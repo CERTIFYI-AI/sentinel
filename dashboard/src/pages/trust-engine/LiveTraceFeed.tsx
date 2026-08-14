@@ -1,62 +1,35 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
-import {
-  Eye, Play, Pause, Warning, Lightning, Clock,
-  CheckCircle, ShieldCheck, MagnifyingGlass, Funnel,
-  ArrowsClockwise, Export, Archive,
-} from '@phosphor-icons/react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// LiveTraceFeed — Live Inference Traces (/trust-engine/traces).
+// Reads the real org-scoped live_traces table; "live" is a Supabase Realtime
+// INSERT subscription (push, not poll) and the indicator reflects the real
+// channel state. No simulated traces, no fabricated spans or I/O payloads —
+// span-level instrumentation is honestly reported as not yet ingested.
+
+import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
+import { Lightning, Export, ShieldCheck, X } from '@phosphor-icons/react';
+import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../../components/ui/select';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
-import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { TRACES, Trace, TRUST_POLICIES, severityColor, formatNumber } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
-import { useChartTheme } from '../../hooks/useChartTheme';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { StatCardRow } from '@/components/ui/StatCardRow';
+import { FilterBar } from '@/components/ui/FilterBar';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { InterlinkChip } from '@/components/ui/InterlinkChip';
 import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
-
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
-
-// ── Simulated new traces for polling ──────────────────────────────────────────
-
-const SIMULATED_AGENTS = ['ComplianceBot', 'LoanAssistant', 'SupportBot', 'RiskAnalyzer', 'DataLabeler-v2', 'AnalyticsAI', 'FraudAlert-Watcher'];
-const SIMULATED_MODELS = ['GPT-4o', 'Claude-3', 'Internal', 'N/A', 'GPT-4o-Mini'];
-const SIMULATED_ACTIONS = ['PII Redaction', 'Toxicity Filter', 'Cost Check', 'Hallucination Guard', 'Data Boundary', 'Rate Limiter', 'Policy Check'];
-const SIMULATED_POLICIES = ['TP-001', 'TP-002', 'TP-003', 'TP-004', 'TP-005'];
-const SIMULATED_STATUSES: Trace['status'][] = ['success', 'blocked', 'fallback'];
-
-function generateTrace(idx: number): Trace {
-  const status = SIMULATED_STATUSES[Math.floor(Math.random() * 10) < 6 ? 0 : Math.floor(Math.random() * 10) < 8 ? 1 : 2];
-  const model = SIMULATED_MODELS[Math.floor(Math.random() * SIMULATED_MODELS.length)];
-  return {
-    id: `TR-${String(100 + idx).padStart(3, '0')}`,
-    timestamp: new Date().toISOString(),
-    agent: SIMULATED_AGENTS[Math.floor(Math.random() * SIMULATED_AGENTS.length)],
-    model,
-    status,
-    action: SIMULATED_ACTIONS[Math.floor(Math.random() * SIMULATED_ACTIONS.length)],
-    latencyMs: status === 'blocked' ? Math.floor(Math.random() * 20) + 3 : Math.floor(Math.random() * 1400) + 100,
-    tokens: status === 'blocked' || model === 'N/A' ? 0 : Math.floor(Math.random() * 5000) + 200,
-    policyEvaluated: SIMULATED_POLICIES[Math.floor(Math.random() * SIMULATED_POLICIES.length)],
-  };
-}
+import { useLiveTraces } from '@/hooks/useLiveTraces';
+import { useModelOptions } from '@/hooks/useAiiaData';
+import type { LiveTrace } from '@/services/liveTraceService';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 function timeAgo(isoDate: string): string {
-  const diff = Date.now() - new Date(isoDate).getTime();
-  const secs = Math.floor(diff / 1000);
-  if (secs < 5) return 'just now';
-  if (secs < 60) return `${secs}s ago`;
+  const secs = Math.floor((Date.now() - new Date(isoDate).getTime()) / 1000);
+  if (secs < 60) return secs < 5 ? 'just now' : `${secs}s ago`;
   const mins = Math.floor(secs / 60);
   if (mins < 60) return `${mins}m ago`;
   const hrs = Math.floor(mins / 60);
@@ -71,655 +44,392 @@ function fullTimestamp(isoDate: string): string {
   });
 }
 
-function statusBadge(status: Trace['status']) {
-  const map = {
+/** Human trace reference — never a raw uuid. */
+function displayRef(t: Pick<LiveTrace, 'id' | 'traceRef'>): string {
+  return t.traceRef ?? t.id.slice(0, 8).toUpperCase();
+}
+
+function statusBadge(status: string | null) {
+  const map: Record<string, { bg: string; color: string; label: string }> = {
     success: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Success' },
-    blocked: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Blocked' },
-    fallback: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Fallback' },
+    blocked: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', label: 'Blocked' },
+    error: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Error' },
   };
-  const s = map[status];
+  const s = (status && map[status]) || { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', label: status ?? 'Unknown' };
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10 }}>{s.label}</Badge>;
 }
 
-// ── Metric Tile ───────────────────────────────────────────────────────────────
-
-function MetricTile({ label, value, variant, icon, sub }: {
-  label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
-}) {
-  const vs = {
-    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-  };
-  const s = vs[variant];
-  return (
-    <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
-          <div className="p-1.5" style={{ background: s.bg, borderRadius: 0 }}>{icon}</div>
-        </div>
-        <div className="text-2xl font-bold" style={{ color: s.color }}>{value}</div>
-        {sub && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>{sub}</p>}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ── Span Waterfall Component ──────────────────────────────────────────────────
-interface ChildSpan {
-  name: string;
-  startMs: number;
-  durationMs: number;
-  type: 'policy' | 'model' | 'tool' | 'guardrail';
-  status: 'ok' | 'blocked' | 'warn';
-}
-
-function generateSpans(trace: Trace): ChildSpan[] {
-  const total = trace.latencyMs;
-  const spans: ChildSpan[] = [];
-  if (trace.status === 'blocked') {
-    spans.push({ name: 'Input Validation', startMs: 0, durationMs: 3, type: 'guardrail', status: 'ok' });
-    spans.push({ name: trace.action, startMs: 3, durationMs: trace.latencyMs - 3, type: 'guardrail', status: 'blocked' });
-  } else if (trace.model !== 'N/A') {
-    const guard1 = Math.floor(total * 0.06);
-    const llm = Math.floor(total * 0.72);
-    const guard2 = Math.floor(total * 0.12);
-    const post = total - guard1 - llm - guard2;
-    spans.push({ name: 'Pre-Guard: ' + trace.policyEvaluated, startMs: 0, durationMs: guard1, type: 'policy', status: 'ok' });
-    spans.push({ name: trace.model + ' Inference', startMs: guard1, durationMs: llm, type: 'model', status: 'ok' });
-    spans.push({ name: 'Post-Guard: ' + trace.action, startMs: guard1 + llm, durationMs: guard2, type: 'guardrail', status: trace.status === 'fallback' ? 'warn' : 'ok' });
-    spans.push({ name: 'Response Routing', startMs: guard1 + llm + guard2, durationMs: post, type: 'tool', status: 'ok' });
-  } else {
-    spans.push({ name: trace.action, startMs: 0, durationMs: total, type: 'tool', status: 'ok' });
-  }
-  return spans;
-}
-
-function SpanWaterfall({ trace }: { trace: Trace }) {
-  const spans = generateSpans(trace);
-  const total = Math.max(trace.latencyMs, 1);
-  const typeColors: Record<ChildSpan['type'], string> = {
-    policy: 'hsl(var(--s-in-bg))',
-    model: 'hsl(var(--brand) / 0.8)',
-    tool: 'hsl(var(--s-ok-bg))',
-    guardrail: 'hsl(var(--s-wn-bg))',
-  };
-  const statusOverride: Record<ChildSpan['status'], string | null> = {
-    ok: null,
-    blocked: 'hsl(var(--s-er-bg))',
-    warn: 'hsl(var(--s-wn-bg))',
-  };
-  const costPerToken = 0.000015;
-  const estimatedCost = trace.tokens > 0 ? (trace.tokens * costPerToken).toFixed(4) : '0.0000';
-  return (
-    <div style={{ background: 'hsl(var(--bg-muted))', borderTop: '1px solid hsl(var(--border))', padding: '10px 12px' }}>
-      <div className="flex items-center gap-4 mb-2 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-        <span>Total: <span className="font-mono font-bold" style={{ color: 'hsl(var(--text-1))' }}>{trace.latencyMs}ms</span></span>
-        <span>Tokens: <span className="font-mono font-bold" style={{ color: 'hsl(var(--text-1))' }}>{trace.tokens > 0 ? trace.tokens.toLocaleString() : '—'}</span></span>
-        <span>Est. Cost: <span className="font-mono font-bold" style={{ color: 'hsl(var(--text-1))' }}>${estimatedCost}</span></span>
-        <span>Policy: <span className="font-mono font-bold" style={{ color: 'hsl(var(--brand))' }}>{trace.policyEvaluated}</span></span>
-      </div>
-      <div className="space-y-1.5">
-        {spans.map((span, idx) => {
-          const leftPct = (span.startMs / total) * 100;
-          const widthPct = Math.max((span.durationMs / total) * 100, 1);
-          const fill = statusOverride[span.status] || typeColors[span.type];
-          return (
-            <div key={idx} className="flex items-center gap-2" style={{ height: 20 }}>
-              <span style={{ width: 180, fontSize: 10, color: 'hsl(var(--text-4))', flexShrink: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{span.name}</span>
-              <div style={{ flex: 1, position: 'relative', height: 14, background: 'hsl(var(--border) / 0.4)', borderRadius: 0 }}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <div
-                      style={{
-                        position: 'absolute',
-                        left: `${leftPct}%`,
-                        width: `${widthPct}%`,
-                        height: '100%',
-                        background: fill,
-                        borderRadius: 0,
-                        cursor: 'default',
-                      }}
-                    />
-                  </TooltipTrigger>
-                  <TooltipContent style={{ borderRadius: 0 }}>
-                    <p className="font-semibold">{span.name}</p>
-                    <p>Start: {span.startMs}ms | Duration: {span.durationMs}ms</p>
-                    <p>Type: {span.type} | Status: {span.status}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
-              <span style={{ width: 42, fontSize: 10, color: 'hsl(var(--text-4))', textAlign: 'right', fontFamily: 'monospace', flexShrink: 0 }}>{span.durationMs}ms</span>
-            </div>
-          );
-        })}
-      </div>
-      <div className="flex items-center gap-4 mt-2" style={{ fontSize: 10, color: 'hsl(var(--text-4))' }}>
-        {(['policy', 'model', 'guardrail', 'tool'] as const).map(t => (
-          <span key={t} className="flex items-center gap-1">
-            <span style={{ width: 8, height: 8, background: typeColors[t], display: 'inline-block', borderRadius: 0 }} />
-            {t}
-          </span>
-        ))}
-      </div>
-    </div>
-  );
-}
+const WINDOW_OPTIONS = [
+  { label: 'Last 24 hours', value: '24h', ms: 24 * 60 * 60 * 1000 },
+  { label: 'Last 7 days', value: '7d', ms: 7 * 24 * 60 * 60 * 1000 },
+  { label: 'Last 14 days', value: '14d', ms: 14 * 24 * 60 * 60 * 1000 },
+];
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function LiveTraceFeed() {
-  const { orgName } = useSettingsStore();
-  const { data: traces, setData: setTraces } = useSupabaseTable('livetracefeed_table', [...TRACES]);
-  const [paused, setPaused] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modelParam = searchParams.get('model');
+  const { models } = useModelOptions();
+
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [filterAgent, setFilterAgent] = useState<string>('all');
-  const [filterLatencyMin, setFilterLatencyMin] = useState<string>('0');
-  const [expandedTraces, setExpandedTraces] = useState<Set<string>>(new Set());
-  const [selectedTrace, setSelectedTrace] = useState<Trace | null>(null);
+  const [filterStatus, setFilterStatus] = useState('');
+  const [filterModel, setFilterModel] = useState('');
+  const [filterWindow, setFilterWindow] = useState('');
+  const [selectedTrace, setSelectedTrace] = useState<LiveTrace | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [clearConfirm, setClearConfirm] = useState(false);
-  const [archivedTraces, setArchivedTraces] = useState<(Trace & { archivedAt: string })[]>([]);
-  const [viewMode, setViewMode] = useState<'active' | 'archived'>('active');
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
-  const pollCountRef = useRef(0);
 
-  const toggleExpand = (id: string) => {
-    setExpandedTraces(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
-  };
+  // Server-side filters (status/model/date); ?model=<uuid> deep-link wins.
+  const effectiveModelId = modelParam || filterModel || undefined;
+  const filters = useMemo(() => {
+    const win = WINDOW_OPTIONS.find(w => w.value === filterWindow);
+    return {
+      status: filterStatus || undefined,
+      modelId: effectiveModelId,
+      since: win ? new Date(Date.now() - win.ms).toISOString() : undefined,
+      limit: 100,
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterStatus, effectiveModelId, filterWindow]);
 
-  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, text, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-  }, []);
+  const { traces, isLoading, error, stats, isLive } = useLiveTraces(filters);
 
-  // Polling simulation: add 1 new trace every 5s when not paused
-  useEffect(() => {
-    if (paused) return;
-    const interval = setInterval(() => {
-      pollCountRef.current += 1;
-      const newTrace = generateTrace(pollCountRef.current);
-      setTraces(prev => [newTrace, ...prev].slice(0, 100));
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [paused]);
+  // Client-side search over the fetched page.
+  const filtered = useMemo(() => traces.filter(t => {
+    if (!search) return true;
+    const q = search.toLowerCase();
+    return displayRef(t).toLowerCase().includes(q)
+      || (t.action ?? '').toLowerCase().includes(q)
+      || (t.modelName ?? '').toLowerCase().includes(q);
+  }), [traces, search]);
 
-  const latencyMinNum = parseInt(filterLatencyMin, 10) || 0;
-  const filtered = traces.filter(t => {
-    if (search && !t.agent.toLowerCase().includes(search.toLowerCase()) && !t.id.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterStatus !== 'all' && t.status !== filterStatus) return false;
-    if (filterAgent !== 'all' && t.agent !== filterAgent) return false;
-    if (latencyMinNum > 0 && t.latencyMs < latencyMinNum) return false;
-    return true;
-  });
-
-  const blockedCount = traces.filter(t => t.status === 'blocked').length;
-  const fallbackCount = traces.filter(t => t.status === 'fallback').length;
-  const agents = Array.from(new Set(traces.map(t => t.agent)));
-
-  const handleClear = () => {
-    const now = new Date().toISOString();
-    const newArchived = traces.map(t => ({ ...t, archivedAt: now }));
-    setArchivedTraces(prev => [...newArchived, ...prev]);
-    setTraces([]);
-    toast(`${newArchived.length} traces archived to cold storage`, 'info');
-    setClearConfirm(false);
-  };
+  const activeFilterCount = (filterStatus ? 1 : 0) + (filterWindow ? 1 : 0)
+    + (filterModel && !modelParam ? 1 : 0) + (modelParam ? 1 : 0);
 
   const handleExport = () => {
-    const csv = ['ID,Timestamp,Agent,Model,Status,Action,Latency(ms),Tokens,Policy']
-      .concat(filtered.map(t => `${t.id},${t.timestamp},${t.agent},${t.model},${t.status},${t.action},${t.latencyMs},${t.tokens},${t.policyEvaluated}`))
+    const esc = (v: string | number | null) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const csv = ['Trace,Timestamp,Model,Action,Status,Latency(ms),TokensIn,TokensOut,CostUSD,Policy']
+      .concat(filtered.map(t => [
+        esc(displayRef(t)), esc(t.createdAt), esc(t.modelName), esc(t.action), esc(t.status),
+        esc(t.latencyMs), esc(t.tokensIn), esc(t.tokensOut), esc(t.costUsd), esc(t.policyRef ?? t.policyName),
+      ].join(',')))
       .join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url; a.download = 'live-traces.csv'; a.click();
     URL.revokeObjectURL(url);
-    toast('Exported trace data to CSV', 'success');
+    toast.success(`Exported ${filtered.length} traces to CSV`);
   };
 
+  if (isLoading) return <PageSkeleton title="Live Inference Traces" />;
+
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        <TrustEngineTabs />
-        {/* Toast */}
-        <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-          {toasts.map(t => (
-            <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-              background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-              color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
-            }}>{t.text}</div>
-          ))}
-        </div>
+    <div className="space-y-6">
+      <TrustEngineTabs />
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <Lightning size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Live Trace Feed</h1>
-              <Badge style={{
-                background: paused ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))',
-                color: paused ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
-                borderRadius: 0, fontSize: 10,
-              }}>
-                {paused ? 'PAUSED' : 'LIVE'}
-              </Badge>
-            </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Real-time agent trace monitoring</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setPaused(!paused)}
-              style={{ borderRadius: 0 }}
+      <PageHeader
+        title="Live Inference Traces"
+        subtitle="Runtime inference traces streamed from the trust proxy — org-scoped, updated in real time"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Trust Engine', href: '/trust-engine' }, { label: 'Inference Traces' }]}
+        badge={
+          // Real subscription state — never claims LIVE without an open channel.
+          <span
+            className="inline-flex items-center gap-1.5 px-2 py-0.5 text-[11px] font-medium border"
+            style={{
+              borderRadius: 0,
+              background: isLive ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-nt-bg))',
+              borderColor: isLive ? 'hsl(var(--s-ok-br))' : 'hsl(var(--border))',
+              color: isLive ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))',
+            }}
+          >
+            <span
+              className={isLive ? 'animate-pulse' : ''}
+              style={{ width: 7, height: 7, borderRadius: '50%', background: isLive ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))' }}
+            />
+            {isLive ? 'Live' : 'Not connected'}
+          </span>
+        }
+        actions={
+          <Button variant="outline" size="sm" onClick={handleExport} style={{ borderRadius: 0 }} disabled={filtered.length === 0}>
+            <Export size={14} /> Export CSV
+          </Button>
+        }
+      />
+
+      {error && (
+        <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load traces</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{error.message}</p>
+        </div>
+      )}
+
+      {/* Model-scoped deep-link chip (?model=<uuid>) */}
+      {modelParam && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+            <span>Filtered to <strong>{models.find(m => m.id === modelParam)?.name ?? 'Unavailable'}</strong></span>
+            <button
+              aria-label="Clear model filter"
+              onClick={() => setSearchParams({})}
+              className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer"
             >
-              {paused ? <Play size={14} weight="fill" /> : <Pause size={14} weight="fill" />}
-              {paused ? 'Resume' : 'Pause'}
-            </Button>
-            <Button variant="outline" size="sm" onClick={handleExport} style={{ borderRadius: 0 }}>
-              <Export size={14} />Export
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => setClearConfirm(true)} style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}>
-              <Archive size={14} />Archive All
-            </Button>
-          </div>
+              <X size={14} />
+            </button>
+          </span>
         </div>
+      )}
 
-        {/* Metrics */}
-        <div className="grid grid-cols-4 gap-4">
-          <MetricTile label="Total Traces" value={String(traces.length)} variant="info" icon={<Lightning size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />
-          <MetricTile label="Blocked" value={String(blockedCount)} variant="error" icon={<Warning size={16} weight="fill" className="text-destructive" />} />
-          <MetricTile label="Fallbacks" value={String(fallbackCount)} variant="warn" icon={<ArrowsClockwise size={16} style={{ color: 'hsl(var(--s-wn-tx))' }} />} />
-          <MetricTile label="Status" value={paused ? 'Paused' : 'Live'} variant={paused ? 'warn' : 'ok'} icon={paused ? <Pause size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} /> : <Play size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} />
-        </div>
+      {/* 24h KPIs computed from real rows — null-guarded, never NaN */}
+      <StatCardRow
+        cards={[
+          {
+            label: 'Traces (24h)',
+            value: stats ? stats.total : '—',
+            description: `Traces ingested in the last 24 hours: ${stats?.total ?? 'unknown'}`,
+          },
+          {
+            label: 'Blocked (24h)',
+            value: stats ? stats.blocked : '—',
+            description: `Traces blocked by policy in the last 24 hours: ${stats?.blocked ?? 'unknown'}`,
+          },
+          {
+            label: 'Error rate (24h)',
+            value: stats?.errorRatePct != null ? `${stats.errorRatePct.toFixed(1)}%` : '—',
+            description: 'Share of traces that ended in a runtime error over the last 24 hours',
+          },
+          {
+            label: 'Avg latency (24h)',
+            value: stats?.avgLatencyMs != null ? `${stats.avgLatencyMs.toLocaleString()}ms` : '—',
+            description: 'Mean end-to-end latency across traces in the last 24 hours',
+          },
+        ]}
+      />
 
-        {/* Filters */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-xs">
-            <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
-            <Input placeholder="Search traces..." value={search} onChange={e => setSearch(e.target.value)}
-              className="pl-9 h-8 text-xs" style={{ borderRadius: 0 }} />
-          </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-8 w-32 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="success">Success</SelectItem>
-              <SelectItem value="blocked">Blocked</SelectItem>
-              <SelectItem value="fallback">Fallback</SelectItem>
-            </SelectContent>
-          </Select>
-          <Select value={filterAgent} onValueChange={setFilterAgent}>
-            <SelectTrigger className="h-8 w-44 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Agent" /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              <SelectItem value="all">All Agents</SelectItem>
-              {agents.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={filterLatencyMin} onValueChange={setFilterLatencyMin}>
-            <SelectTrigger className="h-8 w-40 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Latency" /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              <SelectItem value="0">Any Latency</SelectItem>
-              <SelectItem value="100">{'>'} 100ms</SelectItem>
-              <SelectItem value="500">{'>'} 500ms</SelectItem>
-              <SelectItem value="1000">{'>'} 1000ms (Slow)</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by trace ref, action, model…"
+        filters={[
+          {
+            key: 'status',
+            label: 'Status',
+            value: filterStatus,
+            onChange: setFilterStatus,
+            options: [
+              { label: 'Success', value: 'success' },
+              { label: 'Blocked', value: 'blocked' },
+              { label: 'Error', value: 'error' },
+            ],
+          },
+          ...(!modelParam ? [{
+            key: 'model',
+            label: 'Model',
+            value: filterModel,
+            onChange: setFilterModel,
+            options: models.map(m => ({ label: m.name, value: m.id })),
+          }] : []),
+          {
+            key: 'window',
+            label: 'Period',
+            value: filterWindow,
+            onChange: setFilterWindow,
+            options: WINDOW_OPTIONS.map(w => ({ label: w.label, value: w.value })),
+          },
+        ]}
+        activeFilterCount={activeFilterCount}
+        onClearAll={() => {
+          setSearch(''); setFilterStatus(''); setFilterModel(''); setFilterWindow('');
+          if (modelParam) setSearchParams({});
+        }}
+        trailing={
+          <span className="text-xs text-[hsl(var(--text-4))]">
+            {filtered.length} trace{filtered.length !== 1 ? 's' : ''} (most recent 100)
+          </span>
+        }
+      />
 
-        {/* View Toggle: Active / Archived */}
-        <div className="flex items-center gap-1" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-          <button
-            onClick={() => setViewMode('active')}
-            className="px-4 py-2 text-xs font-medium transition-colors"
-            style={{
-              color: viewMode === 'active' ? 'hsl(var(--brand))' : 'hsl(var(--text-4))',
-              borderBottom: viewMode === 'active' ? '2px solid hsl(var(--brand))' : '2px solid transparent',
-              background: 'transparent',
-              cursor: 'pointer',
-            }}
-          >
-            Active Traces ({traces.length})
-          </button>
-          <button
-            onClick={() => setViewMode('archived')}
-            className="px-4 py-2 text-xs font-medium transition-colors"
-            style={{
-              color: viewMode === 'archived' ? 'hsl(var(--brand))' : 'hsl(var(--text-4))',
-              borderBottom: viewMode === 'archived' ? '2px solid hsl(var(--brand))' : '2px solid transparent',
-              background: 'transparent',
-              cursor: 'pointer',
-            }}
-          >
-            <span className="inline-flex items-center gap-1.5">
-              <Archive size={13} />
-              View Archived ({archivedTraces.length})
-            </span>
-          </button>
-        </div>
-
-        {/* Table */}
-        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    {(viewMode === 'archived'
-                      ? ['', 'ID', 'Time', 'Agent', 'Model', 'Status', 'Action', 'Latency', 'Tokens', 'Policy', 'Archived At']
-                      : ['', 'ID', 'Time', 'Agent', 'Model', 'Status', 'Action', 'Latency', 'Tokens', 'Policy', 'Actions']
-                    ).map(h => (
-                      <th key={h} className="px-3 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                    ))}
+      {/* Table */}
+      <Card style={{ borderRadius: 0 }}>
+        <CardContent className="p-0">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
+                  {['Trace', 'Time', 'Model', 'Action', 'Status', 'Latency', 'Tokens (in / out)', 'Cost', 'Policy'].map(h => (
+                    <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map(trace => (
+                  <tr
+                    key={trace.id}
+                    className="border-b hover:bg-raised transition-colors cursor-pointer"
+                    style={{ borderColor: 'hsl(var(--border))' }}
+                    onClick={() => { setSelectedTrace(trace); setSheetOpen(true); }}
+                  >
+                    <td className="px-3 py-2.5">
+                      <span className="font-mono text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>
+                        {displayRef(trace)}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2.5 text-xs whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }} title={fullTimestamp(trace.createdAt)}>
+                      {timeAgo(trace.createdAt)}
+                    </td>
+                    <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
+                      {trace.modelId ? (
+                        <InterlinkChip label={trace.modelName ?? 'Unavailable'} to={`/models/inventory/${trace.modelId}`} />
+                      ) : (
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{trace.action ?? '—'}</td>
+                    <td className="px-3 py-2.5">{statusBadge(trace.status)}</td>
+                    <td className="px-3 py-2.5 text-xs font-mono whitespace-nowrap" style={{ color: (trace.latencyMs ?? 0) > 5000 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>
+                      {trace.latencyMs != null ? `${trace.latencyMs.toLocaleString()}ms` : '—'}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs font-mono whitespace-nowrap" style={{ color: 'hsl(var(--text-3))' }}>
+                      {trace.tokensIn.toLocaleString()} / {trace.tokensOut.toLocaleString()}
+                    </td>
+                    <td className="px-3 py-2.5 text-xs font-mono whitespace-nowrap" style={{ color: 'hsl(var(--text-3))' }}>
+                      {trace.costUsd != null ? `$${trace.costUsd.toFixed(4)}` : '—'}
+                    </td>
+                    <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
+                      {trace.policyId ? (
+                        <InterlinkChip
+                          label={trace.policyRef ?? trace.policyName ?? 'Unavailable'}
+                          to={`/trust-engine/guardrails?policy=${trace.policyId}`}
+                        />
+                      ) : (
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>
+                      )}
+                    </td>
                   </tr>
-                </thead>
-                <tbody>
-                  {viewMode === 'active' ? (
-                    <>
-                      {filtered.slice(0, 50).map(trace => {
-                        const isExpanded = expandedTraces.has(trace.id);
-                        return (
-                          <React.Fragment key={trace.id}>
-                            <tr style={{ borderBottom: isExpanded ? 'none' : '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
-                              <td className="px-2 py-2.5">
-                                <button
-                                  onClick={() => toggleExpand(trace.id)}
-                                  style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2, color: 'hsl(var(--text-4))', display: 'flex', alignItems: 'center' }}
-                                  title={isExpanded ? 'Collapse spans' : 'Expand span waterfall'}
-                                >
-                                  <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-                                    {isExpanded
-                                      ? <path d="M1 3l4 4 4-4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="square"/>
-                                      : <path d="M3 1l4 4-4 4" stroke="currentColor" strokeWidth="1.5" fill="none" strokeLinecap="square"/>
-                                    }
-                                  </svg>
-                                </button>
-                              </td>
-                              <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{trace.id}</td>
-                              <td className="px-3 py-2.5">
-                                <Tooltip>
-                                  <TooltipTrigger>
-                                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{timeAgo(trace.timestamp)}</span>
-                                  </TooltipTrigger>
-                                  <TooltipContent style={{ borderRadius: 0 }}>{fullTimestamp(trace.timestamp)}</TooltipContent>
-                                </Tooltip>
-                              </td>
-                              <td className="px-3 py-2.5 text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{trace.agent}</td>
-                              <td className="px-3 py-2.5">
-                                {trace.model === 'N/A' ? (
-                                  <Badge style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', borderRadius: 0, fontSize: 10 }}>N/A</Badge>
-                                ) : (
-                                  <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{trace.model}</span>
-                                )}
-                              </td>
-                              <td className="px-3 py-2.5">{statusBadge(trace.status)}</td>
-                              <td className="px-3 py-2.5">
-                                {trace.status === 'fallback' ? (
-                                  <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{trace.action}</Badge>
-                                ) : (
-                                  <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{trace.action}</span>
-                                )}
-                              </td>
-                              <td className="px-3 py-2.5 text-xs font-mono" style={{ color: trace.latencyMs > 1000 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
-                                {trace.latencyMs}ms
-                              </td>
-                              <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>
-                                {trace.tokens > 0 ? formatNumber(trace.tokens) : '0'}
-                              </td>
-                              <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{trace.policyEvaluated}</td>
-                              <td className="px-3 py-2.5">
-                                <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setSelectedTrace(trace); setSheetOpen(true); }}>
-                                  <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
-                                </Button>
-                              </td>
-                            </tr>
-                            {isExpanded && (
-                              <tr key={`${trace.id}-waterfall`} style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                                <td colSpan={11} style={{ padding: 0 }}>
-                                  <SpanWaterfall trace={trace} />
-                                </td>
-                              </tr>
-                            )}
-                          </React.Fragment>
-                        );
-                      })}
-                      {filtered.length === 0 && (
-                        <tr><td colSpan={11} className="px-4 py-8 text-center text-xs" style={{ color: 'hsl(var(--text-4))' }}>No traces to display.</td></tr>
-                      )}
-                    </>
-                  ) : (
-                    <>
-                      {archivedTraces.slice(0, 50).map(trace => (
-                        <tr key={`${trace.id}-${trace.archivedAt}`} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
-                          <td className="px-2 py-2.5" />
-                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{trace.id}</td>
-                          <td className="px-3 py-2.5">
-                            <Tooltip>
-                              <TooltipTrigger>
-                                <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{timeAgo(trace.timestamp)}</span>
-                              </TooltipTrigger>
-                              <TooltipContent style={{ borderRadius: 0 }}>{fullTimestamp(trace.timestamp)}</TooltipContent>
-                            </Tooltip>
-                          </td>
-                          <td className="px-3 py-2.5 text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{trace.agent}</td>
-                          <td className="px-3 py-2.5">
-                            {trace.model === 'N/A' ? (
-                              <Badge style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', borderRadius: 0, fontSize: 10 }}>N/A</Badge>
-                            ) : (
-                              <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{trace.model}</span>
-                            )}
-                          </td>
-                          <td className="px-3 py-2.5">{statusBadge(trace.status)}</td>
-                          <td className="px-3 py-2.5">
-                            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{trace.action}</span>
-                          </td>
-                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>
-                            {trace.latencyMs}ms
-                          </td>
-                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>
-                            {trace.tokens > 0 ? formatNumber(trace.tokens) : '0'}
-                          </td>
-                          <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{trace.policyEvaluated}</td>
-                          <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                            {fullTimestamp(trace.archivedAt)}
-                          </td>
-                        </tr>
-                      ))}
-                      {archivedTraces.length === 0 && (
-                        <tr><td colSpan={10} className="px-4 py-8 text-center text-xs" style={{ color: 'hsl(var(--text-4))' }}>No archived traces.</td></tr>
-                      )}
-                    </>
-                  )}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Clear ConfirmDialog */}
-        <ConfirmDialog
-          open={clearConfirm}
-          onClose={() => setClearConfirm(false)}
-          onConfirm={handleClear}
-          type="danger"
-          title="Archive All Traces"
-          message={<p>Archive all <strong>{traces.length}</strong> traces? Traces will be moved to cold storage per retention policy (7 years).</p>}
-          confirmLabel="Archive All"
-        />
-
-        {/* Trace Detail Sheet */}
-        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent className="w-[580px] sm:max-w-[580px] overflow-y-auto" style={{ borderRadius: 0 }}>
-            {selectedTrace && (
-              <>
-                <SheetHeader>
-                  <SheetTitle className="flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-                    <Lightning size={18} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-                    {selectedTrace.id}
-                  </SheetTitle>
-                </SheetHeader>
-                <Tabs defaultValue="spans" className="mt-4">
-                  <TabsList style={{ borderRadius: 0 }}>
-                    <TabsTrigger value="spans" style={{ borderRadius: 0 }}>Span Details</TabsTrigger>
-                    <TabsTrigger value="io" style={{ borderRadius: 0 }}>Input/Output</TabsTrigger>
-                    <TabsTrigger value="guardrails" style={{ borderRadius: 0 }}>Guardrail Checks</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="spans" className="space-y-4 mt-4">
-                    {/* Metadata grid */}
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Agent</span>
-                        <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedTrace.agent}</p>
-                      </div>
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Model</span>
-                        <p className="text-sm font-mono mt-1" style={{ color: selectedTrace.model === 'N/A' ? 'hsl(var(--text-4))' : 'hsl(var(--text-1))' }}>
-                          {selectedTrace.model === 'N/A' ? 'N/A (non-LLM)' : selectedTrace.model}
-                        </p>
-                      </div>
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Status</span>
-                        <div className="mt-1">{statusBadge(selectedTrace.status)}</div>
-                      </div>
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Latency</span>
-                        <p className="text-sm font-mono mt-1" style={{ color: selectedTrace.latencyMs > 1000 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
-                          {selectedTrace.latencyMs}ms
-                        </p>
-                      </div>
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Tokens</span>
-                        <p className="text-sm font-mono mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedTrace.tokens}</p>
-                      </div>
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Timestamp</span>
-                        <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{fullTimestamp(selectedTrace.timestamp)}</p>
-                      </div>
-                    </div>
-
-                    {/* Span Waterfall */}
-                    {(() => {
-                      const total = selectedTrace.latencyMs;
-                      const isBlocked = selectedTrace.status === 'blocked';
-                      const spans: { name: string; start: number; dur: number; color: string; ok: boolean }[] = isBlocked
-                        ? [
-                            { name: 'Input validation', start: 0, dur: Math.round(total * 0.08), color: 'hsl(var(--s-in-tx))', ok: true },
-                            { name: selectedTrace.action, start: Math.round(total * 0.08), dur: Math.round(total * 0.92), color: 'hsl(var(--destructive))', ok: false },
-                          ]
-                        : [
-                            { name: 'Input validation', start: 0, dur: Math.round(total * 0.05), color: 'hsl(var(--s-ok-tx))', ok: true },
-                            { name: 'Policy check', start: Math.round(total * 0.05), dur: Math.round(total * 0.12), color: 'hsl(var(--s-ok-tx))', ok: true },
-                            { name: 'Guardrail eval', start: Math.round(total * 0.17), dur: Math.round(total * 0.08), color: 'hsl(var(--s-ok-tx))', ok: true },
-                            { name: 'Model inference', start: Math.round(total * 0.25), dur: Math.round(total * 0.60), color: 'hsl(var(--brand))', ok: true },
-                            { name: 'Output validation', start: Math.round(total * 0.85), dur: Math.round(total * 0.09), color: 'hsl(var(--s-ok-tx))', ok: true },
-                            { name: 'Response emit', start: Math.round(total * 0.94), dur: Math.round(total * 0.06), color: 'hsl(var(--s-ok-tx))', ok: true },
-                          ];
-                      return (
-                        <div style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: '14px 16px', borderRadius: 0 }}>
-                          <p className="text-xs font-semibold mb-4" style={{ color: 'hsl(var(--text-1))' }}>
-                            Span Waterfall — {total}ms total
-                          </p>
-                          <div className="space-y-2">
-                            {spans.map((sp, idx) => {
-                              const leftPct = (sp.start / total) * 100;
-                              const widthPct = Math.max((sp.dur / total) * 100, 1.5);
-                              return (
-                                <div key={idx} className="flex items-center gap-3">
-                                  <span className="text-xs font-mono flex-shrink-0" style={{ width: 130, color: 'hsl(var(--text-3))', textAlign: 'right' }}>{sp.name}</span>
-                                  <div className="flex-1 relative" style={{ height: 18, background: 'hsl(var(--bg-muted))' }}>
-                                    <div style={{
-                                      position: 'absolute',
-                                      left: `${leftPct}%`,
-                                      width: `${widthPct}%`,
-                                      top: 0,
-                                      height: '100%',
-                                      background: sp.color,
-                                      opacity: 0.85,
-                                    }} />
-                                  </div>
-                                  <span className="text-xs font-mono flex-shrink-0" style={{ width: 48, color: sp.ok ? 'hsl(var(--text-4))' : 'hsl(var(--destructive))' }}>{sp.dur}ms</span>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          <div className="flex items-center gap-4 mt-4 pt-3" style={{ borderTop: '1px solid hsl(var(--border))' }}>
-                            <div className="flex items-center gap-1.5"><div style={{ width: 10, height: 10, background: 'hsl(var(--brand))' }} /><span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Model</span></div>
-                            <div className="flex items-center gap-1.5"><div style={{ width: 10, height: 10, background: 'hsl(var(--s-ok-tx))' }} /><span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Pass</span></div>
-                            <div className="flex items-center gap-1.5"><div style={{ width: 10, height: 10, background: 'hsl(var(--destructive))' }} /><span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Blocked</span></div>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                  </TabsContent>
-
-                  <TabsContent value="io" className="space-y-4 mt-4">
-                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Input (redacted)</span>
-                      <pre className="text-xs font-mono mt-1 p-2 overflow-x-auto" style={{ background: 'hsl(var(--border) / 0.3)', borderRadius: 0, color: 'hsl(var(--text-1))' }}>
-                        {selectedTrace.status === 'blocked'
-                          ? '[CONTENT REDACTED — Security policy prevents display of blocked inputs]'
-                          : `Agent: ${selectedTrace.agent}\nModel: ${selectedTrace.model}\nAction: ${selectedTrace.action}\nPolicy: ${selectedTrace.policyEvaluated}`}
-                      </pre>
-                    </div>
-                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Output</span>
-                      <pre className="text-xs font-mono mt-1 p-2 overflow-x-auto" style={{ background: 'hsl(var(--border) / 0.3)', borderRadius: 0, color: 'hsl(var(--text-1))' }}>
-                        {selectedTrace.status === 'blocked'
-                          ? `[BLOCKED by ${selectedTrace.action} — Policy ${selectedTrace.policyEvaluated}]`
-                          : selectedTrace.status === 'fallback'
-                          ? `[FALLBACK — ${selectedTrace.action} — routed to secondary model]`
-                          : `[SUCCESS — ${selectedTrace.tokens} tokens processed in ${selectedTrace.latencyMs}ms]`}
-                      </pre>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="guardrails" className="space-y-3 mt-4">
-                    {(() => {
-                      const policy = TRUST_POLICIES.find(p => p.id === selectedTrace.policyEvaluated);
-                      return (
-                        <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{policy?.name || selectedTrace.policyEvaluated}</span>
-                            {statusBadge(selectedTrace.status)}
-                          </div>
-                          <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{policy?.description || 'Policy evaluation details'}</p>
-                          <div className="mt-2 flex items-center gap-2">
-                            <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 9 }}>
-                              Score: {policy?.trustScore || '—'}%
-                            </Badge>
-                            <Badge style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', borderRadius: 0, fontSize: 9 }}>
-                              {formatNumber(policy?.evaluations || 0)} evaluations
-                            </Badge>
-                          </div>
-                        </div>
-                      );
-                    })()}
-                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Decision</span>
-                      <p className="text-sm font-medium mt-1" style={{
-                        color: selectedTrace.status === 'blocked' ? 'hsl(var(--destructive))' : selectedTrace.status === 'fallback' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
-                      }}>
-                        {selectedTrace.status === 'blocked' ? 'BLOCKED — Policy violation detected' : selectedTrace.status === 'fallback' ? 'FALLBACK — Rerouted to secondary model' : 'PASSED — All guardrail checks passed'}
-                      </p>
-                    </div>
-                  </TabsContent>
-                </Tabs>
-              </>
+                ))}
+              </tbody>
+            </table>
+            {filtered.length === 0 && !error && (
+              traces.length === 0 && activeFilterCount === 0 && !search ? (
+                <div className="py-12 text-center">
+                  <Lightning size={32} className="mx-auto mb-3 text-[hsl(var(--text-4))]" />
+                  <p className="text-sm text-[hsl(var(--text-3))]">No inference traces ingested for your organization yet.</p>
+                  <p className="text-xs text-[hsl(var(--text-4))] mt-1">
+                    Traces appear here in real time once the trust proxy starts reporting inference activity.
+                  </p>
+                </div>
+              ) : (
+                <div className="py-12 text-center text-sm text-[hsl(var(--text-4))]">
+                  No traces match the current filters.
+                </div>
+              )
             )}
-          </SheetContent>
-        </Sheet>
-      </div>
-    </TooltipProvider>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Trace Detail Sheet */}
+      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+        <SheetContent className="w-[560px] sm:max-w-[560px] overflow-y-auto" style={{ borderRadius: 0 }}>
+          {selectedTrace && (
+            <>
+              <SheetHeader className="pb-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
+                <SheetTitle className="flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+                  <Lightning size={18} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
+                  <span className="font-mono text-sm px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>
+                    {displayRef(selectedTrace)}
+                  </span>
+                  {statusBadge(selectedTrace.status)}
+                </SheetTitle>
+              </SheetHeader>
+
+              <div className="space-y-4 mt-4">
+                {/* Real fields */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Model</span>
+                    <div className="mt-1">
+                      {selectedTrace.modelId ? (
+                        <InterlinkChip label={selectedTrace.modelName ?? 'Unavailable'} to={`/models/inventory/${selectedTrace.modelId}`} />
+                      ) : (
+                        <span className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>—</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Agent</span>
+                    <p className="text-sm mt-1" style={{ color: selectedTrace.agentName ? 'hsl(var(--text-1))' : 'hsl(var(--text-4))' }}>
+                      {selectedTrace.agentName ?? 'Not attributed'}
+                    </p>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Action</span>
+                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedTrace.action ?? '—'}</p>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Latency</span>
+                    <p className="text-sm font-mono mt-1" style={{ color: 'hsl(var(--text-1))' }}>
+                      {selectedTrace.latencyMs != null ? `${selectedTrace.latencyMs.toLocaleString()}ms` : '—'}
+                    </p>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Tokens in / out</span>
+                    <p className="text-sm font-mono mt-1" style={{ color: 'hsl(var(--text-1))' }}>
+                      {selectedTrace.tokensIn.toLocaleString()} / {selectedTrace.tokensOut.toLocaleString()}
+                    </p>
+                  </div>
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Cost</span>
+                    <p className="text-sm font-mono mt-1" style={{ color: 'hsl(var(--text-1))' }}>
+                      {selectedTrace.costUsd != null ? `$${selectedTrace.costUsd.toFixed(4)}` : '—'}
+                    </p>
+                  </div>
+                  <div className="p-3 col-span-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Timestamp</span>
+                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{fullTimestamp(selectedTrace.createdAt)}</p>
+                  </div>
+                </div>
+
+                {/* Policy evaluated (real trust_policies row) */}
+                {selectedTrace.policyId ? (
+                  <div className="p-3 space-y-2" style={{ background: 'hsl(var(--brand-subtle))', borderLeft: '3px solid hsl(var(--brand))', borderRadius: 0 }}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <ShieldCheck size={14} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
+                        <span className="text-xs font-semibold truncate" style={{ color: 'hsl(var(--brand))' }}>
+                          {selectedTrace.policyName ?? 'Unavailable'}
+                        </span>
+                        {selectedTrace.policyRef && (
+                          <span className="text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{selectedTrace.policyRef}</span>
+                        )}
+                      </div>
+                    </div>
+                    <InterlinkChip
+                      label="View guardrail activity"
+                      to={`/trust-engine/guardrails?policy=${selectedTrace.policyId}`}
+                    />
+                  </div>
+                ) : (
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No trust policy was evaluated for this trace.</p>
+                  </div>
+                )}
+
+                {/* Honest empty section — no fabricated spans or I/O */}
+                <div className="p-6 text-center" style={{ border: '1px dashed hsl(var(--border))', borderRadius: 0 }}>
+                  <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-2))' }}>
+                    Span-level instrumentation not yet ingested
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                    This trace carries aggregate metrics only. Per-span waterfalls and input/output
+                    payloads will appear here once the runtime proxy ships span ingestion.
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+    </div>
   );
 }
