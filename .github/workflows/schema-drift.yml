@@ -5,7 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: supabase/setup-cli@v1
+      - uses: supabase/setup-cli@v2
       - run: supabase db start
       - run: supabase db diff --use-migra -f _drift_check
       - run: |
