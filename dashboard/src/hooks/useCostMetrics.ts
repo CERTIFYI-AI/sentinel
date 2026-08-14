@@ -1,101 +1,149 @@
-import { useState, useEffect, useMemo } from 'react';
+// SPDX-License-Identifier: Apache-2.0
+// useCostMetrics — real aggregates over `cost_token_usage` (daily batch data).
+// Full rewrite: every number here is computed from fetched rows; nothing is
+// seeded, randomized, or scaled by a fake multiplier. The date range and the
+// optional model filter are REAL query filters (applied server-side).
 
-// Base mock data seeds
-const BASE_TOKEN_USAGE = [
-  { day: 'Mon', tokens: 42.3 },
-  { day: 'Tue', tokens: 48.1 },
-  { day: 'Wed', tokens: 44.7 },
-  { day: 'Thu', tokens: 51.2 },
-  { day: 'Fri', tokens: 47.8 },
-  { day: 'Sat', tokens: 38.2 },
-  { day: 'Sun', tokens: 40.7 },
-];
+import { useMemo } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { fetchCostUsage, setModelBudget, type CostUsageRow } from '@/services/costUsageService'
 
-const BASE_COST_TREND = [
-  { day: 'Mon', cost: 1.27 },
-  { day: 'Tue', cost: 1.44 },
-  { day: 'Wed', cost: 1.34 },
-  { day: 'Thu', cost: 1.54 },
-  { day: 'Fri', cost: 1.43 },
-  { day: 'Sat', cost: 1.15 },
-  { day: 'Sun', cost: 1.22 },
-];
+export type CostRangeKey = '7d' | '14d' | '30d'
+export const COST_RANGE_DAYS: Record<CostRangeKey, number> = { '7d': 7, '14d': 14, '30d': 30 }
 
-const BASE_COST_BY_MODEL = [
-  { model: 'GPT-4o', cost: 3.82, prompt: 420, comp: 180, color: 'hsl(var(--s-in-tx))' },
-  { model: 'Claude-3-Opus', cost: 2.14, prompt: 150, comp: 90, color: 'hsl(var(--s-ok-tx))' },
-  { model: 'GPT-3.5-Turbo', cost: 1.21, prompt: 850, comp: 120, color: 'hsl(var(--s-wn-tx))' },
-  { model: 'Claude-3-Haiku', cost: 0.89, prompt: 300, comp: 150, color: 'hsl(var(--s-wn-tx))' },
-  { model: 'GPT-4o-Mini', cost: 0.74, prompt: 500, comp: 200, color: 'hsl(280 67% 56%)' },
-  { model: 'Mistral-7B', cost: 0.59, prompt: 100, comp: 45, color: 'hsl(var(--destructive))' },
-];
+export interface DailyPoint {
+  date: string // YYYY-MM-DD
+  cost: number
+  tokens: number
+  requests: number
+}
 
-const BASE_TOKEN_BY_AGENT = [
-  { agent: 'OpenAI-API-Connector', tokens: 78.2, pct: 25 },
-  { agent: 'DataLabeler-v2', tokens: 63.1, pct: 20 },
-  { agent: 'LoanAssistant', tokens: 45.3, pct: 14 },
-  { agent: 'SupportBot', tokens: 31.2, pct: 10 },
-  { agent: 'RiskAnalyzer', tokens: 20.4, pct: 7 },
-];
+export interface ModelCostAgg {
+  modelId: string // ai_models uuid (charts are keyed by this, never by name)
+  modelName: string // stored snapshot; resolve registry name at render time
+  cost: number
+  promptTokens: number
+  completionTokens: number
+  totalTokens: number
+  requests: number
+  budgetLimitUsd: number | null
+  latestDayCost: number // spend on the most recent usage_date in the window
+  latestDayDate: string | null
+}
 
-const BASE_PROVIDER_TRAFFIC = [
-  { provider: 'OpenAI', reqs: 14200, pct: 65, activeKeys: 3, latency: 420, status: 'Healthy' },
-  { provider: 'Anthropic', reqs: 5800, pct: 28, activeKeys: 2, latency: 650, status: 'Healthy' },
-  { provider: 'Local Llama', reqs: 1200, pct: 7, activeKeys: 1, latency: 120, status: 'Healthy' },
-];
+export interface BudgetAlert {
+  modelId: string
+  modelName: string
+  latestDayCost: number
+  budgetLimitUsd: number
+  pct: number // latestDayCost / budgetLimitUsd
+}
 
-export function useCostMetrics(dateRange: string) {
-  const [providerTraffic, setProviderTraffic] = useState(BASE_PROVIDER_TRAFFIC);
+function isoDaysAgo(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString().slice(0, 10)
+}
 
-  // Simulate real-time traffic updates every 3 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setProviderTraffic(prev => prev.map(p => {
-        // Randomly fluctuate requests by +/- 2%
-        const reqsDelta = Math.floor(p.reqs * (Math.random() * 0.04 - 0.02));
-        // Randomly fluctuate latency by +/- 15ms
-        const latDelta = Math.floor(Math.random() * 30 - 15);
-        
-        return {
-          ...p,
-          reqs: Math.max(0, p.reqs + reqsDelta),
-          latency: Math.max(10, p.latency + latDelta),
-        };
-      }));
-    }, 3000);
-    return () => clearInterval(interval);
-  }, []);
+export function useCostMetrics(range: CostRangeKey, modelId?: string | null) {
+  const qc = useQueryClient()
+  const days = COST_RANGE_DAYS[range]
+  // Inclusive window of N calendar days ending today.
+  const sinceDate = isoDaysAgo(days - 1)
 
-  // Scale data based on date range
-  const scaledData = useMemo(() => {
-    let multiplier = 1;
-    if (dateRange === 'today') multiplier = 0.15;
-    if (dateRange === 'month') multiplier = 4.2;
-    if (dateRange === 'custom') multiplier = 2.5;
+  const query = useQuery({
+    queryKey: ['cost-usage', range, modelId ?? 'all'],
+    queryFn: () => fetchCostUsage({ sinceDate, modelId: modelId ?? undefined }),
+    staleTime: 60_000,
+  })
+  const rows: CostUsageRow[] = useMemo(() => query.data ?? [], [query.data])
 
-    const tokenUsage = BASE_TOKEN_USAGE.map(d => ({ ...d, tokens: Number((d.tokens * multiplier).toFixed(1)) }));
-    const costTrend = BASE_COST_TREND.map(d => ({ ...d, cost: Number((d.cost * multiplier).toFixed(2)) }));
-    
-    const costByModel = BASE_COST_BY_MODEL.map(d => ({ 
-      ...d, 
-      cost: Number((d.cost * multiplier).toFixed(2)),
-      prompt: Math.round(d.prompt * multiplier),
-      comp: Math.round(d.comp * multiplier)
-    }));
+  const metrics = useMemo(() => {
+    // ── Daily trend ─────────────────────────────────────────────────────────
+    const byDate = new Map<string, DailyPoint>()
+    for (const r of rows) {
+      const p = byDate.get(r.usageDate) ?? { date: r.usageDate, cost: 0, tokens: 0, requests: 0 }
+      p.cost += r.costUsd
+      p.tokens += r.totalTokens
+      p.requests += r.requestCount
+      byDate.set(r.usageDate, p)
+    }
+    const dailyTrend = [...byDate.values()].sort((a, b) => a.date.localeCompare(b.date))
+    const dataThrough = dailyTrend.length > 0 ? dailyTrend[dailyTrend.length - 1].date : null
 
-    const tokenByAgent = BASE_TOKEN_BY_AGENT.map(d => ({
-      ...d,
-      tokens: Number((d.tokens * multiplier).toFixed(1))
-    }));
+    // ── Per-model aggregates (keyed by ai_models uuid) ──────────────────────
+    const byModel = new Map<string, ModelCostAgg>()
+    for (const r of rows) {
+      if (!r.modelId) continue // rows without a registry link can't be keyed or deep-linked
+      const m = byModel.get(r.modelId) ?? {
+        modelId: r.modelId,
+        modelName: r.modelName ?? '',
+        cost: 0, promptTokens: 0, completionTokens: 0, totalTokens: 0, requests: 0,
+        budgetLimitUsd: null, latestDayCost: 0, latestDayDate: null,
+      }
+      m.cost += r.costUsd
+      m.promptTokens += r.promptTokens
+      m.completionTokens += r.completionTokens
+      m.totalTokens += r.totalTokens
+      m.requests += r.requestCount
+      if (r.budgetLimitUsd != null) m.budgetLimitUsd = r.budgetLimitUsd
+      if (m.latestDayDate === null || r.usageDate > m.latestDayDate) {
+        m.latestDayDate = r.usageDate
+        m.latestDayCost = r.costUsd
+      }
+      byModel.set(r.modelId, m)
+    }
+    const costByModel = [...byModel.values()].sort((a, b) => b.cost - a.cost)
 
-    const totalTokens = tokenUsage.reduce((acc, curr) => acc + curr.tokens, 0);
-    const totalCost = costTrend.reduce((acc, curr) => acc + curr.cost, 0);
+    // ── Totals ──────────────────────────────────────────────────────────────
+    const totalCost = rows.reduce((s, r) => s + r.costUsd, 0)
+    const totalTokens = rows.reduce((s, r) => s + r.totalTokens, 0)
+    const totalRequests = rows.reduce((s, r) => s + r.requestCount, 0)
+    const activeModels = byModel.size
+    const costPer1kTokens = totalTokens > 0 ? (totalCost / totalTokens) * 1000 : null
 
-    return { tokenUsage, costTrend, costByModel, tokenByAgent, totalTokens, totalCost };
-  }, [dateRange]);
+    // ── Week-over-week deltas — computed only when the window really spans
+    //    two full weeks of data (never extrapolated). ────────────────────────
+    let costWoWPct: number | null = null
+    let tokensWoWPct: number | null = null
+    if (dailyTrend.length >= 14) {
+      const last7 = dailyTrend.slice(-7)
+      const prev7 = dailyTrend.slice(-14, -7)
+      const sum = (pts: DailyPoint[], k: 'cost' | 'tokens') => pts.reduce((s, p) => s + p[k], 0)
+      const prevCost = sum(prev7, 'cost')
+      const prevTokens = sum(prev7, 'tokens')
+      if (prevCost > 0) costWoWPct = ((sum(last7, 'cost') - prevCost) / prevCost) * 100
+      if (prevTokens > 0) tokensWoWPct = ((sum(last7, 'tokens') - prevTokens) / prevTokens) * 100
+    }
+
+    // ── Budget alerts: models whose latest-day spend is ≥80% of their daily
+    //    budget_limit_usd. Empty array ⇒ the page shows no banner. ───────────
+    const budgetAlerts: BudgetAlert[] = costByModel
+      .filter(m => m.budgetLimitUsd != null && m.budgetLimitUsd > 0 && m.latestDayCost >= 0.8 * m.budgetLimitUsd)
+      .map(m => ({
+        modelId: m.modelId,
+        modelName: m.modelName,
+        latestDayCost: m.latestDayCost,
+        budgetLimitUsd: m.budgetLimitUsd as number,
+        pct: m.latestDayCost / (m.budgetLimitUsd as number),
+      }))
+
+    return {
+      dailyTrend, costByModel, dataThrough,
+      totalCost, totalTokens, totalRequests, activeModels, costPer1kTokens,
+      costWoWPct, tokensWoWPct, budgetAlerts,
+    }
+  }, [rows])
+
+  const saveBudget = useMutation({
+    mutationFn: ({ modelId: id, limitUsd }: { modelId: string; limitUsd: number | null }) =>
+      setModelBudget(id, limitUsd),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['cost-usage'] }),
+  })
 
   return {
-    ...scaledData,
-    providerTraffic
-  };
+    rows,
+    ...metrics,
+    isLoading: query.isLoading,
+    error: (query.error as Error | null) ?? null,
+    saveBudget,
+  }
 }

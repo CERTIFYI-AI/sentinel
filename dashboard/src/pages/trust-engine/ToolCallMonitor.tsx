@@ -1,182 +1,41 @@
-import { useState, useCallback } from 'react';
+// SPDX-License-Identifier: Apache-2.0
+// Tool Monitor — real `tool_call_logs` (agent tool invocations), interlinked to
+// the model registry by uuid and to live traces by trace_id. The old hardcoded
+// authorization matrix is replaced by an honest read-only "observed usage" view
+// derived from the logs; escalation creates a REAL incident via incidentService.
+
+import { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
-  Eye, MagnifyingGlass, Export, Funnel, Wrench, Lightning,
-  ArrowCounterClockwise, Warning, CheckCircle,
+  Eye, Export, Wrench, Lightning, Warning, X, Copy,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../../components/ui/select';
-import { Switch } from '../../components/ui/switch';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
-import { useSettingsStore } from '../../stores/settingsStore';
-import { useChartTheme } from '../../hooks/useChartTheme';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { StatCardRow } from '@/components/ui/StatCardRow';
+import { FilterBar } from '@/components/ui/FilterBar';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
-
-
-// ── Types ─────────────────────────────────────────────────────────────────────
-
-interface ToolCall {
-  id: string; timestamp: string; agent: string; tool: string;
-  args: string; result: 'success' | 'error' | 'timeout' | 'blocked';
-  latencyMs: number; output: string; error?: string; traceId?: string;
-  authCheck?: string; isIdempotent?: boolean;
-}
-
-interface AuthRule {
-  agent: string; tool: string; permission: 'allowed' | 'blocked' | 'conditional';
-  condition?: string;
-}
-
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
-
-// ── Data ──────────────────────────────────────────────────────────────────────
-
-const TOOL_CALLS: ToolCall[] = [
-  {
-    id: 'TC-001', timestamp: '2026-04-05T14:23:01.234Z', agent: 'ComplianceBot',
-    tool: 'search_policy_database',
-    args: '{\n  "query": "EU AI Act Article 11",\n  "scope": "active",\n  "limit": 10\n}',
-    result: 'success', latencyMs: 142, traceId: 'TR-001',
-    output: 'Found 3 matching policy documents: POL-001 (AI Acceptable Use), POL-005 (EU AI Act Framework), POL-010 (Model Documentation Standard).',
-    authCheck: 'Authorized — ComplianceBot has read access to policy_database', isIdempotent: true,
-  },
-  {
-    id: 'TC-002', timestamp: '2026-04-05T14:22:58.891Z', agent: 'LoanAssistant',
-    tool: 'get_customer_profile',
-    args: '{\n  "customer_id": "CUST-4892",\n  "fields": ["credit_score", "income", "ssn"]\n}',
-    result: 'blocked', latencyMs: 8, traceId: 'TR-002',
-    output: '[BLOCKED — PII guardrail: fields array contains "ssn" — unauthorized PII field access]',
-    authCheck: 'BLOCKED — LoanAssistant not authorized to access ssn field for CUST-* records', isIdempotent: true,
-  },
-  {
-    id: 'TC-003', timestamp: '2026-04-05T14:22:55.100Z', agent: 'RiskAnalyzer',
-    tool: 'fetch_vendor_risk_score',
-    args: '{\n  "vendor_id": "V-006",\n  "framework": "ISO27001",\n  "include_subitems": true\n}',
-    result: 'success', latencyMs: 312, traceId: 'TR-011',
-    output: 'Vendor V-006 (Pinecone) risk score: 61/100. Status: in_review. Critical gaps: expired SOC 2, pending DPA.',
-    authCheck: 'Authorized — RiskAnalyzer has read access to vendor_risk_scores', isIdempotent: true,
-  },
-  {
-    id: 'TC-004', timestamp: '2026-04-05T14:22:50.445Z', agent: 'DataLabeler-v2',
-    tool: 'write_label_store',
-    args: '{\n  "batch_id": "DS-0044",\n  "records": [...500 records],\n  "overwrite": false\n}',
-    result: 'timeout', latencyMs: 30000,
-    output: '[TIMEOUT — write_label_store exceeded 30s SLA — partial write state unknown]',
-    error: 'Database connection pool exhausted after 30000ms. Rollback state: UNKNOWN — 500 records may be partially written.',
-    authCheck: 'Authorized — DataLabeler-v2 has write access to label_store (batch mode)',
-  },
-  {
-    id: 'TC-005', timestamp: '2026-04-05T14:22:45.200Z', agent: 'AuditLog-Streamer',
-    tool: 'stream_to_siem',
-    args: '{\n  "events": [...12 entries],\n  "destination": "splunk://siem.internal:8088",\n  "priority": "high"\n}',
-    result: 'success', latencyMs: 45, traceId: 'TR-006',
-    output: '12 audit events streamed to SIEM (Splunk) successfully. Event IDs: AE-0041 through AE-0052.',
-    authCheck: 'Authorized — AuditLog-Streamer has stream access to siem.internal',
-  },
-  {
-    id: 'TC-006', timestamp: '2026-04-05T14:22:40.100Z', agent: 'VendorRisk-Scanner',
-    tool: 'run_vendor_questionnaire',
-    args: '{\n  "vendor_id": "V-004",\n  "template": "ISO27001_v2",\n  "notify_vendor": true\n}',
-    result: 'error', latencyMs: 890,
-    output: '[ERROR — Vendor portal API returned 502 Bad Gateway — questionnaire not sent]',
-    error: 'Remote endpoint https://vendor-portal.api/v1/questionnaire returned 502 Bad Gateway. DPA for V-004 (Pinecone) remains in "In Review" state.',
-    authCheck: 'Authorized — VendorRisk-Scanner has invoke access to vendor_questionnaire',
-  },
-  {
-    id: 'TC-007', timestamp: '2026-04-05T13:55:20.000Z', agent: 'ComplianceBot',
-    tool: 'search_policy_database',
-    args: '{\n  "query": "SOC 2 CC6.1 access controls",\n  "scope": "controls",\n  "limit": 20\n}',
-    result: 'success', latencyMs: 198, traceId: 'TR-019',
-    output: 'Found 8 controls matching SOC 2 CC6.1: CTRL-001, CTRL-007, CTRL-008, CTRL-010, CTRL-011 and 3 more.',
-    authCheck: 'Authorized — read access confirmed', isIdempotent: true,
-  },
-  {
-    id: 'TC-008', timestamp: '2026-04-05T13:30:10.000Z', agent: 'RiskAnalyzer',
-    tool: 'fetch_vendor_risk_score',
-    args: '{\n  "vendor_id": "V-012",\n  "framework": "GDPR",\n  "include_dpa_status": true\n}',
-    result: 'success', latencyMs: 287,
-    output: 'Vendor V-012 GDPR risk: HIGH. DPA status: Missing. Sub-processors: undisclosed. Recommendation: Do not proceed.',
-    authCheck: 'Authorized — read access confirmed', isIdempotent: true,
-  },
-  {
-    id: 'TC-009', timestamp: '2026-04-05T12:48:50.000Z', agent: 'FraudAlert-Watcher',
-    tool: 'get_customer_profile',
-    args: '{\n  "customer_id": "CUST-7712",\n  "fields": ["account_balance", "transaction_history"]\n}',
-    result: 'blocked', latencyMs: 6,
-    output: '[BLOCKED — FraudAlert-Watcher not in authorized agent list for get_customer_profile]',
-    authCheck: 'BLOCKED — Authorization matrix does not include FraudAlert-Watcher for customer_profile access', isIdempotent: true,
-  },
-  {
-    id: 'TC-010', timestamp: '2026-04-05T11:20:40.000Z', agent: 'AuditLog-Streamer',
-    tool: 'stream_to_siem',
-    args: '{\n  "events": [...48 entries],\n  "destination": "splunk://siem.internal:8088",\n  "batch_mode": true\n}',
-    result: 'success', latencyMs: 78, traceId: 'TR-015',
-    output: '48 audit events streamed to SIEM in batch mode. Batch ID: AE-BATCH-0012.',
-    authCheck: 'Authorized — stream access confirmed',
-  },
-  {
-    id: 'TC-011', timestamp: '2026-04-05T10:15:20.000Z', agent: 'LoanAssistant',
-    tool: 'search_policy_database',
-    args: '{\n  "query": "loan approval eligibility criteria 2026",\n  "scope": "policies",\n  "limit": 5\n}',
-    result: 'success', latencyMs: 167,
-    output: 'Found 3 policies: POL-001 (AI Acceptable Use), POL-003 (Data Privacy), POL-009 (Human Oversight). Key: All loan decisions require human oversight per Art. 14.',
-    authCheck: 'Authorized — read access confirmed', isIdempotent: true,
-  },
-  {
-    id: 'TC-012', timestamp: '2026-04-05T09:45:00.000Z', agent: 'DataLabeler-v2',
-    tool: 'write_label_store',
-    args: '{\n  "batch_id": "DS-0043",\n  "records": [...200 records],\n  "overwrite": false\n}',
-    result: 'success', latencyMs: 8900,
-    output: '200 records successfully written to label_store. Batch DS-0043 committed. Avg confidence: 0.94.',
-    authCheck: 'Authorized — write access confirmed',
-  },
-];
-
-// Authorization Matrix data
-const AUTH_MATRIX: AuthRule[] = [
-  { agent: 'ComplianceBot', tool: 'search_policy_database', permission: 'allowed' },
-  { agent: 'ComplianceBot', tool: 'get_customer_profile', permission: 'blocked' },
-  { agent: 'ComplianceBot', tool: 'fetch_vendor_risk_score', permission: 'allowed' },
-  { agent: 'ComplianceBot', tool: 'write_label_store', permission: 'blocked' },
-  { agent: 'ComplianceBot', tool: 'stream_to_siem', permission: 'conditional', condition: 'Read-only audit events' },
-  { agent: 'ComplianceBot', tool: 'run_vendor_questionnaire', permission: 'blocked' },
-  { agent: 'LoanAssistant', tool: 'search_policy_database', permission: 'allowed' },
-  { agent: 'LoanAssistant', tool: 'get_customer_profile', permission: 'conditional', condition: 'Non-PII fields only (no ssn, dob)' },
-  { agent: 'LoanAssistant', tool: 'fetch_vendor_risk_score', permission: 'blocked' },
-  { agent: 'LoanAssistant', tool: 'write_label_store', permission: 'blocked' },
-  { agent: 'LoanAssistant', tool: 'stream_to_siem', permission: 'blocked' },
-  { agent: 'LoanAssistant', tool: 'run_vendor_questionnaire', permission: 'blocked' },
-  { agent: 'RiskAnalyzer', tool: 'search_policy_database', permission: 'allowed' },
-  { agent: 'RiskAnalyzer', tool: 'get_customer_profile', permission: 'blocked' },
-  { agent: 'RiskAnalyzer', tool: 'fetch_vendor_risk_score', permission: 'allowed' },
-  { agent: 'RiskAnalyzer', tool: 'write_label_store', permission: 'blocked' },
-  { agent: 'RiskAnalyzer', tool: 'stream_to_siem', permission: 'blocked' },
-  { agent: 'RiskAnalyzer', tool: 'run_vendor_questionnaire', permission: 'conditional', condition: 'Read-only questionnaire templates' },
-  { agent: 'DataLabeler-v2', tool: 'search_policy_database', permission: 'allowed' },
-  { agent: 'DataLabeler-v2', tool: 'get_customer_profile', permission: 'blocked' },
-  { agent: 'DataLabeler-v2', tool: 'fetch_vendor_risk_score', permission: 'blocked' },
-  { agent: 'DataLabeler-v2', tool: 'write_label_store', permission: 'allowed' },
-  { agent: 'DataLabeler-v2', tool: 'stream_to_siem', permission: 'blocked' },
-  { agent: 'DataLabeler-v2', tool: 'run_vendor_questionnaire', permission: 'blocked' },
-  { agent: 'FraudAlert-Watcher', tool: 'search_policy_database', permission: 'blocked' },
-  { agent: 'FraudAlert-Watcher', tool: 'get_customer_profile', permission: 'blocked' },
-  { agent: 'FraudAlert-Watcher', tool: 'fetch_vendor_risk_score', permission: 'blocked' },
-  { agent: 'FraudAlert-Watcher', tool: 'write_label_store', permission: 'blocked' },
-  { agent: 'FraudAlert-Watcher', tool: 'stream_to_siem', permission: 'conditional', condition: 'Fraud alerts only' },
-  { agent: 'FraudAlert-Watcher', tool: 'run_vendor_questionnaire', permission: 'blocked' },
-];
-
-const AUTH_AGENTS = [...new Set(AUTH_MATRIX.map(r => r.agent))];
-const AUTH_TOOLS = [...new Set(AUTH_MATRIX.map(r => r.tool))];
-
-const IDEMPOTENT_TOOLS = ['search_policy_database', 'get_customer_profile', 'fetch_vendor_risk_score'];
+import { useToolCalls } from '../../hooks/useToolCalls';
+import { useModelOptions } from '@/hooks/useAiiaData';
+import { upsertIncident, type IncidentRecord } from '../../services/incidentService';
+import type { ToolCallRecord } from '@/services/toolCallService';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
+
+function statusBadge(status: string) {
+  const map: Record<string, { bg: string; color: string; label: string }> = {
+    success: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Success' },
+    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Error' },
+    blocked: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Blocked' },
+  };
+  const s = map[status] ?? { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', label: status };
+  return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11 }}>{s.label}</Badge>;
+}
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -188,234 +47,267 @@ function timeAgo(iso: string): string {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-function resultBadge(result: ToolCall['result']) {
-  const map: Record<string, { bg: string; color: string; label: string }> = {
-    success: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Success' },
-    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Error' },
-    timeout: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Timeout' },
-    blocked: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Blocked' },
-  };
-  const s = map[result] ?? map.success;
-  return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 11 }}>{s.label}</Badge>;
-}
+const fmtLatency = (ms: number | null) =>
+  ms == null ? '—' : ms >= 1000 ? `${(ms / 1000).toFixed(1)}s` : `${ms}ms`;
 
-function permBadge(p: AuthRule['permission']) {
-  if (p === 'allowed') return <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Allowed</Badge>;
-  if (p === 'blocked') return <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Blocked</Badge>;
-  return <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>Conditional</Badge>;
-}
+const prettyJson = (v: unknown) => {
+  if (v == null) return '—';
+  try { return JSON.stringify(v, null, 2); } catch { return String(v); }
+};
 
-// ── Main Component ────────────────────────────────────────────────────────────
+const argsPreview = (v: unknown) => {
+  if (v == null) return '—';
+  try { return JSON.stringify(v).slice(0, 60); } catch { return String(v).slice(0, 60); }
+};
+
+const DATE_WINDOWS: Record<string, number> = { '24h': 86_400_000, '7d': 7 * 86_400_000, '30d': 30 * 86_400_000 };
+
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function ToolCallMonitor() {
-  const { orgName } = useSettingsStore();
-  useChartTheme();
-  const [calls, setCalls] = useState<ToolCall[]>(TOOL_CALLS);
-  const [authMatrix, setAuthMatrix] = useState<AuthRule[]>(AUTH_MATRIX);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modelParam = searchParams.get('model');
+  const { data: calls, isLoading, error } = useToolCalls();
+  const { models } = useModelOptions();
+
   const [search, setSearch] = useState('');
-  const [resultFilter, setResultFilter] = useState('all');
-  const [agentFilter, setAgentFilter] = useState('all');
-  const [toolFilter, setToolFilter] = useState('all');
-  const [viewItem, setViewItem] = useState<ToolCall | null>(null);
+  const [statusFilter, setStatusFilter] = useState('');
+  const [toolFilter, setToolFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
+  const [viewItem, setViewItem] = useState<ToolCallRecord | null>(null);
   const [activeTab, setActiveTab] = useState('calls');
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [escalating, setEscalating] = useState<string | null>(null);
+  const [escalated, setEscalated] = useState<Record<string, string>>({}); // call id → incident id
 
-  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, text, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-  }, []);
+  const resolveModelName = (modelId: string | null) =>
+    modelId ? (models.find(m => m.id === modelId)?.name ?? 'Unavailable') : null;
 
-  const agents = ['all', ...Array.from(new Set(calls.map(c => c.agent)))];
-  const tools = ['all', ...Array.from(new Set(calls.map(c => c.tool)))];
+  const toolOptions = useMemo(() => [...new Set(calls.map(c => c.toolName))].sort(), [calls]);
 
-  const filtered = calls.filter(c => {
-    const matchSearch = c.agent.toLowerCase().includes(search.toLowerCase()) ||
-      c.tool.toLowerCase().includes(search.toLowerCase()) ||
-      c.id.toLowerCase().includes(search.toLowerCase()) ||
-      c.result.toLowerCase().includes(search.toLowerCase());
-    const matchResult = resultFilter === 'all' || c.result === resultFilter;
-    const matchAgent = agentFilter === 'all' || c.agent === agentFilter;
-    const matchTool = toolFilter === 'all' || c.tool === toolFilter;
-    return matchSearch && matchResult && matchAgent && matchTool;
-  });
-
-  const successCount = calls.filter(c => c.result === 'success').length;
-  const errorCount = calls.filter(c => c.result === 'error').length;
-  const timeoutCount = calls.filter(c => c.result === 'timeout').length;
-  const blockedCount = calls.filter(c => c.result === 'blocked').length;
-  const successRate = Math.round((successCount / calls.length) * 100);
-  // Exclude timeout from avg latency for healthy calls
-  const healthyCalls = calls.filter(c => c.result !== 'timeout');
-  const avgLatencyHealthy = Math.round(healthyCalls.reduce((s, c) => s + c.latencyMs, 0) / healthyCalls.length);
-
-  const togglePerm = (agent: string, tool: string) => {
-    setAuthMatrix(prev => prev.map(r => {
-      if (r.agent === agent && r.tool === tool) {
-        const next: AuthRule['permission'] = r.permission === 'allowed' ? 'blocked' : r.permission === 'blocked' ? 'conditional' : 'allowed';
-        toast(`${agent} → ${tool}: ${r.permission} → ${next}`);
-        return { ...r, permission: next };
-      }
-      return r;
-    }));
-  };
-
-  const handleRetry = (c: ToolCall) => {
-    if (!IDEMPOTENT_TOOLS.includes(c.tool)) {
-      toast(`${c.tool} is not idempotent — retry not available`, 'error');
-      return;
+  const filtered = useMemo(() => calls.filter(c => {
+    if (modelParam && c.modelId !== modelParam) return false;
+    if (statusFilter && c.status !== statusFilter) return false;
+    if (toolFilter && c.toolName !== toolFilter) return false;
+    if (dateFilter && DATE_WINDOWS[dateFilter] != null &&
+      Date.now() - new Date(c.invokedAt).getTime() > DATE_WINDOWS[dateFilter]) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const hay = [c.agentName ?? '', c.toolName, c.invocationId ?? '', c.status, c.traceRef ?? ''].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
     }
-    toast(`Retrying ${c.id} — ${c.tool}...`);
-    setTimeout(() => toast(`${c.id} retry completed — Success (simulated)`), 1500);
-  };
+    return true;
+  }), [calls, modelParam, statusFilter, toolFilter, dateFilter, search]);
 
-  const handleEscalate = (c: ToolCall) => {
-    const incId = `INC-${String(Math.floor(Math.random() * 900) + 100)}`;
-    toast(`Incident ${incId} created from ${c.id} — ${c.result.toUpperCase()} on ${c.tool}`, 'info');
+  // ── KPIs (with empty guards) ───────────────────────────────────────────────
+  const total = calls.length;
+  const successCount = calls.filter(c => c.status === 'success').length;
+  const errorCount = calls.filter(c => c.status === 'error').length;
+  const blockedCount = calls.filter(c => c.status === 'blocked').length;
+  const successRate = total > 0 ? Math.round((successCount / total) * 100) : null;
+
+  // ── Computed callout: blocked calls in the last 7 days (else nothing) ──────
+  const blockedRecent = useMemo(() =>
+    calls.filter(c => c.status === 'blocked' && Date.now() - new Date(c.invokedAt).getTime() <= DATE_WINDOWS['7d']).length,
+  [calls]);
+
+  // ── Observed usage: distinct agent × tool with status mix, from real logs ──
+  const observedUsage = useMemo(() => {
+    const map = new Map<string, { agent: string; tool: string; total: number; success: number; error: number; blocked: number; lastUsed: string }>();
+    for (const c of calls) {
+      const agent = c.agentName ?? 'Unknown agent';
+      const key = `${agent}::${c.toolName}`;
+      const row = map.get(key) ?? { agent, tool: c.toolName, total: 0, success: 0, error: 0, blocked: 0, lastUsed: c.invokedAt };
+      row.total += 1;
+      if (c.status === 'success') row.success += 1;
+      else if (c.status === 'error') row.error += 1;
+      else if (c.status === 'blocked') row.blocked += 1;
+      if (c.invokedAt > row.lastUsed) row.lastUsed = c.invokedAt;
+      map.set(key, row);
+    }
+    return [...map.values()].sort((a, b) => a.agent.localeCompare(b.agent) || a.tool.localeCompare(b.tool));
+  }, [calls]);
+
+  const handleEscalate = async (c: ToolCallRecord) => {
+    if (escalated[c.id] || escalating) return;
+    setEscalating(c.id);
+    try {
+      const modelName = resolveModelName(c.modelId);
+      const rec = await upsertIncident({
+        incident_type: 'ai_tool_call',
+        severity: c.status === 'blocked' ? 'high' : 'medium',
+        status: 'open',
+        occurred_date: c.invokedAt,
+        detected_date: new Date().toISOString(),
+        reporter: 'Trust Engine — Tool Monitor',
+        description: `Tool call ${c.invocationId ?? c.id} (${c.toolName}) by ${c.agentName ?? 'unknown agent'}` +
+          `${modelName ? ` on model ${modelName}` : ''} ended in ${c.status.toUpperCase()}` +
+          `${c.errorMessage ? `: ${c.errorMessage}` : '.'}`,
+      } as unknown as Partial<IncidentRecord>);
+      if (!rec) throw new Error('The incident write did not persist');
+      setEscalated(prev => ({ ...prev, [c.id]: rec.id }));
+      toast.success('Incident created — view it in the Incident Log', {
+        action: { label: 'Open Incident Log', onClick: () => navigate('/risk/incidents') },
+      });
+    } catch (e) {
+      toast.error(`Failed to create incident: ${(e as Error).message}`);
+    } finally {
+      setEscalating(null);
+    }
   };
 
   const handleExport = () => {
-    const csv = [
-      ['ID', 'Timestamp', 'Agent', 'Tool', 'Result', 'Latency(ms)', 'TraceID', 'Authorized', 'Idempotent'].join(','),
-      ...calls.map(c => [c.id, c.timestamp, c.agent, c.tool, c.result, c.latencyMs, c.traceId || '—',
-        c.result === 'blocked' ? 'NO' : 'YES', IDEMPOTENT_TOOLS.includes(c.tool) ? 'YES' : 'NO'].join(','))
-    ].join('\n');
+    if (calls.length === 0) { toast.error('No tool calls to export'); return; }
+    const csv = ['Invoked At,Agent,Tool,Status,Latency (ms),Invocation ID,Model,Trace Ref,Error']
+      .concat(filtered.map(c => [
+        c.invokedAt, `"${c.agentName ?? ''}"`, c.toolName, c.status, c.latencyMs ?? '',
+        c.invocationId ?? '', `"${resolveModelName(c.modelId) ?? ''}"`, c.traceRef ?? '',
+        `"${(c.errorMessage ?? '').replace(/"/g, '""')}"`,
+      ].join(',')))
+      .join('\n');
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `tool-calls-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    toast('Tool call log exported');
+    a.href = url; a.download = `tool-calls-${new Date().toISOString().split('T')[0]}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Exported tool call log to CSV');
   };
 
-  const getPermission = (agent: string, tool: string): AuthRule['permission'] => {
-    const rule = authMatrix.find(r => r.agent === agent && r.tool === tool);
-    return rule?.permission || 'blocked';
+  const copyTraceRef = async (ref: string) => {
+    try {
+      await navigator.clipboard.writeText(ref);
+      toast.success(`Copied ${ref}`);
+    } catch {
+      toast.error('Could not copy to clipboard');
+    }
   };
+
+  const modelPill = (modelId: string | null) => {
+    const name = resolveModelName(modelId);
+    if (!modelId || !name) return <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>;
+    return (
+      <button onClick={() => navigate(`/models/inventory/${modelId}`)}
+        className="text-xs px-2 py-0.5 hover:underline"
+        style={{ background: 'hsl(var(--bg-raised))', color: 'hsl(var(--brand))', borderRadius: 9999 }}>
+        {name}
+      </button>
+    );
+  };
+
+  const activeFilterCount = (statusFilter ? 1 : 0) + (toolFilter ? 1 : 0) + (dateFilter ? 1 : 0) + (modelParam ? 1 : 0);
+
+  if (isLoading) return <PageSkeleton title="Tool Monitor" />;
 
   return (
     <div className="space-y-6">
       <TrustEngineTabs />
 
-      {/* Toast layer */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-        {toasts.map(t => (
-          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300
-          }}>{t.text}</div>
-        ))}
-      </div>
+      <PageHeader
+        title="Tool Monitor"
+        subtitle="Agent tool invocations from the trust-engine call log"
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Trust Engine', href: '/trust-engine' }, { label: 'Tool Monitor' }]}
+        actions={
+          <Button variant="outline" size="sm" onClick={handleExport} style={{ borderRadius: 0 }}>
+            <Export size={14} />Export CSV
+          </Button>
+        }
+      />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Tool Call Monitor</h1>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Agent tool invocation tracking & authorization</p>
+      {error && (
+        <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load tool calls</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{error.message}</p>
         </div>
-        <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-          <Export className="h-4 w-4" />Export CSV
-        </Button>
-      </div>
+      )}
 
-      {/* TC-002 GDPR Alert Banner */}
-      <div className="flex items-start gap-3 px-4 py-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))', borderRadius: 0 }}>
-        <Warning size={16} className="mt-0.5 shrink-0 text-destructive" />
-        <div>
-          <p className="text-sm font-semibold text-destructive">GDPR Alert: TC-002 — Unauthorized PII Access Attempt</p>
-          <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
-            LoanAssistant attempted to access customer_id CUST-4892 with PII fields (ssn, income). Blocked by guardrail. No incident created — requires immediate GDPR Art. 33 incident report.
+      {/* Model-scoped filter chip (?model=<uuid>) */}
+      {modelParam && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+            <span>Filtered to <strong>{models.find(m => m.id === modelParam)?.name ?? 'Unavailable'}</strong></span>
+            <button aria-label="Clear model filter" onClick={() => setSearchParams({})}
+              className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer">
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
+
+      {/* Computed callout — only when real data supports it */}
+      {blockedRecent > 0 && (
+        <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-br))', borderRadius: 0 }}>
+          <Warning size={14} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
+          <p className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>
+            <strong>{blockedRecent} tool call{blockedRecent !== 1 ? 's were' : ' was'} blocked in the last 7 days.</strong>{' '}
+            Review the affected agents' authorizations in{' '}
+            <button onClick={() => navigate('/agent-iam')} className="underline font-semibold">Agent Permissions (IAM)</button>.
           </p>
         </div>
-      </div>
+      )}
 
-      {/* Stats — separate timeout from error */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {[
-          { label: 'Total Calls', value: calls.length, color: 'hsl(var(--text-1))' },
-          { label: 'Success Rate', value: `${successRate}%`, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Errors', value: errorCount, color: 'hsl(var(--destructive))', sub: 'Integration failures' },
-          { label: 'Timeouts', value: timeoutCount, color: 'hsl(var(--s-wn-tx))', sub: 'SLA violations' },
-          { label: 'Blocked', value: blockedCount, color: 'hsl(var(--s-wn-tx))', sub: 'Auth denied' },
-        ].map(stat => (
-          <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="pt-4 pb-4">
-              <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{stat.label}</p>
-              <p className="text-2xl font-bold mt-1" style={{ color: stat.color }}>{stat.value}</p>
-              {'sub' in stat && <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{(stat as { sub: string }).sub}</p>}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
+      <StatCardRow cards={[
+        { label: 'Total Calls', value: total, description: `Total tool calls recorded: ${total}` },
+        { label: 'Success Rate', value: successRate != null ? `${successRate}%` : '—', description: successRate != null ? `Successful calls: ${successRate}%` : 'No calls recorded' },
+        { label: 'Errors', value: errorCount, description: `Calls that ended in an error: ${errorCount}` },
+        { label: 'Blocked', value: blockedCount, description: `Calls denied by authorization or guardrails: ${blockedCount}` },
+      ]} />
 
-      <div className="flex gap-4">
-        <div className="px-3 py-2" style={{ border: '1px solid hsl(var(--border))' }}>
-          <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Avg Latency (excl. timeouts)</p>
-          <p className="text-sm font-bold mt-0.5" style={{ color: avgLatencyHealthy > 500 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>
-            {avgLatencyHealthy}ms
-          </p>
-        </div>
-        <div className="px-3 py-2" style={{ border: '1px solid hsl(var(--border))' }}>
-          <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Idempotent Calls</p>
-          <p className="text-sm font-bold mt-0.5 text-[hsl(var(--s-ok-tx))]">
-            {calls.filter(c => IDEMPOTENT_TOOLS.includes(c.tool)).length} (retryable)
-          </p>
-        </div>
-      </div>
-
-      {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <TabsTrigger value="calls" style={{ borderRadius: 0 }}>Tool Calls ({calls.length})</TabsTrigger>
-          <TabsTrigger value="matrix" style={{ borderRadius: 0 }}>Authorization Matrix</TabsTrigger>
+          <TabsTrigger value="calls" style={{ borderRadius: 0 }}>Tool Calls ({total})</TabsTrigger>
+          <TabsTrigger value="usage" style={{ borderRadius: 0 }}>Observed Usage</TabsTrigger>
         </TabsList>
 
-        {/* Tool Calls Tab */}
-        <TabsContent value="calls" className="mt-4">
-          <div className="flex items-center gap-3 flex-wrap mb-4">
-            <div className="relative min-w-52 max-w-xs">
-              <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'hsl(var(--text-4))' }} />
-              <Input placeholder="Search tool calls..." value={search} onChange={e => setSearch(e.target.value)}
-                className="pl-9 h-9" style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }} />
-            </div>
-            <Select value={resultFilter} onValueChange={setResultFilter}>
-              <SelectTrigger className="w-36 h-9" style={{ borderRadius: 0 }}>
-                <Funnel className="h-3 w-3 mr-1" /><SelectValue />
-              </SelectTrigger>
-              <SelectContent style={{ borderRadius: 0 }}>
-                <SelectItem value="all">All Results</SelectItem>
-                {['success', 'blocked', 'timeout', 'error'].map(r => (
-                  <SelectItem key={r} value={r}>{r.charAt(0).toUpperCase() + r.slice(1)}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select value={agentFilter} onValueChange={setAgentFilter}>
-              <SelectTrigger className="w-44 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-              <SelectContent style={{ borderRadius: 0 }}>
-                {agents.map(a => <SelectItem key={a} value={a}>{a === 'all' ? 'All Agents' : a}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={toolFilter} onValueChange={setToolFilter}>
-              <SelectTrigger className="w-52 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-              <SelectContent style={{ borderRadius: 0 }}>
-                {tools.map(t => <SelectItem key={t} value={t}>{t === 'all' ? 'All Tools' : t}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{filtered.length} calls</span>
-          </div>
+        {/* ── Tool calls tab ── */}
+        <TabsContent value="calls" className="mt-4 space-y-4">
+          <FilterBar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search by agent, tool, invocation ID…"
+            filters={[
+              {
+                key: 'tool', label: 'Tool', value: toolFilter, onChange: setToolFilter,
+                options: toolOptions.map(t => ({ label: t, value: t })),
+              },
+              {
+                key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter,
+                options: [
+                  { label: 'Success', value: 'success' },
+                  { label: 'Error', value: 'error' },
+                  { label: 'Blocked', value: 'blocked' },
+                ],
+              },
+              {
+                key: 'date', label: 'Period', value: dateFilter, onChange: setDateFilter,
+                options: [
+                  { label: 'Last 24h', value: '24h' },
+                  { label: 'Last 7 days', value: '7d' },
+                  { label: 'Last 30 days', value: '30d' },
+                ],
+              },
+            ]}
+            activeFilterCount={activeFilterCount}
+            onClearAll={() => { setSearch(''); setStatusFilter(''); setToolFilter(''); setDateFilter(''); if (modelParam) setSearchParams({}); }}
+            trailing={<span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} call{filtered.length !== 1 ? 's' : ''}</span>}
+          />
 
           <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="p-0">
               {filtered.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-12" style={{ color: 'hsl(var(--text-4))' }}>
                   <Wrench size={32} className="mb-2 opacity-40" />
-                  <p className="text-sm">No tool calls match your filters</p>
+                  <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>
+                    {calls.length === 0 ? 'No tool calls recorded yet' : 'No tool calls match your filters'}
+                  </p>
+                  {calls.length === 0 && (
+                    <p className="text-xs mt-1">Agent tool invocations appear here as they are logged by the trust engine.</p>
+                  )}
                 </div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead>
                       <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                        {['ID', 'Time', 'Agent', 'Tool', 'Args Preview', 'Result', 'Latency', 'Trace', 'Actions'].map(h => (
+                        {['Invoked', 'Agent', 'Tool', 'Args', 'Status', 'Latency', 'Model', 'Trace', 'Actions'].map(h => (
                           <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                         ))}
                       </tr>
@@ -423,42 +315,47 @@ export default function ToolCallMonitor() {
                     <tbody>
                       {filtered.map(c => (
                         <tr key={c.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30 transition-colors">
-                          <td className="px-4 py-3 font-mono text-xs" style={{ color: 'hsl(var(--text-4))' }}>{c.id}</td>
-                          <td className="px-4 py-3 text-xs whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{timeAgo(c.timestamp)}</td>
-                          <td className="px-4 py-3 font-medium text-xs" style={{ color: 'hsl(var(--text-1))' }}>{c.agent}</td>
+                          <td className="px-4 py-3 text-xs whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }} title={new Date(c.invokedAt).toLocaleString()}>
+                            {timeAgo(c.invokedAt)}
+                          </td>
+                          <td className="px-4 py-3 font-medium text-xs" style={{ color: 'hsl(var(--text-1))' }}>{c.agentName ?? '—'}</td>
                           <td className="px-4 py-3">
                             <span className="font-mono text-xs px-2 py-0.5" style={{ background: 'hsl(var(--brand) / 0.1)', color: 'hsl(var(--brand))', borderRadius: 0 }}>
-                              {c.tool}
+                              {c.toolName}
                             </span>
                           </td>
                           <td className="px-4 py-3 max-w-48">
-                            <span className="text-xs font-mono line-clamp-1" style={{ color: 'hsl(var(--text-4))' }}>
-                              {(c.args ?? '').split('\n')[0].slice(0, 50)}...
-                            </span>
+                            <span className="text-xs font-mono line-clamp-1" style={{ color: 'hsl(var(--text-4))' }}>{argsPreview(c.arguments)}</span>
                           </td>
-                          <td className="px-4 py-3">{resultBadge(c.result)}</td>
-                          <td className="px-4 py-3 font-mono text-xs" style={{ color: c.result === 'timeout' ? 'hsl(var(--s-wn-tx))' : c.latencyMs > 1000 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>
-                            {c.latencyMs >= 1000 ? `${(c.latencyMs / 1000).toFixed(1)}s` : `${c.latencyMs}ms`}
+                          <td className="px-4 py-3">{statusBadge(c.status)}</td>
+                          <td className="px-4 py-3 font-mono text-xs" style={{ color: (c.latencyMs ?? 0) > 1000 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>
+                            {fmtLatency(c.latencyMs)}
                           </td>
+                          <td className="px-4 py-3">{modelPill(c.modelId)}</td>
                           <td className="px-4 py-3">
-                            {c.traceId ? <span className="font-mono text-xs text-[hsl(var(--s-in-tx))]">{c.traceId}</span> : <span style={{ color: 'hsl(var(--text-4))' }}>—</span>}
+                            {c.traceRef ? (
+                              <span className="inline-flex items-center gap-1">
+                                <span className="font-mono text-xs" style={{ color: 'hsl(var(--s-in-tx))' }}>{c.traceRef}</span>
+                                <button aria-label="Copy trace ref" onClick={() => copyTraceRef(c.traceRef!)} className="p-0.5 hover:opacity-70">
+                                  <Copy size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                                </button>
+                              </span>
+                            ) : <span style={{ color: 'hsl(var(--text-4))' }}>—</span>}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-1">
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setViewItem(c)}>
                                 <Eye size={14} />
                               </Button>
-                              {(c.result === 'error' || c.result === 'timeout') && IDEMPOTENT_TOOLS.includes(c.tool) && (
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-[hsl(var(--s-ok-tx))]"
-                                  onClick={() => handleRetry(c)}>
-                                  <ArrowCounterClockwise size={12} />Retry
-                                </Button>
-                              )}
-                              {(c.result === 'blocked' || c.result === 'error') && (
-                                <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
-                                  onClick={() => handleEscalate(c)}>
-                                  <Lightning size={12} />Escalate
-                                </Button>
+                              {(c.status === 'blocked' || c.status === 'error') && (
+                                escalated[c.id] ? (
+                                  <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>Escalated</Badge>
+                                ) : (
+                                  <Button variant="ghost" size="sm" className="h-7 px-2 text-xs text-destructive"
+                                    disabled={escalating === c.id} onClick={() => handleEscalate(c)}>
+                                    <Lightning size={12} />{escalating === c.id ? 'Escalating…' : 'Escalate'}
+                                  </Button>
+                                )
                               )}
                             </div>
                           </td>
@@ -472,128 +369,158 @@ export default function ToolCallMonitor() {
           </Card>
         </TabsContent>
 
-        {/* Authorization Matrix Tab */}
-        <TabsContent value="matrix" className="mt-4">
+        {/* ── Observed usage tab — derived from logs, read-only ── */}
+        <TabsContent value="usage" className="mt-4">
           <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Agent × Tool Authorization Matrix</CardTitle>
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                Observed usage (derived from logs)
+              </CardTitle>
+              <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                Which agents have invoked which tools, with the outcome mix — computed from the call log above.
+                This is an observation, not a policy. Permission management lives in{' '}
+                <button onClick={() => navigate('/agent-iam')} className="underline" style={{ color: 'hsl(var(--brand))' }}>
+                  Agent Permissions (IAM)
+                </button>.
+              </p>
             </CardHeader>
             <CardContent className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                      <th className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Agent</th>
-                      {AUTH_TOOLS.map(t => (
-                        <th key={t} className="px-3 py-3 text-center text-xs font-semibold" style={{ color: 'hsl(var(--text-4))', minWidth: 120 }}>
-                          <span className="font-mono" style={{ color: 'hsl(var(--brand))' }}>{t.replace('_', ' ')}</span>
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {AUTH_AGENTS.map(agent => (
-                      <tr key={agent} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
-                        <td className="px-4 py-3 font-medium text-xs" style={{ color: 'hsl(var(--text-1))' }}>{agent}</td>
-                        {AUTH_TOOLS.map(tool => {
-                          const perm = getPermission(agent, tool);
-                          return (
-                            <td key={tool} className="px-3 py-3 text-center">
-                              <div className="flex flex-col items-center gap-1">
-                                {permBadge(perm)}
-                                <Switch
-                                  checked={perm === 'allowed'}
-                                  onCheckedChange={() => togglePerm(agent, tool)}
-                                  className="scale-75"
-                                />
-                              </div>
-                            </td>
-                          );
-                        })}
+              {observedUsage.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-12" style={{ color: 'hsl(var(--text-4))' }}>
+                  <Wrench size={32} className="mb-2 opacity-40" />
+                  <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>No usage observed yet</p>
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                        {['Agent', 'Tool', 'Calls', 'Success', 'Error', 'Blocked', 'Last Used'].map(h => (
+                          <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                        ))}
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              <p className="text-xs px-4 pb-3 pt-2" style={{ color: 'hsl(var(--text-4))' }}>
-                Toggle switches to update permissions. Changes create an audit log entry. Conditional = requires approval for each use.
-              </p>
+                    </thead>
+                    <tbody>
+                      {observedUsage.map(row => (
+                        <tr key={`${row.agent}::${row.tool}`} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
+                          <td className="px-4 py-3 font-medium text-xs" style={{ color: 'hsl(var(--text-1))' }}>{row.agent}</td>
+                          <td className="px-4 py-3">
+                            <span className="font-mono text-xs px-2 py-0.5" style={{ background: 'hsl(var(--brand) / 0.1)', color: 'hsl(var(--brand))', borderRadius: 0 }}>
+                              {row.tool}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{row.total}</td>
+                          <td className="px-4 py-3 text-xs font-mono" style={{ color: row.success > 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))' }}>{row.success}</td>
+                          <td className="px-4 py-3 text-xs font-mono" style={{ color: row.error > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))' }}>{row.error}</td>
+                          <td className="px-4 py-3 text-xs font-mono" style={{ color: row.blocked > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))' }}>{row.blocked}</td>
+                          <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{timeAgo(row.lastUsed)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Detail Sheet */}
-      <Sheet open={!!viewItem} onOpenChange={() => setViewItem(null)}>
-        <SheetContent style={{ borderRadius: 0, width: 560 }}>
-          <SheetHeader><SheetTitle>Tool Call Detail — {viewItem?.id}</SheetTitle></SheetHeader>
+      {/* Detail sheet */}
+      <Sheet open={!!viewItem} onOpenChange={open => { if (!open) setViewItem(null); }}>
+        <SheetContent className="w-[560px] sm:max-w-[560px] overflow-y-auto" style={{ borderRadius: 0 }}>
           {viewItem && (
-            <div className="mt-6 space-y-4 text-sm overflow-y-auto h-[calc(100vh-100px)]">
-              <div className="flex gap-2 flex-wrap">
-                {resultBadge(viewItem.result)}
-                {viewItem.isIdempotent && <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Idempotent (retryable)</Badge>}
-              </div>
+            <>
+              <SheetHeader>
+                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>
+                  Tool Call — {viewItem.invocationId ?? 'detail'}
+                </SheetTitle>
+              </SheetHeader>
+              <div className="mt-6 space-y-4 text-sm">
+                <div className="flex gap-2 flex-wrap">{statusBadge(viewItem.status)}</div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>ID</p><p className="font-mono">{viewItem.id}</p></div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Timestamp</p><p className="text-xs">{new Date(viewItem.timestamp).toLocaleString()}</p></div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Agent</p><p className="font-medium">{viewItem.agent}</p></div>
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Latency</p>
-                  <span className="font-mono" style={{ color: viewItem.result === 'timeout' ? 'hsl(var(--s-wn-tx))' : viewItem.latencyMs > 1000 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>
-                    {viewItem.latencyMs >= 1000 ? `${(viewItem.latencyMs / 1000).toFixed(1)}s` : `${viewItem.latencyMs}ms`}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Agent</p>
+                    <p className="font-medium text-xs mt-0.5" style={{ color: 'hsl(var(--text-1))' }}>{viewItem.agentName ?? '—'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Invoked</p>
+                    <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-1))' }}>{new Date(viewItem.invokedAt).toLocaleString()}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Latency</p>
+                    <p className="font-mono text-xs mt-0.5" style={{ color: (viewItem.latencyMs ?? 0) > 1000 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>
+                      {fmtLatency(viewItem.latencyMs)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Model</p>
+                    <div className="mt-0.5">{modelPill(viewItem.modelId)}</div>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Tool</p>
+                  <span className="font-mono text-xs px-2 py-1 inline-block" style={{ background: 'hsl(var(--brand) / 0.1)', color: 'hsl(var(--brand))', borderRadius: 0 }}>
+                    {viewItem.toolName}
                   </span>
                 </div>
-              </div>
 
-              <div><p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Tool</p>
-                <span className="font-mono text-xs px-2 py-1 inline-block" style={{ background: 'hsl(var(--brand) / 0.1)', color: 'hsl(var(--brand))', borderRadius: 0 }}>{viewItem.tool}</span>
-              </div>
-
-              <div><p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Full Arguments</p>
-                <pre className="p-2 text-xs font-mono overflow-auto" style={{ background: 'hsl(var(--border) / 0.3)', borderRadius: 0, maxHeight: 140, whiteSpace: 'pre-wrap' }}>{viewItem.args}</pre>
-              </div>
-
-              <div><p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Output / Response</p>
-                <p className="p-2 text-xs" style={{ background: 'hsl(var(--border) / 0.3)', borderRadius: 0, lineHeight: 1.5 }}>{viewItem.output}</p>
-              </div>
-
-              {viewItem.error && (
-                <div><p className="text-xs font-semibold mb-1 text-destructive">Error Details</p>
-                  <p className="p-2 text-xs" style={{ background: 'hsl(var(--s-er-bg))', borderRadius: 0, color: 'hsl(var(--destructive))', lineHeight: 1.5 }}>{viewItem.error}</p>
+                <div>
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Arguments</p>
+                  <pre className="p-2 text-xs font-mono overflow-auto" style={{ background: 'hsl(var(--border) / 0.3)', borderRadius: 0, maxHeight: 160, whiteSpace: 'pre-wrap' }}>
+                    {prettyJson(viewItem.arguments)}
+                  </pre>
                 </div>
-              )}
 
-              {viewItem.authCheck && (
-                <div><p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Authorization Check</p>
-                  <p className="p-2 text-xs" style={{
-                    background: viewItem.result === 'blocked' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-ok-bg))',
-                    borderRadius: 0, lineHeight: 1.5,
-                    color: viewItem.result === 'blocked' ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))'
-                  }}>{viewItem.authCheck}</p>
+                <div>
+                  <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Result</p>
+                  <pre className="p-2 text-xs font-mono overflow-auto" style={{ background: 'hsl(var(--border) / 0.3)', borderRadius: 0, maxHeight: 160, whiteSpace: 'pre-wrap' }}>
+                    {prettyJson(viewItem.result)}
+                  </pre>
                 </div>
-              )}
 
-              {viewItem.traceId && (
-                <div><p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Linked Trace</p>
-                  <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>{viewItem.traceId}</Badge>
-                </div>
-              )}
-
-              <div className="flex gap-2 pt-2 flex-wrap">
-                {(viewItem.result === 'error' || viewItem.result === 'timeout') && IDEMPOTENT_TOOLS.includes(viewItem.tool) && (
-                  <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))' }}
-                    onClick={() => { handleRetry(viewItem); setViewItem(null); }}>
-                    <ArrowCounterClockwise size={14} />Retry
-                  </Button>
+                {viewItem.errorMessage && (
+                  <div>
+                    <p className="text-xs font-semibold mb-1 text-destructive">Error</p>
+                    <p className="p-2 text-xs" style={{ background: 'hsl(var(--s-er-bg))', borderRadius: 0, color: 'hsl(var(--destructive))', lineHeight: 1.5 }}>
+                      {viewItem.errorMessage}
+                    </p>
+                  </div>
                 )}
-                {(viewItem.result === 'blocked' || viewItem.result === 'error') && (
-                  <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}
-                    onClick={() => { handleEscalate(viewItem); setViewItem(null); }}>
-                    <Lightning size={14} />Escalate to Incident
-                  </Button>
+
+                {viewItem.traceRef && (
+                  <div>
+                    <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Linked Trace</p>
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs" style={{ color: 'hsl(var(--s-in-tx))' }}>{viewItem.traceRef}</span>
+                      <Button variant="outline" size="sm" className="h-6 px-2 text-xs" style={{ borderRadius: 0 }}
+                        onClick={() => copyTraceRef(viewItem.traceRef!)}>
+                        <Copy size={12} />Copy ref
+                      </Button>
+                    </div>
+                    <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                      Look this ref up on the Live Traces page (Trust Engine → Traces).
+                    </p>
+                  </div>
+                )}
+
+                {(viewItem.status === 'blocked' || viewItem.status === 'error') && (
+                  <div className="pt-2">
+                    {escalated[viewItem.id] ? (
+                      <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 11 }}>
+                        Escalated to incident
+                      </Badge>
+                    ) : (
+                      <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}
+                        disabled={escalating === viewItem.id} onClick={() => handleEscalate(viewItem)}>
+                        <Lightning size={14} />{escalating === viewItem.id ? 'Creating incident…' : 'Escalate to Incident'}
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
-            </div>
+            </>
           )}
         </SheetContent>
       </Sheet>

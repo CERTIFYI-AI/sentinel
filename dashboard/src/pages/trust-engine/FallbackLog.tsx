@@ -1,444 +1,391 @@
-import { useState, useCallback } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
+// SPDX-License-Identifier: Apache-2.0
+// Fallback Failovers — real `fallback_logs` events (primary → fallback model
+// failovers), interlinked to the model registry by uuid and to live traces by
+// trace_id. All KPIs and the elevated-activity callout are computed from data.
+
+import { useMemo, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
-  ArrowsClockwise, Eye, Warning, CheckCircle, Fire, Clock,
-  Lightning, Export, MagnifyingGlass, Funnel, Info, Link, UserCircleGear, Archive,
+  ArrowsClockwise, Eye, Warning, Export, X, Copy, UserCircleGear, ArrowRight,
 } from '@phosphor-icons/react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../../components/ui/select';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../../components/ui/tooltip';
-import { FALLBACK_LOG, FallbackEntry, formatDate } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
-import { useChartTheme } from '../../hooks/useChartTheme';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { StatCardRow } from '@/components/ui/StatCardRow';
+import { FilterBar } from '@/components/ui/FilterBar';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { TrustEngineTabs } from '../../components/trust-engine/TrustEngineTabs';
+import { useFallbackLogs } from '../../hooks/useFallbackLogs';
+import { useModelOptions } from '@/hooks/useAiiaData';
+import type { FallbackLogRecord } from '@/services/fallbackService';
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+const TRIGGER_META: Record<string, { bg: string; color: string; label: string }> = {
+  timeout: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Timeout' },
+  rate_limit: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', label: 'Rate Limit' },
+  error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Error' },
+  quality: { bg: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))', label: 'Quality' },
+};
 
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
-
-// ── Cause Colors ──────────────────────────────────────────────────────────────
-
-function causeBadge(trigger: string) {
-  const map: Record<string, { bg: string; color: string; label: string }> = {
-    'Rate limit exceeded': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', label: 'Rate-Limit' },
-    '30s timeout': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Timeout' },
-    '503 API error': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Model-Error' },
-    'Cost limit exceeded': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Content-Policy' },
-    'Context window exceeded': { bg: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))', label: 'Context-Length' },
-  };
-  const s = map[trigger] || { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', label: trigger };
+function triggerBadge(reason: string) {
+  const s = TRIGGER_META[reason] ?? { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', label: reason };
   return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10, fontWeight: 600 }}>{s.label}</Badge>;
 }
 
-// ── Metric Tile ───────────────────────────────────────────────────────────────
-
-function MetricTile({ label, value, variant, icon, sub }: {
-  label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
-}) {
-  const vs = {
-    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-  };
-  const s = vs[variant];
+function outcomeBadge(succeeded: boolean) {
   return (
-    <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
-          <div className="p-1.5" style={{ background: s.bg, borderRadius: 0 }}>{icon}</div>
-        </div>
-        <div className="text-2xl font-bold" style={{ color: s.color }}>{value}</div>
-        {sub && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>{sub}</p>}
-      </CardContent>
-    </Card>
+    <Badge style={{
+      background: succeeded ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
+      color: succeeded ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
+      borderRadius: 0, fontSize: 10, fontWeight: 600,
+    }}>
+      {succeeded ? 'Succeeded' : 'Failed'}
+    </Badge>
   );
 }
 
-// ── Extended Entries ───────────────────────────────────────────────────────────
+const fmtWhen = (iso: string) =>
+  new Date(iso).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
-interface ExtFallback extends FallbackEntry {
-  primaryModel: string;
-  fallbackModel: string;
-  recoveryTimeMs: number;
-}
-
-const EXTENDED_ENTRIES: ExtFallback[] = FALLBACK_LOG.map(fb => {
-  const parts = (fb.modelChain ?? '').split(' → ');
-  return {
-    ...fb,
-    primaryModel: parts[0] || '',
-    fallbackModel: parts[1] || '',
-    recoveryTimeMs: fb.latencyMs,
-  };
-});
-
-// ── Main Component ────────────────────────────────────────────────────────────
+// ── Main component ────────────────────────────────────────────────────────────
 
 export default function FallbackLog() {
-  const { orgName } = useSettingsStore();
-  const { data: entries, setData: setEntries } = useSupabaseTable('fallbacklog_table', EXTENDED_ENTRIES);
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modelParam = searchParams.get('model');
+  const { data: entries, isLoading, error } = useFallbackLogs();
+  const { models } = useModelOptions();
+
   const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [selectedEntry, setSelectedEntry] = useState<ExtFallback | null>(null);
+  const [triggerFilter, setTriggerFilter] = useState('');
+  const [outcomeFilter, setOutcomeFilter] = useState('');
+  const [selected, setSelected] = useState<FallbackLogRecord | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
-  const [escalatedEntries, setEscalatedEntries] = useState<Record<string, string>>({});
 
-  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, text, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-  }, []);
+  // Resolve registry name at render time; stored snapshot is the fallback.
+  const resolveName = (modelId: string | null, snapshot: string | null) =>
+    (modelId ? models.find(m => m.id === modelId)?.name : undefined) ?? snapshot ?? 'Unavailable';
 
-  const filtered = entries.filter(e => {
-    if (search && !e.agent.toLowerCase().includes(search.toLowerCase()) && !e.id.toLowerCase().includes(search.toLowerCase())) return false;
-    if (filterStatus !== 'all' && e.status !== filterStatus) return false;
+  const modelPill = (modelId: string | null, snapshot: string | null, tone: 'primary' | 'fallback') => {
+    const name = resolveName(modelId, snapshot);
+    const color = tone === 'primary' ? 'hsl(var(--destructive))' : 'hsl(var(--brand))';
+    if (!modelId) {
+      return <span className="text-xs px-2 py-0.5" style={{ background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-3))', borderRadius: 9999 }}>{name}</span>;
+    }
+    return (
+      <button onClick={() => navigate(`/models/inventory/${modelId}`)}
+        className="text-xs px-2 py-0.5 hover:underline"
+        style={{ background: 'hsl(var(--bg-raised))', color, borderRadius: 9999 }}>
+        {name}
+      </button>
+    );
+  };
+
+  const filtered = useMemo(() => entries.filter(e => {
+    if (modelParam && e.primaryModelId !== modelParam && e.fallbackModelId !== modelParam) return false;
+    if (triggerFilter && e.triggerReason !== triggerFilter) return false;
+    if (outcomeFilter === 'succeeded' && !e.succeeded) return false;
+    if (outcomeFilter === 'failed' && e.succeeded) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      const hay = [
+        e.requestId ?? '', e.traceRef ?? '',
+        resolveName(e.primaryModelId, e.primaryModel),
+        resolveName(e.fallbackModelId, e.fallbackModel),
+        e.triggerReason,
+      ].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
     return true;
-  });
+  }), [entries, modelParam, triggerFilter, outcomeFilter, search, models]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const criticalCount = entries.filter(e => e.status === 'failed').length;
-  const autoRecoveredCount = entries.filter(e => e.status === 'success').length;
-  const avgRecovery = (entries.reduce((a, e) => a + e.latencyMs, 0) / entries.length / 1000).toFixed(1);
+  // ── KPIs (with empty guards) ───────────────────────────────────────────────
+  const total = entries.length;
+  const succeededCount = entries.filter(e => e.succeeded).length;
+  const failedCount = total - succeededCount;
+  const successRate = total > 0 ? Math.round((succeededCount / total) * 100) : null;
+  const latencies = entries.map(e => e.latencyMs).filter((l): l is number => l != null);
+  const avgLatency = latencies.length > 0 ? latencies.reduce((a, b) => a + b, 0) / latencies.length : null;
 
-  // Spike detection: simple heuristic — 5 fallbacks in one session is above baseline
-  const showSpikeAlert = entries.length >= 5;
+  // ── Elevated-activity callout — real computation, honest wording ───────────
+  // Compare last-24h count against the daily average across the observed window;
+  // only shown when genuinely elevated (≥2× average and at least 3 events).
+  const spike = useMemo(() => {
+    if (entries.length === 0) return null;
+    const now = Date.now();
+    const last24h = entries.filter(e => now - new Date(e.occurredAt).getTime() <= 86_400_000).length;
+    const days = new Set(entries.map(e => e.occurredAt.slice(0, 10))).size;
+    const dailyAvg = entries.length / Math.max(days, 1);
+    if (last24h >= 3 && last24h >= 2 * dailyAvg) return { last24h, dailyAvg, days };
+    return null;
+  }, [entries]);
 
   const handleExport = () => {
-    const csv = ['ID,Agent,Primary,Fallback,Trigger,Latency(ms),Tokens,Status,Timestamp']
-      .concat(entries.map(e => `${e.id},${e.agent},${e.primaryModel},${e.fallbackModel},${e.trigger},${e.latencyMs},${e.tokens},${e.status},${e.timestamp}`))
+    if (entries.length === 0) { toast.error('No fallback events to export'); return; }
+    const csv = ['Occurred At,Primary Model,Fallback Model,Trigger,Latency (ms),Outcome,Request ID,Trace Ref,Error']
+      .concat(filtered.map(e => [
+        e.occurredAt,
+        `"${resolveName(e.primaryModelId, e.primaryModel)}"`,
+        `"${resolveName(e.fallbackModelId, e.fallbackModel)}"`,
+        e.triggerReason, e.latencyMs ?? '', e.succeeded ? 'succeeded' : 'failed',
+        e.requestId ?? '', e.traceRef ?? '', `"${(e.errorMessage ?? '').replace(/"/g, '""')}"`,
+      ].join(',')))
       .join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
+    const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
     const a = document.createElement('a');
-    a.href = url; a.download = 'fallback-log.csv'; a.click();
+    a.href = url; a.download = 'fallback-failovers.csv'; a.click();
     URL.revokeObjectURL(url);
-    toast('Exported fallback log to CSV', 'success');
+    toast.success('Exported fallback failovers to CSV');
   };
 
-  const handleCreateHITL = (entryId: string) => {
-    const hitlId = `HITL-${String(Math.floor(Math.random() * 900) + 100)}`;
-    setEscalatedEntries(prev => ({ ...prev, [entryId]: hitlId }));
-    toast(`HITL review ${hitlId} created for fallback event ${entryId}`, 'info');
+  const copyTraceRef = async (ref: string) => {
+    try {
+      await navigator.clipboard.writeText(ref);
+      toast.success(`Copied ${ref}`);
+    } catch {
+      toast.error('Could not copy to clipboard');
+    }
   };
 
-  const handleArchive = (entryId: string) => {
-    setEntries(prev => prev.filter(e => e.id !== entryId));
-    if (selectedEntry?.id === entryId) { setSheetOpen(false); setSelectedEntry(null); }
-    toast(`Fallback event ${entryId} archived`, 'info');
-  };
+  const activeFilterCount = (triggerFilter ? 1 : 0) + (outcomeFilter ? 1 : 0) + (modelParam ? 1 : 0);
+
+  if (isLoading) return <PageSkeleton title="Fallback Failovers" />;
 
   return (
     <TooltipProvider>
       <div className="space-y-6">
         <TrustEngineTabs />
-        {/* Toast */}
-        <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-          {toasts.map(t => (
-            <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-              background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-              color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
-            }}>{t.text}</div>
-          ))}
-        </div>
 
-        {/* Header */}
-        <div className="flex items-center justify-between">
-          <div>
-            <div className="flex items-center gap-3 mb-1">
-              <ArrowsClockwise size={22} style={{ color: 'hsl(var(--brand))' }} />
-              <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Fallback Log</h1>
-            </div>
-            <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} — Model failover chain events and recovery tracking</p>
+        <PageHeader
+          title="Fallback Failovers"
+          subtitle="Model failover chain events — primary → fallback routing with outcome and latency"
+          breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Trust Engine', href: '/trust-engine' }, { label: 'Fallback Failovers' }]}
+          actions={
+            <Button variant="outline" size="sm" onClick={handleExport} style={{ borderRadius: 0 }}>
+              <Export size={14} />Export CSV
+            </Button>
+          }
+        />
+
+        {error && (
+          <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+            <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load fallback events</p>
+            <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{error.message}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleExport} style={{ borderRadius: 0 }}>
-            <Export size={14} />Export
-          </Button>
-        </div>
+        )}
 
-        {/* Spike Alert Banner */}
-        {showSpikeAlert && (
-          <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))', borderRadius: 0 }}>
+        {/* Model-scoped filter chip (?model=<uuid>, matches primary or fallback) */}
+        {modelParam && (
+          <div className="flex items-center gap-2">
+            <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+              <span>Filtered to <strong>{models.find(m => m.id === modelParam)?.name ?? 'Unavailable'}</strong> (as primary or fallback)</span>
+              <button aria-label="Clear model filter" onClick={() => setSearchParams({})}
+                className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer">
+                <X size={14} />
+              </button>
+            </span>
+          </div>
+        )}
+
+        {/* Elevated-activity callout — only when actually elevated */}
+        {spike && (
+          <div className="flex items-center gap-2 px-4 py-2" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-br))', borderRadius: 0 }}>
             <Warning size={14} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
             <p className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>
-              <strong>Fallback Spike Detected:</strong> {entries.length} fallbacks in current session exceeds baseline (rate &gt; baseline + 2σ). Investigate GPT-4o reliability.
+              <strong>Elevated fallback activity:</strong> {spike.last24h} failovers in the last 24h vs a daily
+              average of {spike.dailyAvg.toFixed(1)} over the past {spike.days} observed day{spike.days !== 1 ? 's' : ''}.
             </p>
           </div>
         )}
 
-        {/* Metrics */}
-        <div className="grid grid-cols-4 gap-4">
-          <MetricTile label="Total Fallbacks" value={String(entries.length)} variant="info" icon={<ArrowsClockwise size={16} className="text-[hsl(var(--s-in-tx))]" />} />
-          <MetricTile label="Critical (Failed)" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Requires incident" />
-          <MetricTile label="Auto-Recovered" value={String(autoRecoveredCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} />
-          <MetricTile label="Avg Recovery Time" value={`${avgRecovery}s`} variant="info" icon={<Clock size={16} className="text-[hsl(var(--s-in-tx))]" />} />
-        </div>
+        <StatCardRow cards={[
+          { label: 'Total Failovers', value: total, description: `Total failover events: ${total}` },
+          { label: 'Success Rate', value: successRate != null ? `${successRate}%` : '—', description: successRate != null ? `Failovers where the fallback model succeeded: ${successRate}%` : 'No events yet' },
+          { label: 'Failed Failovers', value: failedCount, description: `Failovers where the fallback also failed: ${failedCount}` },
+          { label: 'Avg Failover Latency', value: avgLatency != null ? `${(avgLatency / 1000).toFixed(1)}s` : '—', description: avgLatency != null ? `Average failover latency ${Math.round(avgLatency)}ms` : 'No latency data' },
+        ]} />
 
-        {/* Filters */}
-        <div className="flex items-center gap-3">
-          <div className="relative flex-1 max-w-xs">
-            <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
-            <Input placeholder="Search fallbacks..." value={search} onChange={e => setSearch(e.target.value)}
-              className="pl-9 h-8 text-xs" style={{ borderRadius: 0 }} />
-          </div>
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
-            <SelectTrigger className="h-8 w-32 text-xs" style={{ borderRadius: 0 }}><SelectValue placeholder="Status" /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              <SelectItem value="all">All Status</SelectItem>
-              <SelectItem value="success">Success</SelectItem>
-              <SelectItem value="failed">Failed</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        <FilterBar
+          search={search}
+          onSearchChange={setSearch}
+          searchPlaceholder="Search by model, request ID, trace ref…"
+          filters={[
+            {
+              key: 'trigger', label: 'Trigger', value: triggerFilter, onChange: setTriggerFilter,
+              options: [
+                { label: 'Timeout', value: 'timeout' },
+                { label: 'Rate Limit', value: 'rate_limit' },
+                { label: 'Error', value: 'error' },
+                { label: 'Quality', value: 'quality' },
+              ],
+            },
+            {
+              key: 'outcome', label: 'Outcome', value: outcomeFilter, onChange: setOutcomeFilter,
+              options: [
+                { label: 'Succeeded', value: 'succeeded' },
+                { label: 'Failed', value: 'failed' },
+              ],
+            },
+          ]}
+          activeFilterCount={activeFilterCount}
+          onClearAll={() => { setSearch(''); setTriggerFilter(''); setOutcomeFilter(''); if (modelParam) setSearchParams({}); }}
+          trailing={<span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} event{filtered.length !== 1 ? 's' : ''}</span>}
+        />
 
         {/* Table */}
         <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    {['ID', 'Agent', 'Primary Model (Failed)', 'Fallback Model', 'Cause', 'Recovery Time', 'Status', 'HITL', 'Timestamp', 'Actions'].map(h => (
-                      <th key={h} className="px-3 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(entry => (
-                    <tr key={entry.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
-                      <td className="px-3 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{entry.id}</td>
-                      <td className="px-3 py-3 text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{entry.agent}</td>
-                      <td className="px-3 py-3 text-xs font-mono text-destructive">{entry.primaryModel}</td>
-                      <td className="px-3 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{entry.fallbackModel}</td>
-                      <td className="px-3 py-3">{causeBadge(entry.trigger)}</td>
-                      <td className="px-3 py-3 text-xs font-mono" style={{ color: entry.latencyMs > 10000 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
-                        {(entry.latencyMs / 1000).toFixed(1)}s
-                      </td>
-                      <td className="px-3 py-3">
-                        <Badge style={{
-                          background: entry.status === 'success' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
-                          color: entry.status === 'success' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
-                          borderRadius: 0, fontSize: 10,
-                        }}>
-                          {entry.status.charAt(0).toUpperCase() + entry.status.slice(1)}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-3">
-                        {escalatedEntries[entry.id] ? (
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <Badge style={{ background: 'hsl(var(--tag-purple-bg))', color: 'hsl(var(--tag-purple))', borderRadius: 0, fontSize: 10, fontWeight: 600 }}>
-                                <UserCircleGear size={10} weight="fill" className="mr-1 inline" />
-                                {escalatedEntries[entry.id]}
-                              </Badge>
-                            </TooltipTrigger>
-                            <TooltipContent style={{ borderRadius: 0 }}>Escalated to HITL review {escalatedEntries[entry.id]}</TooltipContent>
-                          </Tooltip>
-                        ) : entry.status === 'failed' ? (
-                          <Button variant="outline" size="sm" className="h-6 text-xs px-2" style={{ borderRadius: 0, fontSize: 10 }}
-                            onClick={() => handleCreateHITL(entry.id)}>
-                            <UserCircleGear size={12} />Create HITL Review
-                          </Button>
-                        ) : (
-                          <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>--</span>
-                        )}
-                      </td>
-                      <td className="px-3 py-3">
-                        <Tooltip>
-                          <TooltipTrigger>
-                            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                              {new Date(entry.timestamp).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+            {filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-12" style={{ color: 'hsl(var(--text-4))' }}>
+                <ArrowsClockwise size={32} className="mb-2 opacity-40" />
+                <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>
+                  {entries.length === 0 ? 'No fallback events recorded yet' : 'No events match your filters'}
+                </p>
+                {entries.length === 0 && (
+                  <p className="text-xs mt-1">Failover events appear here when a primary model call is rerouted to its fallback.</p>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                      {['Occurred', 'Primary Model', '', 'Fallback Model', 'Trigger', 'Latency', 'Outcome', 'Trace', 'Request', ''].map((h, i) => (
+                        <th key={i} className="px-3 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filtered.map(e => (
+                      <tr key={e.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
+                        <td className="px-3 py-3 text-xs whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{fmtWhen(e.occurredAt)}</td>
+                        <td className="px-3 py-3">{modelPill(e.primaryModelId, e.primaryModel, 'primary')}</td>
+                        <td className="px-1 py-3"><ArrowRight size={12} style={{ color: 'hsl(var(--text-4))' }} /></td>
+                        <td className="px-3 py-3">{modelPill(e.fallbackModelId, e.fallbackModel, 'fallback')}</td>
+                        <td className="px-3 py-3">{triggerBadge(e.triggerReason)}</td>
+                        <td className="px-3 py-3 text-xs font-mono" style={{ color: (e.latencyMs ?? 0) > 10000 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
+                          {e.latencyMs != null ? `${(e.latencyMs / 1000).toFixed(1)}s` : '—'}
+                        </td>
+                        <td className="px-3 py-3">{outcomeBadge(e.succeeded)}</td>
+                        <td className="px-3 py-3">
+                          {e.traceRef ? (
+                            <span className="inline-flex items-center gap-1">
+                              <span className="text-xs font-mono" style={{ color: 'hsl(var(--s-in-tx))' }}>{e.traceRef}</span>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <button aria-label="Copy trace ref" onClick={() => copyTraceRef(e.traceRef!)}
+                                    className="p-0.5 hover:opacity-70">
+                                    <Copy size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                                  </button>
+                                </TooltipTrigger>
+                                <TooltipContent style={{ borderRadius: 0 }}>Copy trace ref — find it on the Live Traces page</TooltipContent>
+                              </Tooltip>
                             </span>
-                          </TooltipTrigger>
-                          <TooltipContent style={{ borderRadius: 0 }}>
-                            {new Date(entry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                          </TooltipContent>
-                        </Tooltip>
-                      </td>
-                      <td className="px-3 py-3">
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setSelectedEntry(entry); setSheetOpen(true); }}>
+                          ) : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
+                        </td>
+                        <td className="px-3 py-3 text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{e.requestId ?? '—'}</td>
+                        <td className="px-3 py-3">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setSelected(e); setSheetOpen(true); }}>
                             <Eye size={13} style={{ color: 'hsl(var(--brand))' }} />
                           </Button>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleArchive(entry.id)}>
-                                <Archive size={13} style={{ color: 'hsl(var(--text-4))' }} />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent style={{ borderRadius: 0 }}>Archive entry</TooltipContent>
-                          </Tooltip>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Fallback Detail Sheet */}
+        {/* Detail sheet */}
         <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-          <SheetContent className="w-[560px] sm:max-w-[560px] overflow-y-auto" style={{ borderRadius: 0 }}>
-            {selectedEntry && (
+          <SheetContent className="w-[520px] sm:max-w-[520px] overflow-y-auto" style={{ borderRadius: 0 }}>
+            {selected && (
               <>
                 <SheetHeader>
                   <SheetTitle className="flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
                     <ArrowsClockwise size={18} style={{ color: 'hsl(var(--brand))' }} />
-                    {selectedEntry.id} — {selectedEntry.agent}
+                    Failover — {fmtWhen(selected.occurredAt)}
                   </SheetTitle>
                 </SheetHeader>
-                <Tabs defaultValue="overview" className="mt-4">
-                  <TabsList style={{ borderRadius: 0 }}>
-                    <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
-                    <TabsTrigger value="trace" style={{ borderRadius: 0 }}>Trace Link</TabsTrigger>
-                    <TabsTrigger value="recovery" style={{ borderRadius: 0 }}>Recovery Steps</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="overview" className="space-y-4 mt-4">
-                    <div className="grid grid-cols-2 gap-3">
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Primary Model (Failed)</span>
-                        <p className="text-sm font-mono font-bold mt-1 text-destructive">{selectedEntry.primaryModel}</p>
-                      </div>
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Fallback Model</span>
-                        <p className="text-sm font-mono font-bold mt-1" style={{ color: 'hsl(var(--brand))' }}>{selectedEntry.fallbackModel}</p>
-                      </div>
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Trigger</span>
-                        <div className="mt-1">{causeBadge(selectedEntry.trigger)}</div>
-                      </div>
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Status</span>
-                        <div className="mt-1">
-                          <Badge style={{
-                            background: selectedEntry.status === 'success' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
-                            color: selectedEntry.status === 'success' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
-                            borderRadius: 0, fontSize: 11,
-                          }}>
-                            {selectedEntry.status.toUpperCase()}
-                          </Badge>
-                        </div>
-                      </div>
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Recovery Time</span>
-                        <p className="text-sm font-mono mt-1" style={{ color: selectedEntry.latencyMs > 10000 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
-                          {(selectedEntry.latencyMs / 1000).toFixed(1)}s
-                        </p>
-                      </div>
-                      <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Tokens Processed</span>
-                        <p className="text-sm font-mono mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedEntry.tokens}</p>
-                      </div>
+                <div className="mt-4 space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Primary Model (failed)</span>
+                      <div className="mt-1">{modelPill(selected.primaryModelId, selected.primaryModel, 'primary')}</div>
                     </div>
-                    {selectedEntry.status === 'failed' && (
-                      <div className="space-y-3">
-                        <div className="p-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))', borderRadius: 0 }}>
-                          <p className="text-xs font-semibold text-destructive">
-                            <Warning size={12} className="inline mr-1" weight="fill" />
-                            FAILED — Fallback model also failed. Zero tokens processed. Data may have been silently dropped.
-                            Auto-incident creation recommended.
-                          </p>
-                        </div>
-                        {escalatedEntries[selectedEntry.id] ? (
-                          <div className="p-3 flex items-center gap-2" style={{ background: 'hsl(var(--tag-purple-bg))', border: '1px solid hsl(var(--tag-purple-bg))', borderRadius: 0 }}>
-                            <UserCircleGear size={14} weight="fill" style={{ color: 'hsl(var(--tag-purple))' }} />
-                            <p className="text-xs font-semibold" style={{ color: 'hsl(var(--tag-purple))' }}>
-                              Escalated to HITL review {escalatedEntries[selectedEntry.id]}
-                            </p>
-                          </div>
-                        ) : (
-                          <Button size="sm" variant="outline" style={{ borderRadius: 0 }}
-                            onClick={() => handleCreateHITL(selectedEntry.id)}>
+                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Fallback Model</span>
+                      <div className="mt-1">{modelPill(selected.fallbackModelId, selected.fallbackModel, 'fallback')}</div>
+                    </div>
+                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Trigger</span>
+                      <div className="mt-1">{triggerBadge(selected.triggerReason)}</div>
+                    </div>
+                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Outcome</span>
+                      <div className="mt-1">{outcomeBadge(selected.succeeded)}</div>
+                    </div>
+                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Failover Latency</span>
+                      <p className="text-sm font-mono mt-1" style={{ color: 'hsl(var(--text-1))' }}>
+                        {selected.latencyMs != null ? `${selected.latencyMs.toLocaleString()}ms` : '—'}
+                      </p>
+                    </div>
+                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Request ID</span>
+                      <p className="text-sm font-mono mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selected.requestId ?? '—'}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-3" style={{ border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Linked Trace</span>
+                    {selected.traceRef ? (
+                      <div className="mt-1 flex items-center gap-2">
+                        <span className="text-sm font-mono" style={{ color: 'hsl(var(--s-in-tx))' }}>{selected.traceRef}</span>
+                        <Button variant="outline" size="sm" className="h-6 px-2 text-xs" style={{ borderRadius: 0 }}
+                          onClick={() => copyTraceRef(selected.traceRef!)}>
+                          <Copy size={12} />Copy ref
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-4))' }}>No trace linked to this event</p>
+                    )}
+                    {selected.traceRef && (
+                      <p className="text-xs mt-1.5" style={{ color: 'hsl(var(--text-4))' }}>
+                        Look this ref up on the Live Traces page (Trust Engine → Traces).
+                      </p>
+                    )}
+                  </div>
+
+                  {selected.errorMessage && (
+                    <div className="p-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', borderRadius: 0 }}>
+                      <p className="text-xs font-semibold text-[hsl(var(--destructive))]">Error</p>
+                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>{selected.errorMessage}</p>
+                    </div>
+                  )}
+
+                  {!selected.succeeded && (
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <span className="inline-block">
+                          <Button size="sm" variant="outline" disabled style={{ borderRadius: 0 }}>
                             <UserCircleGear size={14} />Create HITL Review
                           </Button>
-                        )}
-                      </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="trace" className="space-y-4 mt-4">
-                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Linked Trace</span>
-                      <p className="text-sm font-mono mt-1" style={{ color: 'hsl(var(--brand))' }}>
-                        <Link size={12} className="inline mr-1" />
-                        TR-{String(parseInt(selectedEntry.id.replace('FB-', '')) + 3).padStart(3, '0')}
-                      </p>
-                    </div>
-                    <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Timestamp</span>
-                      <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>
-                        {new Date(selectedEntry.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                      </p>
-                    </div>
-                    <div className="p-3" style={{ background: 'hsl(var(--s-in-bg))', border: '1px solid hsl(var(--s-in-bg))', borderRadius: 0 }}>
-                      <p className="text-xs text-[hsl(var(--s-in-tx))]">
-                        <Info size={12} className="inline mr-1" />
-                        Model quality impact: Fallback from {selectedEntry.primaryModel} to {selectedEntry.fallbackModel} may affect output quality, hallucination rate, and bias characteristics (ISO 42001 Cl. 8.4).
-                      </p>
-                    </div>
-                  </TabsContent>
-
-                  <TabsContent value="recovery" className="space-y-3 mt-4">
-                    {selectedEntry.status === 'success' ? (
-                      <>
-                        <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                          <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 20 }}>1</div>
-                          <div>
-                            <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Primary model failure detected</p>
-                            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Trigger: {selectedEntry.trigger}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                          <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 20 }}>2</div>
-                          <div>
-                            <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Automatic failover initiated</p>
-                            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{selectedEntry.primaryModel} → {selectedEntry.fallbackModel}</p>
-                          </div>
-                        </div>
-                        <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                          <div className="flex items-center justify-center w-5 h-5 text-xs font-bold" style={{ background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 20 }}>3</div>
-                          <div>
-                            <p className="text-xs font-medium text-[hsl(var(--s-ok-tx))]">Recovery successful</p>
-                            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{selectedEntry.tokens} tokens processed in {(selectedEntry.latencyMs / 1000).toFixed(1)}s</p>
-                          </div>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <div className="flex items-start gap-3 p-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))', borderRadius: 0 }}>
-                          <Warning size={14} weight="fill" className="text-destructive mt-0.5" />
-                          <div>
-                            <p className="text-xs font-bold text-destructive">Recovery FAILED</p>
-                            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                              Fallback to {selectedEntry.fallbackModel} also failed. 0 tokens processed. Batch operation silently dropped.
-                            </p>
-                          </div>
-                        </div>
-                        <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                          <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Recommended Action</p>
-                          <ul className="text-xs mt-1 space-y-1" style={{ color: 'hsl(var(--text-4))' }}>
-                            <li>• Create incident for data integrity review</li>
-                            <li>• Check for partial writes in label store</li>
-                            <li>• Review cost limit configuration</li>
-                            <li>• Add HITL review for affected batch</li>
-                          </ul>
-                        </div>
-                      </>
-                    )}
-                  </TabsContent>
-                </Tabs>
+                        </span>
+                      </TooltipTrigger>
+                      <TooltipContent style={{ borderRadius: 0, maxWidth: 260 }}>
+                        HITL review escalation is not connected to a backend yet, so this action is disabled rather than simulated.
+                      </TooltipContent>
+                    </Tooltip>
+                  )}
+                </div>
               </>
             )}
           </SheetContent>
