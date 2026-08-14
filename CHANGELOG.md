@@ -1,3 +1,8 @@
+## 1.56.0 (2026-08-14)
+
+* Merge release v1.55.0 from main ([d7c9546](https://github.com/CERTIFYI-AI/sentinel/commit/d7c9546))
+* feat(trust-engine): Live Inference Traces + Active Guardrails on real data; retire demo tables ([20d1082](https://github.com/CERTIFYI-AI/sentinel/commit/20d1082))
+
 ## 1.55.0 (2026-08-14)
 
 * feat(runtime-trust): rebuild Performance Monitoring, Model Efficiency, GenAI Risk Profiles on real d ([bbf33a3](https://github.com/CERTIFYI-AI/sentinel/commit/bbf33a3))
