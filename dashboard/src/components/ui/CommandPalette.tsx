@@ -42,7 +42,7 @@ const ALL_ITEMS: SearchItem[] = [
   { group: 'Security', icon: ShieldCheck, title: 'Security Overview', subtitle: 'Security posture', path: '/security', keywords: ['security', 'threats', 'vulnerabilities'] },
   { group: 'Security', icon: ShieldWarning, title: 'Threat Feed', subtitle: 'Active threat intelligence', path: '/security/threats', keywords: ['threats', 'intel', 'cve'] },
   { group: 'Security', icon: Target, title: 'Scan Center', subtitle: 'Security scans', path: '/security/scans' },
-  { group: 'Security', icon: ShieldWarning, title: 'Vulnerabilities', subtitle: 'Vulnerability register', path: '/security/vulnerabilities' },
+  { group: 'Security', icon: ShieldWarning, title: 'Vulnerabilities', subtitle: 'Vulnerability register', path: '/security/vuln-tracker' },
 
   // Compliance
   { group: 'Compliance', icon: ChartBar, title: 'Compliance Dashboard', subtitle: 'Compliance posture', path: '/compliance', keywords: ['compliance', 'gdpr', 'eu ai act', 'sox'] },

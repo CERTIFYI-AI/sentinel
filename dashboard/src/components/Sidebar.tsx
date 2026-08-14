@@ -110,7 +110,7 @@ const NAV: NavSection[] = [
         ],
       },
       {
-        label: 'Agent Control', to: '/agents', icon: Brain, badge: 3,
+        label: 'Agent Control', to: '/agents', icon: Brain,
         children: [
           { label: 'Shadow AI Discovery',    to: '/agents/shadow-ai' },
           { label: 'Agent Registry',         to: '/agent-registry' },
@@ -170,7 +170,7 @@ const NAV: NavSection[] = [
           { label: 'Threat Feed',       to: '/security/threats' },
           { label: 'Scan Center',       to: '/security/scans' },
           { label: 'Attack Surface',    to: '/security/attack-surface' },
-          { label: 'Vulnerabilities',   to: '/security/vulnerabilities' },
+          { label: 'Vulnerabilities',   to: '/security/vuln-tracker' },
         ],
       },
       {
@@ -268,7 +268,7 @@ const NAV: NavSection[] = [
         ],
       },
       {
-        label: 'Operations & Flows', to: '/hitl', icon: UserCircleCheck, badge: 3,
+        label: 'Operations & Flows', to: '/hitl', icon: UserCircleCheck,
         children: [
           { label: 'HITL Reviews',      to: '/hitl' },
           { label: 'Approval Workflows', to: '/workflows' },

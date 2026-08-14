@@ -9,7 +9,6 @@ import { PageSkeleton } from './components/ui/PageSkeleton';
 import Sidebar from './components/Sidebar';
 import { SkipLink } from './lib/a11y/SkipLink';
 import TopHeader from './components/TopHeader';
-import CommandPalette from './components/CommandPalette';
 import { useRealtimeEvents } from './hooks/useRealtimeEvents';
 import { useRealtimeInvalidation } from './hooks/useRealtimeInvalidation';
 import { useAuthStore } from './store/authStore';
