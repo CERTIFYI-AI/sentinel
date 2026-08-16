@@ -1,341 +1,642 @@
-import { useState, useMemo } from 'react'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
-import { Globe, Export, Plus, Eye, X, CheckCircle, Clock, Trash, Warning, ChartBar } from '@phosphor-icons/react'
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// ESG Reports — AI-specific sustainability disclosures with their evidence
+// chain, assurance record and a governed approval transition.
+//
+// What was deleted, and why:
+//  * the three fabricated **Published** disclosures the service served to any
+//    tenant whose table was empty — named human authors, scores of 88/92/95
+//    and factual claims about emission reductions that never happened. The
+//    seed is gone from the service; this page's honest empty state, which
+//    could previously never render, is now what a new tenant sees;
+//  * "publish" and "submit for review" as local `setState` + success toast.
+//    Both are now real writes that stamp the approver identity and time from
+//    the signed-in user and land in the audit log; the drawer closes only
+//    after the write resolves;
+//  * "Download Report", which downloaded nothing while toasting "Report
+//    downloaded". It now writes a real disclosure file built from the stored
+//    record and its citations;
+//  * the up=green / down=red trend arrows on AI metrics — inverted for carbon,
+//    where a rise is bad — and the dead `aiSpecificMetrics` read that hid the
+//    real `ai_metrics` payload behind a column name that does not exist.
+//
+// The overall score is the mean of three hand-entered dimension scores. It is
+// labelled self-assessed everywhere it appears; it is not a framework score.
+
+import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from 'recharts'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import { useEsgData } from '@/hooks/useEsgData'
+import {
+  RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, ResponsiveContainer,
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, CartesianGrid,
+} from 'recharts'
+import { Globe, Export, Plus, X, CheckCircle, DownloadSimple } from '@phosphor-icons/react'
+
+import { PageHeader } from '@/components/ui/PageHeader'
+import { DataTable, type Column } from '@/components/ui/DataTable'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { InterlinkChip } from '@/components/ui/InterlinkChip'
+import { FormDialog, Field } from '@/components/evals/FormDialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+
+import { useEsgData } from '@/hooks/useEsgData'
+import { useCarbonRecordsData } from '@/hooks/useCarbonRecordsData'
+import { useEnergyData } from '@/hooks/useEnergyData'
+import { useModelOptions } from '@/hooks/useAiiaData'
+import { useUserOptions } from '@/hooks/useUserOptions'
 import { useChartTheme } from '@/hooks/useChartTheme'
+import { comparePeriodsDesc } from '@/services/reportingPeriod'
+import {
+  ESG_STATUS_LABEL, ESG_STATUSES, ASSURANCE_STATUSES,
+  type AssuranceStatus, type EsgReport, type EsgStatus,
+} from '@/services/esgService'
 
-function exportCsv(rows: any[], filename: string) {
-  if (!rows.length) return
-  const keys = Object.keys(rows[0])
-  const csv = [keys.join(','), ...rows.map(r => keys.map(k => JSON.stringify(r[k] ?? '')).join(','))].join('\n')
-  const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' })); a.download = filename; a.click()
+const DASH = '—'
+const score = (v: number | null | undefined) => (v == null ? DASH : `${Math.round(v)}/100`)
+const dec = (v: number | null | undefined, unit = '') =>
+  v == null ? DASH : `${v.toFixed(1)}${unit ? ` ${unit}` : ''}`
+const numOrNull = (v: string): number | null => {
+  const s = v.trim()
+  if (!s) return null
+  const n = Number(s)
+  return Number.isFinite(n) ? n : null
 }
 
-const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  Published: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-  Draft: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-  'Under Review': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  Approved: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+const STATUS_TONE: Record<EsgStatus, { background: string; color: string }> = {
+  draft: { background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))' },
+  in_review: { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  approved: { background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  published: { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
 }
 
-const FRAMEWORKS = ['GRI / SASB', 'GRI / SASB / EU CSRD', 'GRI / SASB / EU CSRD / TCFD', 'TCFD Only', 'ISSB (IFRS S1/S2)', 'CDP + SASB', 'GRI Only']
-const PERIODS = ['Q2 2026', 'Q3 2026', 'Q4 2026', '2026 Annual', '2025 Annual']
-const AUTHORS = ['Maria Santos', 'Sarah Chen', 'James Patel', 'David Kim', 'Linda Park']
+const ASSURANCE_LABEL: Record<AssuranceStatus, string> = {
+  none: 'No assurance',
+  limited: 'Limited assurance',
+  reasonable: 'Reasonable assurance',
+}
 
-const BLANK_FORM = {
-  title: '',
-  period: '',
-  framework: '',
-  author: '',
-  status: 'Draft',
-  environmentalScore: '',
-  socialScore: '',
-  governanceScore: '',
-  highlights: '',
+const FRAMEWORKS = ['GRI', 'SASB', 'EU CSRD / ESRS', 'TCFD', 'ISSB (IFRS S1/S2)', 'CDP', 'GHG Protocol']
+
+const BLANK = {
+  title: '', period: '', periodStart: '', periodEnd: '',
+  framework: '', frameworkVersion: '', authorId: '', status: 'draft' as EsgStatus,
+  environmentalScore: '', socialScore: '', governanceScore: '',
+  highlights: '', assuranceStatus: 'none' as AssuranceStatus, assuranceProvider: '', assuranceDate: '',
+  reportingBoundary: '', consolidationBasis: '', isRestatement: false, restatementReason: '',
+  materialityTopics: '', scope1: '', scope2: '', scope3: '', methodology: '',
+  carbonRecordIds: [] as string[], energyMetricIds: [] as string[], modelIds: [] as string[],
+}
+
+function StatusBadge({ status }: { status: EsgStatus }) {
+  return (
+    <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_TONE[status]}>
+      {ESG_STATUS_LABEL[status]}
+    </span>
+  )
 }
 
 export default function EsgReports() {
-  const { reports: items, isLoading, save, remove } = useEsgData();
-  const chartTheme = useChartTheme()
-  if (isLoading) return <PageSkeleton />
+  const [searchParams, setSearchParams] = useSearchParams()
+  const modelParam = searchParams.get('model')
 
-  // Normalize items
-  const reports = (items || []).map((r: any) => ({
-    id: r.id,
-    title: r.title || r.metadata?.title || `ESG Report ${r.id}`,
-    period: r.period || r.metadata?.period || '',
-    framework: r.framework || r.metadata?.framework || 'GRI / SASB',
-    status: r.status || r.metadata?.status || 'Draft',
-    publishedDate: r.publishedDate ?? r.published_date ?? r.metadata?.publishedDate,
-    author: r.author || r.metadata?.author || '',
-    environmentalScore: Number(r.environmentalScore ?? r.environmental_score ?? r.metadata?.environmentalScore ?? 0),
-    socialScore: Number(r.socialScore ?? r.social_score ?? r.metadata?.socialScore ?? 0),
-    governanceScore: Number(r.governanceScore ?? r.governance_score ?? r.metadata?.governanceScore ?? 0),
-    overallScore: Number(r.overallScore ?? r.overall_score ?? r.metadata?.overallScore ?? 0),
-    highlights: r.highlights ?? r.metadata?.highlights ?? [],
-    aiSpecificMetrics: r.aiSpecificMetrics ?? r.ai_specific_metrics ?? r.metadata?.aiSpecificMetrics ?? [],
-  }))
+  const { reports, isLoading, isError, error, refetch, save, remove, transition, isSaving, isTransitioning } = useEsgData()
+  const { items: carbonRecords } = useCarbonRecordsData()
+  const { metrics: energyMetrics } = useEnergyData()
+  const { models } = useModelOptions()
+  const { options: users } = useUserOptions()
+  const chart = useChartTheme()
 
-  return <EsgReportsInner reports={reports} save={save} remove={remove} chartTheme={chartTheme} />
-}
+  const [selected, setSelected] = useState<EsgReport | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [form, setForm] = useState(BLANK)
+  const [toDelete, setToDelete] = useState<EsgReport | null>(null)
 
-function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: any) {
-  const [selected, setSelected] = useState<any | null>(null)
-  const [showCreate, setShowCreate] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<any | null>(null)
-  const [form, setForm] = useState(BLANK_FORM)
-  const [localReports, setLocalReports] = useState<any[]>([])
-  const [deletedIds, setDeletedIds] = useState<Set<string>>(new Set())
-  const [localUpdates, setLocalUpdates] = useState<Record<string, any>>({})
+  const modelName = (id: string): string => models.find(m => m.id === id)?.name ?? 'Unavailable'
+  const carbonLabel = (id: string) => {
+    const r = carbonRecords.find(c => c.id === id)
+    if (!r) return 'Unavailable'
+    return `${r.period ?? 'Period —'} · ${r.modelId ? modelName(r.modelId) : 'no model'}`
+  }
+  const energyLabel = (id: string) => {
+    const r = energyMetrics.find(e => e.id === id)
+    if (!r) return 'Unavailable'
+    return `${r.period ?? 'Period —'} · ${r.modelId ? modelName(r.modelId) : (r.modelName ?? 'no model')}`
+  }
 
-  const reports = useMemo(() => {
-    const merged = [...localReports, ...initialReports.filter((r: any) => !localReports.find((l: any) => l.id === r.id))]
-    return merged
-      .filter((r: any) => !deletedIds.has(r.id))
-      .map((r: any) => localUpdates[r.id] ? { ...r, ...localUpdates[r.id] } : r)
-  }, [initialReports, localReports, deletedIds, localUpdates])
+  /** Chronological by reporting period — never by insertion order. */
+  const sorted = useMemo(() => [...reports].sort(comparePeriodsDesc), [reports])
 
-  const published = reports.filter((r: any) => r.status === 'Published')
-  const latest = published[0]
+  const filtered = useMemo(
+    () => sorted.filter(r => !modelParam || r.modelIds.includes(modelParam)),
+    [sorted, modelParam],
+  )
 
-  // Radar data from live reports
+  const publishedByPeriod = useMemo(() => filtered.filter(r => r.status === 'published'), [filtered])
+  const latest = publishedByPeriod[0] ?? filtered[0] ?? null
+
+  /** Latest vs prior — by reporting period, among reports carrying scores. */
   const radarData = useMemo(() => {
-    if (reports.length < 2) return []
-    const r0 = reports[0], r1 = reports[1]
-    return [
-      { subject: 'Environmental', A: r0.environmentalScore, B: r1.environmentalScore },
-      { subject: 'Social', A: r0.socialScore, B: r1.socialScore },
-      { subject: 'Governance', A: r0.governanceScore, B: r1.governanceScore },
+    const scored = filtered.filter(r =>
+      r.environmentalScore != null || r.socialScore != null || r.governanceScore != null)
+    if (scored.length < 2) return null
+    const [a, b] = scored
+    return {
+      latestLabel: a.period || a.title,
+      priorLabel: b.period || b.title,
+      rows: [
+        { subject: 'Environmental', latest: a.environmentalScore, prior: b.environmentalScore },
+        { subject: 'Social', latest: a.socialScore, prior: b.socialScore },
+        { subject: 'Governance', latest: a.governanceScore, prior: b.governanceScore },
+      ],
+    }
+  }, [filtered])
+
+  const scoreTrend = useMemo(() => (
+    [...filtered]
+      .reverse()
+      .filter(r => r.environmentalScore != null || r.socialScore != null || r.governanceScore != null)
+      .map(r => ({
+        period: r.period || r.title,
+        env: r.environmentalScore,
+        social: r.socialScore,
+        gov: r.governanceScore,
+      }))
+  ), [filtered])
+
+  function exportCsv() {
+    if (!filtered.length) { toast.error('Nothing to export'); return }
+    const header = [
+      'title', 'period', 'period_start', 'period_end', 'framework', 'framework_version', 'status',
+      'author', 'approver', 'approved_at', 'published_at', 'assurance_status', 'assurance_provider',
+      'assurance_date', 'reporting_boundary', 'consolidation_basis', 'is_restatement',
+      'environmental_score_self_assessed', 'social_score_self_assessed', 'governance_score_self_assessed',
+      'overall_score_self_assessed', 'scope1_tco2e', 'scope2_tco2e', 'scope3_tco2e',
+      'cited_carbon_records', 'cited_energy_metrics', 'linked_models', 'methodology',
     ]
-  }, [reports])
+    const cell = (v: unknown) => JSON.stringify(v == null ? '' : v)
+    const body = filtered.map(r => [
+      r.title, r.period, r.periodStart, r.periodEnd, r.framework, r.frameworkVersion, r.status,
+      r.author, r.approver, r.approvedAt, r.publishedAt, r.assuranceStatus, r.assuranceProvider,
+      r.assuranceDate, r.reportingBoundary, r.consolidationBasis, r.isRestatement,
+      r.environmentalScore, r.socialScore, r.governanceScore, r.overallScore,
+      r.scope1Tco2e, r.scope2Tco2e, r.scope3Tco2e,
+      r.carbonRecordIds.length, r.energyMetricIds.length,
+      r.modelIds.map(modelName).join(' | '), r.methodology,
+    ].map(cell).join(','))
+    const csv = [header.join(','), ...body].join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
+    a.download = `esg-reports-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
 
-  // Score trend from live data
-  const scoreTrend = useMemo(() => {
-    return reports.filter((r: any) => r.overallScore > 0).map((r: any) => ({
-      period: r.period,
-      env: r.environmentalScore,
-      social: r.socialScore,
-      gov: r.governanceScore,
-      overall: r.overallScore,
-    }))
-  }, [reports])
-
-  async function handleCreate() {
-    if (!form.title || !form.period || !form.framework || !form.author) {
-      toast.error('Please fill in all required fields')
-      return
+  /** A real file, built from the stored record and its resolved citations. */
+  function downloadDisclosure(r: EsgReport) {
+    const payload = {
+      exportedAt: new Date().toISOString(),
+      note: 'Dimension scores are self-assessed by the report author; they are not framework-issued ratings.',
+      report: {
+        title: r.title,
+        reportingPeriod: r.period,
+        periodStart: r.periodStart,
+        periodEnd: r.periodEnd,
+        framework: r.framework,
+        frameworkVersion: r.frameworkVersion,
+        status: r.status,
+        author: r.author,
+        approver: r.approver,
+        approvedAt: r.approvedAt,
+        publishedAt: r.publishedAt,
+        assurance: {
+          status: r.assuranceStatus,
+          provider: r.assuranceProvider,
+          date: r.assuranceDate,
+        },
+        reportingBoundary: r.reportingBoundary,
+        consolidationBasis: r.consolidationBasis,
+        isRestatement: r.isRestatement,
+        restatementReason: r.restatementReason,
+        materialityTopics: r.materialityTopics,
+        selfAssessedScores: {
+          environmental: r.environmentalScore,
+          social: r.socialScore,
+          governance: r.governanceScore,
+          overall: r.overallScore,
+        },
+        ghgInventoryTco2e: { scope1: r.scope1Tco2e, scope2: r.scope2Tco2e, scope3: r.scope3Tco2e },
+        aiMetrics: r.aiMetrics,
+        highlights: r.highlights,
+        methodology: r.methodology,
+      },
+      evidence: {
+        carbonRecords: r.carbonRecordIds.map(id => ({ id, label: carbonLabel(id) })),
+        energyMetrics: r.energyMetricIds.map(id => ({ id, label: energyLabel(id) })),
+        models: r.modelIds.map(id => ({ id, name: modelName(id) })),
+      },
     }
-    const env = Number(form.environmentalScore) || 0
-    const soc = Number(form.socialScore) || 0
-    const gov = Number(form.governanceScore) || 0
-    const overall = env && soc && gov ? Math.round((env + soc + gov) / 3) : 0
-    const highlights = form.highlights
-      ? form.highlights.split('\n').map((h: string) => h.trim()).filter(Boolean)
-      : []
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }))
+    a.download = `${(r.period || r.title).replace(/[^\w.-]+/g, '-').toLowerCase()}-esg-disclosure.json`
+    a.click()
+    URL.revokeObjectURL(a.href)
+    toast.success('Disclosure file downloaded')
+  }
 
-    const newR: any = {
-      id: `ESG-${Date.now()}`,
-      title: form.title, period: form.period,
-      framework: form.framework, status: form.status,
-      author: form.author, environmentalScore: env,
-      socialScore: soc, governanceScore: gov,
-      overallScore: overall, highlights, aiSpecificMetrics: [],
-    }
-    setLocalReports(p => [newR, ...p])
-    setShowCreate(false)
-    setForm(BLANK_FORM)
-    toast.success(`ESG Report "${newR.title}" created as ${newR.status}`)
+  const formValid = !!form.title.trim() && !!form.period.trim()
+
+  async function submit() {
+    const env = numOrNull(form.environmentalScore)
+    const soc = numOrNull(form.socialScore)
+    const gov = numOrNull(form.governanceScore)
+    // Mean only when all three are present. A legitimate 0 counts; a MISSING
+    // dimension makes the mean undefined, so it stays null and renders as —.
+    const overall = env != null && soc != null && gov != null
+      ? Math.round((env + soc + gov) / 3)
+      : null
+    const author = users.find(u => u.id === form.authorId)
+
     try {
       await save({
-        title: newR.title, period: newR.period, framework: newR.framework,
-        status: newR.status, author: newR.author,
-        environmental_score: env, social_score: soc, governance_score: gov,
-        overall_score: overall,
-        highlights: highlights,
+        title: form.title.trim(),
+        period: form.period.trim(),
+        periodStart: form.periodStart || null,
+        periodEnd: form.periodEnd || null,
+        framework: form.framework || null,
+        frameworkVersion: form.frameworkVersion.trim() || null,
+        status: form.status,
+        author: author?.name ?? null,
+        authorUserId: author?.id ?? null,
+        environmentalScore: env,
+        socialScore: soc,
+        governanceScore: gov,
+        overallScore: overall,
+        highlights: form.highlights.split('\n').map(h => h.trim()).filter(Boolean),
+        assuranceStatus: form.assuranceStatus,
+        assuranceProvider: form.assuranceProvider.trim() || null,
+        assuranceDate: form.assuranceDate || null,
+        reportingBoundary: form.reportingBoundary.trim() || null,
+        consolidationBasis: form.consolidationBasis.trim() || null,
+        isRestatement: form.isRestatement,
+        restatementReason: form.isRestatement ? (form.restatementReason.trim() || null) : null,
+        materialityTopics: form.materialityTopics.split(',').map(t => t.trim()).filter(Boolean),
+        scope1Tco2e: numOrNull(form.scope1),
+        scope2Tco2e: numOrNull(form.scope2),
+        scope3Tco2e: numOrNull(form.scope3),
+        carbonRecordIds: form.carbonRecordIds,
+        energyMetricIds: form.energyMetricIds,
+        modelIds: form.modelIds,
+        methodology: form.methodology.trim() || null,
       })
-    } catch {}
+      toast.success(`ESG report saved — ${form.title.trim()}`)
+      setFormOpen(false)
+      setForm(BLANK)
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Failed to save ESG report')
+    }
   }
 
-  async function handleDelete() {
-    if (!deleteTarget) return
-    setDeletedIds(p => new Set([...p, deleteTarget.id]))
-    toast.success(`Report "${deleteTarget.title}" deleted`)
-    setDeleteTarget(null)
-    if (selected?.id === deleteTarget.id) setSelected(null)
-    try { await remove(deleteTarget.id) } catch {}
+  /** Governed transition — the drawer only advances if the write lands. */
+  async function changeStatus(r: EsgReport, to: EsgStatus) {
+    try {
+      const saved = await transition({ id: r.id, to, previous: r.status })
+      toast.success(
+        to === 'published'
+          ? `"${saved.title}" published${saved.approver ? ` — approved by ${saved.approver}` : ''}`
+          : to === 'in_review'
+            ? `"${saved.title}" submitted for review`
+            : `"${saved.title}" approved`,
+      )
+      setSelected(saved)
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Failed to change report status')
+    }
   }
 
-  function handleSubmitForReview(r: any) {
-    setLocalUpdates(p => ({ ...p, [r.id]: { status: 'Under Review' } }))
-    toast.success(`"${r.title}" submitted for review`)
-    setSelected(null)
+  async function confirmDelete() {
+    if (!toDelete) return false
+    try {
+      await remove(toDelete.id)
+      toast.success(`"${toDelete.title}" deleted`)
+      if (selected?.id === toDelete.id) setSelected(null)
+      setToDelete(null)
+      return true
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Failed to delete report')
+      return false
+    }
   }
 
-  function handlePublish(r: any) {
-    setLocalUpdates(p => ({ ...p, [r.id]: { status: 'Published', publishedDate: new Date().toISOString().slice(0, 10) } }))
-    toast.success(`"${r.title}" published successfully`)
-    setSelected(null)
-  }
+  const columns: Column<EsgReport>[] = [
+    {
+      key: 'title', header: 'Report', sortable: true,
+      render: r => (
+        <div>
+          <div className="text-sm font-medium text-[hsl(var(--text-1))]">{r.title}</div>
+          <div className="text-[11px] text-[hsl(var(--text-4))]">
+            {r.framework ?? 'Framework —'}{r.frameworkVersion ? ` ${r.frameworkVersion}` : ''} · {r.author ?? 'Author —'}
+          </div>
+        </div>
+      ),
+    },
+    { key: 'period', header: 'Period', sortable: true, render: r => <span className="text-xs">{r.period || DASH}</span> },
+    { key: 'status', header: 'Status', sortable: true, render: r => <StatusBadge status={r.status} /> },
+    {
+      key: 'assuranceStatus', header: 'Assurance',
+      render: r => (r.assuranceStatus
+        ? <span className="text-xs text-[hsl(var(--text-2))]">
+            {ASSURANCE_LABEL[r.assuranceStatus]}{r.assuranceProvider ? ` · ${r.assuranceProvider}` : ''}
+          </span>
+        : <span className="text-xs text-[hsl(var(--text-4))]">{DASH}</span>),
+    },
+    {
+      key: 'overallScore', header: 'Overall (self-assessed)', sortable: true,
+      render: r => <span className="font-mono text-xs">{score(r.overallScore)}</span>,
+    },
+    {
+      key: 'publishedAt', header: 'Published',
+      render: r => <span className="text-xs">{r.publishedAt ? r.publishedAt.slice(0, 10) : DASH}</span>,
+    },
+    {
+      key: 'carbonRecordIds', header: 'Evidence',
+      render: r => (
+        <span className="text-[11px] text-[hsl(var(--text-3))]">
+          {r.carbonRecordIds.length + r.energyMetricIds.length === 0
+            ? 'No records cited'
+            : `${r.carbonRecordIds.length} carbon · ${r.energyMetricIds.length} energy`}
+        </span>
+      ),
+    },
+  ]
+
+  if (isLoading) return <PageSkeleton />
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <Globe size={20} weight="fill" className="text-[hsl(var(--brand))]" />
-            ESG Reports
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">AI-specific ESG reporting aligned to GRI, SASB, EU CSRD, and TCFD frameworks</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => exportCsv(reports, 'esg-reports.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><Export size={14} /> Export CSV</button>
-          <button onClick={() => setShowCreate(true)} className="flex items-center gap-1.5 px-4 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90"><Plus size={14} /> New Report</button>
-        </div>
-      </div>
-
-      {/* KPI Strip from latest */}
-      {latest && (
-        <div className="grid grid-cols-4 gap-4">
-          {[
-            { label: 'Environmental Score', value: `${latest.environmentalScore}/100`, color: 'hsl(var(--s-ok-tx))' },
-            { label: 'Social Score', value: `${latest.socialScore}/100`, color: 'hsl(var(--brand))' },
-            { label: 'Governance Score', value: `${latest.governanceScore}/100`, color: 'hsl(var(--s-in-tx))' },
-            { label: 'Overall ESG Score', value: `${latest.overallScore}/100`, color: 'hsl(var(--text-1))' },
-          ].map(s => (
-            <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-              <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
-              <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-              <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">{latest.period}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Charts */}
-      {(radarData.length > 0 || scoreTrend.length > 0) && (
-        <div className="grid grid-cols-2 gap-4">
-          {radarData.length > 0 && (
-            <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-              <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">ESG Dimension Comparison (Latest vs Prior)</h3>
-              <ResponsiveContainer width="100%" height={220}>
-                <RadarChart data={radarData}>
-                  <PolarGrid stroke="hsl(var(--border))" />
-                  <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: chartTheme.tickColor }} />
-                  <Radar name="Prior" dataKey="B" stroke="hsl(var(--text-4))" fill="hsl(var(--text-4) / 0.1)" strokeWidth={1} strokeDasharray="4 2" />
-                  <Radar name="Latest" dataKey="A" stroke="hsl(var(--brand))" fill="hsl(var(--brand) / 0.15)" strokeWidth={2} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                </RadarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-          {scoreTrend.length > 0 && (
-            <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-              <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">Score Trend by Dimension</h3>
-              <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={scoreTrend}>
-                  <XAxis dataKey="period" tick={{ fontSize: 10, fill: chartTheme.tickColor }} />
-                  <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: chartTheme.tickColor }} />
-                  <Tooltip contentStyle={chartTheme.tooltipStyle} />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="env" name="Environmental" fill="hsl(var(--s-ok-bg))" />
-                  <Bar dataKey="social" name="Social" fill="hsl(var(--brand) / 0.7)" />
-                  <Bar dataKey="gov" name="Governance" fill="hsl(var(--s-in-bg))" />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* AI Metrics for latest */}
-      {latest && latest.aiSpecificMetrics && latest.aiSpecificMetrics.length > 0 && (
-        <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">AI-Specific Metrics — {latest.period}</h3>
-          <div className="grid grid-cols-3 gap-2">
-            {latest.aiSpecificMetrics.map((m: any) => (
-              <div key={m.metric} className="flex items-center justify-between p-3 bg-raised border border-[hsl(var(--border))]">
-                <span className="text-xs text-[hsl(var(--text-3))]">{m.metric}</span>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-semibold text-[hsl(var(--text-1))]">{m.value}</span>
-                  <span className="text-xs font-bold" style={{ color: m.trend === 'up' ? 'hsl(var(--s-ok-tx))' : m.trend === 'down' ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))' }}>
-                    {m.trend === 'up' ? '↑' : m.trend === 'down' ? '↓' : '→'}
-                  </span>
-                </div>
-              </div>
-            ))}
+      <PageHeader
+        title="ESG Reports"
+        subtitle="AI sustainability disclosures — evidence chain, assurance record and approval trail"
+        icon={Globe}
+        actions={
+          <div className="flex gap-2">
+            <Button size="sm" variant="secondary" icon={<Export />} onClick={exportCsv}>Export CSV</Button>
+            <Button size="sm" icon={<Plus />} onClick={() => { setForm(BLANK); setFormOpen(true) }}>New report</Button>
           </div>
+        }
+      />
+
+      {modelParam && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm border rounded-none"
+            style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))', borderColor: 'hsl(var(--border))' }}>
+            <span>Filtered to <strong>{models.find(m => m.id === modelParam)?.name ?? 'Unavailable'}</strong></span>
+            <button aria-label="Clear model filter" onClick={() => setSearchParams({})}
+              className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer">
+              <X size={14} />
+            </button>
+          </span>
+          <InterlinkChip label="Carbon records for this model" to={`/carbon-ledger?model=${modelParam}`} />
+          <InterlinkChip label="Energy readings" to={`/energy-efficiency?model=${modelParam}`} />
         </div>
       )}
 
-      {/* Report list */}
-      {reports.length === 0 ? (
-        <div className="border border-[hsl(var(--border))] bg-surface p-12 text-center">
-          <Globe size={32} className="mx-auto mb-3 text-[hsl(var(--text-4))]" />
-          <p className="text-sm text-[hsl(var(--text-3))]">No ESG reports yet. Create your first report.</p>
-        </div>
+      {isError ? (
+        <ErrorState title="ESG reports could not be loaded" error={error} onRetry={() => refetch()} />
+      ) : filtered.length === 0 ? (
+        <EmptyState
+          icon={<Globe size={28} />}
+          title={reports.length === 0 ? 'No ESG reports yet' : 'No reports match this filter'}
+          description={reports.length === 0
+            ? 'Create a disclosure and cite the carbon records and energy readings it reports on, so every figure in it is traceable.'
+            : 'Clear the model filter to see the rest of the reports.'}
+          action={reports.length === 0
+            ? <Button size="sm" icon={<Plus />} onClick={() => { setForm(BLANK); setFormOpen(true) }}>New report</Button>
+            : undefined}
+        />
       ) : (
-        <div className="space-y-2">
-          {reports.map((r: any) => (
-            <div
-              key={r.id}
-              className="rounded border border-[hsl(var(--border))] bg-surface p-4 flex items-center justify-between cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors"
-              onClick={() => setSelected(r)}
-            >
-              <div className="flex items-center gap-4">
-                <div className="w-10 h-10 bg-[hsl(var(--brand)/0.1)] border border-[hsl(var(--brand)/0.2)] flex items-center justify-center flex-shrink-0">
-                  <Globe size={18} className="text-[hsl(var(--brand))]" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-[hsl(var(--text-1))]">{r.title}</h3>
-                  <p className="text-xs text-[hsl(var(--text-4))]">{r.framework} · {r.author}{r.publishedDate ? ` · Published ${r.publishedDate}` : ''}</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                {r.overallScore > 0 && (
-                  <div className="text-right">
-                    <p className="text-lg font-bold text-[hsl(var(--text-1))]">{r.overallScore}</p>
-                    <p className="text-[10px] text-[hsl(var(--text-4))]">ESG Score</p>
+        <>
+          {latest && (
+            <>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {[
+                  ['Environmental', latest.environmentalScore],
+                  ['Social', latest.socialScore],
+                  ['Governance', latest.governanceScore],
+                  ['Overall', latest.overallScore],
+                ].map(([label, value]) => (
+                  <div key={label as string} className="border border-[hsl(var(--border))] bg-surface p-4">
+                    <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{label} score</p>
+                    <p className="text-2xl font-bold text-[hsl(var(--text-1))]">{score(value as number | null)}</p>
+                    <p className="text-[10px] text-[hsl(var(--text-4))] mt-1">
+                      Self-assessed · {latest.period || latest.title} · {ESG_STATUS_LABEL[latest.status]}
+                    </p>
                   </div>
-                )}
-                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[r.status] || STATUS_STYLE.Draft}>{r.status}</span>
-                <button
-                  onClick={e => { e.stopPropagation(); setDeleteTarget(r) }}
-                  className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"
-                >
-                  <Trash size={13} />
-                </button>
-                <Eye size={14} className="text-[hsl(var(--text-4))]" />
+                ))}
+              </div>
+              <p className="text-[11px] text-[hsl(var(--text-4))] -mt-2">
+                Dimension scores are entered by the report author and averaged for the overall figure. They are a
+                self-assessment, not a rating issued under GRI, SASB, ESRS or TCFD.
+              </p>
+            </>
+          )}
+
+          {(radarData || scoreTrend.length > 0) && (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              {radarData && (
+                <div className="border border-[hsl(var(--border))] bg-surface p-4">
+                  <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-1">Self-assessed dimensions</h3>
+                  <p className="text-[11px] text-[hsl(var(--text-4))] mb-3">
+                    {radarData.latestLabel} vs {radarData.priorLabel} — ordered by reporting period.
+                  </p>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <RadarChart data={radarData.rows}>
+                      <PolarGrid stroke={chart.grid} />
+                      <PolarAngleAxis dataKey="subject" tick={{ fontSize: 10, fill: chart.axis }} />
+                      <PolarRadiusAxis domain={[0, 100]} tick={{ fontSize: 9, fill: chart.axis }} />
+                      <Radar name={radarData.priorLabel} dataKey="prior" stroke={chart.axis} fill={chart.axis} fillOpacity={0.08} strokeDasharray="4 2" />
+                      <Radar name={radarData.latestLabel} dataKey="latest" stroke={chart.brand} fill={chart.brand} fillOpacity={0.15} strokeWidth={2} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+              {scoreTrend.length > 0 && (
+                <div className="border border-[hsl(var(--border))] bg-surface p-4">
+                  <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-1">Self-assessed scores by period</h3>
+                  <p className="text-[11px] text-[hsl(var(--text-4))] mb-3">Oldest to newest by reporting period; missing dimensions are gaps, not zeros.</p>
+                  <ResponsiveContainer width="100%" height={220}>
+                    <BarChart data={scoreTrend}>
+                      <CartesianGrid strokeDasharray="3 3" stroke={chart.grid} />
+                      <XAxis dataKey="period" tick={{ fontSize: 10, fill: chart.axis }} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: chart.axis }} />
+                      <Tooltip contentStyle={{ background: chart.tooltipBg, border: `1px solid ${chart.tooltipBorder}`, color: chart.tooltipText, fontSize: 12 }} />
+                      <Legend wrapperStyle={{ fontSize: 11 }} />
+                      <Bar dataKey="env" name="Environmental" fill={chart.colors[1]} />
+                      <Bar dataKey="social" name="Social" fill={chart.brand} />
+                      <Bar dataKey="gov" name="Governance" fill={chart.colors[5]} />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </div>
+          )}
+
+          {latest?.aiMetrics && Object.keys(latest.aiMetrics).length > 0 && (
+            <div className="border border-[hsl(var(--border))] bg-surface p-4">
+              <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-1">
+                AI metrics — {latest.period || latest.title}
+              </h3>
+              <p className="text-[11px] text-[hsl(var(--text-4))] mb-3">As recorded on the report. No direction of travel is asserted.</p>
+              <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+                {Object.entries(latest.aiMetrics).map(([key, value]) => (
+                  <div key={key} className="flex items-center justify-between p-3 bg-raised border border-[hsl(var(--border))]">
+                    <span className="text-xs text-[hsl(var(--text-3))]">{key.replace(/_/g, ' ')}</span>
+                    <span className="text-sm font-semibold text-[hsl(var(--text-1))]">
+                      {value == null || value === '' ? DASH : String(value)}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
-        </div>
+          )}
+
+          <div className="border border-[hsl(var(--border))] bg-surface p-4">
+            <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">Disclosures</h3>
+            <DataTable
+              data={filtered}
+              columns={columns}
+              searchKey="title"
+              searchPlaceholder="Search reports…"
+              onView={r => setSelected(r)}
+              onDelete={r => setToDelete(r)}
+              emptyMessage="No reports match this search."
+            />
+          </div>
+        </>
       )}
 
-      {/* Detail Drawer */}
+      {/* Detail drawer */}
       {selected && (
         <div className="fixed inset-0 z-50 flex">
           <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[500px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full">
+            <div className="flex items-start justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
               <div>
-                <p className="font-mono text-xs text-[hsl(var(--brand))]">{String(selected.id).slice(0, 16)}</p>
                 <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{selected.title}</h2>
+                <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">
+                  {selected.period || DASH} · {selected.framework ?? 'Framework —'}
+                  {selected.frameworkVersion ? ` ${selected.frameworkVersion}` : ''}
+                </p>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => setDeleteTarget(selected)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><Trash size={14} /></button>
-                <button onClick={() => setSelected(null)} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]"><X size={16} /></button>
-              </div>
+              <button onClick={() => setSelected(null)} aria-label="Close"><X size={18} className="text-[hsl(var(--text-4))]" /></button>
             </div>
-            <div className="p-5 space-y-4 flex-1">
-              <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || STATUS_STYLE.Draft}>{selected.status}</span>
+
+            <div className="p-5 space-y-4 flex-1 overflow-y-auto">
+              <div className="flex items-center gap-2">
+                <StatusBadge status={selected.status} />
+                {selected.isRestatement && (
+                  <span className="text-[11px] px-2 py-0.5" style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>
+                    Restatement
+                  </span>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { label: 'Period', value: selected.period },
-                  { label: 'Framework', value: selected.framework },
-                  { label: 'Author', value: selected.author },
-                  { label: 'Published', value: selected.publishedDate ?? 'TBD' },
-                  ...(selected.overallScore > 0 ? [
-                    { label: 'Environmental', value: `${selected.environmentalScore}/100` },
-                    { label: 'Social', value: `${selected.socialScore}/100` },
-                    { label: 'Governance', value: `${selected.governanceScore}/100` },
-                    { label: 'Overall Score', value: `${selected.overallScore}/100` },
-                  ] : []),
-                ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
+                  ['Reporting period', selected.period || DASH],
+                  ['Period start', selected.periodStart ?? DASH],
+                  ['Period end', selected.periodEnd ?? DASH],
+                  ['Lead author', selected.author ?? DASH],
+                  ['Approver', selected.approver ?? DASH],
+                  ['Approved at', selected.approvedAt ? selected.approvedAt.slice(0, 10) : DASH],
+                  ['Published at', selected.publishedAt ? selected.publishedAt.slice(0, 10) : DASH],
+                  ['Assurance', selected.assuranceStatus ? ASSURANCE_LABEL[selected.assuranceStatus] : DASH],
+                  ['Assurance provider', selected.assuranceProvider ?? DASH],
+                  ['Assurance date', selected.assuranceDate ?? DASH],
+                  ['Reporting boundary', selected.reportingBoundary ?? DASH],
+                  ['Consolidation basis', selected.consolidationBasis ?? DASH],
+                  ['Scope 1', dec(selected.scope1Tco2e, 'tCO₂e')],
+                  ['Scope 2', dec(selected.scope2Tco2e, 'tCO₂e')],
+                  ['Scope 3', dec(selected.scope3Tco2e, 'tCO₂e')],
+                  ['Overall (self-assessed)', score(selected.overallScore)],
+                ].map(([label, value]) => (
+                  <div key={label as string} className="p-3 bg-raised border border-[hsl(var(--border))]">
                     <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
                     <p className="text-xs font-semibold text-[hsl(var(--text-1))] mt-0.5">{value}</p>
                   </div>
                 ))}
               </div>
-              {selected.highlights && selected.highlights.length > 0 && (
+
+              {selected.isRestatement && selected.restatementReason && (
+                <div className="p-3 bg-raised border border-[hsl(var(--border))]">
+                  <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">Restatement reason</p>
+                  <p className="text-xs text-[hsl(var(--text-2))]">{selected.restatementReason}</p>
+                </div>
+              )}
+
+              {selected.materialityTopics.length > 0 && (
                 <div>
-                  <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Key Highlights</p>
+                  <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Material topics</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {selected.materialityTopics.map(t => (
+                      <span key={t} className="text-[11px] px-2 py-0.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-2))' }}>{t}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* The evidence chain — a disclosure must cite what it reports on. */}
+              <div>
+                <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Evidence cited</p>
+                {selected.carbonRecordIds.length + selected.energyMetricIds.length + selected.modelIds.length === 0 ? (
+                  <p className="text-xs text-[hsl(var(--text-4))]">
+                    No carbon records, energy readings or models are cited by this report.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {selected.modelIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selected.modelIds.map(id => (
+                          <InterlinkChip key={id} label={modelName(id)} to={`/models/inventory/${id}`} />
+                        ))}
+                      </div>
+                    )}
+                    {selected.carbonRecordIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selected.carbonRecordIds.map(id => {
+                          const rec = carbonRecords.find(c => c.id === id)
+                          return rec?.modelId
+                            ? <InterlinkChip key={id} label={`Carbon: ${carbonLabel(id)}`} to={`/carbon-ledger?model=${rec.modelId}`} />
+                            : <span key={id} className="text-[11px] px-2 py-0.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }}>Carbon: {carbonLabel(id)}</span>
+                        })}
+                      </div>
+                    )}
+                    {selected.energyMetricIds.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selected.energyMetricIds.map(id => {
+                          const rec = energyMetrics.find(e => e.id === id)
+                          return rec?.modelId
+                            ? <InterlinkChip key={id} label={`Energy: ${energyLabel(id)}`} to={`/energy-efficiency?model=${rec.modelId}`} />
+                            : <span key={id} className="text-[11px] px-2 py-0.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }}>Energy: {energyLabel(id)}</span>
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {selected.highlights.length > 0 && (
+                <div>
+                  <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Highlights</p>
                   <div className="space-y-1.5">
-                    {selected.highlights.map((h: string, i: number) => (
+                    {selected.highlights.map((h, i) => (
                       <div key={i} className="flex items-start gap-2 text-sm text-[hsl(var(--text-2))]">
                         <CheckCircle size={13} className="text-[hsl(var(--s-ok-tx))] flex-shrink-0 mt-0.5" />
                         {h}
@@ -344,124 +645,207 @@ function EsgReportsInner({ reports: initialReports, save, remove, chartTheme }: 
                   </div>
                 </div>
               )}
+
+              {selected.methodology && (
+                <div className="p-3 bg-raised border border-[hsl(var(--border))]">
+                  <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">Methodology</p>
+                  <p className="text-xs text-[hsl(var(--text-2))]">{selected.methodology}</p>
+                </div>
+              )}
             </div>
+
             <div className="p-4 border-t border-[hsl(var(--border))] space-y-2">
-              {selected.status === 'Draft' && (
-                <button onClick={() => handleSubmitForReview(selected)} className="w-full py-2 border border-[hsl(var(--brand))] text-[hsl(var(--brand))] text-sm font-medium hover:bg-[hsl(var(--brand)/0.06)]">Submit for Review</button>
+              {selected.status === 'draft' && (
+                <Button size="sm" variant="secondary" fullWidth loading={isTransitioning}
+                  onClick={() => changeStatus(selected, 'in_review')}>
+                  Submit for review
+                </Button>
               )}
-              {selected.status === 'Under Review' && (
-                <button onClick={() => handlePublish(selected)} className="w-full py-2 bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Approve & Publish</button>
+              {selected.status === 'in_review' && (
+                <Button size="sm" fullWidth loading={isTransitioning}
+                  onClick={() => changeStatus(selected, 'published')}>
+                  Approve &amp; publish
+                </Button>
               )}
-              <button onClick={() => toast.success('Report downloaded')} className="w-full py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Download Report</button>
+              <Button size="sm" variant="secondary" fullWidth icon={<DownloadSimple />}
+                onClick={() => downloadDisclosure(selected)}>
+                Download disclosure (JSON)
+              </Button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Generate Report Modal */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-surface border border-[hsl(var(--border))] w-full max-w-lg mx-4 shadow-2xl max-h-[90vh] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
-              <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-                <Globe size={15} className="text-[hsl(var(--brand))]" />
-                Generate ESG Report
-              </h2>
-              <button onClick={() => setShowCreate(false)} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]"><X size={16} /></button>
-            </div>
-            <div className="p-5 space-y-4 overflow-y-auto">
-              <div>
-                <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Report Title *</label>
-                <input
-                  value={form.title}
-                  onChange={e => setForm(p => ({ ...p, title: e.target.value }))}
-                  className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]"
-                  placeholder="e.g. AI ESG Report — Q2 2026"
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Reporting Period *</label>
-                  <Select value={form.period || undefined} onValueChange={v => setForm(p => ({ ...p, period: v }))}>
-                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select period..." /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {PERIODS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Framework *</label>
-                  <Select value={form.framework || undefined} onValueChange={v => setForm(p => ({ ...p, framework: v }))}>
-                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select framework..." /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {FRAMEWORKS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Lead Author *</label>
-                  <Select value={form.author || undefined} onValueChange={v => setForm(p => ({ ...p, author: v }))}>
-                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select author..." /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {AUTHORS.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Initial Status</label>
-                  <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
-                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      <SelectItem value="Draft">Draft</SelectItem>
-                      <SelectItem value="Under Review">Under Review</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-2">ESG Scores (0–100, optional for drafts)</p>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { key: 'environmentalScore', label: 'Environmental' },
-                    { key: 'socialScore', label: 'Social' },
-                    { key: 'governanceScore', label: 'Governance' },
-                  ].map(({ key, label }) => (
-                    <div key={key}>
-                      <label className="text-[10px] text-[hsl(var(--text-4))] mb-1 block">{label}</label>
-                      <input type="number" min={0} max={100} value={(form as any)[key]} onChange={e => setForm(p => ({ ...p, [key]: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="0–100" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div>
-                <label className="text-[11px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Key Highlights (one per line)</label>
-                <textarea
-                  value={form.highlights}
-                  onChange={e => setForm(p => ({ ...p, highlights: e.target.value }))}
-                  rows={4}
-                  className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none"
-                  placeholder={'Carbon footprint reduced 17%\nRenewable energy at 84%'}
-                />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
-              <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Generate Report</button>
-            </div>
-          </div>
+      <FormDialog
+        open={formOpen}
+        onOpenChange={o => { if (!o) setFormOpen(false) }}
+        title="New ESG report"
+        description="Cite the carbon records and energy readings this disclosure reports on. Dimension scores are self-assessed and are labelled as such wherever they appear."
+        submitLabel="Save report"
+        busy={isSaving}
+        disabled={!formValid}
+        onSubmit={submit}
+      >
+        <Field label="Title" required>
+          <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. AI ESG disclosure — 2026 Q2" />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Reporting period" required hint="e.g. 2026-Q2 or 2026 Annual">
+            <Input value={form.period} onChange={e => setForm(f => ({ ...f, period: e.target.value }))} placeholder="2026-Q2" />
+          </Field>
+          <Field label="Initial status">
+            <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v as EsgStatus }))}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {/* Publishing is an approval transition, not an initial state. */}
+                {ESG_STATUSES.filter(s => s === 'draft' || s === 'in_review').map(s => (
+                  <SelectItem key={s} value={s}>{ESG_STATUS_LABEL[s]}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Period start"><Input type="date" value={form.periodStart} onChange={e => setForm(f => ({ ...f, periodStart: e.target.value }))} /></Field>
+          <Field label="Period end"><Input type="date" value={form.periodEnd} onChange={e => setForm(f => ({ ...f, periodEnd: e.target.value }))} /></Field>
+          <Field label="Framework">
+            <Select value={form.framework || undefined} onValueChange={v => setForm(f => ({ ...f, framework: v }))}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="Select framework…" /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {FRAMEWORKS.map(fr => <SelectItem key={fr} value={fr}>{fr}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Framework version" hint="e.g. GRI 2021, ESRS E1">
+            <Input value={form.frameworkVersion} onChange={e => setForm(f => ({ ...f, frameworkVersion: e.target.value }))} />
+          </Field>
+          <Field label="Lead author" hint="Chosen from the org directory; the user id is stored with the report.">
+            <Select value={form.authorId || undefined} onValueChange={v => setForm(f => ({ ...f, authorId: v }))}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="Select author…" /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {users.map(u => <SelectItem key={u.id} value={u.id}>{u.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Assurance">
+            <Select value={form.assuranceStatus} onValueChange={v => setForm(f => ({ ...f, assuranceStatus: v as AssuranceStatus }))}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {ASSURANCE_STATUSES.map(a => <SelectItem key={a} value={a}>{ASSURANCE_LABEL[a]}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Assurance provider"><Input value={form.assuranceProvider} onChange={e => setForm(f => ({ ...f, assuranceProvider: e.target.value }))} /></Field>
+          <Field label="Assurance date"><Input type="date" value={form.assuranceDate} onChange={e => setForm(f => ({ ...f, assuranceDate: e.target.value }))} /></Field>
+          <Field label="Reporting boundary"><Input value={form.reportingBoundary} onChange={e => setForm(f => ({ ...f, reportingBoundary: e.target.value }))} placeholder="e.g. All AI systems in production" /></Field>
+          <Field label="Consolidation basis"><Input value={form.consolidationBasis} onChange={e => setForm(f => ({ ...f, consolidationBasis: e.target.value }))} placeholder="e.g. Operational control" /></Field>
+          <Field label="Scope 1 (tCO₂e)"><Input type="number" step="0.01" value={form.scope1} onChange={e => setForm(f => ({ ...f, scope1: e.target.value }))} /></Field>
+          <Field label="Scope 2 (tCO₂e)"><Input type="number" step="0.01" value={form.scope2} onChange={e => setForm(f => ({ ...f, scope2: e.target.value }))} /></Field>
+          <Field label="Scope 3 (tCO₂e)"><Input type="number" step="0.01" value={form.scope3} onChange={e => setForm(f => ({ ...f, scope3: e.target.value }))} /></Field>
+          <Field label="Environmental score" hint="Self-assessed, 0–100. Leave blank if not assessed."><Input type="number" min={0} max={100} value={form.environmentalScore} onChange={e => setForm(f => ({ ...f, environmentalScore: e.target.value }))} /></Field>
+          <Field label="Social score" hint="Self-assessed, 0–100."><Input type="number" min={0} max={100} value={form.socialScore} onChange={e => setForm(f => ({ ...f, socialScore: e.target.value }))} /></Field>
+          <Field label="Governance score" hint="Self-assessed, 0–100."><Input type="number" min={0} max={100} value={form.governanceScore} onChange={e => setForm(f => ({ ...f, governanceScore: e.target.value }))} /></Field>
         </div>
-      )}
+
+        <Field label="Material topics" hint="Comma separated">
+          <Input value={form.materialityTopics} onChange={e => setForm(f => ({ ...f, materialityTopics: e.target.value }))} placeholder="Climate change, Energy, Data privacy" />
+        </Field>
+
+        <div className="flex items-center gap-2">
+          <input
+            id="esg-restatement" type="checkbox" checked={form.isRestatement}
+            onChange={e => setForm(f => ({ ...f, isRestatement: e.target.checked }))}
+            className="h-4 w-4 accent-[hsl(var(--brand))]"
+          />
+          <label htmlFor="esg-restatement" className="text-[13px] text-[hsl(var(--text-2))]">
+            This report restates a previously published disclosure
+          </label>
+        </div>
+        {form.isRestatement && (
+          <Field label="Restatement reason" required>
+            <Textarea rows={2} value={form.restatementReason} onChange={e => setForm(f => ({ ...f, restatementReason: e.target.value }))} />
+          </Field>
+        )}
+
+        <Field label="Models covered" hint="Stored as registry ids; names resolve at render time.">
+          <CheckboxList
+            options={models.map(m => ({ id: m.id, label: m.name }))}
+            selected={form.modelIds}
+            onToggle={id => setForm(f => ({
+              ...f, modelIds: f.modelIds.includes(id) ? f.modelIds.filter(x => x !== id) : [...f.modelIds, id],
+            }))}
+            emptyLabel="No models in the registry yet."
+          />
+        </Field>
+        <Field label="Carbon records cited" hint="The evidence this disclosure's emission figures rest on.">
+          <CheckboxList
+            options={carbonRecords.map(c => ({
+              id: c.id,
+              label: `${c.period ?? 'Period —'} · ${c.modelId ? modelName(c.modelId) : 'no model'} · ${c.totalEmissions == null ? DASH : `${c.totalEmissions.toFixed(1)} tCO₂e`}`,
+            }))}
+            selected={form.carbonRecordIds}
+            onToggle={id => setForm(f => ({
+              ...f, carbonRecordIds: f.carbonRecordIds.includes(id) ? f.carbonRecordIds.filter(x => x !== id) : [...f.carbonRecordIds, id],
+            }))}
+            emptyLabel="No carbon records to cite yet."
+          />
+        </Field>
+        <Field label="Energy readings cited">
+          <CheckboxList
+            options={energyMetrics.map(e => ({
+              id: e.id,
+              label: `${e.period ?? 'Period —'} · ${e.modelId ? modelName(e.modelId) : (e.modelName ?? 'no model')} · ${e.kwh == null ? DASH : `${Math.round(e.kwh).toLocaleString()} kWh`}`,
+            }))}
+            selected={form.energyMetricIds}
+            onToggle={id => setForm(f => ({
+              ...f, energyMetricIds: f.energyMetricIds.includes(id) ? f.energyMetricIds.filter(x => x !== id) : [...f.energyMetricIds, id],
+            }))}
+            emptyLabel="No energy readings to cite yet."
+          />
+        </Field>
+
+        <Field label="Highlights" hint="One per line">
+          <Textarea rows={3} value={form.highlights} onChange={e => setForm(f => ({ ...f, highlights: e.target.value }))} />
+        </Field>
+        <Field label="Methodology">
+          <Textarea rows={2} value={form.methodology} onChange={e => setForm(f => ({ ...f, methodology: e.target.value }))} />
+        </Field>
+      </FormDialog>
 
       <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={o => !o && setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        title="Delete ESG Report?"
-        description={`Permanently remove "${deleteTarget?.title}". This action cannot be undone.`}
+        open={!!toDelete}
+        onOpenChange={o => !o && setToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete ESG report?"
+        description={`Permanently remove "${toDelete?.title ?? ''}". This cannot be undone.`}
         isDestructive
-        confirmLabel="Delete Report"
+        confirmLabel="Delete report"
       />
+    </div>
+  )
+}
+
+/** Bounded, scrollable multi-select for the evidence-chain fields. */
+function CheckboxList({ options, selected, onToggle, emptyLabel }: {
+  options: { id: string; label: string }[]
+  selected: string[]
+  onToggle: (id: string) => void
+  emptyLabel: string
+}) {
+  if (options.length === 0) {
+    return <p className="text-[11px] text-[hsl(var(--text-4))] border border-dashed border-[hsl(var(--border))] p-3">{emptyLabel}</p>
+  }
+  return (
+    <div className="max-h-32 overflow-y-auto border border-[hsl(var(--border))] p-2 space-y-1">
+      {options.map(o => (
+        <label key={o.id} className="flex items-center gap-2 text-xs text-[hsl(var(--text-2))] cursor-pointer">
+          <input
+            type="checkbox"
+            checked={selected.includes(o.id)}
+            onChange={() => onToggle(o.id)}
+            className="h-3.5 w-3.5 accent-[hsl(var(--brand))]"
+          />
+          <span className="truncate">{o.label}</span>
+        </label>
+      ))}
     </div>
   )
 }

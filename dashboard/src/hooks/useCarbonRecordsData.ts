@@ -1,40 +1,56 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchAllCarbonRecords, fetchCarbonRecordsById, upsertCarbonRecords, deleteCarbonRecords } from '@/services/carbonRecordsService'
-import { toast } from 'sonner'
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// React Query wrapper for the Carbon Ledger. Reads are cached and shared;
+// mutations invalidate the list. The service throws on write failure, so a
+// rejected write lands in `onError` at the call site instead of being reported
+// as a success.
+//
+// TOASTS ARE OWNED BY THE PAGE (as in useModelsData): the hook used to fire a
+// generic "Record saved" in onSuccess while the page fired its own toast
+// BEFORE awaiting, so a failed save produced two success toasts and no error.
 
-export function useCarbonRecordsData(filters: Record<string, any> = {}) {
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import {
+  fetchCarbonRecords, fetchCarbonRecord, upsertCarbonRecord, deleteCarbonRecord,
+  type CarbonRecord,
+} from '@/services/carbonRecordsService'
+
+export function useCarbonRecordsData(filters: { modelId?: string; period?: string } = {}) {
   const qc = useQueryClient()
-  const { data: items = [], isLoading, error } = useQuery({
-    queryKey: ['carbonRecords', filters],
-    queryFn: () => fetchAllCarbonRecords(filters),
+  const query = useQuery({
+    queryKey: ['carbon-records', filters],
+    queryFn: () => fetchCarbonRecords(filters),
     staleTime: 30_000,
   })
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['carbon-records'] })
 
   const saveMutation = useMutation({
-    mutationFn: (record: any) => upsertCarbonRecords(record),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['carbonRecords'] }); toast.success('Record saved') },
-    onError: () => toast.error('Failed to save record'),
+    mutationFn: (record: Partial<CarbonRecord>) => upsertCarbonRecord(record),
+    onSuccess: invalidate,
   })
-
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteCarbonRecords(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['carbonRecords'] }); toast.success('Record deleted') },
-    onError: () => toast.error('Failed to delete record'),
+    mutationFn: (id: string) => deleteCarbonRecord(id),
+    onSuccess: invalidate,
   })
 
   return {
-    items, isLoading, error,
-    saveCarbonRecords: saveMutation.mutateAsync,
-    removeCarbonRecords: deleteMutation.mutateAsync,
+    items: query.data ?? [],
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error as Error | null,
+    refetch: query.refetch,
+    saveCarbonRecord: saveMutation.mutateAsync,
+    removeCarbonRecord: deleteMutation.mutateAsync,
     isSaving: saveMutation.isPending,
     isDeleting: deleteMutation.isPending,
   }
 }
 
-export function useCarbonRecordsById(id: string) {
+export function useCarbonRecord(id: string | undefined) {
   return useQuery({
-    queryKey: ['carbonRecords', id],
-    queryFn: () => fetchCarbonRecordsById(id),
+    queryKey: ['carbon-record', id],
+    queryFn: () => fetchCarbonRecord(id as string),
     enabled: !!id,
     staleTime: 30_000,
   })

@@ -6,7 +6,9 @@ import { supabase } from '@/lib/supabase';
  * risk & security modules (risks, incidents, HITL, financial quantification,
  * threat feed, red-team findings, model arena) and the compliance cluster
  * (conformity assessments, evidence vault, post-market monitoring plans,
- * compliance controls, transparency reports, AI literacy trainings).
+ * compliance controls, transparency reports, AI literacy trainings) and the
+ * sustainability cluster (carbon records, energy readings, ESG disclosures) —
+ * so a model detail page can reach its own footprint.
  *
  * Every source is queried independently and tolerates failure: a source whose
  * query errors reports `count: null` ("unavailable") instead of throwing the
@@ -48,6 +50,9 @@ export interface ModelBacklinks {
   controls: BacklinkSource;
   transparencyReports: BacklinkSource;
   aiTrainings: BacklinkSource;
+  carbonRecords: BacklinkSource;
+  energyMetrics: BacklinkSource;
+  esgReports: BacklinkSource;
 }
 
 const UNAVAILABLE: BacklinkSource = { count: null, items: [] };
@@ -129,6 +134,7 @@ async function fetchModelBacklinks(modelId: string): Promise<ModelBacklinks> {
     securityThreats, redTeamFindings, arenaRuns,
     conformityAssessments, evidence, postMarketPlans,
     controls, transparencyReports, aiTrainings,
+    carbonRecords, energyMetrics, esgReports,
   ] = await Promise.all([
     // linked_model_ids is text[] — the uuid is matched as a string.
     safeSource(
@@ -275,12 +281,65 @@ async function fetchModelBacklinks(modelId: string): Promise<ModelBacklinks> {
         note: str(r.audience),
       }),
     ),
+    // carbon_records.model_id is uuid. The measurement basis travels with the
+    // row so a backlink never presents an estimate as a measurement, and a
+    // NULL total shows as "no total reported" rather than as 0.
+    safeSource(
+      () => supabase.from('carbon_records')
+        .select('id,period,total_emissions,measurement_method,verified', { count: 'exact' })
+        .eq('model_id', modelId)
+        .order('created_at', { ascending: false })
+        .limit(3),
+      r => ({
+        id: String(r.id),
+        ref: null,
+        title: str(r.period) ? `Carbon — ${str(r.period)}` : 'Carbon record',
+        severity: null,
+        status: str(r.measurement_method) ?? 'basis not declared',
+        note: typeof r.total_emissions === 'number'
+          ? `${r.total_emissions.toFixed(1)} tCO₂e`
+          : 'no total reported',
+      }),
+    ),
+    // energy_metrics.model_id is uuid (model_name is the legacy label only).
+    safeSource(
+      () => supabase.from('energy_metrics')
+        .select('id,period,kwh,measurement_source', { count: 'exact' })
+        .eq('model_id', modelId)
+        .order('created_at', { ascending: false })
+        .limit(3),
+      r => ({
+        id: String(r.id),
+        ref: null,
+        title: str(r.period) ? `Energy — ${str(r.period)}` : 'Energy reading',
+        severity: null,
+        status: str(r.measurement_source) ?? 'source not declared',
+        note: typeof r.kwh === 'number' ? `${Math.round(r.kwh).toLocaleString()} kWh` : 'no kWh reported',
+      }),
+    ),
+    // esg_reports.model_ids is uuid[] — the disclosures covering this model.
+    safeSource(
+      () => supabase.from('esg_reports')
+        .select('id,title,period,status', { count: 'exact' })
+        .contains('model_ids', [modelId])
+        .order('created_at', { ascending: false })
+        .limit(3),
+      r => ({
+        id: String(r.id),
+        ref: null,
+        title: str(r.title) ?? 'Untitled ESG report',
+        severity: null,
+        status: str(r.status),
+        note: str(r.period),
+      }),
+    ),
   ]);
 
   return {
     risks, incidents, hitlReviews, financialRisks, securityThreats, redTeamFindings, arenaRuns,
     conformityAssessments, evidence, postMarketPlans,
     controls, transparencyReports, aiTrainings,
+    carbonRecords, energyMetrics, esgReports,
   };
 }
 

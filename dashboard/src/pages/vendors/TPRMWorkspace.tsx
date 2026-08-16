@@ -1,448 +1,447 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// TPRMWorkspace — the operational view across the whole third-party estate.
+//
+// The previous version made ZERO backend calls: it imported VENDORS,
+// VENDOR_ASSESSMENTS, VENDOR_SLAS, TPRM_ISSUES and VENDOR_DOCUMENTS straight
+// from the seed file, so all six "executive KPIs" and all three red alert
+// cards were counts over mock arrays, and every tile navigated to
+// /vendors/<seed-code>, which is a dead end. Everything here now comes from
+// the real hooks.
+//
+// Three smaller fixes worth naming:
+//   * `activeSection` was set in three places and never read, leaving two KPI
+//     tiles and an alert card inert. Every tile now navigates somewhere real.
+//   * `--s-er-bg` (a BACKGROUND token) was used as a text colour in four
+//     places, producing background-on-background text. Tones now come from the
+//     shared `vendorUi` helpers, which pair bg/fg/border correctly.
+//   * `criticality()` fell back to `map.moderate`, silently DOWNGRADING any
+//     vendor whose tier was unknown. Unknown is now its own bucket.
+
+import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
-  Buildings, Warning, CheckCircle, XCircle, Clock, ArrowRight,
-  Shield, FileText, ClipboardText, Gauge, ArrowSquareOut,
-  Siren, Eye, FileMagnifyingGlass,
-} from '@phosphor-icons/react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
+  Buildings, Warning, CheckCircle, Clock, ArrowRight, ClipboardText,
+  Gauge, FileArrowUp, ShieldWarning, Siren,
+} from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { useVendorsData } from '@/hooks/useVendorsData'
+import { useVendorAssessments } from '@/hooks/useVendorAssessments'
+import { useVendorSlas } from '@/hooks/useVendorSlas'
+import { useVendorDocuments } from '@/hooks/useVendorDocuments'
+import { documentsExpiringWithin } from '@/services/vendorDocumentService'
+import type { VendorRecord } from '@/services/vendorService'
 import {
-  VENDORS, VENDOR_ASSESSMENTS, VENDOR_SLAS, TPRM_ISSUES, VENDOR_DOCUMENTS,
-  Vendor, VendorAssessment, VendorSLA, TPRMIssue, VendorDocument, formatDate,
-} from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+  Pill, LinkPill, SectionTitle, tierTone, tierLabel, dash, fmtDate, daysUntil, tone,
+} from './vendorUi'
 
-function criticality(v: Vendor) {
-  const map: Record<string, { bg: string; color: string; label: string }> = {
-    critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Tier 1 · Critical' },
-    high: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Tier 2 · High' },
-    moderate: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Tier 3 · Moderate' },
-    low: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Tier 4 · Low' },
-  };
-  return map[v.criticality] ?? map.moderate;
-}
+/** Tier buckets. 'unknown' is a real bucket — an untiered critical vendor must
+ *  be visible, not folded into "moderate". */
+const TIERS = ['critical', 'high', 'medium', 'low', 'unknown'] as const
 
-function slaStatusStyle(status: VendorSLA['status']) {
-  if (status === 'healthy') return { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Healthy' };
-  if (status === 'at_risk') return { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'At Risk' };
-  if (status === 'breached') return { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Breached' };
-  return { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))', label: status };
-}
-
-function issueStyle(sev: string) {
-  if (sev === 'critical') return 'hsl(var(--destructive))';
-  if (sev === 'high') return 'hsl(var(--s-er-bg))';
-  if (sev === 'medium') return 'hsl(var(--s-wn-tx))';
-  return 'hsl(var(--s-ok-tx))';
-}
-
-function docStatus(status: VendorDocument['status']) {
-  if (status === 'valid') return { color: 'hsl(var(--s-ok-tx))', label: 'Valid' };
-  if (status === 'expiring_soon') return { color: 'hsl(var(--s-wn-tx))', label: 'Expiring Soon' };
-  if (status === 'expired') return { color: 'hsl(var(--destructive))', label: 'Expired' };
-  if (status === 'requested') return { color: 'hsl(var(--s-in-tx))', label: 'Requested' };
-  return { color: 'hsl(var(--destructive))', label: 'Missing' };
-}
-
-function assessmentStatusLabel(status: VendorAssessment['status']) {
-  const map: Record<string, string> = {
-    draft: 'Draft', in_progress: 'In Progress', submitted: 'Submitted',
-    under_review: 'Under Review', approved: 'Approved',
-    approved_with_conditions: 'Approved w/ Conditions',
-    rejected: 'Rejected', expired: 'Expired',
-  };
-  return map[status] ?? status;
+function bucketOf(v: VendorRecord): (typeof TIERS)[number] {
+  const t = v.riskTierLabel
+  return t && (TIERS as readonly string[]).includes(t) ? (t as (typeof TIERS)[number]) : 'unknown'
 }
 
 export default function TPRMWorkspace() {
-  const { orgName } = useSettingsStore();
-  const navigate = useNavigate();
-  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const navigate = useNavigate()
 
-  const criticalVendors = VENDORS.filter(v => v.criticality === 'critical');
-  const highVendors = VENDORS.filter(v => v.criticality === 'high');
-  const moderateVendors = VENDORS.filter(v => v.criticality === 'moderate');
-  const lowVendors = VENDORS.filter(v => v.criticality === 'low');
+  const vendorsQ = useVendorsData()
+  const assessmentsQ = useVendorAssessments()
+  const slasQ = useVendorSlas()
+  const documentsQ = useVendorDocuments()
 
-  const breachedSLAs = VENDOR_SLAS.filter(s => s.status === 'breached');
-  const atRiskSLAs = VENDOR_SLAS.filter(s => s.status === 'at_risk');
-  const openIssues = TPRM_ISSUES.filter(i => ['open', 'in_progress'].includes(i.status));
-  const criticalIssues = openIssues.filter(i => i.severity === 'critical');
+  const vendors = vendorsQ.vendors
+  const assessments = assessmentsQ.assessments
+  const slas = slasQ.slas
+  const documents = documentsQ.documents
 
-  const now = Date.now();
-  const overdue30 = VENDORS.filter(v => {
-    const due = new Date(v.reassessmentDue).getTime();
-    return due < now + 30 * 24 * 60 * 60 * 1000;
-  });
+  const loading = vendorsQ.isLoading || assessmentsQ.isLoading || slasQ.isLoading || documentsQ.isLoading
+  const failed = [vendorsQ, assessmentsQ, slasQ, documentsQ].find((q) => q.isError)
 
-  const expDocs = VENDOR_DOCUMENTS.filter(d => ['expired', 'expiring_soon', 'missing'].includes(d.status));
-  const missingDPA = VENDORS.filter(v => v.dpaStatus === 'not_signed');
-  const pendingAssessments = VENDOR_ASSESSMENTS.filter(a => ['in_progress', 'submitted', 'under_review'].includes(a.status));
-  const dueAssessments = VENDOR_ASSESSMENTS.filter(a => {
-    if (['approved', 'rejected'].includes(a.status)) return false;
-    return new Date(a.dueDate).getTime() < now + 30 * 24 * 60 * 60 * 1000;
-  });
+  const vendorName = useMemo(() => new Map(vendors.map((v) => [v.id, v.name])), [vendors])
+  const resolve = (id?: string | null) => (id ? (vendorName.get(id) ?? 'Unavailable') : 'Unavailable')
 
-  const tierGroups = [
-    { label: 'Tier 1 — Critical', vendors: criticalVendors, color: 'hsl(var(--destructive))', bg: 'hsl(var(--s-er-bg))' },
-    { label: 'Tier 2 — High', vendors: highVendors, color: 'hsl(var(--s-er-bg))', bg: 'hsl(var(--s-er-bg))' },
-    { label: 'Tier 3 — Moderate', vendors: moderateVendors, color: 'hsl(var(--s-wn-tx))', bg: 'hsl(var(--s-wn-bg))' },
-    { label: 'Tier 4 — Low', vendors: lowVendors, color: 'hsl(var(--s-ok-tx))', bg: 'transparent' },
-  ];
+  const byTier = useMemo(() => {
+    const m = new Map<(typeof TIERS)[number], VendorRecord[]>()
+    for (const t of TIERS) m.set(t, [])
+    for (const v of vendors) m.get(bucketOf(v))!.push(v)
+    return m
+  }, [vendors])
+
+  const breachedSlas = slas.filter((s) => s.derivedStatus === 'breached')
+  const atRiskSlas = slas.filter((s) => s.derivedStatus === 'at_risk')
+  const unmeasuredSlas = slas.filter((s) => s.derivedStatus === 'unmeasured')
+
+  const openAssessments = assessments.filter((a) =>
+    ['draft', 'in_progress', 'submitted', 'under_review'].includes(a.status))
+  const assessmentsWithDue = assessments.filter((a) => !!a.dueAt)
+  const overdueAssessments = assessmentsWithDue.filter((a) => {
+    const d = daysUntil(a.dueAt)
+    return d !== null && d < 0 && !['approved', 'rejected', 'expired'].includes(a.status)
+  })
+
+  // Only vendors that carry a reassessment date participate — the rest are
+  // "no cadence set", which is a different problem from "overdue".
+  const vendorsWithCadence = vendors.filter((v) => !!v.reassessmentDueAt)
+  const reassessmentOverdue = vendorsWithCadence.filter((v) => (daysUntil(v.reassessmentDueAt) ?? 0) < 0)
+  const reassessmentDue30 = vendorsWithCadence.filter((v) => {
+    const d = daysUntil(v.reassessmentDueAt)
+    return d !== null && d >= 0 && d <= 30
+  })
+  const noCadence = vendors.length - vendorsWithCadence.length
+
+  const expiringDocs = documentsExpiringWithin(documents, 90)
+  const expiredDocs = documents.filter((d) => {
+    const days = daysUntil(d.expiresAt)
+    return days !== null && days < 0
+  })
+  const dpaUnsigned = vendors.filter((v) => v.dpaStatus === 'not_signed')
+
+  const kpis: StatCardRowItem[] = [
+    {
+      label: 'Vendors', value: vendors.length, icon: <Buildings size={18} />,
+      href: '/vendors',
+      description: `${vendors.length} vendors in the register`,
+    },
+    {
+      label: 'Critical / high tier',
+      value: vendors.length ? (byTier.get('critical')!.length + byTier.get('high')!.length) : '—',
+      icon: <ShieldWarning size={18} />, href: '/vendors',
+      isPositiveUp: false,
+      description: `${byTier.get('unknown')!.length} vendors are untiered`,
+    },
+    {
+      label: 'SLAs breached',
+      value: slas.length ? breachedSlas.length : '—',
+      icon: <Gauge size={18} />, href: '/vendors/sla?status=breached',
+      isPositiveUp: false,
+      description: `${unmeasuredSlas.length} of ${slas.length} SLAs have never been measured`,
+    },
+    {
+      label: 'Assessments in flight',
+      value: assessments.length ? openAssessments.length : '—',
+      icon: <ClipboardText size={18} />, href: '/vendors/assessments',
+      description: `${overdueAssessments.length} past their due date`,
+    },
+  ]
+
+  const kpis2: StatCardRowItem[] = [
+    {
+      label: 'Reassessment overdue',
+      value: vendorsWithCadence.length ? reassessmentOverdue.length : '—',
+      icon: <Clock size={18} />, href: '/vendors',
+      isPositiveUp: false,
+      description: vendorsWithCadence.length
+        ? `${reassessmentDue30.length} more fall due within 30 days`
+        : 'No vendor has a reassessment date set',
+    },
+    {
+      label: 'Documents expiring < 90d',
+      value: documents.length ? expiringDocs.length : '—',
+      icon: <FileArrowUp size={18} />, href: '/vendor-upload',
+      isPositiveUp: false,
+      description: `${expiredDocs.length} already expired`,
+    },
+    {
+      label: 'DPA not signed',
+      value: vendors.length ? dpaUnsigned.length : '—',
+      icon: <Warning size={18} />, href: '/vendors',
+      isPositiveUp: false,
+      description: 'Vendors positively recorded as having no signed DPA',
+    },
+    {
+      label: 'No reassessment cadence',
+      value: vendors.length ? noCadence : '—',
+      icon: <CheckCircle size={18} />, href: '/vendors',
+      isPositiveUp: false,
+      description: 'Vendors with no scheduled reassessment',
+    },
+  ]
+
+  if (loading) return <PageSkeleton title="TPRM Workspace" rows={6} />
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>TPRM Workspace</h1>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Third-Party Risk Management — operational command center</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => navigate('/vendors')} style={{ borderRadius: 0 }}>
-            <Buildings size={14} />All Vendors
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/vendors/assessments')} style={{ borderRadius: 0 }}>
-            <ClipboardText size={14} />Assessments
-          </Button>
-          <Button variant="outline" onClick={() => navigate('/vendors/sla')} style={{ borderRadius: 0 }}>
-            <Gauge size={14} />SLA Monitor
-          </Button>
-        </div>
-      </div>
-
-      {/* Critical Alerts Row */}
-      {(breachedSLAs.length > 0 || criticalIssues.length > 0 || missingDPA.length > 0) && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {breachedSLAs.length > 0 && (
-            <div className="p-4 flex items-start gap-3 cursor-pointer" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))' }}
-              onClick={() => navigate('/vendors/sla')}>
-              <XCircle size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
-              <div>
-                <p className="text-sm font-bold text-destructive">{breachedSLAs.length} SLA Breach{breachedSLAs.length > 1 ? 'es' : ''}</p>
-                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-2))' }}>{breachedSLAs.map(s => s.vendorName).join(', ')}</p>
-              </div>
-              <ArrowRight size={14} style={{ color: 'hsl(var(--destructive))', marginLeft: 'auto', marginTop: 4 }} />
-            </div>
-          )}
-          {criticalIssues.length > 0 && (
-            <div className="p-4 flex items-start gap-3 cursor-pointer" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))' }}
-              onClick={() => setActiveSection('issues')}>
-              <Siren size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
-              <div>
-                <p className="text-sm font-bold text-destructive">{criticalIssues.length} Critical TPRM Issue{criticalIssues.length > 1 ? 's' : ''}</p>
-                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-2))' }}>{criticalIssues.map(i => i.vendorName).join(', ')}</p>
-              </div>
-              <ArrowRight size={14} style={{ color: 'hsl(var(--destructive))', marginLeft: 'auto', marginTop: 4 }} />
-            </div>
-          )}
-          {missingDPA.length > 0 && (
-            <div className="p-4 flex items-start gap-3 cursor-pointer" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))' }}
-              onClick={() => navigate('/vendors')}>
-              <Shield size={20} style={{ color: 'hsl(var(--s-wn-tx))', flexShrink: 0, marginTop: 1 }} />
-              <div>
-                <p className="text-sm font-bold" style={{ color: 'hsl(var(--s-wn-tx))' }}>{missingDPA.length} Missing DPA — GDPR Art. 28</p>
-                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-2))' }}>{missingDPA.map(v => v.name).join(', ')}</p>
-              </div>
-              <ArrowRight size={14} style={{ color: 'hsl(var(--s-wn-tx))', marginLeft: 'auto', marginTop: 4 }} />
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Executive KPI Row */}
-      <div className="grid grid-cols-2 lg:grid-cols-6 gap-3">
-        {[
-          { label: 'Total Vendors', value: VENDORS.length, color: 'hsl(var(--text-1))', icon: Buildings, action: () => navigate('/vendors') },
-          { label: 'Critical Vendors', value: criticalVendors.length, color: 'hsl(var(--destructive))', icon: Warning, action: () => {} },
-          { label: 'Reassessment Due', value: overdue30.length, color: 'hsl(var(--s-wn-tx))', icon: Clock, action: () => {} },
-          { label: 'Breached SLAs', value: breachedSLAs.length, color: 'hsl(var(--destructive))', icon: XCircle, action: () => navigate('/vendors/sla') },
-          { label: 'Open Issues', value: openIssues.length, color: openIssues.length > 5 ? 'hsl(var(--destructive))' : 'hsl(var(--s-wn-tx))', icon: FileMagnifyingGlass, action: () => setActiveSection('issues') },
-          { label: 'Expiring Docs', value: expDocs.length, color: expDocs.length > 3 ? 'hsl(var(--destructive))' : 'hsl(var(--s-wn-tx))', icon: FileText, action: () => setActiveSection('docs') },
-        ].map(s => (
-          <Card key={s.label} onClick={s.action} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', cursor: 'pointer' }} className="hover:bg-muted/20 transition-colors">
-            <CardContent className="pt-3 pb-3">
-              <s.icon size={16} style={{ color: s.color, marginBottom: 4 }} />
-              <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
-              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{s.label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Main Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Vendor Risk Tiers */}
-        <div className="lg:col-span-2 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-sm font-bold" style={{ color: 'hsl(var(--text-1))' }}>Vendor Risk Tiers</h2>
-            <button onClick={() => navigate('/vendors')} className="text-xs flex items-center gap-1 hover:underline" style={{ color: 'hsl(var(--brand))' }}>
-              View all <ArrowSquareOut size={11} />
-            </button>
+      <PageHeader
+        title="TPRM Workspace"
+        subtitle="Third-party risk management — the whole estate in one view"
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: 'Vendors', href: '/vendors' },
+          { label: 'TPRM' },
+        ]}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => navigate('/vendors')}>
+              <Buildings size={14} /> Registry
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/vendors/assessments')}>
+              <ClipboardText size={14} /> Assessments
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/vendors/sla')}>
+              <Gauge size={14} /> SLAs
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => navigate('/vendor-upload')}>
+              <FileArrowUp size={14} /> Documents
+            </Button>
           </div>
-          {tierGroups.filter(g => g.vendors.length > 0).map(group => (
-            <Card key={group.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardHeader className="pb-2 pt-3 px-4">
-                <CardTitle className="text-xs font-bold flex items-center justify-between" style={{ color: group.color }}>
-                  <span>{group.label}</span>
-                  <span>{group.vendors.length} vendor{group.vendors.length !== 1 ? 's' : ''}</span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-0">
-                {group.vendors.map((v, i) => {
-                  const vAssessments = VENDOR_ASSESSMENTS.filter(a => a.vendorId === v.id);
-                  const vSLAs = VENDOR_SLAS.filter(s => s.vendorId === v.id);
-                  const vIssues = TPRM_ISSUES.filter(ti => ti.vendorId === v.id && ['open', 'in_progress'].includes(ti.status));
-                  const breachedVSLA = vSLAs.filter(s => s.status === 'breached').length;
-                  const lastAssessment = vAssessments.sort((a, b) => (b.approvedAt ?? b.dueDate).localeCompare(a.approvedAt ?? a.dueDate))[0];
+        }
+      />
+
+      {failed ? (
+        <ErrorState
+          title="Could not load the third-party estate"
+          error={failed.error}
+          onRetry={() => { vendorsQ.refetch(); assessmentsQ.refetch(); slasQ.refetch(); documentsQ.refetch() }}
+        />
+      ) : vendors.length === 0 ? (
+        <EmptyState
+          icon={<Buildings size={32} weight="duotone" />}
+          title="No vendors registered yet"
+          description="The TPRM workspace aggregates vendors, their assessments, SLAs and evidence. Register your first vendor to populate it."
+          action={<Button size="sm" onClick={() => navigate('/vendors')}>Open the vendor registry</Button>}
+        />
+      ) : (
+        <>
+          <StatCardRow cards={kpis} />
+          <StatCardRow cards={kpis2} />
+
+          {/* ── Alerts. Each one is a count over real rows, and each links to
+                the filtered list that produced it. ─────────────────────────── */}
+          {(breachedSlas.length > 0 || reassessmentOverdue.length > 0 || expiredDocs.length > 0) && (
+            <div className="grid gap-3 md:grid-cols-3">
+              {breachedSlas.length > 0 && (
+                <AlertCard
+                  icon={<Siren size={16} />}
+                  title={`${breachedSlas.length} SLA${breachedSlas.length > 1 ? 's' : ''} in breach`}
+                  body={breachedSlas.slice(0, 3).map((s) => `${resolve(s.vendorId)} · ${s.metric.replace(/_/g, ' ')}`)}
+                  onOpen={() => navigate('/vendors/sla?status=breached')}
+                />
+              )}
+              {reassessmentOverdue.length > 0 && (
+                <AlertCard
+                  icon={<Clock size={16} />}
+                  title={`${reassessmentOverdue.length} reassessment${reassessmentOverdue.length > 1 ? 's' : ''} overdue`}
+                  body={reassessmentOverdue.slice(0, 3).map((v) => `${v.name} · due ${fmtDate(v.reassessmentDueAt)}`)}
+                  onOpen={() => navigate('/vendors')}
+                />
+              )}
+              {expiredDocs.length > 0 && (
+                <AlertCard
+                  icon={<FileArrowUp size={16} />}
+                  title={`${expiredDocs.length} document${expiredDocs.length > 1 ? 's' : ''} expired`}
+                  body={expiredDocs.slice(0, 3).map((d) => `${resolve(d.vendorId)} · ${d.docType ?? 'Document'}`)}
+                  onOpen={() => navigate('/vendor-upload')}
+                />
+              )}
+            </div>
+          )}
+
+          {/* ── Portfolio by tier ────────────────────────────────────────── */}
+          <Card style={{ borderRadius: 0, border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-5">
+              <SectionTitle
+                action={
+                  <Button variant="ghost" size="sm" onClick={() => navigate('/vendors')}>
+                    Open registry <ArrowRight size={13} />
+                  </Button>
+                }
+              >
+                Portfolio by risk tier
+              </SectionTitle>
+              <div className="mt-4 space-y-4">
+                {TIERS.map((t) => {
+                  const group = byTier.get(t)!
+                  if (group.length === 0) return null
                   return (
-                    <div key={v.id} className="flex items-center justify-between px-4 py-3 hover:bg-muted/30 transition-colors cursor-pointer"
-                      style={{ borderTop: i > 0 ? '1px solid hsl(var(--border))' : 'none' }}
-                      onClick={() => navigate(`/vendors/${v.id}`)}>
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div style={{ width: 32, height: 32, background: group.bg, border: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                          <Buildings size={14} style={{ color: group.color }} />
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-xs font-semibold truncate" style={{ color: 'hsl(var(--text-1))' }}>{v.name}</p>
-                          <p className="text-xs truncate" style={{ color: 'hsl(var(--text-4))' }}>{v.category} · {v.aiUse.replace('_', ' ')}</p>
-                        </div>
+                    <div key={t}>
+                      <div className="flex items-center gap-2">
+                        <Pill tone={t === 'unknown' ? tone('neutral') : tierTone(t)}>
+                          {t === 'unknown' ? 'Untiered' : tierLabel(t)}
+                        </Pill>
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                          {group.length} vendor{group.length > 1 ? 's' : ''}
+                        </span>
                       </div>
-                      <div className="flex items-center gap-2 flex-shrink-0 ml-3">
-                        {breachedVSLA > 0 && <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>SLA Breach</Badge>}
-                        {v.dpaStatus === 'not_signed' && <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>No DPA</Badge>}
-                        {vIssues.length > 0 && <span className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>{vIssues.length} issue{vIssues.length > 1 ? 's' : ''}</span>}
-                        <span className="text-xs font-bold" style={{ color: v.score >= 80 ? 'hsl(var(--s-ok-tx))' : v.score >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }}>{v.score}</span>
-                        {lastAssessment && (
-                          <Badge style={{
-                            background: lastAssessment.status === 'approved' ? 'hsl(var(--s-ok-bg))' : lastAssessment.status === 'approved_with_conditions' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))',
-                            color: lastAssessment.status === 'approved' ? 'hsl(var(--s-ok-tx))' : lastAssessment.status === 'approved_with_conditions' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
-                            borderRadius: 0, fontSize: 9,
-                          }}>{assessmentStatusLabel(lastAssessment.status)}</Badge>
-                        )}
-                        <ArrowRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                      <div className="mt-2 flex flex-wrap gap-1.5">
+                        {group.map((v) => (
+                          <LinkPill key={v.id} to={`/vendors/${v.id}`}>{v.name || 'Unnamed vendor'}</LinkPill>
+                        ))}
                       </div>
                     </div>
-                  );
+                  )
                 })}
+                {byTier.get('unknown')!.length > 0 && (
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                    Untiered vendors are shown as their own group rather than assumed moderate — an untiered
+                    critical supplier is a gap, not a mid-tier one.
+                  </p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* ── Reassessment calendar ─────────────────────────────────────── */}
+          <Card style={{ borderRadius: 0, border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-5">
+              <SectionTitle>Reassessment calendar</SectionTitle>
+              {vendorsWithCadence.length === 0 ? (
+                <p className="mt-3 text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+                  No vendor has a reassessment date recorded. Set a cadence on the vendor record and the schedule
+                  appears here.
+                </p>
+              ) : (
+                <div className="mt-3 space-y-2">
+                  {[...vendorsWithCadence]
+                    .sort((a, b) => (a.reassessmentDueAt ?? '').localeCompare(b.reassessmentDueAt ?? ''))
+                    .slice(0, 12)
+                    .map((v) => {
+                      const d = daysUntil(v.reassessmentDueAt)
+                      const overdue = d !== null && d < 0
+                      return (
+                        <div key={v.id} className="flex items-center justify-between gap-4 p-3" style={{ border: '1px solid hsl(var(--border))' }}>
+                          <div className="flex min-w-0 items-center gap-3">
+                            <Pill tone={tierTone(v.riskTierLabel)}>{tierLabel(v.riskTierLabel)}</Pill>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{v.name}</p>
+                              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                                Manager {v.vendorManager || '—'} · cadence {dash(v.reassessmentCadenceMonths, ' months')}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <span
+                              className="whitespace-nowrap text-xs"
+                              style={{ color: overdue ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-2))' }}
+                            >
+                              {fmtDate(v.reassessmentDueAt)}
+                              {d !== null && (overdue ? ` · ${Math.abs(d)}d overdue` : ` · in ${d}d`)}
+                            </span>
+                            <LinkPill to={`/vendors/${v.id}`}>Open</LinkPill>
+                          </div>
+                        </div>
+                      )
+                    })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* ── Assessment & SLA queues ───────────────────────────────────── */}
+          <div className="grid gap-4 md:grid-cols-2">
+            <Card style={{ borderRadius: 0, border: '1px solid hsl(var(--border))' }}>
+              <CardContent className="p-5">
+                <SectionTitle
+                  action={
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/vendors/assessments')}>
+                      All <ArrowRight size={13} />
+                    </Button>
+                  }
+                >
+                  Assessments awaiting a decision
+                </SectionTitle>
+                {openAssessments.length === 0 ? (
+                  <p className="mt-3 text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+                    Nothing is awaiting a decision.
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-2">
+                    {openAssessments.slice(0, 6).map((a) => (
+                      <div key={a.id} className="flex items-center justify-between gap-3 p-2" style={{ border: '1px solid hsl(var(--border))' }}>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm" style={{ color: 'hsl(var(--text-1))' }}>
+                            {resolve(a.vendorId)}
+                          </p>
+                          <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                            {a.status.replace(/_/g, ' ')} · owner {a.owner || '—'} · due {fmtDate(a.dueAt)}
+                          </p>
+                        </div>
+                        <LinkPill to={`/vendors/assessments?open=${a.id}`}>Open</LinkPill>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
             </Card>
-          ))}
-        </div>
 
-        {/* Right Column */}
-        <div className="space-y-4">
-          {/* Assessments Due */}
-          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardHeader className="pb-2 pt-3 px-4">
-              <CardTitle className="text-xs font-bold flex items-center justify-between" style={{ color: 'hsl(var(--text-1))' }}>
-                <span className="flex items-center gap-1.5"><Clock size={13} />Assessments Due (30d)</span>
-                <button onClick={() => navigate('/vendors/assessments')} className="text-xs hover:underline" style={{ color: 'hsl(var(--brand))' }}>View all</button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {dueAssessments.length === 0 ? (
-                <p className="text-xs text-center py-6" style={{ color: 'hsl(var(--text-4))' }}>No assessments due in next 30 days</p>
-              ) : dueAssessments.slice(0, 5).map((a, i) => (
-                <div key={a.id} className="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-muted/20"
-                  style={{ borderTop: i > 0 ? '1px solid hsl(var(--border))' : 'none' }}
-                  onClick={() => navigate('/vendors/assessments')}>
-                  <div>
-                    <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{a.vendorName} — {a.assessmentType}</p>
-                    <p className="text-xs" style={{ color: new Date(a.dueDate) < new Date() ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))' }}>Due {formatDate(a.dueDate)}</p>
+            <Card style={{ borderRadius: 0, border: '1px solid hsl(var(--border))' }}>
+              <CardContent className="p-5">
+                <SectionTitle
+                  action={
+                    <Button variant="ghost" size="sm" onClick={() => navigate('/vendors/sla')}>
+                      All <ArrowRight size={13} />
+                    </Button>
+                  }
+                >
+                  Service levels needing attention
+                </SectionTitle>
+                {breachedSlas.length + atRiskSlas.length === 0 ? (
+                  <p className="mt-3 text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+                    {slas.length === 0
+                      ? 'No SLAs are recorded.'
+                      : unmeasuredSlas.length === slas.length
+                        ? 'No SLA has been measured yet, so none can be evaluated.'
+                        : 'Every measured SLA is within target.'}
+                  </p>
+                ) : (
+                  <div className="mt-3 space-y-2">
+                    {[...breachedSlas, ...atRiskSlas].slice(0, 6).map((s) => (
+                      <div key={s.id} className="flex items-center justify-between gap-3 p-2" style={{ border: '1px solid hsl(var(--border))' }}>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm" style={{ color: 'hsl(var(--text-1))' }}>{resolve(s.vendorId)}</p>
+                          <p className="text-xs capitalize" style={{ color: 'hsl(var(--text-4))' }}>
+                            {s.metric.replace(/_/g, ' ')} · {dash(s.currentValue)} {s.unit} vs target {dash(s.targetValue)}
+                          </p>
+                        </div>
+                        <LinkPill to={`/vendors/sla?open=${s.id}`}>Open</LinkPill>
+                      </div>
+                    ))}
                   </div>
-                  <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 9 }}>
-                    {assessmentStatusLabel(a.status)}
-                  </Badge>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-
-          {/* Breached + At-Risk SLAs */}
-          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardHeader className="pb-2 pt-3 px-4">
-              <CardTitle className="text-xs font-bold flex items-center justify-between" style={{ color: 'hsl(var(--text-1))' }}>
-                <span className="flex items-center gap-1.5"><Gauge size={13} />SLA Status</span>
-                <button onClick={() => navigate('/vendors/sla')} className="text-xs hover:underline" style={{ color: 'hsl(var(--brand))' }}>View all</button>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {[...breachedSLAs, ...atRiskSLAs].length === 0 ? (
-                <div className="flex items-center gap-2 px-4 py-4">
-                  <CheckCircle size={16} style={{ color: 'hsl(var(--s-ok-tx))' }} />
-                  <p className="text-xs" style={{ color: 'hsl(var(--s-ok-tx))' }}>All SLAs healthy</p>
-                </div>
-              ) : [...breachedSLAs, ...atRiskSLAs].slice(0, 6).map((s, i) => {
-                const ss = slaStatusStyle(s.status);
-                return (
-                  <div key={s.id} className="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-muted/20"
-                    style={{ borderTop: i > 0 ? '1px solid hsl(var(--border))' : 'none' }}
-                    onClick={() => navigate('/vendors/sla')}>
-                    <div>
-                      <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{s.vendorName}</p>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{s.serviceName} · {s.currentPerformance}</p>
-                    </div>
-                    <Badge style={{ background: ss.bg, color: ss.color, borderRadius: 0, fontSize: 9 }}>{ss.label}</Badge>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-
-          {/* Expiring Documents */}
-          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardHeader className="pb-2 pt-3 px-4">
-              <CardTitle className="text-xs font-bold flex items-center justify-between" style={{ color: 'hsl(var(--text-1))' }}>
-                <span className="flex items-center gap-1.5"><FileText size={13} />Document Gaps</span>
-                <span className="text-xs font-normal" style={{ color: 'hsl(var(--text-4))' }}>{expDocs.length} issues</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="p-0">
-              {expDocs.length === 0 ? (
-                <p className="text-xs text-center py-6" style={{ color: 'hsl(var(--text-4))' }}>All documents valid</p>
-              ) : expDocs.slice(0, 6).map((d, i) => {
-                const ds = docStatus(d.status);
-                return (
-                  <div key={d.id} className="flex items-center justify-between px-4 py-2.5 cursor-pointer hover:bg-muted/20"
-                    style={{ borderTop: i > 0 ? '1px solid hsl(var(--border))' : 'none' }}
-                    onClick={() => navigate(`/vendors/${d.vendorId}`)}>
-                    <div>
-                      <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{d.vendorName} — {d.type}</p>
-                      {d.expiresAt && <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Expires {formatDate(d.expiresAt)}</p>}
-                    </div>
-                    <span className="text-xs font-semibold" style={{ color: ds.color }}>{ds.label}</span>
-                  </div>
-                );
-              })}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-
-      {/* Open TPRM Issues */}
-      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-sm font-bold flex items-center justify-between" style={{ color: 'hsl(var(--text-1))' }}>
-            <span className="flex items-center gap-2"><FileMagnifyingGlass size={16} />Open TPRM Issues</span>
-            <span className="text-xs font-normal" style={{ color: 'hsl(var(--text-4))' }}>{openIssues.length} open · {criticalIssues.length} critical</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                  {['Issue ID', 'Vendor', 'Title', 'Severity', 'Status', 'Source', 'Owner', 'Due Date', 'Action'].map(h => (
-                    <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {openIssues.map((issue, i) => (
-                  <tr key={issue.id} className="hover:bg-muted/20 transition-colors"
-                    style={{ borderBottom: '1px solid hsl(var(--border))', background: issue.severity === 'critical' ? 'hsl(var(--s-er-bg))' : 'transparent' }}>
-                    <td className="px-4 py-2.5">
-                      <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-2))' }}>{issue.id}</span>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <button className="text-xs font-medium hover:underline" style={{ color: 'hsl(var(--brand))' }}
-                        onClick={() => navigate(`/vendors/${issue.vendorId}`)}>
-                        {issue.vendorName}
-                      </button>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))', maxWidth: 280 }}>{issue.title}</p>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Badge style={{ background: `${issueStyle(issue.severity)}20`, color: issueStyle(issue.severity), borderRadius: 0, fontSize: 10 }}>
-                        {issue.severity}
-                      </Badge>
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Badge style={{
-                        background: issue.status === 'in_progress' ? 'hsl(var(--s-in-bg))' : 'hsl(var(--s-nt-bg))',
-                        color: issue.status === 'in_progress' ? 'hsl(var(--s-in-tx))' : 'hsl(var(--text-3))',
-                        borderRadius: 0, fontSize: 10,
-                      }}>{issue.status.replace('_', ' ')}</Badge>
-                    </td>
-                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{issue.sourceType}</td>
-                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{issue.owner}</td>
-                    <td className="px-4 py-2.5 text-xs" style={{ color: new Date(issue.dueDate) < new Date() ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))' }}>
-                      {formatDate(issue.dueDate)}
-                    </td>
-                    <td className="px-4 py-2.5">
-                      <Button variant="ghost" size="sm" className="h-7 px-2" style={{ borderRadius: 0 }}
-                        onClick={() => navigate(`/vendors/${issue.vendorId}`)}>
-                        <Eye size={13} />View
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                )}
+              </CardContent>
+            </Card>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Reassessment Calendar */}
-      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardHeader className="pb-2 pt-4 px-4">
-          <CardTitle className="text-sm font-bold" style={{ color: 'hsl(var(--text-1))' }}>
-            Reassessment Schedule — Next 90 Days
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                  {['Vendor', 'Criticality', 'Reassessment Due', 'Days Remaining', 'Last Reviewed', 'Owner', 'Action'].map(h => (
-                    <th key={h} className="px-4 py-2.5 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {overdue30.sort((a, b) => new Date(a.reassessmentDue).getTime() - new Date(b.reassessmentDue).getTime()).map((v, i) => {
-                  const daysLeft = Math.ceil((new Date(v.reassessmentDue).getTime() - now) / (1000 * 60 * 60 * 24));
-                  const ct = criticality(v);
-                  return (
-                    <tr key={v.id} className="hover:bg-muted/20 transition-colors cursor-pointer"
-                      style={{ borderBottom: '1px solid hsl(var(--border))' }}
-                      onClick={() => navigate(`/vendors/${v.id}`)}>
-                      <td className="px-4 py-2.5">
-                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{v.name}</p>
-                        <p className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{v.id}</p>
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <Badge style={{ background: ct.bg, color: ct.color, borderRadius: 0, fontSize: 9 }}>{ct.label}</Badge>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs" style={{ color: daysLeft < 0 ? 'hsl(var(--destructive))' : 'hsl(var(--text-2))' }}>
-                        {formatDate(v.reassessmentDue)}
-                      </td>
-                      <td className="px-4 py-2.5">
-                        <span className="text-xs font-bold" style={{ color: daysLeft < 0 ? 'hsl(var(--destructive))' : daysLeft < 14 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-2))' }}>
-                          {daysLeft < 0 ? `${Math.abs(daysLeft)}d overdue` : `${daysLeft}d`}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(v.lastReview)}</td>
-                      <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{v.vendorManager}</td>
-                      <td className="px-4 py-2.5">
-                        <Button size="sm" variant="outline" className="h-6 text-xs px-2" style={{ borderRadius: 0 }}
-                          onClick={e => { e.stopPropagation(); navigate('/vendors/assessments'); }}>
-                          Start Assessment
-                        </Button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+        </>
+      )}
     </div>
-  );
+  )
+}
+
+function AlertCard({ icon, title, body, onOpen }: {
+  icon: React.ReactNode
+  title: string
+  body: string[]
+  onOpen: () => void
+}) {
+  const t = tone('err')
+  return (
+    <button
+      type="button"
+      onClick={onOpen}
+      className="p-4 text-left transition-opacity hover:opacity-90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+      style={{ background: t.bg, border: `1px solid ${t.br}`, outlineColor: t.fg }}
+    >
+      <div className="flex items-center gap-2" style={{ color: t.fg }}>
+        {icon}
+        <span className="text-sm font-semibold">{title}</span>
+      </div>
+      <ul className="mt-2 space-y-0.5">
+        {body.map((line, i) => (
+          <li key={i} className="truncate text-xs" style={{ color: 'hsl(var(--text-2))' }}>{line}</li>
+        ))}
+      </ul>
+      <span className="mt-2 inline-flex items-center gap-1 text-xs font-medium" style={{ color: t.fg }}>
+        Open <ArrowRight size={12} />
+      </span>
+    </button>
+  )
 }

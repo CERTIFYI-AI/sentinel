@@ -1,676 +1,784 @@
-import { useState } from 'react'
-import { useSupabaseTable } from '@/hooks/useSupabaseTable'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
-import { Package, MagnifyingGlass, Plus, Eye, X, Export, Warning, CheckCircle, Trash, ShieldWarning, Scales, ListChecks, ArrowLeft, ArrowRight, DownloadSimple, Seal, FloppyDisk, Spinner, CaretRight } from '@phosphor-icons/react'
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// AIBOM Registry — AI Bill of Materials on the real org-scoped tables
+// `aibom_records` / `aibom_components` / `aibom_vulnerabilities`.
+//
+// What this rebuild deliberately does NOT do any more:
+//   * it does not invent a SHA-256 from Math.random() and feed it to an
+//     "integrity PASS" — the digest is producer-declared, stored in
+//     `declared_digest`, and rendered as self-declared and unverified;
+//   * it does not count a dropdown value as "Known CVEs" beside the claim
+//     "Scanner: Sentinel CVE Scanner + OSV.dev" — CVEs are rows written by a
+//     scanner, and a record that has never been scanned renders an em-dash
+//     with an honest "no scan has been run" state, not 0;
+//   * it does not sign anything as 'James Liu';
+//   * it does not fake a spinner, a success toast or a hardcoded PASS check;
+//   * it does not emit a CycloneDX-shaped document for an SPDX record.
+//
+// Interlinks: every record carries model_id (uuid) and vendor_id (uuid),
+// resolved to names at render; ?model=<uuid> filters with a dismissible chip
+// and ?open=<id> opens a record. Outbound links reach the model registry,
+// vendor register, provenance graph and attestation register.
+
+import { useEffect, useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import {
+  Package, Plus, Export, DownloadSimple, ArrowSquareOut, X, ShieldWarning, Trash,
+} from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StatCardRow } from '@/components/ui/StatCardRow'
+import { DataTable, type Column } from '@/components/ui/DataTable'
+import { DetailDrawer } from '@/components/ui/DetailDrawer'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { FormDialog, Field } from '@/components/evals/FormDialog'
+import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
+import { Button } from '@/components/ui/button'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { exportCsv } from '@/lib/exportUtils'
+import { useAibomRecords, useAibomComponents, useAibomVulnerabilities } from '@/hooks/useAibomData'
+import { useSupplyChainEntities } from '@/hooks/useSupplyChainEntities'
+import { buildAibomExport, type AibomRecord } from '@/services/aibomService'
 
+const FORMATS = ['CycloneDX', 'SPDX']
+const COMPONENT_TYPES = ['library', 'model', 'dataset', 'framework', 'service']
+const LICENSE_RISKS = ['permissive', 'weak_copyleft', 'strong_copyleft', 'commercial', 'unknown']
+const STATUSES = ['draft', 'published', 'superseded']
 
-interface AIBOMRecord {
-  id: string
-  modelName: string
-  modelVersion: string
-  format: 'CycloneDX' | 'SPDX' | 'Sentinel-AIBOM'
-  generatedDate: string
-  status: 'Verified' | 'Pending Verification' | 'Stale' | 'Incomplete'
-  baseModel: string
-  baseModelProvider: string
-  trainingDatasets: { name: string; version: string; license: string }[]
-  frameworks: string[]
-  dependencies: { name: string; version: string; license: string; risk: 'Low' | 'Medium' | 'High' }[]
-  vulnerabilities: number
-  licenseConflicts: number
-  sha256: string
-  attestedBy: string
-  owner: string
+const STATUS_TONE: Record<string, { background: string; color: string }> = {
+  draft: { background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  published: { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  superseded: { background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-4))' },
 }
 
-const SEED: AIBOMRecord[] = [
-  { id: 'AIBOM-001', modelName: 'Credit Scoring Model', modelVersion: 'v2.1', format: 'Sentinel-AIBOM', generatedDate: '2026-04-08', status: 'Verified', baseModel: 'LightGBM 4.3.0', baseModelProvider: 'Microsoft / Open Source', trainingDatasets: [{ name: 'ACME Credit History DS', version: '2025-Q4', license: 'Proprietary' }, { name: 'Experian Bureau Data', version: '2026-Q1', license: 'Commercial' }], frameworks: ['LightGBM 4.3.0', 'scikit-learn 1.4.0', 'SHAP 0.44', 'pandas 2.2.0'], dependencies: [{ name: 'LightGBM', version: '4.3.0', license: 'MIT', risk: 'Low' }, { name: 'scikit-learn', version: '1.4.0', license: 'BSD-3', risk: 'Low' }, { name: 'numpy', version: '1.26.4', license: 'BSD-3', risk: 'Low' }], vulnerabilities: 0, licenseConflicts: 0, sha256: 'a4b3c9d2e7f1...', attestedBy: 'James Liu', owner: 'ML Engineering' },
-  { id: 'AIBOM-002', modelName: 'Loan Approval Model', modelVersion: 'v3.0', format: 'CycloneDX', generatedDate: '2026-04-05', status: 'Pending Verification', baseModel: 'XGBoost 2.0.3', baseModelProvider: 'DMLC / Open Source', trainingDatasets: [{ name: 'HMDA Mortgage Data', version: '2024', license: 'Public Domain' }, { name: 'ACME Loan History', version: '2025-Q4', license: 'Proprietary' }, { name: 'Bureau Employment Data', version: '2026-Q1', license: 'Commercial' }], frameworks: ['XGBoost 2.0.3', 'scikit-learn 1.4.0', 'Fairlearn 0.10', 'SHAP 0.44'], dependencies: [{ name: 'XGBoost', version: '2.0.3', license: 'Apache-2.0', risk: 'Low' }, { name: 'Fairlearn', version: '0.10.0', license: 'MIT', risk: 'Low' }, { name: 'imbalanced-learn', version: '0.11.0', license: 'MIT', risk: 'Low' }], vulnerabilities: 1, licenseConflicts: 0, sha256: 'b7e1a5c3f9d4...', attestedBy: 'Pending', owner: 'ML Engineering' },
-  { id: 'AIBOM-003', modelName: 'Fraud Detection Engine', modelVersion: 'v4.2', format: 'Sentinel-AIBOM', generatedDate: '2026-03-20', status: 'Stale', baseModel: 'GPT-4o (fine-tuned)', baseModelProvider: 'OpenAI', trainingDatasets: [{ name: 'ACME Transaction History', version: '2025-Q3', license: 'Proprietary' }, { name: 'Synthetic Fraud Patterns', version: 'v3.0', license: 'Proprietary' }], frameworks: ['OpenAI API 1.x', 'Hugging Face Transformers 4.39', 'scikit-learn 1.3.2', 'PyTorch 2.2'], dependencies: [{ name: 'openai', version: '1.14.0', license: 'MIT', risk: 'Medium' }, { name: 'transformers', version: '4.39.3', license: 'Apache-2.0', risk: 'Low' }, { name: 'torch', version: '2.2.0', license: 'BSD-3', risk: 'High' }], vulnerabilities: 3, licenseConflicts: 0, sha256: 'c9d4f2b8a1e5...', attestedBy: 'Sarah Chen', owner: 'Security AI' },
-  { id: 'AIBOM-004', modelName: 'Customer Churn Predictor', modelVersion: 'v2.3', format: 'CycloneDX', generatedDate: '2026-04-01', status: 'Incomplete', baseModel: 'Ensemble (Random Forest + GBDT)', baseModelProvider: 'Internal', trainingDatasets: [{ name: 'ACME Customer Behavior', version: '2026-Q1', license: 'Proprietary' }], frameworks: ['scikit-learn 1.4.0', 'pandas 2.2.0', 'MLflow 2.11.0'], dependencies: [{ name: 'scikit-learn', version: '1.4.0', license: 'BSD-3', risk: 'Low' }, { name: 'mlflow', version: '2.11.0', license: 'Apache-2.0', risk: 'Low' }], vulnerabilities: 0, licenseConflicts: 1, sha256: 'INCOMPLETE', attestedBy: 'Unassigned', owner: 'Customer Analytics' },
-]
+/** null renders an em-dash — never 0, never an invented figure. */
+const num = (v: number | null | undefined) => (typeof v === 'number' ? v.toLocaleString() : '—')
+const text = (v: string | null | undefined) => (v && v.trim() ? v : '—')
+const date = (v: string | null | undefined) => (v ? v.slice(0, 10) : '—')
 
-const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  Verified: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-  'Pending Verification': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-  Stale: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  Incomplete: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+function Pill({ label, tone }: { label: string; tone: { background: string; color: string } }) {
+  return <span className="px-2 py-0.5 text-[11px] font-medium" style={tone}>{label}</span>
 }
 
-const BLANK_AIBOM = { model: '', version: '', format: 'Sentinel-AIBOM' as const, baseModel: '', baseModelProvider: 'Open Source', owner: '', description: '' }
-const BLANK_DS = { name: '', version: '', license: 'Proprietary' }
-const BLANK_DEP = { name: '', version: '', license: 'MIT', risk: 'Low' as 'Low' | 'Medium' | 'High' }
-
-export default function AibomRegistry() {
-  const { data: records, setData: setRecords } = useSupabaseTable<AIBOMRecord>('aibomregistry_table', SEED)
-  const [selected, setSelected] = useState<AIBOMRecord | null>(null)
-  const [drawerTab, setDrawerTab] = useState<'overview' | 'components' | 'vulnerabilities' | 'compliance'>('overview')
-  const [search, setSearch] = useState('')
-  const [showCreate, setShowCreate] = useState(false)
-  const [wizardStep, setWizardStep] = useState(1)
-  const [form, setForm] = useState({ ...BLANK_AIBOM })
-  const [wizardDatasets, setWizardDatasets] = useState<typeof BLANK_DS[]>([])
-  const [wizardDeps, setWizardDeps] = useState<typeof BLANK_DEP[]>([])
-  const [wizardFw, setWizardFw] = useState<string[]>([])
-  const [wizardFwInput, setWizardFwInput] = useState('')
-  const [newDs, setNewDs] = useState({ ...BLANK_DS })
-  const [newDep, setNewDep] = useState({ ...BLANK_DEP })
-  const [generating, setGenerating] = useState(false)
-  const [deleteTarget, setDeleteTarget] = useState<AIBOMRecord | null>(null)
-  const [attesting, setAttesting] = useState(false)
-
-  const filtered = records.filter(r =>
-    r.modelName.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase())
-  )
-
-  function openWizard() {
-    setForm({ ...BLANK_AIBOM })
-    setWizardDatasets([])
-    setWizardDeps([])
-    setWizardFw([])
-    setWizardFwInput('')
-    setNewDs({ ...BLANK_DS })
-    setNewDep({ ...BLANK_DEP })
-    setWizardStep(1)
-    setShowCreate(true)
-  }
-
-  function handleCreate() {
-    if (!form.model || !form.version || !form.baseModel) { toast.error('Model name, version, and base model are required'); return }
-    setGenerating(true)
-    setTimeout(() => {
-      const sha = Math.random().toString(36).slice(2, 14) + Math.random().toString(36).slice(2, 14)
-      const newR: AIBOMRecord = {
-        id: `AIBOM-${String(records.length + 1).padStart(3, '0')}`,
-        modelName: form.model, modelVersion: form.version, format: form.format as AIBOMRecord['format'],
-        generatedDate: new Date().toISOString().split('T')[0], status: 'Pending Verification',
-        baseModel: form.baseModel, baseModelProvider: form.baseModelProvider,
-        trainingDatasets: wizardDatasets, frameworks: wizardFw,
-        dependencies: wizardDeps as AIBOMRecord['dependencies'],
-        vulnerabilities: wizardDeps.filter(d => d.risk === 'High').length,
-        licenseConflicts: 0, sha256: sha.slice(0, 12) + '...',
-        attestedBy: 'Pending', owner: form.owner || 'ML Engineering',
-      }
-      setRecords(p => [newR, ...p])
-      setShowCreate(false)
-      setGenerating(false)
-      toast.success(`AIBOM ${newR.id} generated for ${newR.modelName} ${newR.modelVersion}`)
-    }, 1800)
-  }
-
-  function handleDelete() {
-    if (!deleteTarget) return
-    setRecords(p => p.filter(r => r.id !== deleteTarget.id))
-    if (selected?.id === deleteTarget.id) setSelected(null)
-    toast.success(`AIBOM ${deleteTarget.id} deleted`)
-    setDeleteTarget(null)
-  }
-
-  function handleDownload(r: AIBOMRecord) {
-    const content = JSON.stringify({
-      bomFormat: r.format, specVersion: '1.4', serialNumber: r.id,
-      metadata: { component: { name: r.modelName, version: r.modelVersion }, timestamp: r.generatedDate },
-      components: r.dependencies.map(d => ({ type: 'library', name: d.name, version: d.version, licenses: [{ license: { id: d.license } }] })),
-      dependencies: [], attestedBy: r.attestedBy, sha256: r.sha256,
-    }, null, 2)
-    const blob = new Blob([content], { type: 'application/json' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = `${r.id}.json`; a.click()
-    URL.revokeObjectURL(url)
-    toast.success(`Downloaded ${r.id}.json`)
-  }
-
-  function handleAttest(r: AIBOMRecord) {
-    setAttesting(true)
-    setTimeout(() => {
-      setRecords(p => p.map(x => x.id === r.id ? { ...x, attestedBy: 'James Liu', status: 'Verified' } : x))
-      if (selected?.id === r.id) setSelected(s => s ? { ...s, attestedBy: 'James Liu', status: 'Verified' } : s)
-      setAttesting(false)
-      toast.success(`Attestation signed for ${r.id} — status updated to Verified`)
-    }, 1200)
-  }
-
-  function handleExport() {
-    const csv = ['ID,Model,Version,Format,Status,Vulnerabilities,License Conflicts,Generated',
-      ...records.map(r => `${r.id},${r.modelName},${r.modelVersion},${r.format},${r.status},${r.vulnerabilities},${r.licenseConflicts},${r.generatedDate}`)
-    ].join('\n')
-    const blob = new Blob([csv], { type: 'text/csv' })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a'); a.href = url; a.download = 'aibom-registry.csv'; a.click()
-    URL.revokeObjectURL(url)
-    toast.success('Exported AIBOM registry as CSV')
-  }
-
+/**
+ * The integrity panel. It reports two separate facts and never conflates them:
+ * what the producer declared, and what a verifier has confirmed (nothing, so
+ * far). There is no PASS/FAIL verdict here because no verification is performed.
+ */
+function IntegrityPanel({ record }: { record: AibomRecord }) {
+  const verified = record.verificationStatus === 'verified'
+  const failed = record.verificationStatus === 'failed'
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <Package size={20} weight="fill" className="text-[hsl(var(--brand))]" />
-            AIBOM Registry
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">AI Bill of Materials — full component inventory for all AI models including base models, datasets, frameworks, and dependencies</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={handleExport} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
-            <Export size={14} /> Export CSV
-          </button>
-          <button onClick={openWizard} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
-            <Plus size={14} /> Generate AIBOM
-          </button>
+    <div className="space-y-4">
+      <div>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--text-3))]">
+          Producer-declared digest
+        </p>
+        <div className="border border-[hsl(var(--border))] bg-raised p-3">
+          <p className="break-all font-mono text-[11px] text-[hsl(var(--text-1))]">
+            {record.declaredDigest ? `${record.digestAlg}:${record.declaredDigest}` : '—'}
+          </p>
+          <p className="mt-2 text-[11px] leading-relaxed text-[hsl(var(--text-3))]">
+            Self-declared by the producer of this bill of materials. Sentinel has
+            not recomputed or checked it, so it is not evidence of integrity.
+          </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-4 gap-4">
+      <div>
+        <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--text-3))]">
+          Verification
+        </p>
+        <div
+          className="border p-3"
+          style={{
+            background: verified ? 'hsl(var(--s-ok-bg))' : failed ? 'hsl(var(--s-er-bg))' : 'hsl(var(--bg-raised))',
+            borderColor: 'hsl(var(--border))',
+          }}
+        >
+          <p
+            className="text-sm font-semibold"
+            style={{
+              color: verified ? 'hsl(var(--s-ok-tx))' : failed ? 'hsl(var(--destructive))' : 'hsl(var(--text-2))',
+            }}
+          >
+            {verified ? 'Verified' : failed ? 'Verification failed' : 'Unverified'}
+          </p>
+          <p className="mt-1 text-[11px] leading-relaxed text-[hsl(var(--text-3))]">
+            {verified || failed
+              ? `Method: ${text(record.verificationMethod)} · Checked ${date(record.verifiedAt)}`
+              : 'No verifier has checked this record. DSSE / Sigstore verification is not implemented yet, so nothing here may be described as signed or cryptographically verified.'}
+          </p>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3">
         {[
-          { label: 'Models in Registry', value: records.length, color: 'hsl(var(--text-1))' },
-          { label: 'Verified', value: records.filter(r => r.status === 'Verified').length, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Total Vulnerabilities', value: records.reduce((s, r) => s + r.vulnerabilities, 0), color: 'hsl(var(--destructive))' },
-          { label: 'License Conflicts', value: records.reduce((s, r) => s + r.licenseConflicts, 0), color: 'hsl(var(--s-wn-tx))' },
-        ].map(s => (
-          <div key={s.label} className="border border-[hsl(var(--border))] bg-surface p-4" style={{ borderRadius: 0 }}>
-            <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+          { label: 'Signature', value: record.signature ? 'Present' : '—' },
+          { label: 'Signer identity', value: text(record.signerIdentity) },
+          { label: 'Rekor log index', value: text(record.rekorLogIndex) },
+          { label: 'Signed at', value: date(record.signedAt) },
+        ].map(f => (
+          <div key={f.label} className="border border-[hsl(var(--border))] bg-raised p-3">
+            <p className="text-[10px] uppercase text-[hsl(var(--text-4))]">{f.label}</p>
+            <p className="mt-0.5 truncate font-mono text-xs text-[hsl(var(--text-1))]">{f.value}</p>
           </div>
         ))}
       </div>
+    </div>
+  )
+}
 
-      <div className="relative max-w-xs">
-        <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search models…" className="w-full pl-9 pr-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-      </div>
+const BLANK_FORM = {
+  aibomRef: '',
+  modelId: '',
+  modelVersion: '',
+  vendorId: '',
+  format: 'CycloneDX',
+  specVersion: '1.5',
+  declaredDigest: '',
+  weightsUri: '',
+  countryOfOrigin: '',
+  status: 'draft',
+  notes: '',
+}
 
-      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-raised">
-              {['AIBOM ID', 'Model', 'Base Model', 'Format', 'Datasets', 'Vulns', 'License Issues', 'Generated', 'Status', ''].map(h => (
-                <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(r => (
-              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(r)}>
-                <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.id}</td>
-                <td className="px-4 py-3"><p className="font-medium text-[hsl(var(--text-1))] text-xs">{r.modelName}</p><p className="text-[10px] text-[hsl(var(--text-4))]">{r.modelVersion}</p></td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))] max-w-[120px] truncate">{r.baseModel}</td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{r.format}</td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{r.trainingDatasets.length}</td>
-                <td className="px-4 py-3">
-                  <span className={`text-[11px] font-bold ${r.vulnerabilities > 0 ? 'text-[hsl(var(--destructive))]' : 'text-[hsl(var(--s-ok-tx))]'}`}>{r.vulnerabilities}</span>
-                </td>
-                <td className="px-4 py-3">
-                  <span className={`text-[11px] font-bold ${r.licenseConflicts > 0 ? 'text-[hsl(var(--s-wn-tx))]' : 'text-[hsl(var(--s-ok-tx))]'}`}>{r.licenseConflicts}</span>
-                </td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{r.generatedDate}</td>
-                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[r.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{r.status}</span></td>
-                <td className="px-4 py-3"><Eye size={14} className="text-[hsl(var(--text-4))]" /></td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+const BLANK_COMPONENT = {
+  name: '', version: '', componentType: 'library', purl: '', licenseSpdx: '',
+  licenseRisk: 'unknown', supplier: '', isDirect: true,
+}
 
-      {selected && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[520px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full">
-            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
-              <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p><h2 className="text-base font-semibold text-[hsl(var(--text-1))]">{selected.modelName} {selected.modelVersion}</h2></div>
-              <div className="flex gap-2 items-center">
-                <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><Trash size={15} /></button>
-                <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
-              </div>
-            </div>
+export default function AibomRegistry() {
+  const nav = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const modelParam = searchParams.get('model')
+  const openParam = searchParams.get('open')
 
-            <div className="flex border-b border-[hsl(var(--border))]">
-              {(['overview', 'components', 'vulnerabilities', 'compliance'] as const).map(tab => (
-                <button key={tab} onClick={() => setDrawerTab(tab)} className="flex-1 py-2.5 text-[11px] font-medium capitalize transition-colors" style={drawerTab === tab ? { color: 'hsl(var(--brand))', borderBottom: '2px solid hsl(var(--brand))' } : { color: 'hsl(var(--text-4))' }}>
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                </button>
-              ))}
-            </div>
+  const { records, isLoading, error, refetch, create, update, remove } = useAibomRecords()
+  const { components, create: createComponent, remove: removeComponent } = useAibomComponents()
+  const { vulnerabilities } = useAibomVulnerabilities()
+  const entities = useSupplyChainEntities()
 
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {drawerTab === 'overview' && (
-                <>
-                  <div className="flex gap-2 flex-wrap">
-                    <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
-                    <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.format}</span>
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    {[
-                      { label: 'Base Model', value: selected.baseModel },
-                      { label: 'Provider', value: selected.baseModelProvider },
-                      { label: 'Attested By', value: selected.attestedBy },
-                      { label: 'Owner', value: selected.owner },
-                      { label: 'Generated', value: selected.generatedDate },
-                      { label: 'SHA-256', value: selected.sha256 },
-                    ].map(({ label, value }) => (
-                      <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
-                        <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
-                        <p className="text-xs font-mono font-medium text-[hsl(var(--text-1))] mt-0.5 truncate">{value}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Training Datasets</p>
-                    <div className="space-y-1">
-                      {selected.trainingDatasets.map(d => (
-                        <div key={d.name} className="p-2 bg-raised border border-[hsl(var(--border))]">
-                          <p className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name} {d.version}</p>
-                          <p className="text-[10px] text-[hsl(var(--text-4))]">License: {d.license}</p>
-                        </div>
-                      ))}
-                      {selected.trainingDatasets.length === 0 && <p className="text-xs text-[hsl(var(--text-4))]">No training datasets registered</p>}
-                    </div>
-                  </div>
-                </>
-              )}
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<AibomRecord | null>(null)
+  const [form, setForm] = useState({ ...BLANK_FORM })
+  const [componentOpen, setComponentOpen] = useState(false)
+  const [componentForm, setComponentForm] = useState({ ...BLANK_COMPONENT })
+  const [toDelete, setToDelete] = useState<AibomRecord | null>(null)
+  const [componentToDelete, setComponentToDelete] = useState<{ id: string; name: string } | null>(null)
 
-              {drawerTab === 'components' && (
-                <>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Frameworks & Runtime</p>
-                    <div className="space-y-1">
-                      {selected.frameworks.map(f => (
-                        <div key={f} className="flex items-center gap-2 p-2 bg-raised border border-[hsl(var(--border))]">
-                          <div className="w-1.5 h-1.5 rounded-full bg-[hsl(var(--brand))]" />
-                          <p className="text-xs text-[hsl(var(--text-2))]">{f}</p>
-                        </div>
-                      ))}
-                      {selected.frameworks.length === 0 && <p className="text-xs text-[hsl(var(--text-4))]">No frameworks listed</p>}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Dependencies ({selected.dependencies.length})</p>
-                    <div className="space-y-1">
-                      {selected.dependencies.map(d => (
-                        <div key={d.name} className="flex items-center justify-between p-2 bg-raised border border-[hsl(var(--border))]">
-                          <div>
-                            <p className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name} <span className="font-normal text-[hsl(var(--text-4))]">{d.version}</span></p>
-                            <p className="text-[10px] text-[hsl(var(--text-4))]">{d.license}</p>
-                          </div>
-                          <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: d.risk === 'High' ? 'hsl(var(--s-er-bg))' : d.risk === 'Medium' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))', color: d.risk === 'High' ? 'hsl(var(--destructive))' : d.risk === 'Medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>{d.risk}</span>
-                        </div>
-                      ))}
-                      {selected.dependencies.length === 0 && <p className="text-xs text-[hsl(var(--text-4))]">No dependencies listed</p>}
-                    </div>
-                  </div>
-                </>
-              )}
+  const selected = records.find(r => r.id === selectedId) ?? null
 
-              {drawerTab === 'vulnerabilities' && (
-                <>
-                  <div className="flex items-center gap-3 p-4 rounded border" style={selected.vulnerabilities > 0 ? { background: 'hsl(var(--s-er-bg))', borderColor: 'hsl(var(--destructive) / 0.3)' } : { background: 'hsl(var(--s-ok-bg))', borderColor: 'hsl(var(--s-ok-bg))' }}>
-                    {selected.vulnerabilities > 0 ? <ShieldWarning size={24} className="text-[hsl(var(--destructive))]" /> : <CheckCircle size={24} className="text-[hsl(var(--s-ok-tx))]" />}
-                    <div>
-                      <p className="text-sm font-bold" style={{ color: selected.vulnerabilities > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))' }}>{selected.vulnerabilities} Known CVE{selected.vulnerabilities !== 1 ? 's' : ''}</p>
-                      <p className="text-xs text-[hsl(var(--text-4))]">{selected.vulnerabilities > 0 ? 'Review and remediate before production deployment' : 'No known vulnerabilities in registered dependencies'}</p>
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Dependency Risk Summary</p>
-                    <div className="space-y-2">
-                      {(['High', 'Medium', 'Low'] as const).map(risk => {
-                        const count = selected.dependencies.filter(d => d.risk === risk).length
-                        return (
-                          <div key={risk} className="flex items-center gap-3 p-2.5 bg-raised border border-[hsl(var(--border))]">
-                            <div className="w-2 h-2 rounded-full" style={{ background: risk === 'High' ? 'hsl(var(--destructive))' : risk === 'Medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }} />
-                            <p className="text-xs text-[hsl(var(--text-2))] flex-1">{risk} Risk</p>
-                            <span className="text-xs font-bold text-[hsl(var(--text-1))]">{count}</span>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Scan Details</p>
-                    <div className="p-3 bg-raised border border-[hsl(var(--border))] space-y-1">
-                      <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">Last Scan:</span> {selected.generatedDate}</p>
-                      <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">Scanner:</span> Sentinel CVE Scanner + OSV.dev</p>
-                      <p className="text-xs text-[hsl(var(--text-2))]"><span className="text-[hsl(var(--text-4))]">Total Dependencies Scanned:</span> {selected.dependencies.length}</p>
-                    </div>
-                  </div>
-                </>
-              )}
+  // Deep link ?open=<id>
+  useEffect(() => {
+    if (openParam && records.some(r => r.id === openParam)) setSelectedId(openParam)
+  }, [openParam, records])
 
-              {drawerTab === 'compliance' && (
-                <>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">License Compliance</p>
-                    <div className="flex items-center gap-3 p-4 rounded border mb-3" style={selected.licenseConflicts > 0 ? { background: 'hsl(var(--s-wn-bg))', borderColor: 'hsl(var(--s-wn-bg))' } : { background: 'hsl(var(--s-ok-bg))', borderColor: 'hsl(var(--s-ok-bg))' }}>
-                      {selected.licenseConflicts > 0 ? <Warning size={20} className="text-[hsl(var(--s-wn-tx))]" /> : <CheckCircle size={20} className="text-[hsl(var(--s-ok-tx))]" />}
-                      <div>
-                        <p className="text-sm font-bold" style={{ color: selected.licenseConflicts > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>{selected.licenseConflicts} License Conflict{selected.licenseConflicts !== 1 ? 's' : ''}</p>
-                        <p className="text-xs text-[hsl(var(--text-4))]">{selected.licenseConflicts > 0 ? 'Resolve conflicts before distribution' : 'All licenses compatible — no conflicts detected'}</p>
-                      </div>
-                    </div>
-                    <div className="space-y-1">
-                      {selected.dependencies.map(d => (
-                        <div key={d.name} className="flex items-center justify-between p-2 bg-raised border border-[hsl(var(--border))]">
-                          <p className="text-xs text-[hsl(var(--text-2))]">{d.name} {d.version}</p>
-                          <span className="text-[10px] font-mono text-[hsl(var(--text-3))]">{d.license}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">AIBOM Standard Compliance</p>
-                    <div className="space-y-2">
-                      {[
-                        { check: 'Format specification met', pass: true },
-                        { check: 'All components declared', pass: selected.dependencies.length > 0 },
-                        { check: 'Cryptographic hash present', pass: selected.sha256 !== 'PENDING' && selected.sha256 !== 'INCOMPLETE' },
-                        { check: 'Training datasets declared', pass: selected.trainingDatasets.length > 0 },
-                        { check: 'Attestation signed', pass: selected.attestedBy !== 'Pending' && selected.attestedBy !== 'Unassigned' },
-                      ].map(({ check, pass }) => (
-                        <div key={check} className="flex items-center gap-2 p-2.5 bg-raised border border-[hsl(var(--border))]">
-                          <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: pass ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }} />
-                          <p className="text-xs text-[hsl(var(--text-2))] flex-1">{check}</p>
-                          <span className="text-[10px] font-medium" style={{ color: pass ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>{pass ? 'PASS' : 'FAIL'}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+  const filtered = useMemo(
+    () => records.filter(r => !modelParam || r.modelId === modelParam),
+    [records, modelParam],
+  )
 
-            <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => handleDownload(selected!)} className="flex-1 flex items-center justify-center gap-1.5 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">
-                <DownloadSimple size={14} /> Download AIBOM
-              </button>
-              <button
-                onClick={() => handleAttest(selected!)}
-                disabled={attesting || selected?.attestedBy !== 'Pending' && selected?.attestedBy !== 'Unassigned'}
-                className="flex items-center gap-1.5 px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {attesting ? <Spinner size={14} className="animate-spin" /> : <Seal size={14} />}
-                {attesting ? 'Signing…' : selected?.attestedBy === 'Pending' || selected?.attestedBy === 'Unassigned' ? 'Sign Attestation' : 'Attested'}
-              </button>
-            </div>
+  const componentsFor = (id: string) => components.filter(c => c.aibomId === id)
+  const vulnsFor = (id: string) => vulnerabilities.filter(v => v.aibomId === id)
+  /** null == never scanned. A never-scanned record must not report 0 CVEs. */
+  const openCves = (r: AibomRecord) => (r.lastScannedAt ? vulnsFor(r.id).filter(v => v.status === 'open').length : null)
+
+  const scanned = filtered.filter(r => !!r.lastScannedAt)
+  const totalOpenCves = scanned.length
+    ? scanned.reduce((s, r) => s + (openCves(r) ?? 0), 0)
+    : null
+
+  const rows = useMemo(() => filtered.map(r => ({
+    ...r,
+    name: r.aibomRef ?? r.id,
+    modelName: entities.resolve('model', r.modelId) ?? '—',
+  })), [filtered, entities])
+
+  type Row = (typeof rows)[number]
+
+  function clearModelFilter() {
+    const next = new URLSearchParams(searchParams)
+    next.delete('model')
+    setSearchParams(next, { replace: true })
+  }
+
+  function openCreate() {
+    setEditing(null)
+    setForm({
+      ...BLANK_FORM,
+      // The primary key is a DB uuid, so this human label can never collide the
+      // way `AIBOM-${records.length + 1}` did; it is only a display reference.
+      aibomRef: `AIBOM-${new Date().getFullYear()}-${Date.now().toString(36).toUpperCase().slice(-6)}`,
+      modelId: modelParam ?? '',
+    })
+    setFormOpen(true)
+  }
+
+  function openEdit(r: AibomRecord) {
+    setEditing(r)
+    setForm({
+      aibomRef: r.aibomRef ?? '',
+      modelId: r.modelId ?? '',
+      modelVersion: r.modelVersion ?? '',
+      vendorId: r.vendorId ?? '',
+      format: r.format,
+      specVersion: r.specVersion ?? '',
+      declaredDigest: r.declaredDigest ?? '',
+      weightsUri: r.weightsUri ?? '',
+      countryOfOrigin: r.countryOfOrigin ?? '',
+      status: r.status,
+      notes: r.notes ?? '',
+    })
+    setFormOpen(true)
+  }
+
+  // The dialog closes only after the write resolves; a failure keeps it open
+  // with a real error toast.
+  async function submitForm() {
+    if (!form.modelId) { toast.error('Select the model this AIBOM describes'); return }
+    const patch: Partial<AibomRecord> = {
+      aibomRef: form.aibomRef.trim() || null,
+      modelId: form.modelId,
+      modelVersion: form.modelVersion.trim() || null,
+      vendorId: form.vendorId || null,
+      format: form.format,
+      specVersion: form.specVersion.trim() || null,
+      declaredDigest: form.declaredDigest.trim() || null,
+      weightsUri: form.weightsUri.trim() || null,
+      countryOfOrigin: form.countryOfOrigin.trim() || null,
+      status: form.status,
+      notes: form.notes.trim() || null,
+    }
+    try {
+      if (editing) {
+        await update.mutateAsync({ id: editing.id, patch })
+        toast.success(`${patch.aibomRef ?? 'AIBOM'} updated`)
+      } else {
+        const saved = await create.mutateAsync(patch)
+        toast.success(`${saved.aibomRef ?? 'AIBOM'} created`)
+      }
+      setFormOpen(false)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save the AIBOM record')
+    }
+  }
+
+  async function submitComponent() {
+    if (!selected) return
+    if (!componentForm.name.trim()) { toast.error('A component name is required'); return }
+    try {
+      await createComponent.mutateAsync({
+        aibomId: selected.id,
+        name: componentForm.name.trim(),
+        version: componentForm.version.trim() || null,
+        componentType: componentForm.componentType,
+        purl: componentForm.purl.trim() || null,
+        licenseSpdx: componentForm.licenseSpdx.trim() || null,
+        licenseRisk: componentForm.licenseRisk,
+        supplier: componentForm.supplier.trim() || null,
+        isDirect: componentForm.isDirect,
+      })
+      toast.success(`Component ${componentForm.name.trim()} added`)
+      setComponentForm({ ...BLANK_COMPONENT })
+      setComponentOpen(false)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to add the component')
+    }
+  }
+
+  async function confirmDelete() {
+    if (!toDelete) return
+    try {
+      await remove.mutateAsync(toDelete.id)
+      if (selectedId === toDelete.id) setSelectedId(null)
+      toast.success(`${toDelete.aibomRef ?? 'AIBOM record'} deleted`)
+      setToDelete(null)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete the AIBOM record')
+      // Rethrown so ConfirmDialog keeps itself open — a failed delete must
+      // never look like it succeeded.
+      throw e
+    }
+  }
+
+  async function confirmDeleteComponent() {
+    if (!componentToDelete) return
+    try {
+      await removeComponent.mutateAsync(componentToDelete.id)
+      toast.success(`${componentToDelete.name} removed`)
+      setComponentToDelete(null)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to remove the component')
+      throw e
+    }
+  }
+
+  /** Emits a document that actually matches the record's declared format. */
+  function downloadBom(r: AibomRecord) {
+    const payload = buildAibomExport(r, componentsFor(r.id), vulnsFor(r.id), entities.resolve('model', r.modelId))
+    // Written directly (not via exportJson) because a BOM is a single document,
+    // not a row array.
+    const blob = new Blob([JSON.stringify(payload.content, null, 2)], { type: 'application/json' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = payload.filename
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+    toast.success(payload.schemaValid ? `Exported ${payload.filename}` : payload.note)
+  }
+
+  function exportRegistry() {
+    if (!filtered.length) { toast.info('No AIBOM records to export'); return }
+    exportCsv(filtered.map(r => ({
+      aibom_ref: r.aibomRef ?? '',
+      model: entities.resolve('model', r.modelId) ?? '',
+      model_id: r.modelId ?? '',
+      model_version: r.modelVersion ?? '',
+      format: r.format,
+      spec_version: r.specVersion ?? '',
+      status: r.status,
+      components: componentsFor(r.id).length,
+      // Blank, not 0, when no scan has ever run.
+      open_cves: openCves(r) ?? '',
+      last_scanned_at: r.lastScannedAt ?? '',
+      scanner: r.scannerName ?? '',
+      declared_digest: r.declaredDigest ?? '',
+      digest_provenance: r.declaredDigest ? 'self-declared, unverified' : '',
+      verification_status: r.verificationStatus,
+    })), 'aibom-registry.csv')
+  }
+
+  const columns: Column<Row>[] = [
+    {
+      key: 'aibomRef', header: 'AIBOM', sortable: true,
+      render: r => <span className="font-mono text-xs text-[hsl(var(--brand))]">{text(r.aibomRef)}</span>,
+    },
+    {
+      key: 'modelName', header: 'Model', sortable: true,
+      render: r => {
+        const route = entities.routeFor('model', r.modelId)
+        const name = entities.resolve('model', r.modelId)
+        if (!name) return <span className="text-xs text-[hsl(var(--text-4))]">—</span>
+        if (!route) return <span className="text-xs text-[hsl(var(--text-4))]">{name}</span>
+        return (
+          <button
+            onClick={e => { e.stopPropagation(); nav(route) }}
+            className="inline-flex items-center gap-1 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-2 py-0.5 text-xs font-medium text-[hsl(var(--brand))] transition-colors hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))]"
+          >
+            {name} <ArrowSquareOut size={12} />
+          </button>
+        )
+      },
+    },
+    { key: 'modelVersion', header: 'Version', render: r => <span className="text-xs text-[hsl(var(--text-3))]">{text(r.modelVersion)}</span> },
+    { key: 'format', header: 'Format', sortable: true, render: r => <span className="text-xs text-[hsl(var(--text-3))]">{r.format}{r.specVersion ? ` ${r.specVersion}` : ''}</span> },
+    { key: 'components', header: 'Components', render: r => <span className="font-mono text-xs text-[hsl(var(--text-2))]">{componentsFor(r.id).length}</span> },
+    {
+      key: 'openCves', header: 'Open CVEs',
+      render: r => {
+        const c = openCves(r)
+        if (c === null) {
+          return <span className="text-xs text-[hsl(var(--text-4))]" title="No scan has been run for this record">—</span>
+        }
+        return (
+          <span className={`font-mono text-xs font-semibold ${c > 0 ? 'text-[hsl(var(--destructive))]' : 'text-[hsl(var(--s-ok-tx))]'}`}>{c}</span>
+        )
+      },
+    },
+    { key: 'lastScannedAt', header: 'Last scanned', sortable: true, render: r => <span className="text-xs text-[hsl(var(--text-4))]">{date(r.lastScannedAt)}</span> },
+    { key: 'status', header: 'Status', sortable: true, render: r => <Pill label={r.status} tone={STATUS_TONE[r.status] ?? STATUS_TONE.superseded} /> },
+    {
+      key: 'verificationStatus', header: 'Integrity',
+      render: r => (
+        <span
+          className="text-[11px] font-medium"
+          style={{ color: r.verificationStatus === 'verified' ? 'hsl(var(--s-ok-tx))' : r.verificationStatus === 'failed' ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))' }}
+          title={r.verificationStatus === 'unverified' ? 'No verifier has checked this record' : undefined}
+        >
+          {r.verificationStatus === 'unverified' ? 'Unverified' : r.verificationStatus === 'verified' ? 'Verified' : 'Failed'}
+        </span>
+      ),
+    },
+  ]
+
+  const selectedComponents = selected ? componentsFor(selected.id) : []
+  const selectedVulns = selected ? vulnsFor(selected.id) : []
+
+  return (
+    <div>
+      <PageHeader
+        title="AIBOM Registry"
+        subtitle="AI Bill of Materials — components, licences and recorded vulnerabilities for every registered model"
+        icon={Package}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="secondary" icon={<Export />} onClick={exportRegistry}>Export CSV</Button>
+            <Button size="sm" icon={<Plus />} onClick={openCreate}>New AIBOM</Button>
           </div>
+        }
+      />
+
+      {modelParam && (
+        <div className="mb-3 flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-3 py-1.5 text-sm text-[hsl(var(--brand))]">
+            <span>Filtered to <strong>{entities.resolve('model', modelParam) ?? 'Unavailable'}</strong></span>
+            <button aria-label="Clear model filter" onClick={clearModelFilter} className="inline-flex cursor-pointer items-center hover:text-[hsl(var(--text-1))]">
+              <X size={14} />
+            </button>
+          </span>
         </div>
       )}
-      {/* ── Generate AIBOM Wizard Modal ──────────────────────────── */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="w-[600px] max-h-[90vh] flex flex-col bg-surface border border-[hsl(var(--border))]" style={{ borderRadius: 0 }}>
-            {/* Modal Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
-              <div>
-                <p className="text-xs text-[hsl(var(--text-4))] mb-0.5">Step {wizardStep} of 4</p>
-                <h2 className="text-base font-semibold text-[hsl(var(--text-1))]">
-                  {wizardStep === 1 && 'Model Information'}
-                  {wizardStep === 2 && 'Training Datasets'}
-                  {wizardStep === 3 && 'Frameworks & Dependencies'}
-                  {wizardStep === 4 && 'Review & Generate'}
-                </h2>
-              </div>
-              <button onClick={() => setShowCreate(false)} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))]"><X size={18} /></button>
-            </div>
 
-            {/* Step Progress */}
-            <div className="flex px-5 py-2 gap-1 border-b border-[hsl(var(--border))]">
-              {[1, 2, 3, 4].map(s => (
-                <div key={s} className="flex items-center gap-1 flex-1">
-                  <div className="flex items-center justify-center w-5 h-5 text-[10px] font-bold" style={{ background: s <= wizardStep ? 'hsl(var(--brand))' : 'hsl(var(--border))', color: s <= wizardStep ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-4))' }}>{s < wizardStep ? '✓' : s}</div>
-                  {s < 4 && <div className="flex-1 h-px" style={{ background: s < wizardStep ? 'hsl(var(--brand))' : 'hsl(var(--border))' }} />}
+      <StatCardRow
+        className="mb-4"
+        loading={isLoading}
+        cards={[
+          { label: 'AIBOM records', value: num(filtered.length) },
+          { label: 'Published', value: num(filtered.filter(r => r.status === 'published').length), variant: 'success' },
+          { label: 'Never scanned', value: num(filtered.filter(r => !r.lastScannedAt).length), variant: 'warning', description: 'Records with no recorded vulnerability scan' },
+          { label: 'Open CVEs (scanned records)', value: num(totalOpenCves), variant: totalOpenCves ? 'danger' : 'default', description: 'Em-dash when no record has been scanned' },
+        ]}
+      />
+
+      {isLoading ? <TableSkeleton cols={9} />
+        : error ? <ErrorState message={error.message} onRetry={() => refetch()} />
+        : rows.length === 0 ? (
+          <EmptyState
+            title={modelParam ? 'No AIBOM records for this model' : 'No AIBOM records yet'}
+            message={modelParam
+              ? 'Clear the model filter to see every record, or generate a bill of materials for this model.'
+              : 'Register a bill of materials to inventory the base models, datasets, frameworks and dependencies behind a model.'}
+            actionLabel="New AIBOM"
+            onAction={openCreate}
+          />
+        ) : (
+          <DataTable
+            data={rows}
+            columns={columns}
+            searchKey="name"
+            searchPlaceholder="Search by AIBOM reference…"
+            onRowClick={r => setSelectedId(r.id)}
+            onView={r => setSelectedId(r.id)}
+            onEdit={r => openEdit(r)}
+            onDelete={r => setToDelete(r)}
+          />
+        )}
+
+      {/* ── Detail drawer ── */}
+      <DetailDrawer
+        open={!!selected}
+        onClose={() => setSelectedId(null)}
+        title={selected ? (selected.aibomRef ?? 'AIBOM record') : ''}
+        subtitle={selected ? (
+          <span className="flex items-center gap-2">
+            <Pill label={selected.status} tone={STATUS_TONE[selected.status] ?? STATUS_TONE.superseded} />
+            <span className="text-xs text-[hsl(var(--text-3))]">{selected.format}{selected.specVersion ? ` ${selected.specVersion}` : ''}</span>
+          </span>
+        ) : undefined}
+        size="lg"
+        actions={selected ? (
+          <Button size="xs" variant="secondary" icon={<DownloadSimple />} onClick={() => downloadBom(selected)}>Export BOM</Button>
+        ) : undefined}
+        tabs={selected ? [
+          {
+            id: 'overview',
+            label: 'Overview',
+            content: (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: 'Model', value: entities.resolve('model', selected.modelId) ?? '—', to: entities.routeFor('model', selected.modelId) },
+                    { label: 'Model version', value: text(selected.modelVersion) },
+                    { label: 'Vendor', value: entities.resolve('vendor', selected.vendorId) ?? '—', to: entities.routeFor('vendor', selected.vendorId) },
+                    { label: 'Generated', value: date(selected.generatedAt) },
+                    { label: 'Country of origin', value: text(selected.countryOfOrigin) },
+                    { label: 'Export control class', value: text(selected.exportControlClass) },
+                    { label: 'Weights URI', value: text(selected.weightsUri) },
+                    { label: 'End of life', value: date(selected.eolAt) },
+                  ].map(f => (
+                    <div key={f.label} className="border border-[hsl(var(--border))] bg-raised p-3">
+                      <p className="text-[10px] uppercase text-[hsl(var(--text-4))]">{f.label}</p>
+                      {f.to ? (
+                        <button onClick={() => nav(f.to!)} className="mt-0.5 inline-flex items-center gap-1 text-xs font-medium text-[hsl(var(--brand))] hover:underline">
+                          {f.value} <ArrowSquareOut size={11} />
+                        </button>
+                      ) : (
+                        <p className="mt-0.5 truncate text-xs font-medium text-[hsl(var(--text-1))]">{f.value}</p>
+                      )}
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-
-            {/* Step Content */}
-            <div className="flex-1 overflow-y-auto p-5 space-y-4">
-              {/* Step 1: Model Info */}
-              {wizardStep === 1 && (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Model Name *</label>
-                      <input value={form.model} onChange={e => setForm(p => ({ ...p, model: e.target.value }))} placeholder="e.g. Loan Approval Model"
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Version *</label>
-                      <input value={form.version} onChange={e => setForm(p => ({ ...p, version: e.target.value }))} placeholder="e.g. v3.1"
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">AIBOM Format</label>
-                      <Select value={form.format} onValueChange={v => setForm(p => ({ ...p, format: v as any }))}>
-                        <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                        <SelectContent style={{ borderRadius: 0 }}>
-                          <SelectItem value="Sentinel-AIBOM">Sentinel-AIBOM</SelectItem>
-                          <SelectItem value="CycloneDX">CycloneDX</SelectItem>
-                          <SelectItem value="SPDX">SPDX</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Owner Team</label>
-                      <Select value={form.owner || undefined} onValueChange={v => setForm(p => ({ ...p, owner: v }))}>
-                        <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select owner…" /></SelectTrigger>
-                        <SelectContent style={{ borderRadius: 0 }}>
-                          {['ML Engineering', 'Security AI', 'Customer Analytics', 'Risk & Compliance', 'Data Science'].map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Base Model *</label>
-                      <input value={form.baseModel} onChange={e => setForm(p => ({ ...p, baseModel: e.target.value }))} placeholder="e.g. LightGBM 4.3.0"
-                        className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Base Model Provider</label>
-                      <Select value={form.baseModelProvider} onValueChange={v => setForm(p => ({ ...p, baseModelProvider: v }))}>
-                        <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                        <SelectContent style={{ borderRadius: 0 }}>
-                          {['Open Source', 'OpenAI', 'Anthropic', 'Google DeepMind', 'Meta', 'Hugging Face', 'Microsoft', 'Internal'].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
+                {selected.notes && (
                   <div>
-                    <label className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide block mb-1">Description</label>
-                    <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} placeholder="Brief description of this model and its purpose…"
-                      className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none resize-none" />
+                    <p className="mb-1 text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--text-3))]">Notes</p>
+                    <p className="border border-[hsl(var(--border))] bg-raised p-3 text-sm leading-relaxed text-[hsl(var(--text-2))]">{selected.notes}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[hsl(var(--text-3))]">Related records</p>
+                  <div className="flex flex-wrap gap-2">
+                    {selected.modelId && (
+                      <>
+                        <Button size="xs" variant="secondary" onClick={() => nav(`/provenance?model=${selected.modelId}`)}>Provenance graph</Button>
+                        <Button size="xs" variant="secondary" onClick={() => nav(`/supply-chain?model=${selected.modelId}`)}>Attestations</Button>
+                        <Button size="xs" variant="secondary" onClick={() => nav(`/supply-chain/graph?model=${selected.modelId}`)}>Supply chain graph</Button>
+                      </>
+                    )}
+                    {selected.vendorId && entities.routeFor('vendor', selected.vendorId) && (
+                      <Button size="xs" variant="secondary" onClick={() => nav(entities.routeFor('vendor', selected.vendorId)!)}>Vendor record</Button>
+                    )}
                   </div>
                 </div>
-              )}
-
-              {/* Step 2: Training Datasets */}
-              {wizardStep === 2 && (
-                <div className="space-y-3">
-                  <p className="text-xs text-[hsl(var(--text-4))]">Add training datasets used for this model. Include name, version, and license type.</p>
-                  <div className="p-3 border border-[hsl(var(--border))] bg-raised space-y-2">
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Add Dataset</p>
-                    <div className="grid grid-cols-3 gap-2">
-                      <input value={newDs.name} onChange={e => setNewDs(p => ({ ...p, name: e.target.value }))} placeholder="Dataset name"
-                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
-                      <input value={newDs.version} onChange={e => setNewDs(p => ({ ...p, version: e.target.value }))} placeholder="Version / Date"
-                        className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
-                      <Select value={newDs.license} onValueChange={v => setNewDs(p => ({ ...p, license: v }))}>
-                        <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                        <SelectContent style={{ borderRadius: 0 }}>
-                          {['Proprietary', 'Public Domain', 'Commercial', 'CC BY 4.0', 'MIT', 'Apache-2.0', 'Research Only'].map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+              </div>
+            ),
+          },
+          {
+            id: 'components',
+            label: `Components (${selectedComponents.length})`,
+            content: (
+              <div className="space-y-3">
+                <div className="flex justify-end">
+                  <Button size="xs" icon={<Plus />} onClick={() => setComponentOpen(true)}>Add component</Button>
+                </div>
+                {selectedComponents.length === 0 ? (
+                  <EmptyState
+                    title="No components recorded"
+                    message="Add the libraries, base models, datasets and services this model depends on. A package URL (purl) is what makes CVE matching possible."
+                  />
+                ) : selectedComponents.map(c => (
+                  <div key={c.id} className="flex items-start gap-2 border border-[hsl(var(--border))] bg-raised p-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-[hsl(var(--text-1))]">
+                        {c.name}{c.version ? ` ${c.version}` : ''}
+                        {!c.isDirect && <span className="ml-2 text-[10px] text-[hsl(var(--text-4))]">transitive</span>}
+                      </p>
+                      <p className="truncate font-mono text-[10px] text-[hsl(var(--text-4))]">{text(c.purl)}</p>
+                      <p className="mt-0.5 text-[10px] text-[hsl(var(--text-3))]">
+                        {c.componentType ?? '—'} · Licence {text(c.licenseSpdx)} · Risk {text(c.licenseRisk)}
+                        {c.datasetId && entities.routeFor('dataset', c.datasetId) && (
+                          <button onClick={() => nav(entities.routeFor('dataset', c.datasetId)!)} className="ml-2 text-[hsl(var(--brand))] hover:underline">
+                            {entities.resolve('dataset', c.datasetId)}
+                          </button>
+                        )}
+                      </p>
                     </div>
-                    <button onClick={() => { if (newDs.name) { setWizardDatasets(p => [...p, { ...newDs }]); setNewDs({ ...BLANK_DS }) } }}
-                      disabled={!newDs.name}
-                      className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] disabled:opacity-40">
-                      <Plus size={12} /> Add Dataset
+                    <button
+                      aria-label={`Remove ${c.name}`}
+                      onClick={() => setComponentToDelete({ id: c.id, name: c.name })}
+                      className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"
+                    >
+                      <Trash size={13} />
                     </button>
                   </div>
-                  <div className="space-y-1">
-                    {wizardDatasets.length === 0 && <p className="text-xs text-[hsl(var(--text-4))] text-center py-4">No datasets added yet</p>}
-                    {wizardDatasets.map((d, i) => (
-                      <div key={i} className="flex items-center justify-between p-2.5 border border-[hsl(var(--border))] bg-surface">
-                        <div>
-                          <p className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name} <span className="font-normal text-[hsl(var(--text-4))]">{d.version}</span></p>
-                          <p className="text-[10px] text-[hsl(var(--text-4))]">{d.license}</p>
+                ))}
+              </div>
+            ),
+          },
+          {
+            id: 'vulnerabilities',
+            label: 'Vulnerabilities',
+            content: (
+              <div className="space-y-3">
+                {!selected.lastScannedAt ? (
+                  <EmptyState
+                    title="No scan has been run"
+                    message="Vulnerability rows are written by a scanner against the recorded package URLs. Until a scan runs, this record's CVE count is unknown — it is not zero."
+                  />
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2 border border-[hsl(var(--border))] bg-raised p-3">
+                      <ShieldWarning size={14} className="text-[hsl(var(--text-3))]" />
+                      <p className="text-[11px] text-[hsl(var(--text-3))]">
+                        Last scanned {date(selected.lastScannedAt)}{selected.scannerName ? ` by ${selected.scannerName}` : ' (scanner not recorded)'}
+                      </p>
+                    </div>
+                    {selectedVulns.length === 0 ? (
+                      <EmptyState title="No vulnerabilities recorded" message="The last scan wrote no findings for this bill of materials." />
+                    ) : selectedVulns.map(v => (
+                      <div key={v.id} className="border border-[hsl(var(--border))] bg-raised p-3">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-semibold text-[hsl(var(--text-1))]">{v.cveId}</span>
+                          {v.severity && <Pill label={v.severity} tone={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }} />}
+                          <span className="ml-auto font-mono text-[11px] text-[hsl(var(--text-3))]">CVSS {v.cvssScore ?? '—'}</span>
                         </div>
-                        <button onClick={() => setWizardDatasets(p => p.filter((_, idx) => idx !== i))} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><X size={14} /></button>
+                        <p className="mt-1 text-[10px] text-[hsl(var(--text-3))]">
+                          Component {selectedComponents.find(c => c.id === v.componentId)?.name ?? '—'} ·
+                          Affected {text(v.affectedVersionRange)} · Fixed in {text(v.fixedVersion)} ·
+                          Source {text(v.source)} · Status {v.status}
+                          {v.exploitKnown && <span className="ml-1 text-[hsl(var(--destructive))]">· known exploit</span>}
+                        </p>
                       </div>
                     ))}
-                  </div>
-                </div>
-              )}
+                  </>
+                )}
+              </div>
+            ),
+          },
+          { id: 'integrity', label: 'Integrity', content: <IntegrityPanel record={selected} /> },
+        ] : []}
+      />
 
-              {/* Step 3: Frameworks & Dependencies */}
-              {wizardStep === 3 && (
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Frameworks & Runtime</p>
-                    <div className="flex gap-2">
-                      <input value={wizardFwInput} onChange={e => setWizardFwInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter' && wizardFwInput.trim()) { setWizardFw(p => [...p, wizardFwInput.trim()]); setWizardFwInput('') }}}
-                        placeholder="e.g. scikit-learn 1.4.0 (press Enter)"
-                        className="flex-1 px-3 py-2 text-sm border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
-                      <button onClick={() => { if (wizardFwInput.trim()) { setWizardFw(p => [...p, wizardFwInput.trim()]); setWizardFwInput('') }}}
-                        className="px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm"><Plus size={14} /></button>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {wizardFw.map((f, i) => (
-                        <span key={i} className="flex items-center gap-1 px-2 py-0.5 text-xs border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-2))]">
-                          {f} <button onClick={() => setWizardFw(p => p.filter((_, idx) => idx !== i))}><X size={10} /></button>
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="space-y-2">
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">Dependencies</p>
-                    <div className="p-3 border border-[hsl(var(--border))] bg-raised space-y-2">
-                      <div className="grid grid-cols-4 gap-2">
-                        <input value={newDep.name} onChange={e => setNewDep(p => ({ ...p, name: e.target.value }))} placeholder="Package"
-                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
-                        <input value={newDep.version} onChange={e => setNewDep(p => ({ ...p, version: e.target.value }))} placeholder="Version"
-                          className="px-2 py-1.5 text-xs border border-[hsl(var(--border))] bg-surface text-[hsl(var(--text-1))] focus:outline-none" />
-                        <Select value={newDep.license} onValueChange={v => setNewDep(p => ({ ...p, license: v }))}>
-                          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                          <SelectContent style={{ borderRadius: 0 }}>
-                            {['MIT', 'Apache-2.0', 'BSD-3', 'GPL-3.0', 'LGPL', 'Proprietary'].map(l => <SelectItem key={l} value={l}>{l}</SelectItem>)}
-                          </SelectContent>
-                        </Select>
-                        <Select value={newDep.risk} onValueChange={v => setNewDep(p => ({ ...p, risk: v as any }))}>
-                          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                          <SelectContent style={{ borderRadius: 0 }}>
-                            <SelectItem value="Low">Low</SelectItem>
-                            <SelectItem value="Medium">Medium</SelectItem>
-                            <SelectItem value="High">High</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <button onClick={() => { if (newDep.name) { setWizardDeps(p => [...p, { ...newDep }]); setNewDep({ ...BLANK_DEP }) }}}
-                        disabled={!newDep.name}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] disabled:opacity-40">
-                        <Plus size={12} /> Add Dependency
-                      </button>
-                    </div>
-                    <div className="space-y-1">
-                      {wizardDeps.length === 0 && <p className="text-xs text-[hsl(var(--text-4))] text-center py-3">No dependencies added</p>}
-                      {wizardDeps.map((d, i) => (
-                        <div key={i} className="flex items-center justify-between p-2 border border-[hsl(var(--border))] bg-surface">
-                          <div className="flex items-center gap-2 flex-1">
-                            <p className="text-xs font-medium text-[hsl(var(--text-1))]">{d.name} <span className="font-normal text-[hsl(var(--text-4))]">{d.version}</span></p>
-                            <span className="text-[10px] font-mono text-[hsl(var(--text-4))]">{d.license}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: d.risk === 'High' ? 'hsl(var(--s-er-bg))' : d.risk === 'Medium' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))', color: d.risk === 'High' ? 'hsl(var(--destructive))' : d.risk === 'Medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>{d.risk}</span>
-                            <button onClick={() => setWizardDeps(p => p.filter((_, idx) => idx !== i))} className="text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><X size={12} /></button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Step 4: Review */}
-              {wizardStep === 4 && (
-                <div className="space-y-4">
-                  <div className="p-3 border border-[hsl(var(--brand))] bg-[hsl(var(--brand-subtle))]">
-                    <p className="text-xs font-semibold text-[hsl(var(--brand))] mb-2">AIBOM Summary</p>
-                    <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-                      <p className="text-[hsl(var(--text-4))]">Model</p><p className="text-[hsl(var(--text-1))] font-medium">{form.model} {form.version}</p>
-                      <p className="text-[hsl(var(--text-4))]">Format</p><p className="text-[hsl(var(--text-1))] font-medium">{form.format}</p>
-                      <p className="text-[hsl(var(--text-4))]">Base Model</p><p className="text-[hsl(var(--text-1))] font-medium">{form.baseModel}</p>
-                      <p className="text-[hsl(var(--text-4))]">Provider</p><p className="text-[hsl(var(--text-1))] font-medium">{form.baseModelProvider}</p>
-                      <p className="text-[hsl(var(--text-4))]">Owner</p><p className="text-[hsl(var(--text-1))] font-medium">{form.owner || 'ML Engineering'}</p>
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-3 gap-2 text-center">
-                    {[
-                      { label: 'Training Datasets', value: wizardDatasets.length, color: 'hsl(var(--brand))' },
-                      { label: 'Frameworks', value: wizardFw.length, color: 'hsl(var(--s-ok-tx))' },
-                      { label: 'Dependencies', value: wizardDeps.length, color: wizardDeps.filter(d => d.risk === 'High').length > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))' },
-                    ].map(({ label, value, color }) => (
-                      <div key={label} className="p-3 border border-[hsl(var(--border))] bg-surface">
-                        <p className="text-lg font-bold" style={{ color }}>{value}</p>
-                        <p className="text-[10px] text-[hsl(var(--text-4))]">{label}</p>
-                      </div>
-                    ))}
-                  </div>
-                  {wizardDeps.filter(d => d.risk === 'High').length > 0 && (
-                    <div className="flex items-center gap-2 p-3 border border-[hsl(var(--s-er-bg))] bg-[hsl(var(--s-er-bg))]">
-                      <ShieldWarning size={16} className="text-[hsl(var(--destructive))] flex-shrink-0" />
-                      <p className="text-xs text-[hsl(var(--text-2))]">{wizardDeps.filter(d => d.risk === 'High').length} high-risk dependency(ies) detected — will flag vulnerabilities after generation</p>
-                    </div>
-                  )}
-                  <div className="p-3 border border-[hsl(var(--border))] bg-raised">
-                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Post-Generation Steps</p>
-                    <ul className="space-y-1">
-                      {['SHA-256 cryptographic hash will be auto-generated', 'Status set to "Pending Verification" — requires attestation', 'CVE scan will run against registered dependencies', 'License compatibility check will be performed'].map(s => (
-                        <li key={s} className="flex items-center gap-2 text-xs text-[hsl(var(--text-3))]">
-                          <CaretRight size={10} className="text-[hsl(var(--brand))]" /> {s}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer */}
-            <div className="flex items-center justify-between px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => wizardStep > 1 ? setWizardStep(s => s - 1) : setShowCreate(false)}
-                className="flex items-center gap-1.5 px-4 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
-                <ArrowLeft size={14} /> {wizardStep === 1 ? 'Cancel' : 'Back'}
-              </button>
-              {wizardStep < 4 ? (
-                <button
-                  onClick={() => {
-                    if (wizardStep === 1 && (!form.model || !form.version || !form.baseModel)) { toast.error('Model name, version, and base model are required'); return }
-                    setWizardStep(s => s + 1)
-                  }}
-                  className="flex items-center gap-1.5 px-4 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
-                  Next <ArrowRight size={14} />
-                </button>
-              ) : (
-                <button onClick={handleCreate} disabled={generating}
-                  className="flex items-center gap-1.5 px-5 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90 disabled:opacity-60">
-                  {generating ? <><Spinner size={14} className="animate-spin" /> Generating…</> : <><FloppyDisk size={14} /> Generate AIBOM</>}
-                </button>
-              )}
-            </div>
-          </div>
+      {/* ── Create / edit ── */}
+      <FormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        title={editing ? 'Edit AIBOM record' : 'New AIBOM record'}
+        description="A bill of materials is keyed to a registered model. The digest recorded here is producer-declared and is not verified by Sentinel."
+        submitLabel={editing ? 'Save changes' : 'Create record'}
+        busy={create.isPending || update.isPending}
+        onSubmit={submitForm}
+      >
+        <Field label="AIBOM reference">
+          <input value={form.aibomRef} onChange={e => setForm(p => ({ ...p, aibomRef: e.target.value }))}
+            className="w-full border border-[hsl(var(--border))] bg-raised px-3 py-2 text-sm text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Model" required hint="Stored as ai_models.id — the display name is resolved at render">
+            <Select value={form.modelId} onValueChange={v => setForm(p => ({ ...p, modelId: v }))}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="Select a model" /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {entities.models.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Model version">
+            <input value={form.modelVersion} onChange={e => setForm(p => ({ ...p, modelVersion: e.target.value }))}
+              className="w-full border border-[hsl(var(--border))] bg-raised px-3 py-2 text-sm text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+          </Field>
         </div>
-      )}
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Format">
+            <Select value={form.format} onValueChange={v => setForm(p => ({ ...p, format: v }))}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {FORMATS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Spec version">
+            <input value={form.specVersion} onChange={e => setForm(p => ({ ...p, specVersion: e.target.value }))}
+              className="w-full border border-[hsl(var(--border))] bg-raised px-3 py-2 text-sm text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Vendor">
+            <Select value={form.vendorId} onValueChange={v => setForm(p => ({ ...p, vendorId: v }))}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="None" /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {entities.vendors.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Status">
+            <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+        <Field label="Producer-declared digest" hint="Whatever the producer asserted. Sentinel does not recompute or verify it, and it is rendered as self-declared.">
+          <input value={form.declaredDigest} onChange={e => setForm(p => ({ ...p, declaredDigest: e.target.value }))}
+            placeholder="e.g. 9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+            className="w-full border border-[hsl(var(--border))] bg-raised px-3 py-2 font-mono text-xs text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Model weights URI">
+            <input value={form.weightsUri} onChange={e => setForm(p => ({ ...p, weightsUri: e.target.value }))}
+              className="w-full border border-[hsl(var(--border))] bg-raised px-3 py-2 text-sm text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+          </Field>
+          <Field label="Country of origin">
+            <input value={form.countryOfOrigin} onChange={e => setForm(p => ({ ...p, countryOfOrigin: e.target.value }))}
+              className="w-full border border-[hsl(var(--border))] bg-raised px-3 py-2 text-sm text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+          </Field>
+        </div>
+        <Field label="Notes">
+          <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3}
+            className="w-full resize-none border border-[hsl(var(--border))] bg-raised px-3 py-2 text-sm text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+        </Field>
+      </FormDialog>
+
+      {/* ── Add component ── */}
+      <FormDialog
+        open={componentOpen}
+        onOpenChange={setComponentOpen}
+        title="Add component"
+        description="Components are the inventory a CVE scan matches against — a package URL (purl) is what makes that matching possible."
+        submitLabel="Add component"
+        busy={createComponent.isPending}
+        onSubmit={submitComponent}
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Name" required>
+            <input value={componentForm.name} onChange={e => setComponentForm(p => ({ ...p, name: e.target.value }))}
+              className="w-full border border-[hsl(var(--border))] bg-raised px-3 py-2 text-sm text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+          </Field>
+          <Field label="Version">
+            <input value={componentForm.version} onChange={e => setComponentForm(p => ({ ...p, version: e.target.value }))}
+              className="w-full border border-[hsl(var(--border))] bg-raised px-3 py-2 text-sm text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Type">
+            <Select value={componentForm.componentType} onValueChange={v => setComponentForm(p => ({ ...p, componentType: v }))}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {COMPONENT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Licence risk">
+            <Select value={componentForm.licenseRisk} onValueChange={v => setComponentForm(p => ({ ...p, licenseRisk: v }))}>
+              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {LICENSE_RISKS.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+        <Field label="Package URL (purl)" hint="e.g. pkg:pypi/torch@2.2.0">
+          <input value={componentForm.purl} onChange={e => setComponentForm(p => ({ ...p, purl: e.target.value }))}
+            className="w-full border border-[hsl(var(--border))] bg-raised px-3 py-2 font-mono text-xs text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="SPDX licence id" hint="e.g. Apache-2.0, MIT, BSD-3-Clause">
+            <input value={componentForm.licenseSpdx} onChange={e => setComponentForm(p => ({ ...p, licenseSpdx: e.target.value }))}
+              className="w-full border border-[hsl(var(--border))] bg-raised px-3 py-2 text-sm text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+          </Field>
+          <Field label="Supplier">
+            <input value={componentForm.supplier} onChange={e => setComponentForm(p => ({ ...p, supplier: e.target.value }))}
+              className="w-full border border-[hsl(var(--border))] bg-raised px-3 py-2 text-sm text-[hsl(var(--text-1))] focus:border-[hsl(var(--brand))] focus:outline-none" />
+          </Field>
+        </div>
+        <label className="flex items-center gap-2 text-[13px] text-[hsl(var(--text-2))]">
+          <input type="checkbox" checked={componentForm.isDirect} onChange={e => setComponentForm(p => ({ ...p, isDirect: e.target.checked }))} />
+          Direct dependency
+        </label>
+      </FormDialog>
 
       <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={o => !o && setDeleteTarget(null)}
-        onConfirm={handleDelete}
+        open={!!toDelete}
+        onOpenChange={o => !o && setToDelete(null)}
+        onConfirm={confirmDelete}
         title="Delete AIBOM record?"
-        description={`Permanently delete the AIBOM for ${deleteTarget?.modelName} ${deleteTarget?.modelVersion}. This cannot be undone.`}
+        description={`Permanently delete ${toDelete?.aibomRef ?? 'this record'} and its components and vulnerability rows. This cannot be undone.`}
         isDestructive
-        confirmLabel="Delete AIBOM"
+        confirmLabel="Delete record"
+      />
+
+      <ConfirmDialog
+        open={!!componentToDelete}
+        onOpenChange={o => !o && setComponentToDelete(null)}
+        onConfirm={confirmDeleteComponent}
+        title="Remove component?"
+        description={`Remove ${componentToDelete?.name ?? 'this component'} from the bill of materials.`}
+        isDestructive
+        confirmLabel="Remove component"
       />
     </div>
   )

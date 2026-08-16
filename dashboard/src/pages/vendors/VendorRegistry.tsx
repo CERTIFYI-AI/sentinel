@@ -1,794 +1,610 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
 //
-// VendorRegistry — third-party AI vendor governance and risk management.
-// Displays vendor KPIs, concentration risk, DPA warnings, and a full vendor table.
+// VendorRegistry — the third-party register, backed by the real org-scoped
+// `vendors` table.
+//
+// Removed in the 2026-08 TPRM rebuild, and deliberately not replaced with a
+// prettier version of the same thing:
+//   * CONCENTRATION_DATA — a hardcoded OpenAI 45% / Anthropic 30% chart with a
+//     "exceeds 40% dependency threshold" warning, shown to every customer
+//     regardless of their estate. Concentration is now computed from the real
+//     vendor→model attribution, and shows an empty state when no model has
+//     been attributed to a vendor yet.
+//   * VSQ_DATA — six rows keyed on 'V-001'-style codes that could never match
+//     a uuid, so the column was permanently dead. The column now reads the
+//     real `vendor_questionnaires` table.
+//   * The DPA warning banner, which read `dpaStatus ?? 'not_signed'` against a
+//     column that did not exist and therefore accused EVERY vendor of a GDPR
+//     Art. 28 violation. It now derives from the real `dpa_status` column and
+//     appears only when a vendor is genuinely recorded as unsigned.
 
-import { useVendorsData } from "@/hooks/useVendorsData";
-import { useAiApps } from "@/hooks/useGovernAddons";
-import { useState, useCallback, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import {
-  Eye, PencilSimple, Trash, Plus, Buildings, Funnel,
-  Warning, CheckCircle, ShieldWarning, Export, Handshake, Globe,
-  CloudArrowUp, Siren, ChartPie, ClipboardText,
-} from '@phosphor-icons/react';
-import { Card, CardContent } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
+  Buildings, Plus, Export, ShieldWarning, CheckCircle, ChartPie,
+  ClipboardText, Siren, Gauge, FileArrowUp,
+} from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow'
+import { DataTable, type Column } from '@/components/ui/DataTable'
+import { FilterBar } from '@/components/ui/FilterBar'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { FormDialog, Field } from '@/components/evals/FormDialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent } from '@/components/ui/card'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useVendorsData, useVendorConcentration } from '@/hooks/useVendorsData'
+import { useVendorQuestionnaires } from '@/hooks/useVendorQuestionnaires'
+import { useModelsData } from '@/hooks/useModelsData'
+import { useAiApps } from '@/hooks/useGovernAddons'
+import type { VendorRecord, VendorRiskTier, VendorCriticality, VendorDpaStatus } from '@/services/vendorService'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../../components/ui/select';
-import { Progress } from '../../components/ui/progress';
-import { PageHeader } from '../../components/ui/PageHeader';
-import { StatCardRow } from '../../components/ui/StatCardRow';
-import { FilterBar } from '../../components/ui/FilterBar';
-import { EmptyState } from '../../components/ui/EmptyState';
-import type { StatCardRowItem } from '../../components/ui/StatCardRow';
-import {
-  Vendor, MODELS, severityColor, statusColor, formatDate,
-} from '../../data/seed';
-import { PageSkeleton } from '@/components/ui/PageSkeleton';
-import { useSettingsStore } from '../../stores/settingsStore';
+  Pill, LinkPill, FilterChip, tierTone, tierLabel, dpaTone, fmtDate,
+  VENDOR_TIERS, VENDOR_CRITICALITIES, DPA_STATUSES,
+} from './vendorUi'
 
+const CATEGORIES = [
+  'Foundation Model', 'Infrastructure', 'Data Provider', 'Tool Provider',
+  'Analytics Platform', 'AI Platform', 'Consulting', 'Other',
+]
+const STATUSES = ['approved', 'in_review', 'high_risk', 'blocked']
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
-
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
-
-function tierColor(risk: Vendor['risk']) {
-  const map: Record<string, { bg: string; color: string; label: string }> = {
-    critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Tier 1' },
-    high: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Tier 1' },
-    medium: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Tier 2' },
-    low: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Tier 3' },
-  };
-  return map[risk] ?? map.medium;
+type FormState = {
+  name: string
+  category: string
+  website: string
+  contactEmail: string
+  businessOwner: string
+  vendorManager: string
+  services: string
+  aiUse: string
+  riskTierLabel: VendorRiskTier
+  criticality: VendorCriticality
+  dpaStatus: VendorDpaStatus
+  status: string
+  description: string
 }
 
-function dpaStatusBadge(dpa: string) {
-  const sc = statusColor(dpa === 'signed' ? 'signed' : dpa === 'pending' ? 'pending' : 'not_signed');
-  const label = dpa === 'signed' ? 'DPA Signed' : dpa === 'pending' ? 'DPA Pending' : 'DPA Not Signed';
-  return <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 10 }}>{label}</Badge>;
+const BLANK: FormState = {
+  name: '', category: '', website: '', contactEmail: '', businessOwner: '',
+  vendorManager: '', services: '', aiUse: '', riskTierLabel: 'medium',
+  criticality: 'moderate', dpaStatus: 'pending', status: 'in_review', description: '',
 }
 
-function scoreProgressColor(score: number): string {
-  if (score >= 80) return 'hsl(var(--s-ok-tx))';
-  if (score >= 60) return 'hsl(var(--s-wn-tx))';
-  return 'hsl(var(--destructive))';
-}
-
-// ── Concentration Risk Data ───────────────────────────────────────────────────
-
-const CONCENTRATION_DATA: { vendor: string; pct: number; color: string }[] = [
-  { vendor: 'OpenAI', pct: 45, color: 'hsl(var(--s-in-tx))' },
-  { vendor: 'Anthropic', pct: 30, color: 'hsl(var(--tag-purple))' },
-  { vendor: 'Internal', pct: 25, color: 'hsl(var(--s-ok-tx))' },
-];
-
-const CONCENTRATION_THRESHOLD = 40;
-
-// ── Security Questionnaire Data ──────────────────────────────────────────────
-
-type VSQStatus = 'Complete' | 'In Progress' | 'Overdue' | 'Not Started';
-
-interface VSQEntry { vendorId: string; status: VSQStatus; dueDate: string }
-
-const VSQ_DATA: VSQEntry[] = [
-  { vendorId: 'V-001', status: 'Complete', dueDate: '2026-02-15' },
-  { vendorId: 'V-002', status: 'In Progress', dueDate: '2026-04-30' },
-  { vendorId: 'V-003', status: 'Overdue', dueDate: '2026-03-01' },
-  { vendorId: 'V-004', status: 'Not Started', dueDate: '2026-05-15' },
-  { vendorId: 'V-005', status: 'Complete', dueDate: '2026-01-20' },
-  { vendorId: 'V-006', status: 'In Progress', dueDate: '2026-06-01' },
-];
-
-function vsqStatusStyle(status: VSQStatus): { bg: string; color: string } {
-  switch (status) {
-    case 'Complete': return { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' };
-    case 'In Progress': return { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' };
-    case 'Overdue': return { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' };
-    case 'Not Started': return { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))' };
+function toForm(v: VendorRecord): FormState {
+  return {
+    name: v.name ?? '',
+    category: v.category ?? '',
+    website: v.website ?? '',
+    contactEmail: v.contactEmail ?? '',
+    businessOwner: v.businessOwner ?? '',
+    vendorManager: v.vendorManager ?? '',
+    services: v.services ?? '',
+    aiUse: v.aiUse ?? '',
+    riskTierLabel: (v.riskTierLabel ?? 'medium') as VendorRiskTier,
+    criticality: (v.criticality ?? 'moderate') as VendorCriticality,
+    dpaStatus: (v.dpaStatus ?? 'pending') as VendorDpaStatus,
+    status: v.status ?? 'in_review',
+    description: v.description ?? '',
   }
 }
 
-// ── Main Component ────────────────────────────────────────────────────────────
-
 export default function VendorRegistry() {
-  const { orgName } = useSettingsStore();
-  const navigate = useNavigate();
-  const { vendors: supabaseVendors, isLoading: vendorsLoading } = useVendorsData();
-  // How many governed AI apps are actually attributed to a vendor — null while
-  // loading, so the count is never rendered as a premature zero.
-  const { data: aiApps, isLoading: aiAppsLoading } = useAiApps();
-  const vendorLinkedApps = aiAppsLoading
-    ? null
-    : (aiApps ?? []).filter((a: any) => !!a.vendorId).length;
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  useEffect(() => { setVendors(supabaseVendors as any); }, [supabaseVendors]);
+  const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const modelParam = params.get('model')
 
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
-  const [detailTab, setDetailTab] = useState('overview');
-  const [editVendor, setEditVendor] = useState<Vendor | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<Vendor | null>(null);
-  const [addOpen, setAddOpen] = useState(false);
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const { vendors, isLoading, isError, error, refetch, create, update, remove } = useVendorsData()
+  const concentration = useVendorConcentration()
+  const { questionnaires } = useVendorQuestionnaires()
+  const { models } = useModelsData()
+  const { data: aiApps, isLoading: aiAppsLoading } = useAiApps()
 
-  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, text, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-  }, []);
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [tierFilter, setTierFilter] = useState('')
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<VendorRecord | null>(null)
+  const [form, setForm] = useState<FormState>(BLANK)
+  const [deleteTarget, setDeleteTarget] = useState<VendorRecord | null>(null)
 
-  if (vendorsLoading) return <PageSkeleton />;
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }))
 
-  // ── Metrics ──────────────────────────────────────────────────────────────────
-  const totalVendors = vendors.length;
-  const criticalRiskVendors = vendors.filter(v => v.risk === 'critical' || v.risk === 'high').length;
-  const dpaSigned = vendors.filter(v => v.dpaStatus === 'signed').length;
-  const dpaPct = Math.round((dpaSigned / Math.max(totalVendors, 1)) * 100);
-  const avgScore = Math.round(vendors.reduce((s, v) => s + v.score, 0) / Math.max(totalVendors, 1));
+  const modelNames = useMemo(
+    () => new Map(models.map((m) => [m.id, m.name])),
+    [models],
+  )
+  const modelFilterName = modelParam ? (modelNames.get(modelParam) ?? 'Unavailable') : null
 
-  // DPA warning vendors
-  const dpaWarningVendors = vendors.filter(v => v.dpaStatus === 'not_signed');
+  /** Latest questionnaire per vendor, from the real table. */
+  const latestVsq = useMemo(() => {
+    const byVendor = new Map<string, (typeof questionnaires)[number]>()
+    for (const q of questionnaires) {
+      if (!q.vendorUuid) continue
+      const cur = byVendor.get(q.vendorUuid)
+      if (!cur || (q.createdAt ?? '') > (cur.createdAt ?? '')) byVendor.set(q.vendorUuid, q)
+    }
+    return byVendor
+  }, [questionnaires])
 
-  // ── Filters ───────────────────────────────────────────────────────────────────
-  const filtered = vendors.filter(v => {
-    const matchSearch = v.id.toLowerCase().includes(search.toLowerCase()) ||
-      v.name.toLowerCase().includes(search.toLowerCase()) ||
-      v.category.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = !statusFilter || v.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+  const vendorLinkedApps = aiAppsLoading ? null : (aiApps ?? []).filter((a) => !!a.vendorId).length
 
-  const activeFilterCount = statusFilter ? 1 : 0;
+  // ── KPIs. A metric with no underlying data renders '—', never 0. ──────────
+  const scored = vendors.filter((v) => v.score !== null && v.score !== undefined)
+  const avgScore = scored.length
+    ? Math.round(scored.reduce((s, v) => s + (v.score ?? 0), 0) / scored.length)
+    : null
 
-  const clearAll = () => {
-    setSearch('');
-    setStatusFilter('');
-  };
+  const tieredVendors = vendors.filter((v) => !!v.riskTierLabel)
+  const criticalVendors = vendors.filter((v) => v.riskTierLabel === 'critical' || v.riskTierLabel === 'high')
 
-  const handleDelete = () => {
-    if (!deleteTarget) return;
-    setVendors(prev => prev.filter(v => v.id !== deleteTarget.id));
-    toast(`${deleteTarget.id} ${deleteTarget.name} removed`, 'error');
-    setDeleteTarget(null);
-  };
+  const dpaKnown = vendors.filter((v) => !!v.dpaStatus)
+  const dpaSigned = dpaKnown.filter((v) => v.dpaStatus === 'signed')
+  const dpaPct = dpaKnown.length ? Math.round((dpaSigned.length / dpaKnown.length) * 100) : null
+  /** Only vendors POSITIVELY recorded as unsigned — an unset column is unknown,
+   *  not a violation. */
+  const dpaUnsigned = vendors.filter((v) => v.dpaStatus === 'not_signed')
 
-  const handleExport = () => {
-    const csv = [
-      ['ID', 'Name', 'Category', 'Risk', 'Score', 'DPA Status', 'Review Status', 'Last Review'].join(','),
-      ...vendors.map(v => [v.id, v.name, v.category, v.risk, v.score, v.dpaStatus, v.status, v.lastReview].join(','))
-    ].join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `vendor-registry-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    toast('Vendor registry exported as CSV');
-  };
-
-  // ── KPI stat cards ──────────────────────────────────────────────────────────
-  const kpiCards: StatCardRowItem[] = [
+  const kpis: StatCardRowItem[] = [
     {
-      label: 'Total Vendors',
-      value: totalVendors,
-      icon: <Buildings size={18} />,
-      description: `${totalVendors} third-party AI vendors registered`,
+      label: 'Vendors', value: vendors.length, icon: <Buildings size={18} />,
+      description: `${vendors.length} third-party vendors registered`,
     },
     {
-      label: 'Critical Risk',
-      value: criticalRiskVendors,
+      label: 'High / Critical Tier',
+      value: tieredVendors.length ? criticalVendors.length : '—',
       icon: <ShieldWarning size={18} />,
-      delta: criticalRiskVendors > 0 ? String(criticalRiskVendors) : undefined,
-      deltaDir: 'up',
-      isPositiveUp: false,
-      description: `${criticalRiskVendors} vendors rated high or critical risk`,
+      description: tieredVendors.length
+        ? `${criticalVendors.length} of ${tieredVendors.length} tiered vendors are high or critical`
+        : 'No vendor has been tiered yet',
     },
     {
       label: 'DPA Signed',
-      value: `${dpaPct}%`,
+      value: dpaPct === null ? '—' : `${dpaPct}%`,
       icon: <CheckCircle size={18} />,
-      delta: `${dpaSigned}/${totalVendors}`,
-      deltaDir: dpaPct >= 80 ? 'up' : 'down',
+      delta: dpaKnown.length ? `${dpaSigned.length}/${dpaKnown.length}` : undefined,
       isPositiveUp: true,
-      description: `${dpaSigned} of ${totalVendors} vendors have signed DPAs (${dpaPct}%)`,
+      description: dpaPct === null
+        ? 'No vendor has a recorded DPA status'
+        : `${dpaSigned.length} of ${dpaKnown.length} vendors with a recorded DPA status are signed`,
     },
     {
       label: 'Avg Score',
-      value: avgScore,
+      value: avgScore === null ? '—' : avgScore,
       icon: <ChartPie size={18} />,
-      delta: avgScore >= 70 ? '+' : undefined,
-      deltaDir: avgScore >= 70 ? 'up' : 'down',
+      delta: scored.length ? `${scored.length} scored` : undefined,
       isPositiveUp: true,
-      description: `Average vendor risk score: ${avgScore}/100`,
+      description: avgScore === null
+        ? 'No vendor has been scored yet'
+        : `Mean of ${scored.length} scored vendors`,
     },
-  ];
+  ]
+
+  // ── filtering ────────────────────────────────────────────────────────────
+  const filtered = useMemo(() => vendors.filter((v) => {
+    if (modelParam && !v.linkedModels.includes(modelParam)) return false
+    if (statusFilter && v.status !== statusFilter) return false
+    if (tierFilter && v.riskTierLabel !== tierFilter) return false
+    if (search) {
+      const q = search.toLowerCase()
+      const hay = `${v.name} ${v.category ?? ''} ${v.services ?? ''} ${v.businessOwner ?? ''}`.toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    return true
+  }), [vendors, modelParam, statusFilter, tierFilter, search])
+
+  function clearModelFilter() {
+    const next = new URLSearchParams(params)
+    next.delete('model')
+    setParams(next, { replace: true })
+  }
+
+  function openCreate() { setEditing(null); setForm(BLANK); setFormOpen(true) }
+  function openEdit(v: VendorRecord) { setEditing(v); setForm(toForm(v)); setFormOpen(true) }
+
+  function submit() {
+    const patch: Partial<VendorRecord> = {
+      name: form.name.trim(),
+      category: form.category || null,
+      website: form.website || null,
+      contactEmail: form.contactEmail || null,
+      businessOwner: form.businessOwner || null,
+      vendorManager: form.vendorManager || null,
+      services: form.services || null,
+      aiUse: form.aiUse || null,
+      riskTierLabel: form.riskTierLabel,
+      criticality: form.criticality,
+      dpaStatus: form.dpaStatus,
+      status: form.status,
+      description: form.description || null,
+    }
+    // The dialog closes only after the write resolves.
+    if (editing) {
+      update.mutate({ id: editing.id, patch }, { onSuccess: () => setFormOpen(false) })
+    } else {
+      create.mutate(patch, { onSuccess: () => setFormOpen(false) })
+    }
+  }
+
+  function handleExport() {
+    const header = [
+      'id', 'name', 'category', 'risk_tier_label', 'criticality', 'score',
+      'dpa_status', 'status', 'business_owner', 'reassessment_due_at',
+    ]
+    const csv = [
+      header.join(','),
+      ...filtered.map((v) => [
+        v.id, JSON.stringify(v.name ?? ''), v.category ?? '', v.riskTierLabel ?? '',
+        v.criticality ?? '', v.score ?? '', v.dpaStatus ?? '', v.status ?? '',
+        JSON.stringify(v.businessOwner ?? ''), v.reassessmentDueAt ?? '',
+      ].join(',')),
+    ].join('\n')
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    a.download = `vendor-registry-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+  }
+
+  const columns: Column<VendorRecord>[] = [
+    {
+      key: 'name', header: 'Vendor', sortable: true,
+      render: (v) => (
+        <div>
+          <div className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{v.name || 'Unnamed vendor'}</div>
+          {/* The uuid is the key, not a label — we show what the vendor does. */}
+          <div className="max-w-xs truncate text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+            {v.services || v.description || '—'}
+          </div>
+        </div>
+      ),
+    },
+    { key: 'category', header: 'Category', sortable: true, render: (v) => (
+      <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{v.category || '—'}</span>
+    ) },
+    {
+      key: 'riskTierLabel', header: 'Risk Tier', sortable: true,
+      render: (v) => <Pill tone={tierTone(v.riskTierLabel)}>{tierLabel(v.riskTierLabel)}</Pill>,
+    },
+    {
+      key: 'score', header: 'Score', sortable: true,
+      render: (v) => (
+        v.score === null || v.score === undefined
+          ? <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>
+          : (
+            <div className="flex min-w-[110px] items-center gap-2">
+              <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))', minWidth: 26 }}>{v.score}</span>
+              <div className="h-1.5 flex-1" style={{ background: 'hsl(var(--border))' }}>
+                <div
+                  className="h-full"
+                  style={{
+                    width: `${Math.max(0, Math.min(100, v.score))}%`,
+                    background: v.score >= 80 ? 'hsl(var(--s-ok-tx))' : v.score >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
+                  }}
+                />
+              </div>
+            </div>
+          )
+      ),
+    },
+    {
+      key: 'dpaStatus', header: 'DPA', sortable: true,
+      render: (v) => v.dpaStatus
+        ? <Pill tone={dpaTone(v.dpaStatus)}>{v.dpaStatus.replace(/_/g, ' ')}</Pill>
+        : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>,
+    },
+    {
+      key: 'vsq', header: 'Questionnaire',
+      render: (v) => {
+        const q = latestVsq.get(v.id)
+        if (!q) {
+          return (
+            <button
+              type="button"
+              className="text-xs underline-offset-2 hover:underline"
+              style={{ color: 'hsl(var(--brand))' }}
+              onClick={(e) => { e.stopPropagation(); navigate(`/vendors/${v.id}/questionnaire`) }}
+            >
+              Send VSQ
+            </button>
+          )
+        }
+        const pct = q.score != null && q.maxScore ? Math.round((q.score / q.maxScore) * 100) : null
+        return (
+          <div className="flex flex-col gap-0.5">
+            <span className="text-xs capitalize" style={{ color: 'hsl(var(--text-2))' }}>
+              {q.reviewDecision ? q.reviewDecision.replace(/_/g, ' ') : q.status}
+            </span>
+            <span className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>
+              {pct === null ? '—' : `${pct}%`} · {fmtDate(q.responseDate ?? q.createdAt)}
+            </span>
+          </div>
+        )
+      },
+    },
+    { key: 'businessOwner', header: 'Business Owner', sortable: true, render: (v) => (
+      <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{v.businessOwner || '—'}</span>
+    ) },
+    { key: 'reassessmentDueAt', header: 'Reassessment Due', sortable: true, render: (v) => (
+      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{fmtDate(v.reassessmentDueAt)}</span>
+    ) },
+  ]
+
+  if (isLoading) return <PageSkeleton title="Vendor Registry" rows={8} />
 
   return (
     <div className="space-y-6">
-      {/* Toast layer */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-        {toasts.map(t => (
-          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
-          }}>{t.text}</div>
-        ))}
-      </div>
-
-      {/* Enterprise Page Header */}
       <PageHeader
         title="Vendor Registry"
         subtitle="Third-party AI vendor governance and risk"
-        breadcrumbs={[
-          { label: 'Home', href: '/' },
-          { label: 'Vendors' },
-        ]}
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Vendors' }]}
         actions={
-          <div className="flex gap-2">
-            {/* The AI tools these vendors supply, governed in the AI Apps
-                inventory — carrying the real count so the relationship is
-                visible here, not just a link out. */}
-            <Button variant="ghost" onClick={() => navigate('/ai-apps')} style={{ borderRadius: 0 }}>
-              AI Apps{vendorLinkedApps != null ? ` (${vendorLinkedApps})` : ''}
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/vendors/tprm')}>TPRM Workspace</Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/vendors/assessments')}>
+              <ClipboardText size={14} /> Assessments
             </Button>
-            {/* Subprocessors published externally are drawn from these records. */}
-            <Button variant="ghost" onClick={() => navigate('/trust-center')} style={{ borderRadius: 0 }}>
-              Trust Center
+            <Button variant="ghost" size="sm" onClick={() => navigate('/vendors/sla')}>
+              <Gauge size={14} /> SLAs
             </Button>
-            <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-              <Export className="h-4 w-4" />Export CSV
+            <Button variant="ghost" size="sm" onClick={() => navigate('/vendor-upload')}>
+              <FileArrowUp size={14} /> Documents
             </Button>
-            <Button
-              onClick={() => setAddOpen(true)}
-              style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
-            >
-              <Plus className="h-4 w-4" />Add Vendor
+            <Button variant="ghost" size="sm" onClick={() => navigate('/ai-apps')}>
+              AI Apps{vendorLinkedApps !== null ? ` (${vendorLinkedApps})` : ''}
             </Button>
+            <Button variant="outline" size="sm" onClick={handleExport}>
+              <Export size={14} /> Export CSV
+            </Button>
+            <Button size="sm" onClick={openCreate}><Plus size={14} /> Add Vendor</Button>
           </div>
         }
       />
 
-      {/* KPI Row */}
-      <StatCardRow cards={kpiCards} />
-
-      {/* DPA Warning Banner */}
-      {dpaWarningVendors.length > 0 && (
-        <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-bg))' }}>
-          <Siren size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
-          <div>
-            <p className="text-sm font-semibold text-destructive">
-              {dpaWarningVendors.length} vendor{dpaWarningVendors.length > 1 ? 's' : ''} processing EU customer data without signed DPA — GDPR Art.28 violation
-            </p>
-            <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>
-              {dpaWarningVendors.map(v => v.name).join(', ')} require{dpaWarningVendors.length === 1 ? 's' : ''} immediate DPA execution.
-            </p>
-          </div>
-        </div>
+      {isError && (
+        <ErrorState
+          title="Could not load vendors"
+          error={error}
+          onRetry={() => refetch()}
+        />
       )}
 
-      {/* Concentration Risk */}
-      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <ChartPie size={16} style={{ color: 'hsl(var(--brand))' }} />
-            <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Vendor Concentration Risk</span>
-          </div>
-          {CONCENTRATION_DATA.some(d => d.pct > CONCENTRATION_THRESHOLD) && (
-            <div className="flex items-center gap-2 px-3 py-2 mb-3" style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-bg))', borderRadius: 0 }}>
-              <Warning size={12} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
-              <p className="text-xs" style={{ color: 'hsl(var(--s-wn-tx))' }}>
-                <strong>Warning:</strong> {CONCENTRATION_DATA.filter(d => d.pct > CONCENTRATION_THRESHOLD).map(d => d.vendor).join(', ')} exceed{CONCENTRATION_DATA.filter(d => d.pct > CONCENTRATION_THRESHOLD).length === 1 ? 's' : ''} {CONCENTRATION_THRESHOLD}% dependency threshold
-              </p>
+      {!isError && (
+        <>
+          <StatCardRow cards={kpis} />
+
+          {modelParam && (
+            <div className="flex items-center gap-2">
+              <FilterChip label="Model" value={modelFilterName ?? 'Unavailable'} onClear={clearModelFilter} />
+              <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                Showing vendors that supply this model.
+              </span>
             </div>
           )}
-          <div className="space-y-2">
-            {CONCENTRATION_DATA.map(d => (
-              <div key={d.vendor} className="flex items-center gap-3">
-                <span className="text-xs w-20 font-medium" style={{ color: 'hsl(var(--text-1))' }}>{d.vendor}</span>
-                <div className="flex-1 h-2" style={{ background: 'hsl(var(--border))', borderRadius: 0 }}>
-                  <div className="h-full" style={{ width: `${d.pct}%`, background: d.color, borderRadius: 0 }} />
+
+          {/* DPA gap — derived from the real dpa_status column, and shown only
+              when at least one vendor is actually recorded as unsigned. */}
+          {dpaUnsigned.length > 0 && (
+            <div
+              className="flex items-start gap-3 p-4"
+              style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))' }}
+            >
+              <Siren size={20} style={{ color: 'hsl(var(--destructive))', flexShrink: 0, marginTop: 1 }} />
+              <div>
+                <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>
+                  {dpaUnsigned.length} vendor{dpaUnsigned.length > 1 ? 's are' : ' is'} recorded as having no signed DPA
+                </p>
+                <p className="mt-1 text-xs" style={{ color: 'hsl(var(--text-2))' }}>
+                  Where the vendor processes personal data on your behalf, GDPR Art. 28 requires a
+                  data processing agreement before processing begins.
+                </p>
+                <div className="mt-2 flex flex-wrap gap-1.5">
+                  {dpaUnsigned.slice(0, 8).map((v) => (
+                    <LinkPill key={v.id} to={`/vendors/${v.id}`}>{v.name || 'Unnamed vendor'}</LinkPill>
+                  ))}
+                  {dpaUnsigned.length > 8 && (
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                      +{dpaUnsigned.length - 8} more
+                    </span>
+                  )}
                 </div>
-                <span className="text-xs font-bold w-10 text-right" style={{ color: d.pct > CONCENTRATION_THRESHOLD ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>
-                  {d.pct}%
-                </span>
-                {d.pct > CONCENTRATION_THRESHOLD && (
-                  <Warning size={12} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />
-                )}
               </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+          )}
 
-      {/* FilterBar — replaces the manual Input + Select controls */}
-      <FilterBar
-        search={search}
-        onSearchChange={setSearch}
-        searchPlaceholder="Search vendors..."
-        filters={[
-          {
-            key: 'status',
-            label: 'Status',
-            value: statusFilter,
-            onChange: setStatusFilter,
-            options: [
-              { label: 'Approved', value: 'approved' },
-              { label: 'In Review', value: 'in_review' },
-              { label: 'High Risk', value: 'high_risk' },
-              { label: 'Blocked', value: 'blocked' },
-            ],
-          },
-        ]}
-        activeFilterCount={activeFilterCount}
-        onClearAll={clearAll}
-        trailing={
-          <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-            {filtered.length} vendors
-          </span>
-        }
-      />
+          {/* Concentration — computed from the real vendor→model attribution. */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <ChartPie size={16} style={{ color: 'hsl(var(--brand))' }} />
+                <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                  Vendor Concentration
+                </span>
+                <span className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>
+                  share of the attributed model estate
+                </span>
+              </div>
 
-      {/* Table */}
-      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardContent className="p-0">
-          {filtered.length === 0 ? (
+              {concentration.isError ? (
+                <ErrorState title="Could not compute concentration" error={concentration.error} />
+              ) : concentration.isLoading ? (
+                <div className="h-16" aria-label="Loading concentration" role="status" />
+              ) : concentration.slices.length === 0 ? (
+                <EmptyState
+                  icon={<ChartPie size={28} weight="duotone" />}
+                  title="No model is attributed to a vendor yet"
+                  description="Concentration is measured over AI models linked to a vendor. Link models to their supplier on the vendor record to see the real distribution."
+                />
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    {concentration.slices.map((s) => (
+                      <div key={s.vendorId} className="flex items-center gap-3">
+                        <LinkPill to={`/vendors/${s.vendorId}`}>{s.vendorName || 'Unnamed vendor'}</LinkPill>
+                        <div className="h-2 flex-1" style={{ background: 'hsl(var(--border))' }}>
+                          <div
+                            className="h-full"
+                            style={{
+                              width: `${s.pct}%`,
+                              background: s.pct > 40 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--brand))',
+                            }}
+                          />
+                        </div>
+                        <span className="w-24 text-right text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                          {Math.round(s.pct)}% · {s.modelCount}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>
+                    Based on {concentration.attributedModels} of {concentration.totalModels} registered models that
+                    are attributed to a vendor. Unattributed models are excluded rather than assumed.
+                  </p>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <FilterBar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search vendors, services, owners…"
+            filters={[
+              {
+                key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter,
+                options: STATUSES.map((s) => ({ label: s.replace(/_/g, ' '), value: s })),
+              },
+              {
+                key: 'tier', label: 'Risk Tier', value: tierFilter, onChange: setTierFilter,
+                options: VENDOR_TIERS.map((t) => ({ label: t, value: t })),
+              },
+            ]}
+            activeFilterCount={[statusFilter, tierFilter].filter(Boolean).length}
+            onClearAll={() => { setSearch(''); setStatusFilter(''); setTierFilter('') }}
+            trailing={
+              <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                {filtered.length} of {vendors.length}
+              </span>
+            }
+          />
+
+          {vendors.length === 0 ? (
             <EmptyState
               icon={<Buildings size={32} weight="duotone" />}
-              title="No vendors found"
-              description="No vendors match your search or filter criteria."
-              action={
-                <Button variant="outline" onClick={clearAll}>
-                  Clear Filters
-                </Button>
-              }
+              title="No vendors registered"
+              description="Register the third parties that supply or host your AI capability. Every assessment, SLA and document in this cluster hangs off a vendor record."
+              action={<Button size="sm" onClick={openCreate}><Plus size={14} /> Add Vendor</Button>}
             />
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    {['Vendor', 'Category', 'Risk Tier', 'Score', 'DPA Status', 'VSQ Status', 'Review Status', 'Assignee', 'Last Review', 'Actions'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(v => {
-                    const tc = tierColor(v.risk);
-                    const stc = statusColor(v.status);
-                    return (
-                      <tr
-                        key={v.id}
-                        className="hover:bg-muted/30 transition-colors cursor-pointer"
-                        style={{ borderBottom: '1px solid hsl(var(--border))' }}
-                        onClick={() => navigate(`/vendors/${v.id}`)}
-                      >
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{v.name}</p>
-                            <p className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{v.id}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{v.category}</td>
-                        <td className="px-4 py-3">
-                          <Badge style={{ background: tc.bg, color: tc.color, borderRadius: 0, fontSize: 10 }}>
-                            {tc.label}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2 min-w-[120px]">
-                            <span className="text-xs font-bold" style={{ color: scoreProgressColor(v.score), minWidth: 28 }}>{v.score}</span>
-                            <div className="flex-1 h-1.5" style={{ background: 'hsl(var(--border))' }}>
-                              <div className="h-full transition-all" style={{ width: `${v.score}%`, background: scoreProgressColor(v.score) }} />
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">{dpaStatusBadge(v.dpaStatus)}</td>
-                        <td className="px-4 py-3">
-                          {(() => {
-                            const vsq = VSQ_DATA.find(q => q.vendorId === v.id);
-                            if (!vsq) return <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>--</span>;
-                            const st = vsqStatusStyle(vsq.status);
-                            return (
-                              <div className="flex flex-col gap-0.5">
-                                <Badge style={{ background: st.bg, color: st.color, borderRadius: 0, fontSize: 10 }}>
-                                  <ClipboardText size={10} weight="fill" className="mr-1 inline" />{vsq.status}
-                                </Badge>
-                                <span className="text-xs" style={{ color: vsq.status === 'Overdue' ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))', fontSize: 9 }}>
-                                  Due: {formatDate(vsq.dueDate)}
-                                </span>
-                              </div>
-                            );
-                          })()}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Badge style={{ background: stc.bg, color: stc.text, borderRadius: 0, fontSize: 10 }}>
-                            {v.status.replace('_', ' ')}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>
-                          {v.contact ? v.contact.split('@')[0] : '—'}
-                        </td>
-                        <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(v.lastReview)}</td>
-                        <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
-                          <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
-                              onClick={() => navigate(`/vendors/${v.id}`)}>
-                              <Eye size={14} />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
-                              onClick={() => setEditVendor(v)}>
-                              <PencilSimple size={14} />
-                            </Button>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0"
-                              onClick={() => setDeleteTarget(v)}>
-                              <Trash size={14} />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Destructive delete — ConfirmDialog per rules */}
-      <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={() => setDeleteTarget(null)}
-        title={`Delete ${deleteTarget?.name}?`}
-        description={`This will remove ${deleteTarget?.id} from the vendor registry. This action cannot be undone.`}
-        confirmLabel="Delete Vendor"
-        type="danger"
-        onConfirm={handleDelete}
-      />
-
-      {/* Vendor Detail Sheet */}
-      <Sheet open={!!selectedVendor} onOpenChange={() => setSelectedVendor(null)}>
-        <SheetContent style={{ borderRadius: 0, width: 640, maxWidth: '100vw' }}>
-          <SheetHeader>
-            <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>
-              {selectedVendor?.name}{' '}
-              <span className="text-xs font-mono font-normal" style={{ color: 'hsl(var(--text-4))' }}>
-                {selectedVendor?.id}
-              </span>
-            </SheetTitle>
-          </SheetHeader>
-          {selectedVendor && (
-            <div className="mt-4 overflow-y-auto h-[calc(100vh-120px)]">
-              <Tabs value={detailTab} onValueChange={setDetailTab}>
-                <TabsList style={{ borderRadius: 0 }}>
-                  <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
-                  <TabsTrigger value="scorecard" style={{ borderRadius: 0 }}>Scorecard</TabsTrigger>
-                  <TabsTrigger value="linked" style={{ borderRadius: 0 }}>Linked Models</TabsTrigger>
-                  <TabsTrigger value="history" style={{ borderRadius: 0 }}>Review History</TabsTrigger>
-                  <TabsTrigger value="dpa" style={{ borderRadius: 0 }}>DPA Status</TabsTrigger>
-                </TabsList>
-
-                {/* Overview */}
-                <TabsContent value="overview" className="mt-4 space-y-4">
-                  <div className="flex gap-2 flex-wrap">
-                    {(() => { const tc = tierColor(selectedVendor.risk); return <Badge style={{ background: tc.bg, color: tc.color, borderRadius: 0, fontSize: 10 }}>{tc.label} — {selectedVendor.risk}</Badge>; })()}
-                    <Badge style={{ ...statusColor(selectedVendor.status), borderRadius: 0, fontSize: 10 }}>{selectedVendor.status.replace('_', ' ')}</Badge>
-                    {dpaStatusBadge(selectedVendor.dpaStatus)}
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Description</p><p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedVendor.description}</p></div>
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Category</p><p className="mt-1 font-medium" style={{ color: 'hsl(var(--text-1))' }}>{selectedVendor.category}</p></div>
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Website</p><p className="mt-1 font-mono" style={{ color: 'hsl(var(--brand))' }}>{selectedVendor.website}</p></div>
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Contact</p><p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedVendor.contact}</p></div>
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Overall Score</p><p className="mt-1 text-lg font-bold" style={{ color: scoreProgressColor(selectedVendor.score) }}>{selectedVendor.score}/100</p></div>
-                    <div><p style={{ color: 'hsl(var(--text-4))' }}>Last Review</p><p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(selectedVendor.lastReview)}</p></div>
-                  </div>
-                </TabsContent>
-
-                {/* Scorecard */}
-                <TabsContent value="scorecard" className="mt-4 space-y-4">
-                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Risk Scorecard</p>
-                  {[
-                    { label: 'Data Sensitivity', value: selectedVendor.scoreBreakdown.dataPrivacy },
-                    { label: 'Business Criticality', value: selectedVendor.scoreBreakdown.reliability },
-                    { label: 'Past Incidents', value: 100 - (selectedVendor.risk === 'high' ? 40 : selectedVendor.risk === 'medium' ? 20 : 10) },
-                    { label: 'Regulatory Exposure', value: selectedVendor.scoreBreakdown.compliance },
-                  ].map((item, idx) => (
-                    <div key={idx} className="space-y-1">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{item.label}</span>
-                        <span className="text-xs font-bold" style={{ color: scoreProgressColor(item.value) }}>{item.value}/100</span>
-                      </div>
-                      <div className="h-2" style={{ background: 'hsl(var(--border))' }}>
-                        <div className="h-full transition-all" style={{ width: `${item.value}%`, background: scoreProgressColor(item.value) }} />
-                      </div>
-                    </div>
-                  ))}
-                  <div className="mt-4 p-3" style={{ border: '1px solid hsl(var(--border))' }}>
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Security</p>
-                      <span className="text-sm font-bold" style={{ color: scoreProgressColor(selectedVendor.scoreBreakdown.security) }}>{selectedVendor.scoreBreakdown.security}/100</span>
-                    </div>
-                    <div className="mt-1 h-2" style={{ background: 'hsl(var(--border))' }}>
-                      <div className="h-full" style={{ width: `${selectedVendor.scoreBreakdown.security}%`, background: scoreProgressColor(selectedVendor.scoreBreakdown.security) }} />
-                    </div>
-                  </div>
-                </TabsContent>
-
-                {/* Linked Models */}
-                <TabsContent value="linked" className="mt-4 space-y-3">
-                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Linked Models</p>
-                  {selectedVendor.linkedModels.length === 0 ? (
-                    <p className="text-xs py-6 text-center" style={{ color: 'hsl(var(--text-4))' }}>No linked models</p>
-                  ) : (
-                    selectedVendor.linkedModels.map(modelId => {
-                      const model = MODELS.find(m => m.id === modelId);
-                      return model ? (
-                        <div key={modelId} className="p-3 flex items-center justify-between" style={{ border: '1px solid hsl(var(--border))' }}>
-                          <div>
-                            <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{model.name}</p>
-                            <p className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>{model.id} · {model.version}</p>
-                          </div>
-                          <Badge style={{ ...statusColor(model.status), borderRadius: 0, fontSize: 10 }}>{model.status}</Badge>
-                        </div>
-                      ) : (
-                        <p key={modelId} className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{modelId} — not found</p>
-                      );
-                    })
-                  )}
-                </TabsContent>
-
-                {/* Review History */}
-                <TabsContent value="history" className="mt-4 space-y-3">
-                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Review History</p>
-                  {[
-                    { date: selectedVendor.lastReview, reviewer: 'David Kim', result: selectedVendor.status === 'approved' ? 'Approved' : 'In Review', notes: 'Annual vendor review completed.' },
-                    { date: '2025-10-15', reviewer: 'James Patel', result: 'Approved', notes: 'Initial vendor onboarding review.' },
-                  ].map((review, idx) => (
-                    <div key={idx} className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
-                      <div className="flex items-center justify-between">
-                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(review.date)}</p>
-                        <Badge style={{
-                          background: review.result === 'Approved' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))',
-                          color: review.result === 'Approved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
-                          borderRadius: 0, fontSize: 10,
-                        }}>{review.result}</Badge>
-                      </div>
-                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Reviewer: {review.reviewer}</p>
-                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>{review.notes}</p>
-                    </div>
-                  ))}
-                </TabsContent>
-
-                {/* DPA Status */}
-                <TabsContent value="dpa" className="mt-4 space-y-4">
-                  <div className="flex items-center gap-3">
-                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>DPA Status:</p>
-                    {dpaStatusBadge(selectedVendor.dpaStatus)}
-                  </div>
-
-                  {selectedVendor.dpaStatus === 'signed' && (
-                    <div className="p-3" style={{ border: '1px solid hsl(var(--s-ok-bg))', background: 'hsl(var(--s-ok-bg))' }}>
-                      <p className="text-xs font-medium text-[hsl(var(--s-ok-tx))]">Data Processing Agreement signed and active</p>
-                      <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>Signed: {formatDate(selectedVendor.lastReview)} · Valid for 12 months</p>
-                    </div>
-                  )}
-
-                  {selectedVendor.dpaStatus !== 'signed' && (
-                    <>
-                      <div className="p-3" style={{ border: '1px solid hsl(var(--s-er-bg))', background: 'hsl(var(--s-er-bg))' }}>
-                        <p className="text-xs font-medium text-destructive">
-                          {selectedVendor.dpaStatus === 'pending' ? 'DPA pending signature' : 'No DPA on file — GDPR Art. 28 violation'}
-                        </p>
-                        <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
-                          A Data Processing Agreement is required before this vendor can process EU customer data.
-                        </p>
-                      </div>
-                      <div className="flex gap-2">
-                        <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
-                          onClick={() => toast('DPA request sent to ' + selectedVendor.contact, 'info')}>
-                          <Handshake size={14} />Request DPA
-                        </Button>
-                        <Button size="sm" variant="outline" style={{ borderRadius: 0 }}>
-                          <CloudArrowUp size={14} />Upload Document
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
-
-      {/* Edit Dialog */}
-      <Dialog open={!!editVendor} onOpenChange={() => setEditVendor(null)}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader>
-            <DialogTitle>Edit {editVendor?.name}</DialogTitle>
-          </DialogHeader>
-          {editVendor && (
-            <EditVendorForm
-              vendor={editVendor}
-              onSave={(updated) => {
-                setVendors(prev => prev.map(v => v.id === updated.id ? updated : v));
-                toast(`${updated.id} updated`);
-                setEditVendor(null);
-              }}
+            <DataTable
+              data={filtered}
+              columns={columns}
+              searchKey="name"
+              onRowClick={(v) => navigate(`/vendors/${v.id}`)}
+              onView={(v) => navigate(`/vendors/${v.id}`)}
+              onEdit={openEdit}
+              onDelete={(v) => setDeleteTarget(v)}
+              emptyMessage="No vendors match the current filters."
             />
           )}
-        </DialogContent>
-      </Dialog>
+        </>
+      )}
 
-      {/* Add Vendor Dialog */}
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 600 }} className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add Vendor</DialogTitle>
-          </DialogHeader>
-          <AddVendorForm
-            onSubmit={(newVendor) => {
-              setVendors(prev => [...prev, newVendor]);
-              toast(`${newVendor.id} ${newVendor.name} added`);
-              setAddOpen(false);
+      <FormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        title={editing ? `Edit ${editing.name}` : 'Register vendor'}
+        description="Vendors are the anchor record for assessments, SLAs, questionnaires and evidence."
+        submitLabel={editing ? 'Save changes' : 'Register vendor'}
+        busy={create.isPending || update.isPending}
+        disabled={!form.name.trim()}
+        onSubmit={submit}
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Name" required>
+            <Input value={form.name} onChange={(e) => set('name', e.target.value)} placeholder="Vendor name" />
+          </Field>
+          <Field label="Category">
+            <Select value={form.category} onValueChange={(v) => set('category', v)}>
+              <SelectTrigger className="h-9"><SelectValue placeholder="Select" /></SelectTrigger>
+              <SelectContent>{CATEGORIES.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Website">
+            <Input value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="https://vendor.com" />
+          </Field>
+          <Field label="Contact email">
+            <Input value={form.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} placeholder="security@vendor.com" />
+          </Field>
+          <Field label="Business owner">
+            <Input value={form.businessOwner} onChange={(e) => set('businessOwner', e.target.value)} />
+          </Field>
+          <Field label="Vendor manager">
+            <Input value={form.vendorManager} onChange={(e) => set('vendorManager', e.target.value)} />
+          </Field>
+          <Field label="Risk tier">
+            <Select value={form.riskTierLabel} onValueChange={(v) => set('riskTierLabel', v as VendorRiskTier)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{VENDOR_TIERS.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Business criticality">
+            <Select value={form.criticality} onValueChange={(v) => set('criticality', v as VendorCriticality)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{VENDOR_CRITICALITIES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="DPA status" hint="Leave as pending until the agreement is genuinely executed.">
+            <Select value={form.dpaStatus} onValueChange={(v) => set('dpaStatus', v as VendorDpaStatus)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{DPA_STATUSES.map((d) => <SelectItem key={d} value={d}>{d.replace(/_/g, ' ')}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Review status">
+            <Select value={form.status} onValueChange={(v) => set('status', v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUSES.map((s) => <SelectItem key={s} value={s}>{s.replace(/_/g, ' ')}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+        </div>
+        <Field label="Services provided">
+          <Input value={form.services} onChange={(e) => set('services', e.target.value)} placeholder="What does this vendor supply?" />
+        </Field>
+        <Field label="AI use" hint="How this vendor's product touches AI in your estate.">
+          <Input value={form.aiUse} onChange={(e) => set('aiUse', e.target.value)} />
+        </Field>
+        <Field label="Description">
+          <textarea
+            value={form.description}
+            onChange={(e) => set('description', e.target.value)}
+            className="h-20 w-full resize-none p-2 text-xs"
+            style={{
+              background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))',
+              color: 'hsl(var(--text-1))',
             }}
-            nextId={`V-${String(vendors.length + 1).padStart(3, '0')}`}
           />
-        </DialogContent>
-      </Dialog>
+        </Field>
+      </FormDialog>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}
+        title={`Delete ${deleteTarget?.name ?? 'vendor'}?`}
+        description="Assessments, SLAs and documents that reference this vendor are removed with it. This cannot be undone."
+        confirmLabel="Delete vendor"
+        type="danger"
+        onConfirm={async () => {
+          if (!deleteTarget) return false
+          // Returning the promise keeps the dialog open until the write
+          // resolves; a rejection leaves it open and the hook toasts the error.
+          await remove.mutateAsync(deleteTarget.id)
+          setDeleteTarget(null)
+        }}
+      />
     </div>
-  );
-}
-
-// ── Edit Form ─────────────────────────────────────────────────────────────────
-
-function EditVendorForm({ vendor, onSave }: { vendor: Vendor; onSave: (v: Vendor) => void }) {
-  const [name, setName] = useState(vendor.name);
-  const [category, setCategory] = useState(vendor.category);
-  const [status, setStatus] = useState(vendor.status);
-  const [contact, setContact] = useState(vendor.contact);
-
-  return (
-    <div className="space-y-3 py-2">
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Name</label>
-        <Input value={name} onChange={e => setName(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
-      </div>
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Category</label>
-        <Input value={category} onChange={e => setCategory(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
-      </div>
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Contact</label>
-        <Input value={contact} onChange={e => setContact(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} />
-      </div>
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Status</label>
-        <Select value={status} onValueChange={v => setStatus(v as Vendor['status'])}>
-          <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            {['approved', 'in_review', 'high_risk', 'blocked'].map(s => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
-      <div className="flex justify-end gap-2 pt-2">
-        <Button
-          onClick={() => onSave({ ...vendor, name, category, status, contact })}
-          style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
-        >
-          Save Changes
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ── Add Vendor Form ───────────────────────────────────────────────────────────
-
-function AddVendorForm({ onSubmit, nextId }: { onSubmit: (v: Vendor) => void; nextId: string }) {
-  const [name, setName] = useState('');
-  const [category, setCategory] = useState('');
-  const [website, setWebsite] = useState('');
-  const [contact, setContact] = useState('');
-  const [assignee, setAssignee] = useState('');
-  const [whatProvides, setWhatProvides] = useState('');
-  const [riskTier, setRiskTier] = useState<Vendor['risk']>('medium');
-  const [dpaStatus, setDpaStatus] = useState('pending');
-
-  const canSubmit = name && category && assignee && whatProvides;
-
-  const handleSubmit = () => {
-    if (!canSubmit) return;
-    const now = new Date().toISOString().split('T')[0];
-    onSubmit({
-      id: nextId, name, category, risk: riskTier, score: 50, status: 'in_review',
-      lastReview: now, contact, website, dpaStatus, description: whatProvides,
-      linkedModels: [], scoreBreakdown: { security: 50, compliance: 50, reliability: 50, dataPrivacy: 50 },
-    } as any);
-  };
-
-  return (
-    <div className="space-y-3 py-2">
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Name *</label>
-          <Input value={name} onChange={e => setName(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="Vendor name" />
-        </div>
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Category *</label>
-          <Select value={category} onValueChange={setCategory}>
-            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue placeholder="Select" /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              {['Foundation Model', 'Infrastructure', 'Data Provider', 'Tool Provider', 'Analytics Platform', 'AI Platform', 'Consulting'].map(c =>
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              )}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Website</label>
-          <Input value={website} onChange={e => setWebsite(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="vendor.com" />
-        </div>
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Contact</label>
-          <Input value={contact} onChange={e => setContact(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="email@vendor.com" />
-        </div>
-      </div>
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Assignee *</label>
-        <Input value={assignee} onChange={e => setAssignee(e.target.value)} className="mt-1" style={{ borderRadius: 0 }} placeholder="Internal reviewer" />
-      </div>
-      <div>
-        <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>What does this vendor provide? *</label>
-        <textarea
-          value={whatProvides}
-          onChange={e => setWhatProvides(e.target.value)}
-          className="mt-1 w-full h-16 text-xs p-2 resize-none"
-          style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}
-          placeholder="Describe what this vendor provides..."
-        />
-      </div>
-      <div className="grid grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Risk Tier</label>
-          <Select value={riskTier} onValueChange={v => setRiskTier(v as Vendor['risk'])}>
-            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              {['low', 'medium', 'high', 'critical'].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>DPA Status</label>
-          <Select value={dpaStatus} onValueChange={setDpaStatus}>
-            <SelectTrigger className="mt-1 h-9" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              {['signed', 'pending', 'not_signed'].map(d => <SelectItem key={d} value={d}>{d.replace('_', ' ')}</SelectItem>)}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-      <div className="flex justify-end gap-2 pt-2">
-        <Button
-          disabled={!canSubmit}
-          onClick={handleSubmit}
-          style={{ borderRadius: 0, background: canSubmit ? 'hsl(var(--brand))' : undefined, color: canSubmit ? 'hsl(var(--bg-surface))' : undefined }}
-        >
-          <Plus size={14} />Add Vendor
-        </Button>
-      </div>
-    </div>
-  );
+  )
 }
