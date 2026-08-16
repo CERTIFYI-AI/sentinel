@@ -1,4 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { ArrowSquareOut } from '@phosphor-icons/react';
+import { useModelOptions } from '../../hooks/useAiiaData';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Card } from '../../components/ui/card';
 import { Input } from '../../components/ui/input';
@@ -61,6 +64,15 @@ export default function Playground() {
   const [viewMode, setViewMode] = useState<'chat'|'trace'>('chat');
   const [userRole, setUserRole] = useState('employee');
   const scrollRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+
+  // Target the real, governed model inventory rather than invented endpoints.
+  const { models, loading: modelsLoading } = useModelOptions();
+  const [targetModelId, setTargetModelId] = useState<string>('');
+  useEffect(() => {
+    if (!targetModelId && models.length > 0) setTargetModelId(models[0].id);
+  }, [models, targetModelId]);
+  const targetModel = models.find(m => m.id === targetModelId);
 
   // Totals
   const totalTokens = messages.reduce((acc, m) => acc + (m.metrics?.tokens || 0), 0);
@@ -139,10 +151,23 @@ export default function Playground() {
 
   return (
     <div className="space-y-6">
-      <PageHeader 
-        title="Endpoint Playground" 
-        description="Simulate enterprise AI traffic. Test guardrails, RBAC policies, and trace telemetry before deploying to production."
+      <PageHeader
+        title="Endpoint Playground"
+        description="Rehearse guardrail, RBAC and trace behaviour against a governed model before changing production policy."
       />
+
+      {/* The responses below are produced locally to exercise guardrail paths —
+          they are not live provider inference, and no tokens or spend are billed.
+          Say so plainly so nothing here is mistaken for measured telemetry. */}
+      <div className="flex items-start gap-2 border border-[hsl(var(--s-wn-br))] bg-[hsl(var(--s-wn-bg))] px-3 py-2">
+        <WarningCircle size={15} className="mt-[1px] shrink-0 text-[hsl(var(--s-wn-tx))]" />
+        <p className="text-xs text-[hsl(var(--s-wn-tx))]">
+          <strong>Simulation.</strong> Guardrail decisions, token counts, cost and latency shown here are generated
+          locally to rehearse policy behaviour — they are not live provider calls and are never recorded as
+          measured telemetry. Real traffic appears in{' '}
+          <button onClick={() => navigate('/trust-engine/traces')} className="underline hover:opacity-80">Live Inference Traces</button>.
+        </p>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-200px)] min-h-[600px]">
         
@@ -173,16 +198,32 @@ export default function Playground() {
             </div>
 
             <div className="space-y-3">
-              <label className="text-xs font-medium text-[hsl(var(--text-2))] uppercase tracking-wider">Target Endpoint</label>
-              <Select defaultValue="prod-gpt4">
+              <label className="text-xs font-medium text-[hsl(var(--text-2))] uppercase tracking-wider">Target Model</label>
+              <Select value={targetModelId} onValueChange={setTargetModelId}>
                 <SelectTrigger className="w-full bg-surface-2 border-[hsl(var(--border))] rounded-none">
-                  <SelectValue placeholder="Select Endpoint" />
+                  <SelectValue placeholder={modelsLoading ? 'Loading models…' : 'Select a governed model'} />
                 </SelectTrigger>
                 <SelectContent className="rounded-none">
-                  <SelectItem value="prod-gpt4">prod-eu-compliance-gpt4 (OpenAI)</SelectItem>
-                  <SelectItem value="prod-claude">prod-red-team-claude (Anthropic)</SelectItem>
+                  {models.map(m => (
+                    <SelectItem key={m.id} value={m.id}>
+                      {m.name}{m.riskTier ? ` · ${m.riskTier}` : ''}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
+              {targetModel && (
+                <button
+                  onClick={() => navigate(`/models/inventory/${targetModel.id}`)}
+                  className="inline-flex items-center gap-1 text-[11px] text-[hsl(var(--brand))] hover:underline"
+                >
+                  Open model record <ArrowSquareOut size={11} />
+                </button>
+              )}
+              {!modelsLoading && models.length === 0 && (
+                <p className="text-[11px] text-[hsl(var(--text-4))]">
+                  No governed models registered yet — add one in the model inventory.
+                </p>
+              )}
             </div>
 
             <div className="space-y-3">

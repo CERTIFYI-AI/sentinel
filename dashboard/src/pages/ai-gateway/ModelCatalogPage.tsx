@@ -1,5 +1,5 @@
 import { useModelsData } from "@/hooks/useModelsData";
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -39,6 +39,10 @@ const LIFECYCLE_TO_STATUS: Record<string, Model['status']> = {
   staging: 'staging', stage: 'staging', testing: 'staging', test: 'staging', review: 'staging',
   dev: 'development', development: 'development',
   deprecated: 'retired', retired: 'retired',
+};
+/** Inverse of the above, for writing the catalog's status back to ai_models. */
+const STATUS_TO_LIFECYCLE: Record<string, string> = {
+  production: 'production', staging: 'staging', development: 'development', retired: 'retired',
 };
 function recordToModel(r: ModelRecord): Model {
   const tier = (r.risk_tier ?? '').toLowerCase();
@@ -183,9 +187,10 @@ export default function ModelCatalogPage() {
   const ct = useChartTheme();
   const navigate = useNavigate();
 
-  const { data: models, setData: setModels } = useSupabaseTable('modelinventory_table', MODELS);
-  const { models: supabaseModels, isLoading: isLoadingModels } = useModelsData();
-  useEffect(() => { if (supabaseModels.length > 0) setModels(supabaseModels.map(recordToModel)); }, [supabaseModels]);
+  // Single source of truth: the canonical `ai_models` inventory. Writes go
+  // through saveModel/deleteModel so a failure can never look like a success.
+  const { models: supabaseModels, isLoading: isLoadingModels, saveModel, deleteModel } = useModelsData();
+  const models: Model[] = useMemo(() => supabaseModels.map(recordToModel), [supabaseModels]);
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -221,10 +226,25 @@ export default function ModelCatalogPage() {
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    setModels(prev => prev.filter(m => m.id !== deleteTarget.id));
-    toast(`${deleteTarget.id} ${deleteTarget.name} removed`, 'error');
-    setDeleteTarget(null);
+    const target = deleteTarget;
+    // Persist first; the list re-renders from the invalidated query.
+    void deleteModel(target.id)
+      .then(() => { toast(`${target.name} removed`, 'error'); setDeleteTarget(null); })
+      .catch((e: any) => toast(e?.message ?? 'Failed to remove model', 'error'));
   };
+
+  /** Map the catalog's view model back onto the ai_models record shape. */
+  const persistModel = (m: Model) => saveModel({
+    id: m.id,
+    name: m.name,
+    version: m.version === '—' ? undefined : m.version,
+    model_type: m.type === '—' ? undefined : m.type,
+    business_owner: m.owner === '—' ? undefined : m.owner,
+    risk_tier: m.riskTier,
+    framework: m.framework === '—' ? undefined : m.framework,
+    description: m.description || undefined,
+    lifecycle_stage: STATUS_TO_LIFECYCLE[m.status] ?? m.status,
+  } as any);
 
   // Drift performance data for the detail chart (12 months)
   const monthLabels = ['Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec', 'Jan', 'Feb', 'Mar'];
@@ -703,9 +723,9 @@ export default function ModelCatalogPage() {
             <EditModelForm
               model={editModel}
               onSave={(updated) => {
-                setModels(prev => prev.map(m => m.id === updated.id ? updated : m));
-                toast(`${updated.id} updated`);
-                setEditModel(null);
+                void persistModel(updated)
+                  .then(() => { toast(`${updated.name} updated`); setEditModel(null); })
+                  .catch((e: any) => toast(e?.message ?? 'Failed to update model', 'error'));
               }}
             />
           )}
@@ -721,11 +741,12 @@ export default function ModelCatalogPage() {
           </DialogHeader>
           <RegisterModelForm
             onSubmit={(newModel) => {
-              setModels(prev => [...prev, newModel]);
-              toast(`${newModel.id} ${newModel.name} registered`);
-              setRegisterOpen(false);
+              // Let the DB mint the canonical uuid — never a client-side MDL-xxx code.
+              void persistModel({ ...newModel, id: undefined as unknown as string })
+                .then(() => { toast(`${newModel.name} registered`); setRegisterOpen(false); })
+                .catch((e: any) => toast(e?.message ?? 'Failed to register model', 'error'));
             }}
-            nextId={`MDL-${String(models.length + 1).padStart(3, '0')}`}
+            nextId=""
           />
         </DialogContent>
       </Dialog>
