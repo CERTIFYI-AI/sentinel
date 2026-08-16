@@ -53,6 +53,9 @@ export interface ModelBacklinks {
   carbonRecords: BacklinkSource;
   energyMetrics: BacklinkSource;
   esgReports: BacklinkSource;
+  aibomRecords: BacklinkSource;
+  attestations: BacklinkSource;
+  provenanceNodes: BacklinkSource;
 }
 
 const UNAVAILABLE: BacklinkSource = { count: null, items: [] };
@@ -135,6 +138,7 @@ async function fetchModelBacklinks(modelId: string): Promise<ModelBacklinks> {
     conformityAssessments, evidence, postMarketPlans,
     controls, transparencyReports, aiTrainings,
     carbonRecords, energyMetrics, esgReports,
+    aibomRecords, attestations, provenanceNodes,
   ] = await Promise.all([
     // linked_model_ids is text[] — the uuid is matched as a string.
     safeSource(
@@ -333,6 +337,58 @@ async function fetchModelBacklinks(modelId: string): Promise<ModelBacklinks> {
         note: str(r.period),
       }),
     ),
+
+    // ---- AI supply chain -------------------------------------------------
+    // These three modules previously held no model reference at all, so a model
+    // could not surface the bill of materials, attestations or lineage that
+    // describe it. All three now key on ai_models.id directly.
+    safeSource(
+      () => supabase.from('aibom_records')
+        .select('id,aibom_ref,model_version,status,verification_status', { count: 'exact' })
+        .eq('model_id', modelId)
+        .order('generated_at', { ascending: false })
+        .limit(3),
+      (r: Row): BacklinkItem => ({
+        id: String(r.id),
+        ref: str(r.aibom_ref),
+        title: str(r.model_version) ? `AIBOM ${str(r.model_version)}` : 'AI bill of materials',
+        severity: null,
+        status: str(r.status),
+        // Verification is never implied: an unverified record says so here.
+        note: str(r.verification_status),
+      }),
+    ),
+    safeSource(
+      () => supabase.from('supply_chain_attestation_status')
+        .select('id,attestation_ref,title,attestation_type,derived_validity', { count: 'exact' })
+        .eq('model_id', modelId)
+        .order('issued_at', { ascending: false })
+        .limit(3),
+      (r: Row): BacklinkItem => ({
+        id: String(r.id),
+        ref: str(r.attestation_ref),
+        title: str(r.title) ?? str(r.attestation_type) ?? 'Attestation',
+        severity: null,
+        // Validity is the view's derived value, not an authored status.
+        status: str(r.derived_validity),
+        note: str(r.attestation_type),
+      }),
+    ),
+    safeSource(
+      () => supabase.from('provenance_nodes')
+        .select('id,label,node_type,verification_status', { count: 'exact' })
+        .eq('model_id', modelId)
+        .order('created_at', { ascending: false })
+        .limit(3),
+      (r: Row): BacklinkItem => ({
+        id: String(r.id),
+        ref: null,
+        title: str(r.label) ?? 'Provenance node',
+        severity: null,
+        status: str(r.verification_status),
+        note: str(r.node_type),
+      }),
+    ),
   ]);
 
   return {
@@ -340,6 +396,7 @@ async function fetchModelBacklinks(modelId: string): Promise<ModelBacklinks> {
     conformityAssessments, evidence, postMarketPlans,
     controls, transparencyReports, aiTrainings,
     carbonRecords, energyMetrics, esgReports,
+    aibomRecords, attestations, provenanceNodes,
   };
 }
 

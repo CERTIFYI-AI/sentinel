@@ -21,7 +21,7 @@
 // and ?open=<id> opens a record. Outbound links reach the model registry,
 // vendor register, provenance graph and attestation register.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -171,9 +171,14 @@ export default function AibomRegistry() {
 
   const selected = records.find(r => r.id === selectedId) ?? null
 
-  // Deep link ?open=<id>
+  // Deep link ?open=<id> — applied once, so a refetch does not reopen a
+  // drawer the user has closed.
+  const appliedOpen = useRef<string | null>(null)
   useEffect(() => {
-    if (openParam && records.some(r => r.id === openParam)) setSelectedId(openParam)
+    if (openParam && appliedOpen.current !== openParam && records.some(r => r.id === openParam)) {
+      appliedOpen.current = openParam
+      setSelectedId(openParam)
+    }
   }, [openParam, records])
 
   const filtered = useMemo(

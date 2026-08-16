@@ -13,7 +13,7 @@ import {
   Sparkle, FileText, ListBullets, CalendarCheck, Copy, Plus,
   ShieldCheck, CaretRight, Bank, Siren, UsersThree, CurrencyDollar, Crosshair,
   SealCheck, Vault, Pulse, CheckSquare, Megaphone, GraduationCap,
-  Leaf, Lightning, Recycle,
+  Leaf, Lightning, Recycle, Package,
 } from '@phosphor-icons/react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -948,6 +948,34 @@ function ModelDetailView({ model }: { model: Model }) {
               source={backlinks?.aiTrainings}
               loading={backlinksLoading}
               viewAllTo="/ai-literacy"
+            />
+            {/* AI supply chain. These three held no model reference at all, so a
+                model could not surface the bill of materials, attestations or
+                lineage that describe it — the EU AI Act Art. 13/15 traceability
+                story depended on records that pointed nowhere. */}
+            <BacklinkCard
+              title="AI Bill of Materials"
+              icon={<Package size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.aibomRecords}
+              loading={backlinksLoading}
+              viewAllTo={`/aibom?model=${model.id}`}
+              itemTo={item => `/aibom?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="Supply Chain Attestations"
+              icon={<SealCheck size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.attestations}
+              loading={backlinksLoading}
+              viewAllTo={`/supply-chain?model=${model.id}`}
+              itemTo={item => `/supply-chain?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="Provenance"
+              icon={<GitBranch size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.provenanceNodes}
+              loading={backlinksLoading}
+              viewAllTo={`/provenance?model=${model.id}`}
+              itemTo={item => `/provenance?open=${item.id}`}
             />
             {/* Sustainability footprint. Carbon/energy/ESG were previously
                 unreachable from the model they describe — the modules held no

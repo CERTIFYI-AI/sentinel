@@ -24,7 +24,7 @@
 //   * the subject is `subject_type` + `subject_id` on the one id-space,
 //     resolved to a name at render.
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -128,8 +128,14 @@ export default function SupplyChainAttestations() {
 
   const selected = attestations.find(a => a.id === selectedId) ?? null
 
+  // Deep link ?open=<id> — applied once, so a refetch does not reopen a
+  // drawer the user has closed.
+  const appliedOpen = useRef<string | null>(null)
   useEffect(() => {
-    if (openParam && attestations.some(a => a.id === openParam)) setSelectedId(openParam)
+    if (openParam && appliedOpen.current !== openParam && attestations.some(a => a.id === openParam)) {
+      appliedOpen.current = openParam
+      setSelectedId(openParam)
+    }
   }, [openParam, attestations])
 
   /** Subject resolution — subject_type + subject_id on the one id-space. */
@@ -569,7 +575,7 @@ export default function SupplyChainAttestations() {
                     return (
                       <button
                         key={id}
-                        onClick={() => label && nav(`/compliance/controls?open=${id}`)}
+                        onClick={() => label && nav(`/compliance/controls/${id}`)}
                         disabled={!label}
                         className="mb-2 flex w-full items-center gap-2 border border-[hsl(var(--border))] bg-raised p-2.5 text-left disabled:cursor-not-allowed"
                       >

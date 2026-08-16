@@ -16,7 +16,7 @@
 //     real verifier ever writes;
 //   * its export button downloads a real file instead of firing a toast.
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -210,15 +210,20 @@ export default function ProvenanceGraph() {
   }, [graph])
 
   // ?model=<uuid> focuses the provenance node for that model; ?open=<id>
-  // focuses (and selects) a specific node.
+  // focuses (and selects) a specific node. Each deep-link value is applied
+  // once, so choosing a different focus afterwards is not snapped back.
+  const appliedDeepLink = useRef<string | null>(null)
   useEffect(() => {
-    if (openParam) {
-      const n = graph.byId.get(openParam)
-      if (n) { setFocusId(n.id); setSelected(n); return }
-    }
-    if (modelParam) {
-      const n = graph.nodes.find(x => x.modelId === modelParam)
-      if (n) { setFocusId(n.id); return }
+    const key = `${openParam ?? ''}|${modelParam ?? ''}`
+    if (key !== '|' && appliedDeepLink.current !== key) {
+      if (openParam) {
+        const n = graph.byId.get(openParam)
+        if (n) { appliedDeepLink.current = key; setFocusId(n.id); setSelected(n); return }
+      }
+      if (modelParam) {
+        const n = graph.nodes.find(x => x.modelId === modelParam)
+        if (n) { appliedDeepLink.current = key; setFocusId(n.id); return }
+      }
     }
     if (!focusId && focusCandidates.length) setFocusId(focusCandidates[0].id)
   }, [openParam, modelParam, graph, focusCandidates, focusId])
