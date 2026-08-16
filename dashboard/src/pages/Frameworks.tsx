@@ -8,7 +8,7 @@
 // org-specific cross-framework mappings are not wired to a backend yet).
 // Consolidates the former Framework Catalog and Framework Mapping pages.
 import { useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -116,6 +116,7 @@ function controlStatusStyle(status?: string | null) {
 
 export default function Frameworks() {
   const { frameworks, isLoading, error, save, remove } = useFrameworksData();
+  const nav = useNavigate();
   const [searchParams] = useSearchParams();
 
   // ?tab=portfolio|catalog|mapping selects the initial tab (used by legacy-route redirects).
@@ -494,7 +495,14 @@ export default function Frameworks() {
                         {controls.map(c => {
                           const st = controlStatusStyle(c.status);
                           return (
-                            <div key={c.id} className="flex items-center justify-between p-2 gap-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
+                            <button
+                              key={c.id}
+                              type="button"
+                              onClick={() => nav(`/compliance/controls?open=${c.id}`)}
+                              title="Open in Compliance Controls"
+                              className="w-full flex items-center justify-between p-2 gap-3 text-left cursor-pointer transition-colors hover:bg-[hsl(var(--bg-raised))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--brand))]"
+                              style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}
+                            >
                               <div className="min-w-0">
                                 <p className="text-xs font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>
                                   <span className="font-mono mr-1.5" style={{ color: 'hsl(var(--text-4))' }}>{c.control_ref}</span>
@@ -503,7 +511,7 @@ export default function Frameworks() {
                                 {c.clause_ref && <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{c.clause_ref}</p>}
                               </div>
                               <span className="text-[10px] font-medium flex-shrink-0" style={{ color: st.color }}>{st.label}</span>
-                            </div>
+                            </button>
                           );
                         })}
                       </div>
