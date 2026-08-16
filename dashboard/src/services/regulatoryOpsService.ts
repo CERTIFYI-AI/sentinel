@@ -6,6 +6,7 @@
 // defaults fill it under RLS). Post-market escalation reuses the real
 // incident pipeline (incidentResponseService.saveIncident) — one id-space.
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { logAction } from '../lib/auditLogger'
 import { saveIncident } from './incidentResponseService'
 import { upsertPolicy, savePolicyVersion, type PolicyRecord } from './policyService'
 
@@ -92,14 +93,15 @@ const mapFiling = (r: any): FilingRecord => ({
 })
 
 export const fetchFilings = () => selectAll('regulator_filings', mapFiling)
-export const saveFiling = (f: FilingRecord) =>
-  upsertRow('regulator_filings', {
+export async function saveFiling(f: FilingRecord): Promise<FilingRecord> {
+  const status = f.status?.toLowerCase()
+  const saved = await upsertRow('regulator_filings', {
     id: f.id,
     filing_ref: f.filingRef,
     title: f.title,
     regulation: f.regulation,
     type: f.type,
-    status: f.status?.toLowerCase(),
+    status,
     deadline: f.deadline,
     submitted_at: f.submittedAt,
     linked_incident_id: f.linkedIncidentId || null,
@@ -110,7 +112,29 @@ export const saveFiling = (f: FilingRecord) =>
     attachments: f.attachments,
     updated_at: new Date().toISOString(),
   }, mapFiling)
-export const deleteFiling = (id: string) => deleteRow('regulator_filings', id)
+  // Art. 12 traceability — fires only after the write persisted. Submission /
+  // acknowledgment are the legally significant transitions and get their own
+  // action verbs so the audit trail reads like the statutory timeline.
+  void logAction({
+    module: 'regulator-filings',
+    entityType: 'regulator_filing',
+    entityId: saved.id,
+    entityName: saved.filingRef ?? saved.title,
+    action: !f.id ? 'create' : status === 'submitted' ? 'submit' : status === 'acknowledged' ? 'acknowledge' : 'update',
+    newValues: {
+      status,
+      regulation: saved.regulation,
+      deadline: saved.deadline,
+      linked_incident_id: saved.linkedIncidentId,
+      reference_number: saved.referenceNumber,
+    },
+  })
+  return saved
+}
+export async function deleteFiling(id: string): Promise<void> {
+  await deleteRow('regulator_filings', id)
+  void logAction({ module: 'regulator-filings', entityType: 'regulator_filing', entityId: id, action: 'delete' })
+}
 
 // ---------------------------------------------------------------------------
 // Transparency reports (mesh-written table; model_id → ai_models.id)
@@ -148,8 +172,8 @@ const mapTransparencyReport = (r: any): TransparencyReportRecord => ({
 })
 
 export const fetchTransparencyReports = () => selectAll('transparency_reports', mapTransparencyReport)
-export const saveTransparencyReport = (t: TransparencyReportRecord) =>
-  upsertRow('transparency_reports', {
+export async function saveTransparencyReport(t: TransparencyReportRecord): Promise<TransparencyReportRecord> {
+  const saved = await upsertRow('transparency_reports', {
     id: t.id,
     report_type: t.reportType,
     audience: t.audience,
@@ -163,7 +187,21 @@ export const saveTransparencyReport = (t: TransparencyReportRecord) =>
     published_at: t.publishedAt,
     url: t.url,
   }, mapTransparencyReport)
-export const deleteTransparencyReport = (id: string) => deleteRow('transparency_reports', id)
+  // Art. 12 traceability — publish is the externally significant transition.
+  void logAction({
+    module: 'transparency-reports',
+    entityType: 'transparency_report',
+    entityId: saved.id,
+    entityName: saved.title,
+    action: !t.id ? 'create' : (t.status ?? '').toUpperCase() === 'PUBLISHED' ? 'publish' : 'update',
+    newValues: { status: saved.status, audience: saved.audience, model_id: saved.modelId, version: saved.version },
+  })
+  return saved
+}
+export async function deleteTransparencyReport(id: string): Promise<void> {
+  await deleteRow('transparency_reports', id)
+  void logAction({ module: 'transparency-reports', entityType: 'transparency_report', entityId: id, action: 'delete' })
+}
 
 // ---------------------------------------------------------------------------
 // Post-market monitoring (EU AI Act Art. 72): plans + events. Events can
@@ -202,8 +240,8 @@ const mapPlan = (r: any): PostMarketPlanRecord => ({
 })
 
 export const fetchPostMarketPlans = () => selectAll('post_market_plans', mapPlan)
-export const savePostMarketPlan = (p: PostMarketPlanRecord) =>
-  upsertRow('post_market_plans', {
+export async function savePostMarketPlan(p: PostMarketPlanRecord): Promise<PostMarketPlanRecord> {
+  const saved = await upsertRow('post_market_plans', {
     id: p.id,
     plan_ref: p.planRef,
     model_id: p.modelId || null,
@@ -216,7 +254,28 @@ export const savePostMarketPlan = (p: PostMarketPlanRecord) =>
     next_review: p.nextReview,
     updated_at: new Date().toISOString(),
   }, mapPlan)
-export const deletePostMarketPlan = (id: string) => deleteRow('post_market_plans', id)
+  void logAction({
+    module: 'post-market',
+    entityType: 'post_market_plan',
+    entityId: saved.id,
+    entityName: saved.planRef ?? saved.name,
+    action: p.id ? 'update' : 'create',
+    newValues: { status: saved.status, model_id: saved.modelId },
+  })
+  return saved
+}
+export async function deletePostMarketPlan(id: string): Promise<void> {
+  await deleteRow('post_market_plans', id)
+  // Events survive the plan (FK is ON DELETE SET NULL) — record that the
+  // ledger kept its history while losing the plan context.
+  void logAction({
+    module: 'post-market',
+    entityType: 'post_market_plan',
+    entityId: id,
+    action: 'delete',
+    newValues: { note: 'plan removed; logged events retained with plan_id set null' },
+  })
+}
 
 export interface PostMarketEventRecord {
   id?: string
@@ -287,7 +346,8 @@ export async function savePostMarketEvent(
     })
     incidentId = incident.id ?? null
   }
-  return upsertRow('post_market_events', {
+  const escalatedNow = escalateToIncident && !e.incidentId && !!incidentId
+  const saved = await upsertRow('post_market_events', {
     id: e.id,
     plan_id: e.planId || null,
     incident_id: incidentId,
@@ -297,8 +357,27 @@ export async function savePostMarketEvent(
     occurred_at: e.occurredAt,
     resolved: e.resolved,
   }, mapEvent)
+  // Art. 12 traceability — an escalation is logged with the real incident
+  // uuid it produced so the audit trail links field signal → incident.
+  void logAction({
+    module: 'post-market',
+    entityType: 'post_market_event',
+    entityId: saved.id,
+    action: escalatedNow ? 'escalate' : e.id ? 'update' : 'create',
+    newValues: {
+      severity: saved.severity,
+      event_type: saved.eventType,
+      plan_id: saved.planId,
+      resolved: saved.resolved,
+      ...(escalatedNow ? { incident_id: incidentId } : {}),
+    },
+  })
+  return saved
 }
-export const deletePostMarketEvent = (id: string) => deleteRow('post_market_events', id)
+export async function deletePostMarketEvent(id: string): Promise<void> {
+  await deleteRow('post_market_events', id)
+  void logAction({ module: 'post-market', entityType: 'post_market_event', entityId: id, action: 'delete' })
+}
 
 // ---------------------------------------------------------------------------
 // Policy templates — global READ-ONLY catalog (service-role writes only).

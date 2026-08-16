@@ -23,6 +23,7 @@ import type { IncidentRecord } from "@/services/incidentResponseService";
 import { useModelsData } from "@/hooks/useModelsData";
 import { useRisksData } from "@/hooks/useRisksData";
 import { exportCsv } from "@/lib/exportUtils";
+import { statutoryDeadline } from "@/lib/statutoryWindows";
 import { formatDate } from "../data/seed";
 
 const SEVERITIES = ["critical", "high", "medium", "low"] as const;
@@ -199,6 +200,9 @@ export default function IncidentLog() {
 
   // Art. 73 prompt: draft the serious-incident filing directly from the
   // incident when it is regulatory-reportable and no filing exists yet.
+  // The statutory clock runs from when we became aware of the incident, so
+  // the deadline derives from detected_at when recorded (falling back to
+  // now), using the shared EU-AI-Act-73 window in lib/statutoryWindows.
   const draftFiling = async (inc: IncidentRecord) => {
     if (!inc.id) return;
     try {
@@ -208,7 +212,7 @@ export default function IncidentLog() {
         type: "incident_report",
         status: "draft",
         linkedIncidentId: inc.id,
-        deadline: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
+        deadline: statutoryDeadline("EU-AI-Act-73", inc.detectedAt ?? null),
       });
       // The filings hook toasts success and invalidates its query.
     } catch { /* the filings hook already toasted the real error */ }

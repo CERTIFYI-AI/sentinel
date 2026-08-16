@@ -10,8 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/ca
 import { Button } from '../../components/ui/button'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { InterlinkChip } from '@/components/ui/InterlinkChip'
+import { obStyle } from '@/components/ui/HorizonBadge'
 import { useRegulationEntries } from '@/hooks/useRiskIncidents'
 import { useModelsData } from '@/hooks/useModelsData'
+import { useRisksData } from '@/hooks/useRisksData'
 import { daysUntil, type RegulationEntryRecord } from '@/services/riskGroupService'
 
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
@@ -22,21 +24,14 @@ const STATUS_STYLE: Record<string, React.CSSProperties> = {
 const statusStyle = (s?: string): React.CSSProperties =>
   STATUS_STYLE[(s ?? '').toLowerCase()] ?? { background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }
 
-const OB_STYLE: Record<string, React.CSSProperties> = {
-  mapped:   { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-  unmapped: { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  partial:  { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  exempt:   { background: 'hsl(220 13% 50% / 0.12)', color: 'hsl(var(--text-4))' },
-}
-const obStyle = (s?: string): React.CSSProperties =>
-  OB_STYLE[(s ?? '').toLowerCase()] ?? { background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }
-
 export default function RegDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { items, isLoading, error, save, isSaving } = useRegulationEntries()
   const { models } = useModelsData()
+  const { risks } = useRisksData()
   const modelName = (mid: string) => models.find(m => m.id === mid)?.name ?? 'Unavailable'
+  const riskName = (rid: string) => risks.find((r: any) => r.id === rid)?.title ?? 'Unavailable'
 
   // The row that failed to toggle stays visually unchanged — no optimistic lie.
   const [togglingRef, setTogglingRef] = useState<string | null>(null)
@@ -278,7 +273,7 @@ export default function RegDetail() {
             ) : (
               <div className="flex flex-wrap gap-1.5">
                 {(regulation.linkedRiskIds ?? []).map(rid => (
-                  <InterlinkChip key={rid} label="Open in Risk Register" to={`/risks?open=${rid}`} />
+                  <InterlinkChip key={rid} label={riskName(rid)} to={`/risks?open=${rid}`} />
                 ))}
               </div>
             )}

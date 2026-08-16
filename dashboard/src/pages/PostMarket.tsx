@@ -5,7 +5,7 @@
 // events form the per-plan timeline, and 'Escalate to incident' declares a
 // REAL incident through the incident pipeline — the chip links to it.
 import { useState, useMemo, useEffect } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { Binoculars, Plus, PencilSimple, Trash, Cube, X, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
@@ -343,8 +343,20 @@ export default function PostMarket() {
                             </div>
                             {ev.description && <p className="text-xs mt-1.5 text-[hsl(var(--text-2))]">{ev.description}</p>}
                             {ev.incidentId && (
-                              <div className="mt-2">
+                              <div className="mt-2 flex flex-wrap items-center gap-2">
                                 <InterlinkChip label="Escalated — open incident" to={`/risk/incidents?open=${ev.incidentId}`} />
+                                {/* Art. 73 prompt: a critical/high field event that became an
+                                    incident may be a reportable serious incident. The incident
+                                    page owns the actual filing-draft flow — this only routes. */}
+                                {['critical', 'high'].includes((ev.severity ?? '').toLowerCase()) && (
+                                  <Link
+                                    to={`/risk/incidents?open=${ev.incidentId}`}
+                                    className="inline-flex items-center gap-1 text-xs px-2 py-0.5 font-medium border transition-colors hover:opacity-80"
+                                    style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderColor: 'hsl(var(--s-wn-br))' }}
+                                  >
+                                    <Warning size={12} /> Assess for Art. 73 reporting
+                                  </Link>
+                                )}
                               </div>
                             )}
                           </div>

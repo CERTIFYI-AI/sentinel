@@ -21,6 +21,7 @@ import {
 import { PageHeader } from '@/components/ui/PageHeader'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { InterlinkChip } from '@/components/ui/InterlinkChip'
+import { HorizonBadge } from '@/components/ui/HorizonBadge'
 import { useRegulationEntries } from '@/hooks/useRiskIncidents'
 import { useModelsData } from '@/hooks/useModelsData'
 import { daysUntil, type RegulationEntryRecord } from '@/services/riskGroupService'
@@ -32,14 +33,6 @@ const STATUS_STYLE: Record<string, React.CSSProperties> = {
 }
 const statusStyle = (s?: string): React.CSSProperties =>
   STATUS_STYLE[(s ?? '').toLowerCase()] ?? { background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }
-
-function HorizonBadge({ effectiveOn }: { effectiveOn?: string | null }) {
-  const d = daysUntil(effectiveOn)
-  if (d == null) return <span className="text-[10px] px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">No date set</span>
-  if (d < 0) return <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]">In force</span>
-  if (d <= 90) return <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--s-er-bg))] text-[hsl(var(--destructive))] font-semibold">{d}d until effective</span>
-  return <span className="text-[10px] px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{d}d until effective</span>
-}
 
 interface RegForm {
   name: string; jurisdiction: string; status: string; effectiveOn: string

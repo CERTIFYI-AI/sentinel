@@ -25,6 +25,7 @@ import { exportCsv } from '@/lib/exportUtils'
 import { useFilings } from '@/hooks/useComplianceGroup'
 import { useIncidents } from '@/hooks/useRiskIncidents'
 import { FILING_REGULATIONS, FILING_TYPES, FILING_STATUSES, type FilingRecord } from '@/services/regulatoryOpsService'
+import { statutoryDeadline, statutoryWindowFor } from '@/lib/statutoryWindows'
 
 /** 'breach_notification' → 'Breach notification', 'in_review' → 'In review'. */
 const prettify = (s?: string | null) =>
@@ -124,8 +125,28 @@ export default function RegulatorFilings() {
     setDialogOpen(true)
   }
 
+  // When a regulation is picked on a NEW filing and no deadline has been set
+  // yet, default it from the statutory window (lib/statutoryWindows) — the
+  // same clock the notify agent and the Incident Log prompt use.
+  const onRegulationChange = (v: string) => {
+    setForm(f => {
+      const next = { ...f, regulation: v }
+      if (!editing && !f.deadline) {
+        const d = statutoryDeadline(v)
+        if (d) next.deadline = d.slice(0, 10)
+      }
+      return next
+    })
+  }
+
   const handleSave = async () => {
     if (!form.title.trim()) { toast.error('Filing title is required'); return }
+    // An acknowledgment without the regulator's reference is not evidence:
+    // the transition to 'acknowledged' requires the case reference they issued.
+    if (form.status === 'acknowledged' && !form.referenceNumber.trim()) {
+      toast.error('An acknowledged filing requires the reference number issued by the regulator.')
+      return
+    }
     try {
       await save({
         ...(editing ?? {}),
@@ -415,6 +436,16 @@ export default function RegulatorFilings() {
             <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>{editing ? 'Edit Filing' : 'New Regulator Filing'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
+            {/* filing_ref is minted by the DB trigger (FIL-YYYY-NNNN) — read-only here. */}
+            {editing?.filingRef ? (
+              <p className="text-[11px] text-[hsl(var(--text-4))]">
+                Filing reference: <span className="font-mono text-[hsl(var(--brand))]">{editing.filingRef}</span> (assigned by the register, not editable)
+              </p>
+            ) : !editing ? (
+              <p className="text-[11px] text-[hsl(var(--text-4))]">
+                The filing reference (FIL-YYYY-NNNN) is assigned automatically when the filing is saved.
+              </p>
+            ) : null}
             <div className="space-y-1">
               <Label className="text-xs font-medium">Title *</Label>
               <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Data breach notification — logging misconfiguration" style={{ borderRadius: 0 }} />
@@ -422,12 +453,17 @@ export default function RegulatorFilings() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Regulation</Label>
-                <Select value={form.regulation} onValueChange={v => setForm(f => ({ ...f, regulation: v }))}>
+                <Select value={form.regulation} onValueChange={onRegulationChange}>
                   <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
                     {FILING_REGULATIONS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                   </SelectContent>
                 </Select>
+                {statutoryWindowFor(form.regulation) && (
+                  <p className="text-[10px] text-[hsl(var(--text-4))]">
+                    Statutory window: {statutoryWindowFor(form.regulation)!.label} — {statutoryWindowFor(form.regulation)!.basis}
+                  </p>
+                )}
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Filing Type</Label>
@@ -478,8 +514,11 @@ export default function RegulatorFilings() {
               </div>
             </div>
             <div className="space-y-1">
-              <Label className="text-xs font-medium">Reference Number</Label>
+              <Label className="text-xs font-medium">Reference Number{form.status === 'acknowledged' ? ' *' : ''}</Label>
               <Input value={form.referenceNumber} onChange={e => setForm(f => ({ ...f, referenceNumber: e.target.value }))} placeholder="Case reference assigned by the regulator, if any" style={{ borderRadius: 0 }} />
+              {form.status === 'acknowledged' && (
+                <p className="text-[10px] text-[hsl(var(--s-wn-tx))]">Required: an acknowledged filing must carry the regulator's case reference as evidence.</p>
+              )}
             </div>
           </div>
           <DialogFooter className="mt-4">

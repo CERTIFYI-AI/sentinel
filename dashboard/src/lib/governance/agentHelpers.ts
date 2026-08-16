@@ -5,6 +5,7 @@
  */
 
 import { supabase, isSupabaseConfigured } from '../supabase'
+import { statutoryWindowFor } from '../statutoryWindows'
 
 // ---- Risk scoring ------------------------------------------------
 export function calculateInitialRiskScore(p: {
@@ -93,21 +94,47 @@ export async function safeUpdate<T>(
   } catch (e) { console.warn(`[safeUpdate:${table}]`, e); return null }
 }
 
+// ---- Strict insert helper ----------------------------------------
+// For writes whose success the agent REPORTS (statutory filing drafts,
+// narrative records): unlike safeInsert this throws on any failure, so the
+// caller can never claim success for a row that did not persist.
+export async function strictInsert<T>(
+  table: string,
+  row: Record<string, unknown>,
+): Promise<T> {
+  if (!isSupabaseConfigured()) {
+    throw new Error(`[strictInsert:${table}] Supabase is not configured — the write cannot persist`)
+  }
+  const { data, error } = await supabase.from(table).insert(row).select().single()
+  if (error) throw new Error(`[strictInsert:${table}] ${error.message}`)
+  return data as T
+}
+
 // ---- Multi-regulator notification templates --------------------
-export interface RegulatorTemplate { regulator: string; jurisdiction: string; deadlineHours: number; template: string }
+// deadlineHours comes from lib/statutoryWindows (one source of truth with the
+// filing form and the Incident Log Art. 73 prompt); regulation carries the
+// FILING_REGULATIONS vocabulary value the filing row will be CHECKed against.
+export interface RegulatorTemplate { regulator: string; jurisdiction: string; deadlineHours: number; template: string; regulation: string }
+
+function windowHours(regulation: string, fallback: number): number {
+  return statutoryWindowFor(regulation)?.hours ?? fallback
+}
+
 export function regulatorTemplates(p: { severity: string; dataBreach: boolean; jurisdictions: string[] }): RegulatorTemplate[] {
   const out: RegulatorTemplate[] = []
   if (p.jurisdictions.includes('US') && p.severity === 'P0') {
-    out.push({ regulator: 'SEC', jurisdiction: 'US', deadlineHours: 96, template: 'Form 8-K Item 1.05 - Material Cybersecurity Incident disclosure' })
+    out.push({ regulator: 'SEC', jurisdiction: 'US', regulation: 'SEC-1.05', deadlineHours: windowHours('SEC-1.05', 96), template: 'Form 8-K Item 1.05 - Material Cybersecurity Incident disclosure' })
   }
   if (p.jurisdictions.includes('UK')) {
-    out.push({ regulator: 'FCA', jurisdiction: 'UK', deadlineHours: 72, template: 'SUP 15.3 Notification of material breach' })
+    out.push({ regulator: 'FCA', jurisdiction: 'UK', regulation: 'FCA', deadlineHours: windowHours('FCA', 72), template: 'SUP 15.3 Notification of material breach' })
   }
   if (p.dataBreach && p.jurisdictions.includes('EU')) {
-    out.push({ regulator: 'ICO', jurisdiction: 'EU/UK', deadlineHours: 72, template: 'GDPR Art.33 Personal Data Breach Notification' })
+    out.push({ regulator: 'ICO', jurisdiction: 'EU/UK', regulation: 'GDPR-33', deadlineHours: windowHours('GDPR-33', 72), template: 'GDPR Art.33 Personal Data Breach Notification' })
   }
   if (p.jurisdictions.includes('EU')) {
-    out.push({ regulator: 'National AI Authority', jurisdiction: 'EU', deadlineHours: 168, template: 'EU AI Act Art.62 Serious Incident Report' })
+    // Art. 73 (not the pre-final-text Art. 62 numbering) — serious-incident
+    // reporting for high-risk AI systems.
+    out.push({ regulator: 'National AI Authority', jurisdiction: 'EU', regulation: 'EU-AI-Act-73', deadlineHours: windowHours('EU-AI-Act-73', 72), template: 'EU AI Act Art. 73 Serious Incident Report' })
   }
   return out
 }

@@ -11,24 +11,10 @@ import { Card, CardContent } from '../components/ui/card'
 import { PageHeader } from '../components/ui/PageHeader'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { InterlinkChip } from '@/components/ui/InterlinkChip'
+import { HorizonBadge, OB_STYLE } from '@/components/ui/HorizonBadge'
 import { useRegulationEntries } from '@/hooks/useRiskIncidents'
 import { useModelsData } from '@/hooks/useModelsData'
 import { daysUntil, type RegulationEntryRecord } from '@/services/riskGroupService'
-
-const OB_STYLE: Record<string, React.CSSProperties> = {
-  mapped:   { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-  unmapped: { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  partial:  { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  exempt:   { background: 'hsl(220 13% 50% / 0.12)', color: 'hsl(var(--text-4))' },
-}
-
-function HorizonBadge({ effectiveOn }: { effectiveOn?: string | null }) {
-  const d = daysUntil(effectiveOn)
-  if (d == null) return <span className="text-[10px] px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">No date set</span>
-  if (d < 0) return <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]">In force</span>
-  if (d <= 90) return <span className="text-[10px] px-1.5 py-0.5 bg-[hsl(var(--s-er-bg))] text-[hsl(var(--destructive))] font-semibold">{d}d</span>
-  return <span className="text-[10px] px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{d}d</span>
-}
 
 /** Per-entry obligation status tallies — straight from the jsonb. */
 function obligationTallies(r: RegulationEntryRecord) {
@@ -152,7 +138,7 @@ export default function RegulatoryVelocity() {
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             {r.regulationRef && <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{r.regulationRef}</span>}
                             {r.jurisdiction && <span className="text-[10px] px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{r.jurisdiction}</span>}
-                            <HorizonBadge effectiveOn={r.effectiveOn} />
+                            <HorizonBadge effectiveOn={r.effectiveOn} compact />
                           </div>
                           <p className="text-sm font-semibold text-[hsl(var(--text-1))]">{r.name}</p>
                           {r.obligations.length > 0 ? (

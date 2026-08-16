@@ -69,7 +69,7 @@ export default function TIA() {
   const tia = useTiaRecords()
   // The supplier on the receiving end of the transfer — a TIA without a
   // named recipient cannot be assessed.
-  const { vendors } = useVendorOptions()
+  const { vendors, error: vendorsError } = useVendorOptions()
   const vendorName = (id?: string | null) => vendors.find((v: any) => v.id === id)?.name
 
   const [formOpen, setFormOpen] = useState(false)
@@ -257,6 +257,11 @@ export default function TIA() {
                 {vendors.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
               </SelectContent>
             </Select>
+            {vendorsError && (
+              <p role="alert" className="mt-1 text-[11px] text-[hsl(var(--destructive))]">
+                Vendor options failed to load: {vendorsError.message}
+              </p>
+            )}
           </Field>
         </div>
         <Field label="Supplementary measures" hint="Required where the destination lacks an adequacy decision">
