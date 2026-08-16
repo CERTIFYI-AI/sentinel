@@ -20,6 +20,8 @@ export type EvidenceRecord = {
   linked_controls?: string[] | null
   linked_models?: string[] | null
   linked_use_cases?: string[] | null
+  linked_incident_id?: string | null   // → incidents.id (uuid)
+  linked_assessment_id?: string | null // → conformity_assessments.id (text)
   freshness_status?: string | null
   is_deleted?: boolean | null
   created_at?: string
