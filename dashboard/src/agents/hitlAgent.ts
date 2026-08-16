@@ -35,14 +35,16 @@ export async function hitlAgent(ctx: AgentContext): Promise<AgentResult> {
     metadata:    { created_by: 'HITLAgent', event_type: ctx.event.event_type },
   })
 
+  // tasks has due_date (not due_at) and linked_entity_* (not metadata).
   await safeInsert('tasks', {
     org_id: ctx.orgId,
     title:  `HITL Review: ${p.modelName ?? p.riskId ?? 'unknown'}`,
     type:   'HITL_REVIEW',
     priority: p.severity === 'CRITICAL' ? 'P0' : 'P1',
     status: 'OPEN',
-    due_at: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-    metadata: { reviewId: review?.id, modelId: p.modelId },
+    due_date: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+    linked_entity_type: 'hitl_review',
+    linked_entity_id: review?.id ?? null,
   })
 
   await ctx.emit('HITL_REVIEW_REQUIRED', 'hitl', {

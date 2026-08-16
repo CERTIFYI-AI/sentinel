@@ -174,7 +174,7 @@ export interface ApprovalWorkflowRecord {
 
 const mapWorkflow = (r: any): ApprovalWorkflowRecord => ({
   id: r.id,
-  name: r.name ?? r.entity_name ?? 'Workflow',
+  name: r.name ?? '',
   description: r.description ?? undefined,
   appliesTo: r.applies_to ?? undefined,
   steps: Array.isArray(r.steps) ? r.steps : [],
@@ -187,17 +187,17 @@ const mapWorkflow = (r: any): ApprovalWorkflowRecord => ({
 })
 
 export async function fetchApprovalWorkflows(): Promise<ApprovalWorkflowRecord[]> {
+  // Definitions carry a name; legacy per-entity rows in the same table don't.
   const rows = await selectAll('approval_workflows', mapWorkflow)
-  return rows.filter((w) => w.name && w.name !== 'Workflow')
+  return rows.filter((w) => w.name)
 }
 
 export const saveApprovalWorkflow = (w: ApprovalWorkflowRecord) =>
   upsertRow('approval_workflows', {
     id: w.id,
-    // legacy NOT NULL columns from the definition-era schema
-    entity_type: w.appliesTo ?? 'generic',
-    entity_id: '',
-    workflow_type: 'definition',
+    // Legacy NOT NULL columns, set only on create — an update must not
+    // clobber whatever the row already carries.
+    ...(w.id ? {} : { entity_type: w.appliesTo ?? 'generic', entity_id: '', workflow_type: 'definition' }),
     name: w.name,
     description: w.description,
     applies_to: w.appliesTo,
@@ -399,6 +399,14 @@ export async function validateAutomationRule(rule: AutomationRuleRecord): Promis
     error: ok ? null : problems.join('; '),
   }).select().single()
   if (error) throw new Error(`Validation record did not persist: ${error.message}`)
+  // Keep the rule's own counters honest — they drive the page KPIs.
+  const { error: cntErr } = await client().from('automation_rules').update({
+    run_count: (rule.runCount ?? 0) + 1,
+    last_run_at: new Date().toISOString(),
+    last_run_status: ok ? 'validated' : 'failed',
+    updated_at: new Date().toISOString(),
+  }).eq('id', rule.id)
+  if (cntErr) console.warn('[oversightService] rule counter update failed: %s', cntErr.message)
   if (!ok) throw new Error(problems.join('; '))
   return mapRunRec(data)
 }

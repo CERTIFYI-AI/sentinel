@@ -152,13 +152,13 @@ BEGIN
        'Exercise prompt-injection, jailbreak and PII-exfiltration resistance ahead of the festive surge.',
        'Bikash Thapa', 'completed', 'high',
        array_remove(ARRAY[m_support, m_kyc]::uuid[], NULL),
-       ARRAY['prompt_injection','jailbreak','pii_exfiltration'], 3, 0.27,
+       ARRAY['prompt_injection','jailbreak','pii_exfiltration'], 3, 27,
        now() - interval '9 days', now() - interval '2 days'),
       ('rtc-2026-402', v_org, v_org::text, 'RTC-2026-402', 'Credit model extraction resilience',
        'Attempt surrogate-model reconstruction of the credit scorer via query probing.',
        'Anita Gurung', 'in_progress', 'medium',
        (CASE WHEN m_credit IS NULL THEN '{}'::uuid[] ELSE ARRAY[m_credit] END),
-       ARRAY['model_extraction'], 1, 0.10, now() - interval '3 days', NULL);
+       ARRAY['model_extraction'], 1, 10, now() - interval '3 days', NULL);
   END IF;
 
   IF NOT EXISTS (SELECT 1 FROM public.red_team_findings WHERE org_id = v_org AND finding_ref = 'RTF-2026-501') THEN

@@ -9,6 +9,7 @@
 // INCIDENT_CREATED on the governance bus so the mesh cascade fires.
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { governanceBus } from '../lib/governance/eventBus'
+import { incidentCreatedPayload } from './incidentResponseService'
 
 export type IncidentRecord = {
   id: string
@@ -71,14 +72,18 @@ export async function upsertIncident(record: Partial<IncidentRecord>): Promise<I
   if (error) throw new Error(`The incident write did not persist: ${error.message}`)
   const saved = data as IncidentRecord
   if (isNew) {
-    void governanceBus.emit('INCIDENT_CREATED', 'incident-service', {
-      incident_id: saved.id,
-      incident_ref: saved.incident_id,
+    // Same declared IncidentCreatedPayload contract the cascade agents read.
+    void governanceBus.emit('INCIDENT_CREATED', 'incident-service', incidentCreatedPayload({
+      id: saved.id,
       title: saved.title,
-      severity: saved.severity,
-      model_id: saved.model_id ?? undefined,
-      regulatory_reportable: saved.regulatory_reportable ?? false,
-    })
+      severity: (saved.severity ?? 'medium').toLowerCase(),
+      status: saved.status ?? 'open',
+      category: saved.category,
+      incidentType: saved.incident_type,
+      modelId: saved.model_id ?? null,
+      incidentId: saved.incident_id,
+      regulatoryReportable: saved.regulatory_reportable ?? false,
+    }))
   }
   return saved
 }

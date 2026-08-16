@@ -21,8 +21,9 @@ export async function vendorCascadeAgent(ctx: AgentContext): Promise<AgentResult
     org_id: ctx.orgId,
     title: `Notify vendor ${p.vendor ?? p.vendorId} of SLA breach`,
     type: 'VENDOR_NOTIFICATION', priority: 'P1',
-    status: 'OPEN', due_at: new Date(Date.now() + 4 * 3600 * 1000).toISOString(),
-    metadata: { incidentId: p.incidentId, vendorId: p.vendorId },
+    status: 'OPEN', due_date: new Date(Date.now() + 4 * 3600 * 1000).toISOString(),
+    linked_entity_type: 'incident',
+    linked_entity_id: p.incidentId ?? null,
   })
   await ctx.emit('VENDOR_NOTIFIED', 'vendor-registry', {
     incidentId: p.incidentId, vendorId: p.vendorId, slaBreached: true,

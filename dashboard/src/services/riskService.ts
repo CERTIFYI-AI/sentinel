@@ -78,7 +78,9 @@ function mapRow(row: any): RiskRecord {
 function mapToRow(record: Partial<RiskRecord>): Record<string, any> {
   const row: Record<string, any> = {}
   if (record.id) row.id = record.id
-  if (record.title != null) row.name = record.title
+  // risks.title is NOT NULL with no default — write both columns so inserts
+  // succeed on a from-zero schema and display stays consistent with `name`.
+  if (record.title != null) { row.name = record.title; row.title = record.title }
   if (record.description != null) row.description = record.description
   if (record.category != null) row.categories = [record.category]
   if (record.tags != null) row.categories = record.tags
@@ -103,7 +105,11 @@ function mapToRow(record: Partial<RiskRecord>): Record<string, any> {
 }
 
 export async function fetchAllRisks(filters: Record<string, any> = {}): Promise<RiskRecord[]> {
-  if (!isSupabaseConfigured() || !supabase) return []
+  // A config failure must surface as an error state, not an honest-looking
+  // empty register (platform contract: never fake success).
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error('Supabase is not configured — risk data is unavailable')
+  }
   let q = supabase
     .from('risks')
     .select('*')

@@ -127,20 +127,39 @@ const incidentToRow = (i: IncidentRecord): Record<string, unknown> => ({
 
 export const fetchIncidents = () => selectAll('incidents', mapIncident)
 
+// The cascade agents consume the declared IncidentCreatedPayload contract
+// (lib/governance/types/events.ts): camelCase keys, P-severities, enum type,
+// affectedModels as ai_models uuids. Emitting any other shape makes the
+// handlers silently skip.
+const SEVERITY_TO_P: Record<string, 'P0' | 'P1' | 'P2' | 'P3'> = {
+  critical: 'P0', high: 'P1', medium: 'P2', low: 'P3',
+}
+const CATEGORY_TO_TYPE: Record<string, 'BIAS' | 'DATA_BREACH' | 'MODEL_FAILURE' | 'SECURITY' | 'ETHICS' | 'REGULATORY'> = {
+  bias: 'BIAS', bias_discrimination: 'BIAS',
+  data_leakage: 'DATA_BREACH', data_breach: 'DATA_BREACH', privacy: 'DATA_BREACH',
+  security: 'SECURITY', credential_attack: 'SECURITY',
+  ethics: 'ETHICS', regulatory: 'REGULATORY', compliance: 'REGULATORY',
+}
+
+export function incidentCreatedPayload(saved: IncidentRecord) {
+  return {
+    incidentId: saved.id!,
+    severity: SEVERITY_TO_P[saved.severity] ?? 'P2',
+    type: CATEGORY_TO_TYPE[saved.category ?? ''] ?? CATEGORY_TO_TYPE[saved.incidentType ?? ''] ?? 'MODEL_FAILURE',
+    affectedModels: saved.modelId ? [saved.modelId] : [],
+    reportedVia: 'EXTERNAL' as const,
+    summary: saved.title,
+    // Extra context beyond the contract — harmless to handlers, useful to logs.
+    incidentRef: saved.incidentId,
+    regulatoryReportable: saved.regulatoryReportable ?? false,
+  }
+}
+
 export async function saveIncident(i: IncidentRecord): Promise<IncidentRecord> {
   const isNew = !i.id
   const saved = await upsertRow('incidents', incidentToRow(i), mapIncident)
   if (isNew) {
-    // Fire the mesh cascade — this was the platform's biggest dead wire:
-    // 9 agents register on INCIDENT_CREATED and no emitter existed.
-    void governanceBus.emit('INCIDENT_CREATED', 'incident-log', {
-      incident_id: saved.id,
-      incident_ref: saved.incidentId,
-      title: saved.title,
-      severity: saved.severity,
-      model_id: saved.modelId ?? undefined,
-      regulatory_reportable: saved.regulatoryReportable,
-    })
+    void governanceBus.emit('INCIDENT_CREATED', 'incident-log', incidentCreatedPayload(saved))
   }
   return saved
 }
@@ -290,7 +309,20 @@ const mapRun = (r: any): PlaybookRunRecord => ({
 })
 
 export const fetchPlaybookRuns = () => selectAll('playbook_runs', mapRun, 'started_at')
-export const savePlaybookRun = (r: PlaybookRunRecord) =>
+export async function savePlaybookRun(r: PlaybookRunRecord): Promise<PlaybookRunRecord> {
+  const saved = await savePlaybookRunRow(r)
+  // Keep the incident's own playbook link in sync so the Incident Log's
+  // "Response Playbook" reflects the activation.
+  if (saved.incidentId && saved.playbookId) {
+    const { error } = await client()
+      .from('incidents')
+      .update({ playbook_id: saved.playbookId, updated_at: new Date().toISOString() })
+      .eq('id', saved.incidentId)
+    if (error) console.warn('[incidentResponseService] playbook backfill failed: %s', error.message)
+  }
+  return saved
+}
+const savePlaybookRunRow = (r: PlaybookRunRecord) =>
   upsertRow('playbook_runs', {
     id: r.id,
     playbook_id: r.playbookId,

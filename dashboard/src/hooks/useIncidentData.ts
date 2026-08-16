@@ -27,16 +27,23 @@ export function useIncidentData(filters: Record<string, any> = {}) {
     staleTime: 30_000,
   })
 
+  // The Incident Log reads the same table under the 'ri-incidents' key —
+  // invalidate both namespaces so a write here is visible there immediately.
+  const invalidate = () => {
+    qc.invalidateQueries({ queryKey: ['incidents'] })
+    qc.invalidateQueries({ queryKey: ['ri-incidents'] })
+  }
+
   const saveMutation = useMutation({
     mutationFn: (record: any) => upsertIncident(record),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['incidents'] }); toast.success('Incident saved') },
-    onError: () => toast.error('Failed to save incident'),
+    onSuccess: () => { invalidate(); toast.success('Incident saved') },
+    onError: (e: any) => toast.error(e?.message ? `Save failed: ${e.message}` : 'Failed to save incident'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteIncident(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['incidents'] }); toast.success('Incident deleted') },
-    onError: () => toast.error('Failed to delete incident'),
+    onSuccess: () => { invalidate(); toast.success('Incident deleted') },
+    onError: (e: any) => toast.error(e?.message ? `Delete failed: ${e.message}` : 'Failed to delete incident'),
   })
 
   return {

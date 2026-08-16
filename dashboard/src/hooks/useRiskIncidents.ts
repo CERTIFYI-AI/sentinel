@@ -15,18 +15,25 @@ function crud<T extends { id?: string }>(
   saveFn: (r: any) => Promise<T>,
   deleteFn: (id: string) => Promise<void>,
   label: string,
+  // Extra query keys to invalidate on mutation — for tables that legacy hooks
+  // also read under a different namespace (e.g. incidents ↔ 'incidents').
+  extraKeys: string[] = [],
 ) {
   return function useResource() {
     const qc = useQueryClient()
     const { data: items = [], isLoading, error } = useQuery({ queryKey: [key], queryFn: fetchFn, staleTime: 30_000 })
+    const invalidate = () => {
+      qc.invalidateQueries({ queryKey: [key] })
+      for (const k of extraKeys) qc.invalidateQueries({ queryKey: [k] })
+    }
     const save = useMutation({
       mutationFn: (r: T) => saveFn(r),
-      onSuccess: () => { qc.invalidateQueries({ queryKey: [key] }); toast.success(`${label} saved`) },
+      onSuccess: () => { invalidate(); toast.success(`${label} saved`) },
       onError: (e: any) => toast.error(e?.message ? `Save failed: ${e.message}` : `Failed to save ${label.toLowerCase()}`),
     })
     const remove = useMutation({
       mutationFn: (id: string) => deleteFn(id),
-      onSuccess: () => { qc.invalidateQueries({ queryKey: [key] }); toast.success(`${label} deleted`) },
+      onSuccess: () => { invalidate(); toast.success(`${label} deleted`) },
       onError: (e: any) => toast.error(e?.message ? `Delete failed: ${e.message}` : `Failed to delete ${label.toLowerCase()}`),
     })
     return {
@@ -38,7 +45,7 @@ function crud<T extends { id?: string }>(
 }
 
 // Incident-response cluster
-export const useIncidents    = crud('ri-incidents', ir.fetchIncidents, ir.saveIncident, ir.deleteIncident, 'Incident')
+export const useIncidents    = crud('ri-incidents', ir.fetchIncidents, ir.saveIncident, ir.deleteIncident, 'Incident', ['incidents'])
 export const usePlaybooks    = crud('ri-playbooks', ir.fetchPlaybooks, ir.savePlaybook, ir.deletePlaybook, 'Playbook')
 export const useTabletops    = crud('ri-tabletops', ir.fetchTabletops, ir.saveTabletop, ir.deleteTabletop, 'Exercise')
 export const useRemediations = crud('ri-remediations', ir.fetchRemediations, ir.saveRemediation, ir.deleteRemediation, 'Plan')
@@ -60,6 +67,7 @@ export function useIncidentTransitions() {
       ir.transitionIncident(v.incident, v.toStatus, v.actor, v.notes),
     onSuccess: (_d, v) => {
       qc.invalidateQueries({ queryKey: ['ri-incidents'] })
+      qc.invalidateQueries({ queryKey: ['incidents'] })
       qc.invalidateQueries({ queryKey: ['ri-workflow-steps'] })
       toast.success(`Incident moved to ${v.toStatus.replace(/_/g, ' ')}`)
     },
@@ -172,10 +180,12 @@ export function useValidateAutomationRule() {
     mutationFn: (rule: ov.AutomationRuleRecord) => ov.validateAutomationRule(rule),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['ri-automation-runs'] })
+      qc.invalidateQueries({ queryKey: ['ri-automation-rules'] })
       toast.success('Configuration validated — recorded in run history (nothing executed)')
     },
     onError: (e: any) => {
       qc.invalidateQueries({ queryKey: ['ri-automation-runs'] })
+      qc.invalidateQueries({ queryKey: ['ri-automation-rules'] })
       toast.error(e?.message ?? 'Validation failed')
     },
   })

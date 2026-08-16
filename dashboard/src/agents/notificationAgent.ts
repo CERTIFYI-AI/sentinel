@@ -11,15 +11,19 @@ const IMPORTANT = new Set<string>([
 export async function notificationAgent(ctx: AgentContext): Promise<AgentResult> {
   if (!IMPORTANT.has(ctx.event.event_type)) return { status: 'skipped' }
   const p = ctx.event.payload as Record<string, unknown>
+  // Real notifications columns only (tenant_id/title/message/notification_type/
+  // entity_*/is_read from core_grc; url_path from phase-4). The previous shape
+  // (type/severity/body/link) matched no column and every insert was lost.
   await safeInsert('notifications', {
     org_id: ctx.orgId,
-    type: ctx.event.event_type,
-    severity: (p.severity as string) ?? 'INFO',
-    title: `${ctx.event.event_type.replace(/_/g,' ')} — ${p.modelName ?? p.title ?? 'auto'}`,
-    body: JSON.stringify(p).slice(0, 500),
+    tenant_id: ctx.orgId,
+    notification_type: ctx.event.event_type,
+    title: `${ctx.event.event_type.replace(/_/g,' ')} — ${p.modelName ?? p.title ?? p.summary ?? 'auto'}`,
+    message: JSON.stringify(p).slice(0, 500),
+    entity_type: p.incidentId ? 'incident' : p.modelId ? 'model' : 'event',
+    entity_id: (p.incidentId as string) ?? (p.modelId as string) ?? null,
     is_read: false,
-    link: p.modelId ? `/models/inventory?id=${p.modelId}` : null,
-    created_at: new Date().toISOString(),
+    url_path: p.modelId ? `/models/inventory/${p.modelId}` : p.incidentId ? `/risk/incidents?open=${p.incidentId}` : null,
   })
   return { status: 'succeeded' }
 }

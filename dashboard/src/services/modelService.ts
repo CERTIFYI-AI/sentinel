@@ -45,9 +45,29 @@ export async function fetchAllModels(filters: Record<string,any> = {}): Promise<
 // error toast instead of a false success. Never swallow to null.
 export async function upsertModel(record: Partial<ModelRecord>): Promise<ModelRecord> {
   if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot save model.')
+  const isNew = !record.id
   const { data, error } = await supabase.from('ai_models').upsert(record).select().single()
   if (error) { console.warn('[modelService] upsert:', error.message); throw new Error(error.message) }
-  return data as ModelRecord
+  const saved = data as ModelRecord
+  if (isNew && saved?.id) {
+    // Head of the largest governance cascade (11 registered agents) — this
+    // emitter did not exist, so MODEL_REGISTERED never fired platform-wide.
+    // Payload follows the declared ModelRegisteredPayload contract.
+    const tierNum = Number(String((saved as any).risk_tier ?? '').replace(/\D/g, '')) || 3
+    const { governanceBus } = await import('../lib/governance/eventBus')
+    void governanceBus.emit('MODEL_REGISTERED', 'ai-inventory', {
+      modelId: saved.id,
+      modelName: (saved as any).name ?? 'Unnamed model',
+      modelType: 'OTHER',
+      owner: (saved as any).business_owner ?? (saved as any).technical_owner ?? 'unassigned',
+      riskTier: (Math.min(4, Math.max(1, tierNum)) as 1 | 2 | 3 | 4),
+      purpose: (saved as any).purpose ?? (saved as any).description ?? 'unspecified',
+      vendor: (saved as any).vendor ?? undefined,
+      deploymentScope: ((saved as any).deployment_env ?? 'DEV').toUpperCase().includes('PROD') ? 'PROD' : 'DEV',
+      dataSensitivity: 'CONFIDENTIAL',
+    })
+  }
+  return saved
 }
 
 export async function deleteModel(id: string): Promise<void> {

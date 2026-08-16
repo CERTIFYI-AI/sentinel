@@ -19,19 +19,23 @@ export async function riskAssessmentAgent(ctx: AgentContext): Promise<AgentResul
     euAiActClass:    p.euAiActClass,
   })
 
+  // risks.severity is INTEGER 1–5 and rows are read through the tenant-scoped
+  // RLS policy, so tenant_id must follow the org explicitly in agent context.
+  const SEV_INT: Record<string, number> = { CRITICAL: 5, HIGH: 4, MEDIUM: 3, LOW: 2 }
   const risk = await safeInsert<{ id: string }>('risks', {
     org_id:      ctx.orgId,
+    tenant_id:   ctx.orgId,
     title:       `Auto: ${p.modelName ?? p.modelId} — Initial AI Model Risk`,
+    name:        `Auto: ${p.modelName ?? p.modelId} — Initial AI Model Risk`,
     category:    'AI Model Risk',
     description: `Auto-generated from MODEL_REGISTERED. Vendor=${p.vendor ?? 'internal'}, Tier=${p.riskTier}, Purpose=${p.purpose}.`,
     likelihood:  score.likelihood,
     impact:      score.impact,
-    severity:    score.severity,
-    status:      'OPEN',
+    severity:    SEV_INT[score.severity] ?? 3,
+    status:      'open',
     owner_id:    p.ownerId,
     source:      'auto-agent',
-    related_entity_type: 'model',
-    related_entity_id:   p.modelId,
+    linked_model_ids: [p.modelId],
     metadata:    { modelId: p.modelId, modelName: p.modelName, createdBy: 'RiskAssessmentAgent' },
   })
 

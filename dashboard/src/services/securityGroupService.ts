@@ -368,9 +368,10 @@ export async function generateReport(template: ReportTemplate, generatedBy: stri
   }).select().single()
   if (error) { console.warn('[securityGroup:generate]', error.message); throw new Error(error.message) }
   if (template.id) {
-    await supabase.from('security_reports').update({
+    const { error: cntErr } = await supabase.from('security_reports').update({
       generation_count: (template.generationCount ?? 0) + 1, last_generated_at: new Date().toISOString(),
     }).eq('id', template.id)
+    if (cntErr) console.warn('[securityGroup:generate] counter update failed: %s', cntErr.message)
   }
   return {
     id: data.id, reportId: data.report_id, status: data.status, generatedBy: data.generated_by,

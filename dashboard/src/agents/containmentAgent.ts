@@ -29,13 +29,14 @@ export async function containmentAgent(ctx: AgentContext): Promise<AgentResult> 
     status: 'RUNNING', entity_type: 'incident', entity_id: p.incidentId,
     config: { blockAllDeployments: true },
   })
-  // preserve evidence snapshot
-  await safeInsert('evidence', {
-    org_id: ctx.orgId, incident_id: p.incidentId,
-    evidence_type: 'SNAPSHOT',
-    captured_at: new Date().toISOString(),
-    description: `Containment snapshot for ${p.incidentId}: logs, model state, data state`,
-    hash: null,  // EvidenceCollectionAgent will compute chain hash
+  // preserve evidence snapshot — evidence_chain is the purpose-built table
+  // (the legacy `evidence` table has none of these columns; that write was
+  // silently lost).
+  await safeInsert('evidence_chain', {
+    org_id: ctx.orgId, entity_type: 'incident', entity_id: p.incidentId,
+    action: 'CONTAINMENT_SNAPSHOT', actor: 'ContainmentAgent',
+    prev_hash: null, hash: null, // EvidenceCollectionAgent computes the chain
+    metadata: { note: `Containment snapshot for ${p.incidentId}: logs, model state, data state` },
   })
   await ctx.emit('CONTAINMENT_EXECUTED', 'incidents', {
     incidentId: p.incidentId, modelsPaused: p.affectedModels, bcpActivated: 'BCP-001',

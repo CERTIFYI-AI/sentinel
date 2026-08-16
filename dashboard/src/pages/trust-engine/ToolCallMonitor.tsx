@@ -20,6 +20,7 @@ import { StatCardRow } from '@/components/ui/StatCardRow';
 import { FilterBar } from '@/components/ui/FilterBar';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { useToolCalls } from '../../hooks/useToolCalls';
+import { useQueryClient } from '@tanstack/react-query';
 import { useModelOptions } from '@/hooks/useAiiaData';
 import { upsertIncident, type IncidentRecord } from '../../services/incidentService';
 import type { ToolCallRecord } from '@/services/toolCallService';
@@ -65,6 +66,7 @@ const DATE_WINDOWS: Record<string, number> = { '24h': 86_400_000, '7d': 7 * 86_4
 
 export default function ToolCallMonitor() {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const modelParam = searchParams.get('model');
   const { data: calls, isLoading, error } = useToolCalls();
@@ -144,6 +146,10 @@ export default function ToolCallMonitor() {
           `${c.errorMessage ? `: ${c.errorMessage}` : '.'}`,
       } as unknown as Partial<IncidentRecord>);
       if (!rec) throw new Error('The incident write did not persist');
+      // Refresh both incident query namespaces so the Incident Log the toast
+      // links to actually shows the new row.
+      qc.invalidateQueries({ queryKey: ['incidents'] });
+      qc.invalidateQueries({ queryKey: ['ri-incidents'] });
       setEscalated(prev => ({ ...prev, [c.id]: rec.id }));
       toast.success('Incident created — view it in the Incident Log', {
         action: { label: 'Open Incident Log', onClick: () => navigate('/risk/incidents') },

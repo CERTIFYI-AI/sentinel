@@ -153,9 +153,11 @@ export async function emitEvent(
     retry_count:     0,
   }
 
-  // 1. Persist (idempotent via unique index)
+  // 1. Persist (idempotent via unique index). Without a real org uuid the
+  // insert can only fail (uuid FK) — dispatch locally instead of spamming
+  // 22P02 warnings.
   let persisted: GovernanceEvent | null = null
-  if (isSupabaseConfigured() && supabase) {
+  if (isSupabaseConfigured() && supabase && UUID_RE.test(orgId)) {
     try {
       const { data, error } = await supabase
         .from('governance_events')
@@ -356,21 +358,37 @@ export function listRegisteredAgents(): Record<string, string[]> {
 }
 
 // ------------------------------------------------------------------
-// Default org resolver — reads tenant from auth store.
-// Falls back to 'default' for unauthenticated contexts (e.g. demos).
+// Default org resolver. governance_events.org_id is a uuid FK, so this must
+// resolve the SAME org the rest of the UI uses (session app_metadata.org_id,
+// as read by TenantContext) — the legacy auth-store `tenant` field is the
+// literal 'default' for demo users and broke every insert with 22P02.
+// Resolution order: explicit → supabase session app_metadata.org_id →
+// auth-store tenant/id if they are uuids → '' (caller skips persistence).
 // ------------------------------------------------------------------
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 function resolveOrgId(explicit?: string): string {
-  if (explicit) return explicit
+  if (explicit && UUID_RE.test(explicit)) return explicit
   try {
-    const raw = typeof window !== 'undefined'
-      ? window.localStorage.getItem('auth-storage')
-      : null
-    if (raw) {
-      const state = JSON.parse(raw) as { state?: { user?: { tenant?: string; id?: string } } }
-      return state?.state?.user?.tenant ?? state?.state?.user?.id ?? 'default'
+    if (typeof window !== 'undefined') {
+      // supabase-js persists the session under sb-<ref>-auth-token
+      for (let i = 0; i < window.localStorage.length; i++) {
+        const key = window.localStorage.key(i)
+        if (!key || !key.startsWith('sb-') || !key.endsWith('-auth-token')) continue
+        const sess = JSON.parse(window.localStorage.getItem(key) ?? 'null') as
+          { user?: { app_metadata?: { org_id?: string } } } | null
+        const org = sess?.user?.app_metadata?.org_id
+        if (org && UUID_RE.test(org)) return org
+      }
+      const raw = window.localStorage.getItem('auth-storage')
+      if (raw) {
+        const state = JSON.parse(raw) as { state?: { user?: { tenant?: string; id?: string } } }
+        const cand = state?.state?.user?.tenant ?? state?.state?.user?.id
+        if (cand && UUID_RE.test(cand)) return cand
+      }
     }
   } catch { /* noop */ }
-  return 'default'
+  return ''
 }
 
 // ------------------------------------------------------------------
