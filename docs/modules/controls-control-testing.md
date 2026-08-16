@@ -23,3 +23,18 @@ Planned test → Collect evidence → Evaluate (Effective / Deficient / Not appl
 
 ## Outputs
 SOC 2 / ISO audit-ready control matrix and testing workpapers exportable from Evidence Vault.
+
+## Backend (updated 2026-08-16)
+
+Backed by the canonical org-scoped `controls` table (service:
+`complianceControlsService.ts`, hook: `useControls`). The page previously read
+the generic `compliancecontrols_table (id, doc jsonb)` demo table **while the
+real table already held 385 control records that were never displayed**.
+
+`status` is constrained to `implemented`|`partially_implemented`|
+`not_implemented`|`not_applicable`. `score` and `evidence_count` are nullable
+and render as `—` when never scored/counted — never as `0`. Coverage is
+computed over in-scope controls only (excluding `not_applicable`) and shows
+`—` when the library is empty.
+
+**Interlinks:** Frameworks, Evidence.

@@ -58,13 +58,13 @@ every new RLS policy must use `current_user_org_id()`.
 
 ---
 
-## TD-001 — Modules still reading generic demo tables (P0, 22 modules)
+## TD-001 — Modules still reading generic demo tables (P0, 19 modules)
 
 **Status:** Open · **Severity:** P0 · **Owner:** Platform team
 
 ### What
 
-Twenty-two modules still read a generic `<name>_table (id, doc jsonb)` demo
+Nineteen modules still read a generic `<name>_table (id, doc jsonb)` demo
 table via `useSupabaseTable(...)`, seeded from a hardcoded in-file array. This
 violates the platform's first-principle contract (*"Never wire a page to a
 generic `<name>_table (id, doc jsonb)` demo table"*) in `CLAUDE.md`.
@@ -99,12 +99,9 @@ that has no provenance.
 | Identity Governance (IGA) | `pages/IGA.tsx` | `iga_table` |
 | Model Risk Committee | `pages/ModelRiskCommittee.tsx` | `modelriskcommittee_table` |
 | Regulator Filings | `pages/RegulatorFilings.tsx` | `regulatorfilings_table` |
-| RoPA | `pages/RoPA.tsx` | `ropa_table` |
-| Transfer Impact Assessment | `pages/TIA.tsx` | `tia_table` |
 | Tabletop Exercises | `pages/TabletopExercises.tsx` | `tabletopexercises_table` |
 | Transparency Reports | `pages/TransparencyReports.tsx` | `transparencyreports_table` |
 | Committee Management | `pages/committee/CommitteeManagement.tsx` | `committeemanagement_table` |
-| Compliance Controls | `pages/compliance/ComplianceControls.tsx` | `compliancecontrols_table` |
 | Regulatory Radar | `pages/governance/RegRadar.tsx` | `regradar_table` |
 | HITL Review Center | `pages/hitl/HITLReviewCenter.tsx` | `hitlreviewcenter_table` |
 | Reporting | `pages/reporting/Reporting.tsx` | `reporting_table` |
@@ -122,8 +119,8 @@ Ordered by regulatory exposure — how directly a fabricated record in that modu
 would mislead an assessor:
 
 **Tier 1 — statutory records (do first)**
-`DPIA`, `RoPA`, `TIA`, `Regulator Filings`, `Compliance Controls`,
-`HITL Review Center`. These are named artefacts under GDPR Arts. 30/35, the AI
+Remaining: `DPIA`, `Regulator Filings`, `HITL Review Center`.
+(`RoPA`, `TIA` and `Compliance Controls` migrated 2026-08-16.) These are named artefacts under GDPR Arts. 30/35, the AI
 Act's Art. 14 oversight record, and conformity evidence. A seeded row here is the
 highest-consequence defect in the register.
 
@@ -193,3 +190,6 @@ derived view so it is not mistaken for an independent evidence source.
 | — | `tasks.tenant_id` defaulted to literal `'default'` (outside org isolation) | 2026-08-16 |
 | — | Agent registry banner claimed 27 agents; 26 exist | 2026-08-16 |
 | — | 11 modules isolated (sidebar-only, zero inbound links) | 2026-08-16 |
+| — | RoPA on `ropa_table` demo table (GDPR Art. 30 register) | 2026-08-16 |
+| — | TIA on `tia_table` demo table (GDPR Chapter V) | 2026-08-16 |
+| — | Compliance Controls on demo table while 385 real rows sat unused | 2026-08-16 |

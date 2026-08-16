@@ -1,419 +1,284 @@
-import { useState } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
-import { Link } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// Compliance Controls — the org's control library, mapped to framework clauses,
+// with implementation status, test currency and evidence counts.
+//
+// Backed by the canonical org-scoped `controls` table. The page previously read
+// the generic `compliancecontrols_table (id, doc jsonb)` demo table seeded from
+// a hardcoded array, while the real table already held hundreds of control
+// records that were never displayed.
+
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { toast } from 'sonner'
+import { CheckSquare, Plus, Warning } from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DataTable, type Column } from '@/components/ui/DataTable'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { FormDialog, Field } from '@/components/evals/FormDialog'
+import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
+import { useControls } from '@/hooks/useComplianceRecords'
+import { useRBAC } from '@/hooks/useRBAC'
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '../../components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import {
-  ShieldCheck, MagnifyingGlass, Plus, Eye, PencilSimple, Trash,
-  CheckCircle, XCircle, Clock, Warning, ClipboardText,
-} from '@phosphor-icons/react';
-import { CONTROLS, FRAMEWORKS, GAPS, EVIDENCE, Control, ControlStatus, statusColor, severityColor, formatDate } from '../../data/seed';
-import { REGISTRY_CONTROLS } from '../../data/controlRegistry';
-import { PageHeader } from '../../components/ui/PageHeader';
-import { useSettingsStore } from '../../stores/settingsStore';
-import { useChartTheme } from '../../hooks/useChartTheme';
+  CONTROL_AUTOMATION, CONTROL_STATUSES,
+  type ControlAutomation, type ControlRecord, type ControlStatus,
+} from '@/services/complianceControlsService'
 
-const SEV_TX: Record<string, string> = { CRITICAL: 'hsl(var(--r-cr-tx))', HIGH: 'hsl(var(--r-hi-tx))', MEDIUM: 'hsl(var(--s-wn-tx))', LOW: 'hsl(var(--text-3))' };
-const LIBRARY_CONTROLS: Control[] = REGISTRY_CONTROLS;
+const STATUS_LABEL: Record<ControlStatus, string> = {
+  implemented: 'Implemented',
+  partially_implemented: 'Partially implemented',
+  not_implemented: 'Not implemented',
+  not_applicable: 'Not applicable',
+}
 
+const STATUS_TONE: Record<ControlStatus, string> = {
+  implemented: 'bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]',
+  partially_implemented: 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]',
+  not_implemented: 'bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]',
+  not_applicable: 'bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]',
+}
 
-const EMPTY_CONTROL: Omit<Control, 'id'> = {
-  title: '', framework: 'EU AI Act', clause: '', status: 'planned',
-  score: 0, owner: '', evidenceCount: 0, lastTested: '',
-  description: '', testResult: 'pending',
-};
+const EMPTY: Partial<ControlRecord> = {
+  controlRef: '', name: '', description: '', clauseRef: '', category: '',
+  status: 'not_implemented', severity: 'medium', score: null,
+  automationStatus: 'manual', lastTestedAt: null, nextTestAt: null,
+}
 
-function statusIcon(status: ControlStatus) {
-  if (status === 'implemented') return <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
-  if (status === 'partial') return <Warning size={14} style={{ color: 'hsl(var(--r-hi-tx))' }} />;
-  if (status === 'planned') return <Clock size={14} style={{ color: 'hsl(var(--text-3))' }} />;
-  return <XCircle size={14} style={{ color: '#9ca3af' }} />;
+/** Days until a test is due; negative means overdue. Null when unscheduled. */
+function daysUntil(due?: string | null): number | null {
+  if (!due) return null
+  return Math.ceil((new Date(due).getTime() - Date.now()) / 86_400_000)
 }
 
 export default function ComplianceControls() {
-  const { orgName } = useSettingsStore();
-  const ct = useChartTheme();
+  const nav = useNavigate()
+  const { can } = useRBAC()
+  const controls = useControls()
 
-  const { data: controls, setData: setControls } = useSupabaseTable('compliancecontrols_table', LIBRARY_CONTROLS);
-  const [search, setSearch] = useState('');
-  const [filterFramework, setFilterFramework] = useState('all');
-  const [filterStatus, setFilterStatus] = useState('all');
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<ControlRecord | null>(null)
+  const [form, setForm] = useState<Partial<ControlRecord>>(EMPTY)
+  const [toDelete, setToDelete] = useState<ControlRecord | null>(null)
 
-  const [viewItem, setViewItem] = useState<Control | null>(null);
-  const [editItem, setEditItem] = useState<Control | null>(null);
-  const [deleteItem, setDeleteItem] = useState<Control | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [formData, setFormData] = useState<Omit<Control, 'id'>>(EMPTY_CONTROL);
+  const set = <K extends keyof ControlRecord>(k: K, v: ControlRecord[K] | undefined) =>
+    setForm((f) => ({ ...f, [k]: v }))
 
-  const frameworks = Array.from(new Set(controls.map(c => c.framework)));
+  function openCreate() { setEditing(null); setForm(EMPTY); setFormOpen(true) }
+  function openEdit(c: ControlRecord) { setEditing(c); setForm({ ...c }); setFormOpen(true) }
 
-  const filtered = controls.filter(c => {
-    const q = search.toLowerCase();
-    const matchSearch = !q || c.title.toLowerCase().includes(q) || c.clause.toLowerCase().includes(q) || c.owner.toLowerCase().includes(q);
-    const matchFW = filterFramework === 'all' || c.framework === filterFramework;
-    const matchStat = filterStatus === 'all' || c.status === filterStatus;
-    return matchSearch && matchFW && matchStat;
-  });
-
-  const totalControls = controls.length;
-  const implemented = controls.filter(c => c.status === 'implemented').length;
-  const coverage = Math.round((implemented / totalControls) * 100);
-  const openGaps = GAPS.length;
-  const evidenceTotal = controls.reduce((sum, c) => sum + c.evidenceCount, 0);
-
-  const stats = [
-    { label: 'Control Coverage', value: coverage + '%', icon: ShieldCheck, color: 'hsl(var(--s-ok-tx))' },
-    { label: 'Total Controls', value: totalControls, icon: ClipboardText, color: 'hsl(var(--brand))' },
-    { label: 'Open Gaps', value: openGaps, icon: Warning, color: 'hsl(var(--r-hi-tx))' },
-    { label: 'Evidence Items', value: evidenceTotal, icon: CheckCircle, color: '#3b82f6' },
-  ];
-
-  function handleCreate() {
-    const id = `CTRL-${String(controls.length + 1).padStart(3, '0')}`;
-    setControls(prev => [...prev, { ...formData, id }]);
-    setCreateOpen(false);
-    setFormData(EMPTY_CONTROL);
+  function submit() {
+    const onError = (e: any) => toast.error(e?.message ?? 'Failed to save control')
+    if (editing) {
+      controls.update.mutate({ id: editing.id, patch: form }, {
+        onSuccess: () => { toast.success('Control updated'); setFormOpen(false) }, onError,
+      })
+    } else {
+      controls.create.mutate(form, {
+        onSuccess: () => { toast.success('Control added'); setFormOpen(false) }, onError,
+      })
+    }
   }
 
-  function handleEdit() {
-    if (!editItem) return;
-    setControls(prev => prev.map(c => c.id === editItem.id ? editItem : c));
-    setEditItem(null);
+  /** Records a test against the real row — no simulated result. */
+  function markTested(c: ControlRecord) {
+    const today = new Date()
+    const next = new Date(today.getTime() + 91 * 86_400_000)
+    controls.update.mutate(
+      {
+        id: c.id,
+        patch: {
+          lastTestedAt: today.toISOString().slice(0, 10),
+          nextTestAt: next.toISOString().slice(0, 10),
+        },
+      },
+      {
+        onSuccess: () => toast.success(`${c.controlRef}: test recorded`),
+        onError: (e: any) => toast.error(e?.message ?? 'Failed to record test'),
+      },
+    )
   }
 
-  function handleDelete() {
-    if (!deleteItem) return;
-    setControls(prev => prev.filter(c => c.id !== deleteItem.id));
-    setDeleteItem(null);
-  }
+  const stats = useMemo(() => {
+    const rows = controls.data
+    const inScope = rows.filter((c) => c.status !== 'not_applicable')
+    const implemented = rows.filter((c) => c.status === 'implemented').length
+    const overdue = rows.filter((c) => {
+      const d = daysUntil(c.nextTestAt)
+      return d != null && d < 0
+    }).length
+    return {
+      total: rows.length,
+      implemented,
+      // Coverage is computed over in-scope controls only; null when none exist,
+      // so an empty library shows "—" rather than a misleading 0%.
+      coverage: inScope.length ? Math.round((implemented / inScope.length) * 100) : null,
+      overdue,
+      untested: rows.filter((c) => !c.lastTestedAt).length,
+    }
+  }, [controls.data])
 
-  const selectStyle = {
-    background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))',
-    color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0,
-  };
+  const columns: Column<ControlRecord>[] = [
+    { key: 'controlRef', header: 'Ref', sortable: true, render: (c) => (
+      <span className="font-mono text-xs text-[hsl(var(--text-2))]">{c.controlRef || '—'}</span>
+    ) },
+    { key: 'name', header: 'Control', sortable: true, render: (c) => (
+      <div>
+        <div className="text-sm font-medium text-[hsl(var(--text-1))]">{c.name}</div>
+        {c.description && <div className="max-w-lg truncate text-xs text-[hsl(var(--text-4))]">{c.description}</div>}
+      </div>
+    ) },
+    { key: 'clauseRef', header: 'Clause', sortable: true, render: (c) => (
+      <span className="text-xs text-[hsl(var(--text-3))]">{c.clauseRef || '—'}</span>
+    ) },
+    { key: 'category', header: 'Category', sortable: true, render: (c) => (
+      <span className="text-xs text-[hsl(var(--text-3))]">{c.category || '—'}</span>
+    ) },
+    { key: 'status', header: 'Status', sortable: true, render: (c) => (
+      <span className={`inline-flex px-2 py-0.5 text-[11px] font-medium ${STATUS_TONE[c.status]}`}>
+        {STATUS_LABEL[c.status]}
+      </span>
+    ) },
+    { key: 'score', header: 'Score', sortable: true, render: (c) => (
+      // Null means never scored — render a dash, never a 0.
+      <span className="font-mono text-xs">{c.score == null ? '—' : `${c.score}%`}</span>
+    ) },
+    { key: 'evidenceCount', header: 'Evidence', sortable: true, render: (c) => (
+      <span className="font-mono text-xs">{c.evidenceCount == null ? '—' : c.evidenceCount}</span>
+    ) },
+    { key: 'nextTestAt', header: 'Next test', sortable: true, render: (c) => {
+      const d = daysUntil(c.nextTestAt)
+      if (d == null) return <span className="text-xs text-[hsl(var(--text-4))]">not scheduled</span>
+      const overdue = d < 0
+      return (
+        <span
+          className="inline-flex items-center gap-1 text-xs"
+          style={{ color: overdue ? 'hsl(var(--s-er-tx))' : d <= 14 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-3))' }}
+        >
+          {overdue && <Warning size={11} />}
+          {overdue ? `${Math.abs(d)}d overdue` : `in ${d}d`}
+        </span>
+      )
+    } },
+    { key: 'automationStatus', header: 'Automation', render: (c) => (
+      <span className="text-xs capitalize text-[hsl(var(--text-3))]">
+        {c.automationStatus ? c.automationStatus.replace('_', ' ') : '—'}
+      </span>
+    ) },
+  ]
 
   return (
-    <div className="space-y-4">
+    <div>
       <PageHeader
-        title="Controls Registry"
-        subtitle={`${orgName} · ${totalControls} atomic controls across ${frameworks.length} frameworks`}
-        icon={ShieldCheck}
-        actions={<Button size="sm" leftIcon={<Plus size={14} />} onClick={() => { setFormData(EMPTY_CONTROL); setCreateOpen(true); }}>Add Control</Button>}
+        title="Compliance Controls"
+        subtitle="The control library mapped to framework clauses, with test currency and evidence"
+        icon={CheckSquare}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="sm" onClick={() => nav('/frameworks')}>Frameworks</Button>
+            <Button variant="ghost" size="sm" onClick={() => nav('/evidence')}>Evidence</Button>
+            {can('create') && <Button size="sm" icon={<Plus />} onClick={openCreate}>Add Control</Button>}
+          </div>
+        }
       />
 
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        {stats.map(s => (
-          <Card key={s.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="p-4 flex items-center justify-between">
-              <div>
-                <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{s.label}</p>
-                <p className="text-3xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{s.value}</p>
-              </div>
-              <s.icon size={28} style={{ color: s.color }} />
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Framework filter tabs */}
-      <Tabs value={filterFramework} onValueChange={setFilterFramework}>
-        <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
-          <TabsTrigger value="all" style={{ borderRadius: 0 }}>All</TabsTrigger>
-          {frameworks.map(fw => (
-            <TabsTrigger key={fw} value={fw} style={{ borderRadius: 0 }}>
-              {fw.replace('ISO/IEC ', '').replace('OWASP ', '')}
-            </TabsTrigger>
-          ))}
-        </TabsList>
-      </Tabs>
-
-      {/* Search + Status Filter */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-3))' }} />
-          <Input placeholder="Search controls..." value={search} onChange={e => setSearch(e.target.value)} className="pl-8" style={{ borderRadius: 0 }} />
-        </div>
-        <Select value={filterFramework} onValueChange={setFilterFramework}>
-          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Frameworks</SelectItem>
-            {frameworks.sort().map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {['implemented', 'partial', 'planned', 'not_applicable'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <span className="text-xs ml-auto font-mono" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {controls.length}</span>
-      </div>
-
-      {/* Table */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardContent className="p-0">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16" style={{ color: 'hsl(var(--text-3))' }}>
-              <ShieldCheck size={40} />
-              <p className="mt-3 text-sm font-medium">No controls match your filters</p>
-            </div>
-          ) : (
-            <table className="w-full">
-              <thead style={{ background: 'hsl(var(--bg-muted))' }}>
-                <tr>
-                  {['Code', 'Title', 'Framework', 'Clause', 'Severity', 'Eval', 'Status', 'Score', 'Actions'].map(h => (
-                    <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(c => {
-                  const sc = statusColor(c.status);
-                  return (
-                    <tr
-                      key={c.id}
-                      className="cursor-pointer"
-                      style={{ borderTop: '1px solid hsl(var(--border))' }}
-                      onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--bg-muted))')}
-                      onMouseLeave={e => (e.currentTarget.style.background = '')}
-                      onClick={() => setViewItem(c)}
-                    >
-                      <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{c.id}</td>
-                      <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))', maxWidth: 200 }}>
-                        <span className="line-clamp-2">{c.title}</span>
-                      </td>
-                      <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{c.framework.replace('ISO/IEC ', '')}</td>
-                      <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{c.clause}</td>
-                      <td className="p-3 text-[10px] font-semibold uppercase" style={{ color: c.severity ? SEV_TX[c.severity] : 'hsl(var(--text-4))' }}>{c.severity ?? '—'}</td>
-                      <td className="p-3 text-[10px] font-mono" style={{ color: c.evalType === 'AUTO' ? 'hsl(var(--s-in-tx))' : 'hsl(var(--text-4))' }}>{c.evalType ?? '—'}</td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-1.5">
-                          {statusIcon(c.status)}
-                          <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>
-                            {c.status.replace('_', ' ')}
-                          </Badge>
-                        </div>
-                      </td>
-                      <td className="p-3" style={{ minWidth: 100 }}>
-                        <div className="flex items-center gap-2">
-                          <div style={{ flex: 1, background: 'hsl(var(--bg-muted))', height: 6 }}>
-                            <div style={{
-                              width: c.score + '%',
-                              height: '100%',
-                              background: c.score >= 80 ? 'hsl(var(--s-ok-tx))' : c.score >= 60 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))',
-                            }} />
-                          </div>
-                          <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{c.score}%</span>
-                        </div>
-                      </td>
-                      <td className="p-3">
-                        <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(c)}>
-                            <Eye size={14} />
-                          </Button>
-                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setEditItem({ ...c })}>
-                            <PencilSimple size={14} />
-                          </Button>
-                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-er-tx))' }} onClick={() => setDeleteItem(c)}>
-                            <Trash size={14} />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )}
+      <Card className="mb-4">
+        <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-4">
+          <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Controls</p><p className="font-mono text-xl font-bold">{stats.total}</p></div>
+          <div>
+            <p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Coverage</p>
+            <p className="font-mono text-xl font-bold text-[hsl(var(--s-ok-tx))]">
+              {stats.coverage == null ? '—' : `${stats.coverage}%`}
+            </p>
+            <p className="mt-0.5 text-[11px] text-[hsl(var(--text-4))]">implemented, in-scope</p>
+          </div>
+          <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Test overdue</p><p className="font-mono text-xl font-bold text-[hsl(var(--s-er-tx))]">{stats.overdue}</p></div>
+          <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Never tested</p><p className="font-mono text-xl font-bold text-[hsl(var(--s-wn-tx))]">{stats.untested}</p></div>
         </CardContent>
       </Card>
 
-      {/* View Sheet */}
-      <Sheet open={!!viewItem} onOpenChange={o => !o && setViewItem(null)}>
-        <SheetContent style={{ width: 520, background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
-          {viewItem && (
-            <>
-              <SheetHeader className="pb-4">
-                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.title}</SheetTitle>
-                <div className="flex gap-2">
-                  {(() => { const sc = statusColor(viewItem.status); return (
-                    <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>
-                      {viewItem.status.replace('_', ' ')}
-                    </Badge>
-                  ); })()}
-                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.framework}</Badge>
-                </div>
-              </SheetHeader>
-              <div className="space-y-3">
-                {[
-                  { label: 'Control ID', value: viewItem.id },
-                  { label: 'Clause', value: viewItem.clause },
-                  { label: 'Owner', value: viewItem.owner },
-                  { label: 'Score', value: viewItem.score + '%' },
-                  { label: 'Evidence Items', value: viewItem.evidenceCount.toString() },
-                  { label: 'Last Tested', value: viewItem.lastTested ? formatDate(viewItem.lastTested) : '—' },
-                  { label: 'Test Result', value: viewItem.testResult },
-                ].map(r => (
-                  <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
-                    <span className="text-sm font-medium" style={{ color: r.label === 'Test Result' && viewItem.testResult === 'fail' ? 'hsl(var(--s-er-tx))' : viewItem.testResult === 'pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-1))' }}>
-                      {r.value}
-                    </span>
-                  </div>
-                ))}
-                <div className="pt-2">
-                  <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Description</p>
-                  <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
-                </div>
-                {/* Gap delta — decrease is green, increase is red */}
-                {(() => {
-                  const linkedGaps = GAPS.filter(g => g.controlRef && viewItem.clause && g.controlRef.includes(viewItem.clause.split(' ')[0]));
-                  const delta = viewItem.score - 80;
-                  return (
-                    <div className="pt-2 p-3" style={{ background: 'hsl(var(--bg-muted))' }}>
-                      <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Gap Delta vs Target (80%)</p>
-                      <span className="text-sm font-bold" style={{ color: delta >= 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>
-                        {delta >= 0 ? '+' : ''}{delta}%
-                      </span>
-                      <span className="text-xs ml-2" style={{ color: 'hsl(var(--text-3))' }}>
-                        {delta >= 0 ? 'Above target (good)' : 'Below target — action needed'}
-                      </span>
-                    </div>
-                  );
-                })()}
-              </div>
-              <div className="flex gap-2 mt-6">
-                <Button size="sm" onClick={() => { setEditItem({ ...viewItem }); setViewItem(null); }}>
-                  <PencilSimple size={14} /> Edit
-                </Button>
-                <Link to={`/controls/${viewItem.id}`} onClick={() => setViewItem(null)}>
-                  <Button size="sm" variant="outline">View Detail</Button>
-                </Link>
-                <Button size="sm" variant="outline" onClick={() => setViewItem(null)}>Close</Button>
-              </div>
-            </>
+      <Card className="p-4">
+        {controls.isLoading ? <TableSkeleton cols={9} />
+          : controls.isError ? <ErrorState message={controls.error?.message} onRetry={() => controls.refetch()} />
+          : controls.data.length === 0 ? (
+            <EmptyState
+              title="No controls defined"
+              message="Define the controls your frameworks require, so implementation status and test currency are evidenced rather than asserted."
+              actionLabel={can('create') ? 'Add a control' : undefined}
+              onAction={can('create') ? openCreate : undefined}
+            />
+          ) : (
+            <DataTable
+              data={controls.data} columns={columns} searchKey="name" searchPlaceholder="Search controls…"
+              onEdit={can('update') ? openEdit : undefined}
+              onDelete={can('delete') ? (c) => setToDelete(c) : undefined}
+              actions={can('update') ? (c) => (
+                <Button variant="ghost" size="sm" title="Record a test"
+                  onClick={(e) => { e.stopPropagation(); markTested(c) }}>Record test</Button>
+              ) : undefined}
+            />
           )}
-        </SheetContent>
-      </Sheet>
+      </Card>
 
-      {/* Edit Dialog */}
-      <Dialog open={!!editItem} onOpenChange={o => !o && setEditItem(null)}>
-        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader>
-            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Edit Control</DialogTitle>
-          </DialogHeader>
-          {editItem && (
-            <div className="space-y-3">
-              {[
-                { label: 'Title', key: 'title' },
-                { label: 'Clause', key: 'clause' },
-                { label: 'Owner', key: 'owner' },
-                { label: 'Description', key: 'description' },
-              ].map(f => (
-                <div key={f.key}>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                  <Input value={(editItem as any)[f.key] || ''} onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} style={{ borderRadius: 0 }} />
-                </div>
-              ))}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                  <Select value={editItem.status} onValueChange={v => setEditItem(prev => prev ? { ...prev, status: v as ControlStatus } : null)}>
-                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {['implemented', 'partial', 'planned', 'not_applicable'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Score</label>
-                  <Input type="number" min={0} max={100} value={editItem.score}
-                    onChange={e => setEditItem(prev => prev ? { ...prev, score: Number(e.target.value) } : null)}
-                    style={{ borderRadius: 0 }} />
-                </div>
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditItem(null)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleEdit} style={{ borderRadius: 0 }}>Save Changes</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <FormDialog
+        open={formOpen} onOpenChange={setFormOpen}
+        title={editing ? `Edit ${editing.controlRef || editing.name}` : 'Add Control'}
+        description="Controls carry an implementation status and a test cadence; both are evidence at audit."
+        submitLabel={editing ? 'Save changes' : 'Add'}
+        busy={controls.create.isPending || controls.update.isPending}
+        disabled={!form.name?.trim()}
+        onSubmit={submit}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Control reference"><Input value={form.controlRef ?? ''} onChange={(e) => set('controlRef', e.target.value)} placeholder="A.6.2.4" /></Field>
+          <Field label="Clause reference"><Input value={form.clauseRef ?? ''} onChange={(e) => set('clauseRef', e.target.value)} /></Field>
+        </div>
+        <Field label="Name" required><Input value={form.name ?? ''} onChange={(e) => set('name', e.target.value)} /></Field>
+        <Field label="Description"><Textarea rows={2} value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} /></Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Category"><Input value={form.category ?? ''} onChange={(e) => set('category', e.target.value)} /></Field>
+          <Field label="Status">
+            <Select value={form.status ?? 'not_implemented'} onValueChange={(v) => set('status', v as ControlStatus)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CONTROL_STATUSES.map((s) => <SelectItem key={s} value={s}>{STATUS_LABEL[s]}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Severity">
+            <Select value={form.severity ?? 'medium'} onValueChange={(v) => set('severity', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{['critical', 'high', 'medium', 'low'].map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Automation">
+            <Select value={form.automationStatus ?? 'manual'} onValueChange={(v) => set('automationStatus', v as ControlAutomation)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{CONTROL_AUTOMATION.map((a) => <SelectItem key={a} value={a}>{a.replace('_', ' ')}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Last tested"><Input type="date" value={form.lastTestedAt ?? ''} onChange={(e) => set('lastTestedAt', e.target.value)} /></Field>
+          <Field label="Next test due"><Input type="date" value={form.nextTestAt ?? ''} onChange={(e) => set('nextTestAt', e.target.value)} /></Field>
+        </div>
+      </FormDialog>
 
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-        <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader>
-            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Add Control</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3">
-            {[
-              { label: 'Title', key: 'title' },
-              { label: 'Clause', key: 'clause' },
-              { label: 'Owner', key: 'owner' },
-              { label: 'Description', key: 'description' },
-            ].map(f => (
-              <div key={f.key}>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                <Input value={(formData as any)[f.key] || ''} onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ borderRadius: 0 }} />
-              </div>
-            ))}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Framework</label>
-                <Select value={formData.framework} onValueChange={v => setFormData(prev => ({ ...prev, framework: v }))}>
-                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {FRAMEWORKS.map(fw => <SelectItem key={fw.id} value={fw.name}>{fw.name}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                <Select value={formData.status} onValueChange={v => setFormData(prev => ({ ...prev, status: v as ControlStatus }))}>
-                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {['planned', 'partial', 'implemented'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleCreate} style={{ borderRadius: 0 }} disabled={!formData.title}>Create Control</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Delete Dialog */}
-      <AlertDialog open={!!deleteItem} onOpenChange={o => !o && setDeleteItem(null)}>
-        <AlertDialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
-          <AlertDialogHeader>
-            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Delete Control</AlertDialogTitle>
-            <AlertDialogDescription>
-              Are you sure you want to delete <strong>{deleteItem?.title}</strong>? This action cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--s-er-tx))', borderRadius: 0 }}>Delete</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDialog
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title={`Delete ${toDelete?.controlRef || toDelete?.name || ''}?`}
+        description="The control and its mapping are removed. Evidence already captured against it is retained."
+        isDestructive confirmLabel="Delete"
+        onConfirm={() => {
+          if (!toDelete) return
+          controls.remove.mutate(toDelete.id, {
+            onSuccess: () => { toast.success('Control deleted'); setToDelete(null) },
+            onError: (e: any) => toast.error(e?.message ?? 'Failed to delete'),
+          })
+        }}
+      />
     </div>
-  );
+  )
 }

@@ -30,3 +30,19 @@ TIA is attached to a RoPA record and referenced by the affected Vendor, Asset, a
 
 ## Output
 Exportable TIA report with risk score (Low/Medium/High/Prohibited) and residual-risk rationale.
+
+## Backend (updated 2026-08-16)
+
+Backed by the canonical org-scoped `transfer_impact_assessments` table
+(service: `privacyRecordsService.ts`, hook: `useTiaRecords`). The page
+previously read the generic `tia_table (id, doc jsonb)` demo table.
+
+`transfer_mechanism` is constrained to `adequacy_decision`,
+`standard_contractual_clauses`, `binding_corporate_rules`, `derogation`,
+`other`. There is deliberately **no `none` member**: a transfer with no
+mechanism is represented by leaving the field unset, which the list flags in
+the error tone and the header counts as "No mechanism — unlawful if
+transferring". `status` is constrained to `draft`|`in_progress`|`completed`|
+`approved`.
+
+**Interlinks:** RoPA ↔ TIA (cross-border activities link here); Vendors.
