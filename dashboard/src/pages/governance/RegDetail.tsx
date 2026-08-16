@@ -1,100 +1,100 @@
-import { useParams, useNavigate } from 'react-router-dom';
-import { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import {
-  ArrowLeft, Warning, CheckCircle, Clock, CalendarBlank,
-  Globe, Shield, ListChecks, Lightning,
-} from '@phosphor-icons/react';
-import { REGULATIONS, severityColor, statusColor, formatDate } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+// Regulation Detail — one entry from the org-scoped regulation_entries
+// register, addressed by uuid (or regulationRef as a fallback). The
+// obligations checklist reads the real jsonb; toggling an obligation persists
+// through save() on the parent entry (write throws; success toast fires only
+// from the mutation's onSuccess). Linked models and risks resolve to chips.
+import { useState } from 'react'
+import { useParams, useNavigate, Link } from 'react-router-dom'
+import { ArrowLeft, Warning, Clock, Globe, ListChecks, ArrowSquareOut, CalendarBlank } from '@phosphor-icons/react'
+import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card'
+import { Button } from '../../components/ui/button'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { InterlinkChip } from '@/components/ui/InterlinkChip'
+import { obStyle } from '@/components/ui/HorizonBadge'
+import { useRegulationEntries } from '@/hooks/useRiskIncidents'
+import { useModelsData } from '@/hooks/useModelsData'
+import { useRisksData } from '@/hooks/useRisksData'
+import { daysUntil, type RegulationEntryRecord } from '@/services/riskGroupService'
 
-import { useRegulations } from '../../hooks/queries/useRegulations'
-
-const MOCK_TIMELINES: Record<string, Array<{ date: string; event: string; actor: string }>> = {
-  'REG-001': [
-    { date: '2026-01-10', event: 'EU AI Act impact assessment initiated', actor: 'James Patel' },
-    { date: '2026-02-01', event: 'High-risk AI systems identified and documented', actor: 'Emma Wilson' },
-    { date: '2026-03-01', event: 'Gap analysis completed — 12 gaps identified', actor: 'Raj Gupta' },
-    { date: '2026-03-15', event: 'Remediation plans created for critical gaps', actor: 'James Patel' },
-  ],
-  'REG-002': [
-    { date: '2025-11-01', event: 'Colorado SB 205 effective date monitoring started', actor: 'System' },
-    { date: '2026-01-15', event: 'Algorithmic impact assessment submitted', actor: 'James Patel' },
-    { date: '2026-02-01', event: 'Regulation became effective', actor: 'System' },
-    { date: '2026-02-15', event: 'Compliance review completed', actor: 'Emma Wilson' },
-  ],
-  'REG-003': [
-    { date: '2026-01-15', event: 'Singapore AI Verify assessment started', actor: 'Raj Gupta' },
-    { date: '2026-02-15', event: 'Self-assessment completed', actor: 'Maria Santos' },
-    { date: '2026-03-01', event: 'Framework became effective', actor: 'System' },
-    { date: '2026-03-10', event: 'Governance report submitted to IMDA', actor: 'James Patel' },
-  ],
-  'REG-004': [
-    { date: '2026-01-01', event: 'ISO/IEC 42001 certification project initiated', actor: 'James Patel' },
-    { date: '2026-02-01', event: 'Gap analysis against ISO 42001 requirements', actor: 'Emma Wilson' },
-    { date: '2026-03-15', event: 'Remediation roadmap finalized', actor: 'James Patel' },
-    { date: '2026-04-01', event: 'Pre-audit assessment scheduled', actor: 'Emma Wilson' },
-  ],
-  'REG-005': [
-    { date: '2026-02-01', event: 'NIST AI RMF 2.0 update announced', actor: 'System' },
-    { date: '2026-02-15', event: 'Review of updated framework initiated', actor: 'Raj Gupta' },
-    { date: '2026-03-20', event: 'Gap analysis against existing controls', actor: 'Maria Santos' },
-  ],
-};
+const STATUS_STYLE: Record<string, React.CSSProperties> = {
+  enacted:  { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  guidance: { background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  draft:    { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+}
+const statusStyle = (s?: string): React.CSSProperties =>
+  STATUS_STYLE[(s ?? '').toLowerCase()] ?? { background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }
 
 export default function RegDetail() {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { orgName } = useSettingsStore();
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { items, isLoading, error, save, isSaving } = useRegulationEntries()
+  const { models } = useModelsData()
+  const { risks } = useRisksData()
+  const modelName = (mid: string) => models.find(m => m.id === mid)?.name ?? 'Unavailable'
+  const riskName = (rid: string) => risks.find((r: any) => r.id === rid)?.title ?? 'Unavailable'
 
-  const regulation = REGULATIONS.find(r => r.id === id);
-  const [completedItems, setCompletedItems] = useState<Set<number>>(new Set());
+  // The row that failed to toggle stays visually unchanged — no optimistic lie.
+  const [togglingRef, setTogglingRef] = useState<string | null>(null)
 
-  function toggleItem(idx: number) {
-    setCompletedItems(prev => {
-      const next = new Set(prev);
-      if (next.has(idx)) next.delete(idx);
-      else next.add(idx);
-      return next;
-    });
+  const regulation: RegulationEntryRecord | undefined =
+    items.find(r => r.id === id) ?? items.find(r => r.regulationRef === id)
+
+  if (isLoading) return <PageSkeleton title="Regulation Detail" rows={4} />
+
+  if (error) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" size="sm" onClick={() => navigate('/reg-radar')} style={{ padding: '4px 8px' }}>
+          <ArrowLeft size={14} /> Back to Reg Radar
+        </Button>
+        <div role="alert" className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load the regulation register</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{(error as Error).message}</p>
+        </div>
+      </div>
+    )
   }
 
   if (!regulation) {
     return (
       <div className="p-6 flex flex-col items-center justify-center" style={{ minHeight: 400 }}>
-        <Warning size={48} style={{ color: 'hsl(var(--r-hi-tx))' }} />
+        <Warning size={48} style={{ color: 'hsl(var(--s-wn-tx))' }} />
         <p className="mt-4 text-lg font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Regulation not found</p>
+        <p className="mt-1 text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+          No entry in the register matches this id — it may have been deleted.
+        </p>
         <Button className="mt-4" onClick={() => navigate('/reg-radar')} style={{ borderRadius: 0 }}>
           <ArrowLeft size={14} /> Back to Reg Radar
         </Button>
       </div>
-    );
+    )
   }
 
-  const rc = severityColor(regulation.impact);
-  const sc = statusColor(regulation.status);
-  const days = regulation.daysUntilEffective;
-  const isOverdue = days < 0;
-  const isUrgent = days >= 0 && days <= 30;
+  const days = daysUntil(regulation.effectiveOn)
+  const isInForce = days != null && days < 0
+  const isUrgent = days != null && days >= 0 && days <= 90
 
-  const completedCount = completedItems.size;
-  const totalItems = regulation.actionItems.length;
-  const checklistProgress = Math.round((completedCount / totalItems) * 100);
+  const obligations = regulation.obligations
+  const mappedCount = obligations.filter(o => (o.status ?? '').toLowerCase() === 'mapped').length
 
-  const timeline = MOCK_TIMELINES[regulation.id] || [];
-
-  function daysDisplay() {
-    if (isOverdue) return `${Math.abs(days)} days overdue`;
-    if (days === 0) return 'Effective today';
-    return `${days} days remaining`;
-  }
-
-  function countdownColor() {
-    if (isOverdue) return 'hsl(var(--s-er-tx))';
-    if (isUrgent) return 'hsl(var(--r-hi-tx))';
-    return 'hsl(var(--s-ok-tx))';
+  // Toggling flips mapped ↔ unmapped and persists the whole obligations array
+  // back to the parent entry. Other statuses (partial/exempt) are shown
+  // read-only as stored — toggling from them marks the obligation mapped.
+  const toggleObligation = async (ref: string) => {
+    if (!regulation.id || isSaving) return
+    const next = obligations.map(o =>
+      o.ref === ref
+        ? { ...o, status: (o.status ?? '').toLowerCase() === 'mapped' ? 'unmapped' : 'mapped' }
+        : o)
+    setTogglingRef(ref)
+    try {
+      await save({ ...regulation, obligations: next })
+    } catch {
+      // Error toast fires from the mutation; the list re-renders from the
+      // unchanged cache, so no fake state persists.
+    } finally {
+      setTogglingRef(null)
+    }
   }
 
   return (
@@ -103,181 +103,188 @@ export default function RegDetail() {
         <ArrowLeft size={14} /> Back to Reg Radar
       </Button>
 
-      {/* Overdue Alert */}
-      {isOverdue && (
-        <div style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-tx))', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Warning size={18} style={{ color: 'hsl(var(--s-er-tx))' }} />
-          <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>
-            This regulation became effective {Math.abs(days)} days ago. Ensure compliance measures are fully implemented.
+      {isInForce && (
+        <div style={{ background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-br))', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <CalendarBlank size={18} style={{ color: 'hsl(var(--s-ok-tx))' }} />
+          <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-ok-tx))' }}>
+            In force since {regulation.effectiveOn} ({Math.abs(days!)} days ago).
           </p>
         </div>
       )}
-
-      {isUrgent && !isOverdue && (
-        <div style={{ background: 'hsl(var(--r-hi-bg))', border: '1px solid hsl(var(--r-hi-tx))', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Clock size={18} style={{ color: 'hsl(var(--r-hi-tx))' }} />
-          <p className="text-sm font-semibold" style={{ color: 'hsl(var(--r-hi-tx))' }}>
-            Effective in {days} days — escalate preparation immediately.
+      {isUrgent && (
+        <div style={{ background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-br))', padding: '10px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Clock size={18} style={{ color: 'hsl(var(--s-wn-tx))' }} />
+          <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-wn-tx))' }}>
+            Effective in {days} days ({regulation.effectiveOn}).
           </p>
         </div>
       )}
 
       {/* Header */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
         <div>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            {regulation.regulationRef && <span className="font-mono text-xs text-[hsl(var(--brand))]">{regulation.regulationRef}</span>}
+            {regulation.status && <span className="text-[11px] px-2 py-0.5 font-medium" style={statusStyle(regulation.status)}>{regulation.status}</span>}
+          </div>
           <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{regulation.name}</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · Jurisdiction: {regulation.jurisdiction} · ID: {regulation.id}
+          <p className="text-sm mt-1 flex items-center gap-3 flex-wrap" style={{ color: 'hsl(var(--text-3))' }}>
+            {regulation.jurisdiction && <span className="inline-flex items-center gap-1"><Globe size={13} /> {regulation.jurisdiction}</span>}
+            {regulation.owner && <span>Owner: {regulation.owner}</span>}
+            {regulation.relevanceScore != null && <span>Relevance: {regulation.relevanceScore}</span>}
           </p>
         </div>
-        <div className="flex gap-2">
-          <Badge style={{ background: rc.bg, color: rc.text, border: `1px solid ${rc.border}`, borderRadius: 0 }}>
-            {regulation.impact} impact
-          </Badge>
-          <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0 }}>
-            {regulation.status}
-          </Badge>
-        </div>
+        {regulation.sourceUrl && (
+          <a href={regulation.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-[hsl(var(--brand))] hover:underline">
+            View official source <ArrowSquareOut size={12} />
+          </a>
+        )}
       </div>
 
-      {/* Countdown + Meta Row */}
+      {/* Meta row — every figure from the entry itself */}
       <div className="grid grid-cols-4 gap-4">
-        {/* Countdown */}
-        <Card style={{ background: 'hsl(var(--bg-surface))', border: `2px solid ${countdownColor()}` }}>
-          <CardContent className="p-4 flex flex-col items-center text-center">
-            <CalendarBlank size={24} style={{ color: countdownColor(), marginBottom: 8 }} />
-            <p className="text-3xl font-bold" style={{ color: countdownColor() }}>
-              {isOverdue ? Math.abs(days) : days}
-            </p>
-            <p className="text-xs mt-1" style={{ color: countdownColor() }}>
-              {isOverdue ? 'days overdue' : 'days remaining'}
-            </p>
-            <p className="text-xs mt-2" style={{ color: 'hsl(var(--text-3))' }}>
-              Effective: {formatDate(regulation.effectiveDate)}
-            </p>
-          </CardContent>
-        </Card>
-
-        {/* Jurisdiction */}
-        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Globe size={24} style={{ color: 'hsl(var(--brand))' }} />
-            <div>
-              <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Jurisdiction</p>
-              <p className="text-xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{regulation.jurisdiction}</p>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Action Items Progress */}
-        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardContent className="p-4">
-            <p className="text-xs mb-2" style={{ color: 'hsl(var(--text-3))' }}>Action Items Progress</p>
-            <p className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{completedCount}/{totalItems}</p>
-            <div style={{ marginTop: 8, height: 6, background: 'hsl(var(--bg-muted))' }}>
-              <div style={{ width: `${checklistProgress}%`, height: '100%', background: 'hsl(var(--s-ok-tx))' }} />
-            </div>
-            <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>{checklistProgress}% complete</p>
-          </CardContent>
-        </Card>
-
-        {/* Impact */}
-        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-          <CardContent className="p-4 flex items-center gap-3">
-            <Lightning size={24} style={{ color: rc.text }} />
-            <div>
-              <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Business Impact</p>
-              <p className="text-xl font-bold" style={{ color: rc.text }}>{regulation.impact.toUpperCase()}</p>
-              <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>impact level</p>
-            </div>
-          </CardContent>
-        </Card>
+        {[
+          {
+            label: 'Effective Date',
+            value: regulation.effectiveOn ?? 'Not set',
+            sub: days == null ? 'No countdown without a date' : days < 0 ? `${Math.abs(days)} days ago` : `${days} days remaining`,
+          },
+          {
+            label: 'Obligations',
+            value: obligations.length > 0 ? `${mappedCount}/${obligations.length}` : '—',
+            sub: obligations.length > 0 ? 'mapped to controls' : 'None extracted yet',
+          },
+          {
+            label: 'Compliance Gap',
+            value: regulation.gapPercent != null ? `${regulation.gapPercent}%` : '—',
+            sub: regulation.gapPercent != null ? 'From the register' : 'Not assessed yet',
+          },
+          {
+            label: 'Models in Scope',
+            value: String((regulation.linkedModelIds ?? []).length),
+            sub: 'Linked via ai_models.id',
+          },
+        ].map(m => (
+          <Card key={m.label} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+            <CardContent className="p-4">
+              <p className="text-[11px] uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>{m.label}</p>
+              <p className="text-xl font-bold mt-1" style={{ color: 'hsl(var(--text-1))' }}>{m.value}</p>
+              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{m.sub}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
 
-      {/* Description */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      {/* Summary */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Regulation Overview</CardTitle>
+          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Requirements Summary</CardTitle>
         </CardHeader>
         <CardContent>
-          <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>{regulation.description}</p>
-        </CardContent>
-      </Card>
-
-      {/* Action Items Checklist */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
-              <ListChecks size={15} style={{ display: 'inline', marginRight: 6 }} />
-              Action Items Checklist
-            </CardTitle>
-            <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{completedCount} of {totalItems} completed</span>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {regulation.actionItems.map((item, idx) => {
-            const done = completedItems.has(idx);
-            return (
-              <label
-                key={idx}
-                className="flex items-start gap-3 cursor-pointer"
-                style={{
-                  padding: '10px 12px',
-                  background: done ? 'hsl(var(--s-ok-bg))' : 'transparent',
-                  border: `1px solid ${done ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--border))'}`,
-                  transition: 'all 0.15s',
-                }}
-              >
-                <input
-                  type="checkbox"
-                  checked={done}
-                  onChange={() => toggleItem(idx)}
-                  style={{ accentColor: 'hsl(var(--s-ok-tx))', marginTop: 2, flexShrink: 0 }}
-                />
-                <div className="flex-1">
-                  <p className="text-sm" style={{ color: done ? 'hsl(var(--text-3))' : 'hsl(var(--text-1))', textDecoration: done ? 'line-through' : 'none' }}>
-                    {item}
-                  </p>
-                </div>
-                {done && <CheckCircle size={16} style={{ color: 'hsl(var(--s-ok-tx))', flexShrink: 0 }} />}
-              </label>
-            );
-          })}
-
-          {completedCount === totalItems && (
-            <div style={{ marginTop: 12, padding: '12px 16px', background: 'hsl(var(--s-ok-bg))', border: '1px solid hsl(var(--s-ok-tx))', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <CheckCircle size={18} style={{ color: 'hsl(var(--s-ok-tx))' }} />
-              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-ok-tx))' }}>All action items completed — regulation compliance achieved!</p>
-            </div>
+          {regulation.requirementsSummary ? (
+            <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>{regulation.requirementsSummary}</p>
+          ) : (
+            <p className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>No summary recorded for this regulation yet.</p>
           )}
         </CardContent>
       </Card>
 
-      {/* Timeline */}
-      {timeline.length > 0 && (
-        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      {/* Obligations checklist — statuses from the jsonb; toggles persist */}
+      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+        <CardHeader className="pb-2">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-sm font-semibold flex items-center gap-1.5" style={{ color: 'hsl(var(--text-1))' }}>
+              <ListChecks size={15} /> Obligations
+            </CardTitle>
+            {obligations.length > 0 && (
+              <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{mappedCount} of {obligations.length} mapped</span>
+            )}
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-2">
+          {obligations.length === 0 ? (
+            <p className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>
+              No obligations extracted yet for this regulation.
+            </p>
+          ) : (
+            obligations.map((ob, i) => {
+              const isMapped = (ob.status ?? '').toLowerCase() === 'mapped'
+              const busy = isSaving && togglingRef === ob.ref
+              return (
+                <label
+                  key={`${ob.ref}-${i}`}
+                  className="flex items-start gap-3 cursor-pointer"
+                  style={{
+                    padding: '10px 12px',
+                    background: isMapped ? 'hsl(var(--s-ok-bg))' : 'transparent',
+                    border: `1px solid ${isMapped ? 'hsl(var(--s-ok-br))' : 'hsl(var(--border))'}`,
+                    opacity: busy ? 0.6 : 1,
+                    transition: 'all 0.15s',
+                  }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isMapped}
+                    disabled={isSaving}
+                    onChange={() => toggleObligation(ob.ref)}
+                    aria-label={`Mark obligation ${ob.ref} as ${isMapped ? 'unmapped' : 'mapped'}`}
+                    style={{ accentColor: 'hsl(var(--s-ok-tx))', marginTop: 2, flexShrink: 0 }}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="font-mono text-[10px]" style={{ color: 'hsl(var(--brand))' }}>{ob.ref}</span>
+                      <span className="text-[10px] px-1.5 py-0.5 font-medium" style={obStyle(ob.status)}>{ob.status}</span>
+                      {busy && <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Saving…</span>}
+                    </div>
+                    <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{ob.title}</p>
+                  </div>
+                </label>
+              )
+            })
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Interlinks */}
+      <div className="grid grid-cols-2 gap-4">
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Compliance Timeline</CardTitle>
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Models in Scope</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-0">
-              {timeline.map((event, i) => (
-                <div key={i} className="flex gap-4" style={{ paddingBottom: i < timeline.length - 1 ? 16 : 0, position: 'relative' }}>
-                  {i < timeline.length - 1 && (
-                    <div style={{ position: 'absolute', left: 7, top: 16, bottom: 0, width: 2, background: 'hsl(var(--border))' }} />
-                  )}
-                  <div style={{ width: 16, height: 16, background: i === timeline.length - 1 ? 'hsl(var(--brand))' : 'hsl(var(--bg-muted))', border: '2px solid hsl(var(--brand))', borderRadius: '50%', flexShrink: 0, marginTop: 1 }} />
-                  <div>
-                    <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{event.event}</p>
-                    <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(event.date)} · {event.actor}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {(regulation.linkedModelIds ?? []).length === 0 ? (
+              <p className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>No models linked to this regulation yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {(regulation.linkedModelIds ?? []).map(mid => (
+                  <InterlinkChip key={mid} label={modelName(mid)} to={`/models/inventory/${mid}`} />
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
-      )}
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Linked Risks</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {(regulation.linkedRiskIds ?? []).length === 0 ? (
+              <p className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>No risks linked to this regulation yet.</p>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {(regulation.linkedRiskIds ?? []).map(rid => (
+                  <InterlinkChip key={rid} label={riskName(rid)} to={`/risks?open=${rid}`} />
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+
+      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+        Gap tracking and control mapping for this entry live in{' '}
+        <Link to="/risk-intelligence" className="underline text-[hsl(var(--brand))]">Regulatory Intelligence</Link> — the risk lens on the same register.
+      </p>
     </div>
-  );
+  )
 }

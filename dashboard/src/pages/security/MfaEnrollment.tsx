@@ -6,9 +6,11 @@
 // review enrollment coverage without exposing secrets.
 
 import { useEffect, useRef, useState } from "react";
+import { Link } from "react-router-dom";
 import { Key } from "@phosphor-icons/react";
 import ModuleScaffold from "@/components/ModuleScaffold";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
+import { useTenant } from "@/hooks/useTenant";
 import { telemetry } from "@/lib/telemetry";
 
 interface MfaRow {
@@ -30,6 +32,7 @@ const LABELS: Record<MfaRow["factor_type"], string> = {
 
 export default function MfaEnrollment() {
   const abortRef = useRef<AbortController | null>(null);
+  const { orgId } = useTenant();
   const [rows, setRows] = useState<MfaRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -47,9 +50,13 @@ export default function MfaEnrollment() {
           setRows([]);
           return;
         }
-        const { data, error: err } = await supabase
+        // RLS already scopes to the caller's org; the explicit org_id filter is
+        // defense-in-depth, matching sibling security pages.
+        let query = supabase
           .from("mfa_enrollments")
-          .select("id, factor_type, factor_label, last_used_at, verified_at, enrolled_at")
+          .select("id, factor_type, factor_label, last_used_at, verified_at, enrolled_at");
+        if (orgId) query = query.eq("org_id", orgId);
+        const { data, error: err } = await query
           .order("enrolled_at", { ascending: false })
           .abortSignal(controller.signal);
         if (err) throw err;
@@ -64,7 +71,7 @@ export default function MfaEnrollment() {
     })();
 
     return () => controller.abort();
-  }, []);
+  }, [orgId]);
 
   const verified = rows.filter((r) => r.verified_at).length;
 
@@ -75,7 +82,16 @@ export default function MfaEnrollment() {
       icon={Key}
       breadcrumb={[{ label: "Security" }, { label: "MFA" }]}
       state={{ loading, error, empty: !loading && !error && rows.length === 0 }}
-      emptyMessage="No MFA factors enrolled yet. Add a TOTP or WebAuthn factor from Account Settings to get started."
+      emptyMessage="No MFA factors enrolled yet. Add a TOTP or WebAuthn factor to get started."
+      emptyAction={
+        <Link
+          to="/settings"
+          className="text-sm font-medium underline"
+          style={{ color: "hsl(var(--brand))" }}
+        >
+          Go to Settings
+        </Link>
+      }
       kpis={[
         { label: "Factors enrolled", value: rows.length, tone: rows.length > 0 ? "positive" : "warn" },
         { label: "Verified", value: verified, tone: verified === rows.length ? "positive" : "warn" },

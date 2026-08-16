@@ -10,13 +10,13 @@ const SEED_PATH = path.join(
   REPO_ROOT,
   "supabase",
   "migrations",
-  "20260421_ws09_seed.sql",
+  "20260421000020_ws09_seed.sql",
 );
 const SUPPORT_PATH = path.join(
   REPO_ROOT,
   "supabase",
   "migrations",
-  "20260421_ws09_seed_support.sql",
+  "20260421000021_ws09_seed_support.sql",
 );
 
 describe("WS9 — admin seed", () => {
@@ -61,7 +61,9 @@ describe("WS9 — admin seed", () => {
 
   it("generates ≥ 500 domain rows", () => {
     const sql = fs.readFileSync(SEED_PATH, "utf8");
-    const inserts = sql.match(/^INSERT INTO /gm) ?? [];
+    // Statements are indented inside per-statement fault-tolerant DO blocks
+    // since the replay-safety pass (see supabase/migrations/README.md).
+    const inserts = sql.match(/^\s*INSERT INTO /gm) ?? [];
     // 1 org + 12 users + 12 role_bindings + 22 fwk + 150 ctrl + 120 ev + 60 inc + 80 risk + 40 vendor + 40 training = 537
     expect(inserts.length).toBeGreaterThanOrEqual(500);
   });

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
-import { useState, useMemo, useEffect } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -12,74 +12,47 @@ import {
   Users, Database, StackSimple, ArrowRight, ChartLine, CheckCircle,
   TrendUp, TrendDown, Minus, ShieldCheck, Siren, Plus,
   Robot, Scales, UserCircleCheck, Eye, Lightning, PresentationChart, Exam,
-  ArrowSquareOut, Sparkle, X, ArrowUp, ArrowDown, Timer, Megaphone,
+  ArrowSquareOut, Sparkle, X, Megaphone,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
   LineChart, Line, Legend,
 } from 'recharts';
-import { severityColor, statusColor, formatDate } from '../data/seed';
+import { severityColor, formatDate } from '../data/seed';
+import { useAuditLogData } from '@/hooks/useAuditLogData';
 import { useRisksData } from '../hooks/useRisksData';
 import { useIncidentData } from '../hooks/useIncidentData';
 import { useModelsData } from '../hooks/useModelsData';
 import { useVendorsData } from '../hooks/useVendorsData';
 import { useFrameworksData } from '../hooks/useFrameworksData';
 import { useTaskData } from '../hooks/useTaskData';
+import { useHitlReviews } from '../hooks/useRiskIncidents';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 
-const RISK_TREND = [
-  { month: 'Oct', open: 14, critical: 4 },
-  { month: 'Nov', open: 13, critical: 3 },
-  { month: 'Dec', open: 15, critical: 5 },
-  { month: 'Jan', open: 14, critical: 4 },
-  { month: 'Feb', open: 13, critical: 4 },
-  { month: 'Mar', open: 12, critical: 3 },
-];
+// Open-risk matcher shared by every risk KPI on this page: statuses are
+// normalized to lowercase and anything still being worked counts as open.
+const OPEN_RISK_STATUSES = new Set(['open', 'assessed', 'in_progress', 'investigating']);
+const isOpenRiskStatus = (status: unknown) =>
+  OPEN_RISK_STATUSES.has(String(status ?? '').toLowerCase().replace(/\s+/g, '_'));
+// Incidents count as active until they are resolved or closed.
+const isActiveIncidentStatus = (status: unknown) =>
+  !['resolved', 'closed'].includes(String(status ?? '').toLowerCase());
 
-// CISO View — frameworks with traffic-light thresholds and 30-day sparkline data
-const CISO_FRAMEWORKS: {
-  key: string;
-  label: string;
-  score: number;
-  trend: number[]; // 30 daily scores
-}[] = [
-  { key: 'iso27001', label: 'ISO 27001', score: 92, trend: [85,86,86,87,87,88,88,88,89,89,89,90,90,90,90,91,91,91,91,91,92,92,92,92,92,92,92,92,92,92] },
-  { key: 'soc2', label: 'SOC 2', score: 85, trend: [78,78,79,79,80,80,80,81,81,81,82,82,82,82,83,83,83,83,84,84,84,84,84,85,85,85,85,85,85,85] },
-  { key: 'euaiact', label: 'EU AI Act', score: 65, trend: [55,55,56,56,57,57,58,58,58,59,59,60,60,61,61,62,62,62,63,63,63,64,64,64,64,65,65,65,65,65] },
-  { key: 'nistrmf', label: 'NIST AI RMF', score: 71, trend: [62,62,63,63,63,64,64,64,65,65,66,66,66,67,67,67,68,68,68,69,69,69,70,70,70,70,71,71,71,71] },
-  { key: 'gdpr', label: 'GDPR', score: 88, trend: [82,82,83,83,83,84,84,84,85,85,85,85,86,86,86,86,87,87,87,87,87,87,88,88,88,88,88,88,88,88] },
-];
-
-function cisoTrafficColor(score: number): string {
+// CISO View traffic-light thresholds. A null score is "unscored" — it renders
+// neutral, never as a red 0%.
+function cisoTrafficColor(score: number | null): string {
+  if (score == null) return 'hsl(var(--text-4))';
   if (score >= 85) return 'hsl(var(--s-ok-tx))';
   if (score >= 65) return 'hsl(var(--s-wn-tx))';
   return 'hsl(var(--s-er-tx))';
 }
 
-function cisoTrafficLabel(score: number): string {
+function cisoTrafficLabel(score: number | null): string {
+  if (score == null) return 'UNSCORED';
   if (score >= 85) return 'GREEN';
   if (score >= 65) return 'AMBER';
   return 'RED';
-}
-
-/** Inline SVG sparkline from an array of numbers */
-function Sparkline({ data, color, width = 100, height = 28 }: { data: number[]; color: string; width?: number; height?: number }) {
-  const min = Math.min(...data);
-  const max = Math.max(...data);
-  const range = max - min || 1;
-  const points = data
-    .map((v, i) => {
-      const x = (i / (data.length - 1)) * width;
-      const y = height - ((v - min) / range) * (height - 4) - 2;
-      return `${x},${y}`;
-    })
-    .join(' ');
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`} style={{ display: 'block' }}>
-      <polyline fill="none" stroke={color} strokeWidth="1.5" points={points} />
-    </svg>
-  );
 }
 
 function TrendIcon({ trend }: { trend: 'up' | 'down' | 'stable' }) {
@@ -127,34 +100,6 @@ function ScoreRing({ value, label, color, size = 80 }: { value: number | string;
 
 type DateRange = '7D' | '30D' | '90D' | 'QoQ';
 
-const AUDIT_DATE = new Date('2026-04-20');
-
-function useCountdown(target: Date) {
-  const [timeLeft, setTimeLeft] = useState('');
-  useEffect(() => {
-    function update() {
-      const diff = target.getTime() - Date.now();
-      if (diff <= 0) { setTimeLeft('Today'); return; }
-      const d = Math.floor(diff / 86400000);
-      const h = Math.floor((diff % 86400000) / 3600000);
-      const m = Math.floor((diff % 3600000) / 60000);
-      const s = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(`${d}d ${h}h ${m}m ${s}s`);
-    }
-    update();
-    const id = setInterval(update, 1000);
-    return () => clearInterval(id);
-  }, [target]);
-  return timeLeft;
-}
-
-const DIGEST_TEMPLATES = [
-  'Since last login: 2 new risks added, compliance improved 3%, 1 bias audit failed. 2 models need immediate review.',
-  'Since last login: Shadow AI agent detected in Marketing, EU AI Act readiness at 65%. 3 controls need evidence refresh.',
-  'Since last login: HITL queue has 3 pending reviews, AML false positive rate increased. 1 critical incident escalated.',
-  'Since last login: 4 vendor DPAs approaching expiry, ISO 42001 audit due in 10 days. 5 open gaps are past deadline.',
-];
-
 export default function Overview() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
@@ -162,37 +107,49 @@ export default function Overview() {
   const [cisoView, setCisoView] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>('30D');
   const [alertPanelOpen, setAlertPanelOpen] = useState(false);
-  const [digestIdx, setDigestIdx] = useState(0);
-  const countdown = useCountdown(AUDIT_DATE);
   const [riskThreshold, setRiskThreshold] = useState(15);
 
   // Live Supabase data
   const { risks } = useRisksData();
-  const { incidents } = useIncidentData();
+  const { incidents, error: incidentsError } = useIncidentData();
   const { models } = useModelsData();
   const { vendors } = useVendorsData();
   const { frameworks } = useFrameworksData();
   const { tasks } = useTaskData();
+  const { items: hitlReviews } = useHitlReviews();
   const chartTheme = useChartTheme();
+  // Recent Activity — the real org-scoped audit trail (same hook as
+  // pages/AuditTrail.tsx), latest 5 events.
+  const { logs: recentActivity, isLoading: activityLoading, error: activityError } = useAuditLogData(5);
 
-  const openRisks = risks.filter((r: any) => r.status === 'open').length;
+  const openRisks = risks.filter((r: any) => isOpenRiskStatus(r.status)).length;
   const criticalRisks = risks.filter((r: any) => (r.risk_score || r.score || 0) >= riskThreshold).length;
   const activeModels = models.filter((m: any) => m.is_active || m.lifecycle_stage === 'production' || m.status === 'production').length;
-  const criticalIncidents = incidents.filter((i: any) => i.severity === 'critical').length;
-  const openIncidents = incidents.filter((i: any) => i.status !== 'resolved').length;
+  // Incident KPIs gate on ACTIVE statuses — a resolved critical incident is
+  // history, not a live executive signal.
+  const criticalIncidents = incidents.filter((i: any) => i.severity === 'critical' && isActiveIncidentStatus(i.status)).length;
+  const openIncidents = incidents.filter((i: any) => isActiveIncidentStatus(i.status)).length;
   const overdueGaps = tasks.filter((t: any) => t.status !== 'completed' && t.due_date && new Date(t.due_date) < new Date()).length;
+  const pendingHitl = hitlReviews.filter(r => r.status === 'pending' || r.status === 'info_requested').length;
+
+  // Executive digest — derived from REAL counts at render time (the previous
+  // rotating hardcoded templates fabricated events that never happened).
+  const digestLine = [
+    `${openRisks} open risk${openRisks !== 1 ? 's' : ''}`,
+    `${pendingHitl} pending HITL review${pendingHitl !== 1 ? 's' : ''}`,
+    `${criticalIncidents} active critical incident${criticalIncidents !== 1 ? 's' : ''}`,
+  ].join(' · ');
 
   // Compliance posture
   const avgCompliance = frameworks.length > 0
     ? Math.round(frameworks.reduce((s: number, f: any) => s + (f.compliance_score || f.complianceScore || 0), 0) / frameworks.length)
     : 0;
-  const securityScore = 79;
 
-  const kpis = [
-    { label: 'Open Tasks', value: overdueGaps + 5, icon: Clock, color: ragColor(overdueGaps + 5, 'risk'), link: '/tasks' },
+  const kpis: { label: string; value: number | string; icon: any; color: string; link: string; ragType?: 'risk' | 'incident' }[] = [
+    { label: 'Open Tasks', value: overdueGaps, icon: Clock, color: ragColor(overdueGaps, 'risk'), link: '/tasks' },
     { label: 'Open Risks', value: openRisks, icon: Warning, color: ragColor(openRisks, 'risk'), link: '/risk', ragType: 'risk' as const },
     { label: 'Active Models', value: activeModels, icon: Brain, color: 'hsl(var(--tag-purple))', link: '/models/inventory' },
-    { label: 'Critical Incidents', value: criticalIncidents, icon: WarningCircle, color: ragColor(criticalIncidents, 'incident'), link: '/risk/incidents', ragType: 'incident' as const },
+    { label: 'Critical Incidents', value: incidentsError ? '—' : criticalIncidents, icon: WarningCircle, color: ragColor(criticalIncidents, 'incident'), link: '/risk/incidents', ragType: 'incident' as const },
     { label: 'Vendors', value: vendors.length, icon: Briefcase, color: 'hsl(var(--s-in-tx))', link: '/vendors' },
     { label: 'Frameworks', value: frameworks.length, icon: StackSimple, color: 'hsl(var(--brand))', link: '/frameworks' },
   ];
@@ -201,7 +158,7 @@ export default function Overview() {
   function kpiBorderColor(k: typeof kpis[0]): string {
     if (k.label === 'Critical Incidents') return criticalIncidents >= 2 ? 'hsl(var(--s-er-tx))' : criticalIncidents >= 1 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
     if (k.label === 'Open Risks') return openRisks >= 10 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
-    if (k.label === 'Open Tasks') return (overdueGaps + 5) >= 5 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
+    if (k.label === 'Open Tasks') return overdueGaps >= 5 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
     return 'hsl(var(--border))';
   }
 
@@ -232,35 +189,25 @@ export default function Overview() {
       });
       months.push({
         month: label,
-        open: monthRisks.filter((r: any) => r.status === 'open' || r.status === 'Open').length,
+        open: monthRisks.filter((r: any) => isOpenRiskStatus(r.status)).length,
         critical: monthRisks.filter((r: any) => (r.risk_score || r.score || 0) >= 15).length,
       });
     }
-    // Fall back to static data if no real risk data available
-    if (months.every(m => m.open === 0 && m.critical === 0)) {
-      return RISK_TREND;
-    }
     return months;
   })();
+  // Honest empty state: no fabricated fallback series — when the register has
+  // no risks created in the window, the chart says so instead of inventing one.
+  const riskTrendHasData = riskTrendData.some(m => m.open > 0 || m.critical > 0);
 
-  // CISO frameworks scorecard: prefer real data over static
-  const cisoFrameworksData = frameworks.length > 0
-    ? frameworks.map((f: any) => ({
-        key: (f.id || f.name || '').toLowerCase().replace(/\s+/g, '_'),
-        label: f.name || 'Unknown',
-        score: f.compliance_score || f.complianceScore || 0,
-        trend: Array.from({ length: 30 }, (_, i) => Math.max(0, Math.min(100, (f.compliance_score || 0) - (29 - i) * 0.5))),
-      }))
-    : CISO_FRAMEWORKS;
+  // CISO frameworks scorecard — real org frameworks only. Score may be null
+  // (unscored) and no per-day history is stored, so there is no trend series
+  // to draw; the card says so instead of synthesizing one.
+  const cisoFrameworksData = frameworks.map((f: any) => ({
+    key: String(f.id ?? f.name ?? ''),
+    label: f.name || 'Unknown',
+    score: (f.score ?? f.compliance_score ?? f.complianceScore ?? null) as number | null,
+  }));
 
-
-  const recentActivity = [
-    { id: 'act-001', action: 'Bias Audit Triggered', entity: 'Credit Scorer (v3.2.0)', actor: 'System (Policy Gate)', category: 'in_review', timestamp: '2026-06-16T07:15:00Z' },
-    { id: 'act-002', action: 'Kill Switch Activated', entity: 'Marketing Agent (AGT-010)', actor: 'Sarah Chen (CISO)', category: 'escalated', timestamp: '2026-06-16T06:30:00Z' },
-    { id: 'act-003', action: 'Conformity Assessment Signed', entity: 'EU AI Act Compliance Pack', actor: 'David Kim (Head of GRC)', category: 'signed', timestamp: '2026-06-15T18:45:00Z' },
-    { id: 'act-004', action: 'Model Promoted to Production', entity: 'Fraud Detector v2.4', actor: 'Priya Sharma (MLOps)', category: 'production', timestamp: '2026-06-15T14:20:00Z' },
-    { id: 'act-005', action: 'Vendor Risk DPA Rejected', entity: 'OpenAI API Agreement', actor: 'Legal Team', category: 'failed', timestamp: '2026-06-15T11:05:00Z' },
-  ];
   const overdueGapItems = tasks.filter((t: any) => t.status !== 'completed' && t.due_date && new Date(t.due_date) < new Date()).slice(0, 5);
 
   const quickActions = [
@@ -274,30 +221,33 @@ export default function Overview() {
     { label: 'Ethics Report', desc: 'Anonymous reporting', icon: Megaphone, to: '/ethics-reporting' },
   ];
 
-  const REGULATORY_SCORECARD = [
-    { label: 'EU AI Act', score: 65, target: 80, trend: 'up' as const, link: '/ai-risk-tiering' },
-    { label: 'ISO 42001', score: 72, target: 90, trend: 'up' as const, link: '/frameworks' },
-    { label: 'NIST AI RMF', score: 71, target: 85, trend: 'stable' as const, link: '/frameworks?tab=mapping' },
-    { label: 'GDPR', score: 88, target: 95, trend: 'up' as const, link: '/dpia' },
+  // Attention items — derived from LIVE counts only (the previous hardcoded
+  // ALERT_ITEMS invented findings and linked to business codes like MDL-001
+  // that resolve to nothing). Each entry links to the module that owns it.
+  const attentionItems: { id: string; title: string; severity: 'critical' | 'high'; link: string }[] = [
+    ...(criticalIncidents > 0 ? [{
+      id: 'critical-incidents',
+      title: `${criticalIncidents} active critical incident${criticalIncidents !== 1 ? 's' : ''} in the incident log`,
+      severity: 'critical' as const,
+      link: '/risk/incidents',
+    }] : []),
+    ...(overdueGaps > 0 ? [{
+      id: 'overdue-tasks',
+      title: `${overdueGaps} task${overdueGaps !== 1 ? 's' : ''} past due date`,
+      severity: 'high' as const,
+      link: '/tasks',
+    }] : []),
+    ...(pendingHitl > 0 ? [{
+      id: 'pending-hitl',
+      title: `${pendingHitl} human-oversight review${pendingHitl !== 1 ? 's' : ''} waiting in the HITL queue`,
+      severity: 'high' as const,
+      link: '/hitl',
+    }] : []),
   ];
 
-  const ALERT_ITEMS = [
-    { id: 'A1', title: 'EU AI Act Annex IV documentation incomplete', severity: 'critical', link: '/tasks' },
-    { id: 'A2', title: 'MDL-001 fairness score below threshold (74%)', severity: 'critical', link: '/models/inventory/MDL-001' },
-    { id: 'A3', title: 'Shadow AI agent AGT-010 active in Marketing', severity: 'high', link: '/agents/AGT-010' },
-  ];
-
-  const KPI_TRENDS: Record<string, { delta: number; dir: 'up' | 'down' | 'stable' }> = {
-    'Open Risks': { delta: 2.1, dir: 'up' },
-    'Active Models': { delta: 0, dir: 'stable' },
-    'Critical Incidents': { delta: 1.0, dir: 'up' },
-    'Active Policies': { delta: 5.3, dir: 'up' },
-    'Vendors': { delta: 0, dir: 'stable' },
-    'Datasets': { delta: 1, dir: 'up' },
-    'Frameworks': { delta: 0, dir: 'stable' },
-    'Open Tasks': { delta: 3.2, dir: 'down' },
-    'Use Cases': { delta: 0, dir: 'stable' },
-  };
+  // NOTE: the former KPI_TRENDS map rendered hardcoded percentage deltas that
+  // were never measured. No historical snapshots are stored, so KPIs render
+  // without a delta rather than with a fictional one.
 
   return (
     <div className="space-y-6">
@@ -374,7 +324,8 @@ export default function Overview() {
         }
       />
 
-      {/* Alert Ribbon */}
+      {/* Alert Ribbon — live counts only; hidden when nothing needs attention */}
+      {attentionItems.length > 0 && (
       <div
         onClick={() => setAlertPanelOpen(true)}
         style={{
@@ -389,18 +340,15 @@ export default function Overview() {
         role="button"
         tabIndex={0}
         onKeyDown={e => e.key === 'Enter' && setAlertPanelOpen(true)}
-        aria-label="View critical items before audit"
+        aria-label="View items requiring attention"
       >
         <Siren size={16} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
         <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--s-er-tx))' }}>
-          {ALERT_ITEMS.length} critical items require attention before next audit (see compliance calendar)
+          {attentionItems.length} item{attentionItems.length !== 1 ? 's' : ''} require attention — derived from live incident, task and HITL counts
         </span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginLeft: 'auto', background: 'hsl(var(--s-er-tx)/0.12)', padding: '3px 10px' }}>
-          <Timer size={13} style={{ color: 'hsl(var(--s-er-tx))' }} />
-          <span style={{ fontSize: 12, fontWeight: 700, color: 'hsl(var(--s-er-tx))', fontVariantNumeric: 'tabular-nums' }}>{countdown}</span>
-        </div>
-        <ArrowRight size={14} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0 }} />
+        <ArrowRight size={14} style={{ color: 'hsl(var(--s-er-tx))', flexShrink: 0, marginLeft: 'auto' }} />
       </div>
+      )}
 
       {/* Alert slide-out panel */}
       {alertPanelOpen && (
@@ -410,15 +358,17 @@ export default function Overview() {
             <div style={{ padding: '16px 20px', borderBottom: '1px solid hsl(var(--border))', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, background: 'hsl(var(--bg-surface))' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <Siren size={16} style={{ color: 'hsl(var(--s-er-tx))' }} />
-                <span style={{ fontWeight: 700, color: 'hsl(var(--text-1))', fontSize: 14 }}>Critical Items</span>
-                <span style={{ fontSize: 11, fontVariantNumeric: 'tabular-nums', color: 'hsl(var(--s-er-tx))' }}>Audit in {countdown}</span>
+                <span style={{ fontWeight: 700, color: 'hsl(var(--text-1))', fontSize: 14 }}>Needs Attention</span>
               </div>
               <button onClick={() => setAlertPanelOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--text-3))' }} aria-label="Close">
                 <X size={18} />
               </button>
             </div>
             <div style={{ padding: '16px 20px', flex: 1 }}>
-              {ALERT_ITEMS.map((item, i) => {
+              {attentionItems.length === 0 && (
+                <p style={{ fontSize: 13, color: 'hsl(var(--text-3))' }}>Nothing needs attention right now.</p>
+              )}
+              {attentionItems.map((item) => {
                 const sc = item.severity === 'critical'
                   ? { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', br: 'hsl(var(--s-er-br))' }
                   : { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', br: 'hsl(var(--s-wn-br))' };
@@ -450,20 +400,18 @@ export default function Overview() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-5 gap-4">
-              {cisoFrameworksData.map((fw: any) => {
-                // Normalize live framework data to CISO display format
-                const fwScore = fw.compliance_score || fw.complianceScore || fw.score || 0;
-                const fwLabel = fw.label || fw.name || '';
-                const fwKey = fw.key || fw.id || fwLabel;
-                const fwTrend: number[] = fw.trend || Array.from({length:30}, (_,i) => Math.max(0, fwScore - 5 + Math.round(i * 5/29)));
-                const cisoFw = { key: fwKey, label: fwLabel, score: fwScore, trend: fwTrend };
-                const fw2 = cisoFw; // shadow fw for below code
-                const dotColor = cisoTrafficColor(fw2.score);
-                const ragLabel = cisoTrafficLabel(fw2.score);
+            {cisoFrameworksData.length === 0 ? (
+              <p className="text-sm py-4 text-center" style={{ color: 'hsl(var(--text-4))' }}>
+                No frameworks adopted yet — add one under <Link to="/frameworks" style={{ color: 'hsl(var(--brand))' }}>Frameworks</Link>.
+              </p>
+            ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {cisoFrameworksData.map(fw => {
+                const dotColor = cisoTrafficColor(fw.score);
+                const ragLabel = cisoTrafficLabel(fw.score);
                 return (
                   <div
-                    key={fw2.key}
+                    key={fw.key}
                     style={{
                       background: 'hsl(var(--bg-muted))',
                       border: '1px solid hsl(var(--border))',
@@ -483,12 +431,12 @@ export default function Overview() {
                         }}
                       />
                       <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
-                        {fw2.label}
+                        {fw.label}
                       </span>
                     </div>
                     <div className="flex items-end justify-between mb-2">
-                      <span className="text-2xl font-bold" style={{ color: dotColor }}>
-                        {fw2.score}%
+                      <span className="text-2xl font-bold" style={{ color: dotColor }} title={fw.score == null ? 'No score recorded yet' : undefined}>
+                        {fw.score == null ? '—' : `${fw.score}%`}
                       </span>
                       <span
                         className="text-[10px] font-bold px-1.5 py-0.5"
@@ -502,16 +450,16 @@ export default function Overview() {
                         {ragLabel}
                       </span>
                     </div>
-                    <div className="mt-2">
-                      <span className="text-[10px] block mb-1" style={{ color: 'hsl(var(--text-4))' }}>
-                        30-day trend
-                      </span>
-                      <Sparkline data={fw2.trend} color={dotColor} width={120} height={24} />
-                    </div>
+                    <p className="text-[10px] mt-2" style={{ color: 'hsl(var(--text-4))' }}>
+                      {fw.score == null
+                        ? 'No score recorded yet'
+                        : 'No trend history recorded yet — scores are point-in-time'}
+                    </p>
                   </div>
                 );
               })}
             </div>
+            )}
           </CardContent>
         </Card>
       )}
@@ -525,7 +473,6 @@ export default function Overview() {
           <div className="flex items-center justify-between gap-6">
             <div className="flex items-center gap-8">
               <ScoreRing value={avgCompliance} label="Compliance Score" color={ragColor(avgCompliance, 'score')} size={90} />
-              <ScoreRing value={securityScore} label="Security Score" color={ragColor(securityScore, 'score')} size={90} />
               <div className="flex flex-col items-center gap-1">
                 <div className="flex items-center justify-center w-[90px] h-[90px]">
                   <span className="text-3xl font-bold" style={{ color: ragColor(openRisks, 'risk') }}>{openRisks}</span>
@@ -534,7 +481,7 @@ export default function Overview() {
               </div>
               <div className="flex flex-col items-center gap-1">
                 <div className="flex items-center justify-center w-[90px] h-[90px]">
-                  <span className="text-3xl font-bold" style={{ color: ragColor(criticalIncidents, 'incident') }}>{criticalIncidents}</span>
+                  <span className="text-3xl font-bold" style={{ color: ragColor(criticalIncidents, 'incident') }}>{incidentsError ? '—' : criticalIncidents}</span>
                 </div>
                 <span className="text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>Critical Incidents</span>
               </div>
@@ -545,7 +492,9 @@ export default function Overview() {
                 <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Attention Required</span>{/* consolidated — primary banner above is the authoritative source */}
               </div>
               <p className="text-xs mb-3" style={{ color: 'hsl(var(--text-3))' }}>
-                {ALERT_ITEMS.length} critical items require immediate attention — review compliance calendar for next audit date.
+                {attentionItems.length === 0
+                  ? 'No live items need attention right now.'
+                  : `${attentionItems.length} item${attentionItems.length !== 1 ? 's' : ''} need attention — active critical incidents, overdue tasks and pending HITL reviews.`}
               </p>
               <Button
                 size="sm"
@@ -568,19 +517,17 @@ export default function Overview() {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(var(--text-3))', marginBottom: 4 }}>
-                AI Executive Digest
+                Executive Digest — live counts
               </p>
               <p style={{ fontSize: 13, color: 'hsl(var(--text-2))', lineHeight: 1.6 }}>
-                {DIGEST_TEMPLATES[digestIdx]}
+                Right now: {digestLine}.{' '}
+                <Link to="/risks" style={{ color: 'hsl(var(--brand))' }}>Risks</Link>
+                {' · '}
+                <Link to="/hitl" style={{ color: 'hsl(var(--brand))' }}>HITL queue</Link>
+                {' · '}
+                <Link to="/risk/incidents" style={{ color: 'hsl(var(--brand))' }}>Incidents</Link>
               </p>
             </div>
-            <button
-              onClick={() => setDigestIdx(i => (i + 1) % DIGEST_TEMPLATES.length)}
-              aria-label="Refresh AI digest"
-              style={{ flexShrink: 0, background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', padding: '5px 8px', color: 'hsl(var(--text-3))' }}
-            >
-              <ArrowRight size={13} />
-            </button>
           </div>
         </CardContent>
       </Card>
@@ -658,8 +605,6 @@ export default function Overview() {
             label: 'Open Risks',
             value: openRisks,
             icon: <Warning size={16} />,
-            delta: KPI_TRENDS['Open Risks']?.dir !== 'stable' ? `${KPI_TRENDS['Open Risks']?.delta}%` : undefined,
-            deltaDir: KPI_TRENDS['Open Risks']?.dir === 'stable' ? undefined : KPI_TRENDS['Open Risks']?.dir as 'up' | 'down',
             isPositiveUp: false,
             href: '/risk',
           },
@@ -679,10 +624,8 @@ export default function Overview() {
           },
           {
             label: 'Open Incidents',
-            value: openIncidents,
+            value: incidentsError ? '—' : openIncidents,
             icon: <WarningCircle size={16} />,
-            delta: KPI_TRENDS['Critical Incidents']?.dir !== 'stable' ? `${KPI_TRENDS['Critical Incidents']?.delta}%` : undefined,
-            deltaDir: KPI_TRENDS['Critical Incidents']?.dir === 'stable' ? undefined : KPI_TRENDS['Critical Incidents']?.dir as 'up' | 'down',
             isPositiveUp: false,
             href: '/risk/incidents',
           },
@@ -692,11 +635,6 @@ export default function Overview() {
       {/* KPI Tiles — responsive grid: 3 cols → 3 cols → 3 cols */}
       <div id="main-content" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {kpis.map(k => {
-          const trend = KPI_TRENDS[k.label];
-          const isNegative = k.label === 'Open Risks' || k.label === 'Critical Incidents' || k.label === 'Open Tasks';
-              const metricColor = k.label === 'Critical Incidents' ? 'text-[hsl(var(--s-er-tx))]' : k.label === 'Open Risks' ? 'text-[hsl(var(--s-wn-tx))]' : k.label === 'Compliance Score' || k.label === 'Security Score' ? 'text-[hsl(var(--s-ok-tx))]' : '';
-          const trendColor = !trend || trend.dir === 'stable' ? 'hsl(var(--text-4))'
-            : (trend.dir === 'up' && isNegative) || (trend.dir === 'down' && !isNegative) ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))';
           return (
             <Link key={k.label} to={k.link} style={{ textDecoration: 'none' }}>
               <Card
@@ -717,12 +655,6 @@ export default function Overview() {
                   </div>
                   <p className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{k.value}</p>
                   <p className="text-xs mt-0.5 mb-1" style={{ color: 'hsl(var(--text-3))' }}>{k.label}</p>
-                  {trend && trend.dir !== 'stable' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                      {trend.dir === 'up' ? <ArrowUp size={10} style={{ color: trendColor }} /> : <ArrowDown size={10} style={{ color: trendColor }} />}
-                      <span style={{ fontSize: 10, color: trendColor, fontWeight: 600 }}>{trend.delta}% vs last {dateRange}</span>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </Link>
@@ -775,42 +707,63 @@ export default function Overview() {
         ))}
       </div>
 
-      {/* ═══════ REGULATORY SCORECARD ═══════ */}
+      {/* ═══════ REGULATORY SCORECARD — real org frameworks (was hardcoded) ═══════ */}
       <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
         <CardHeader className="pb-3 flex flex-row items-center justify-between">
           <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
             Regulatory Compliance Scorecard
           </CardTitle>
-          <span className="text-xs px-2 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))', borderRadius: 0 }}>EU AI Act · ISO 42001 · NIST AI RMF · GDPR</span>
+          <span className="text-xs px-2 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))', borderRadius: 0 }}>
+            Live scores from your adopted frameworks
+          </span>
         </CardHeader>
         <CardContent>
+          {frameworks.length === 0 ? (
+            <p className="text-sm py-4 text-center" style={{ color: 'hsl(var(--text-4))' }}>
+              No frameworks adopted yet — add one under <Link to="/frameworks" style={{ color: 'hsl(var(--brand))' }}>Frameworks</Link>.
+            </p>
+          ) : (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
-            {REGULATORY_SCORECARD.map(rs => {
-              const pct = rs.score;
-              const barColor = pct >= 85 ? 'hsl(var(--s-ok-tx))' : pct >= 70 ? 'hsl(var(--brand))' : 'hsl(var(--s-er-tx))';
-              const gapColor = pct >= 85 ? 'hsl(var(--s-ok-bg))' : pct >= 70 ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-er-bg))';
-              const gapPct = rs.target - pct;
+            {frameworks.slice(0, 8).map((f: any) => {
+              const pct = (f.score ?? f.compliance_score ?? null) as number | null;
+              const target = (f.target_score ?? null) as number | null;
+              // Null score = unscored: neutral treatment, never a red 0%.
+              const barColor = pct == null
+                ? 'hsl(var(--text-4))'
+                : pct >= 85 ? 'hsl(var(--s-ok-tx))' : pct >= 70 ? 'hsl(var(--brand))' : 'hsl(var(--s-er-tx))';
+              const gapPct = pct != null && target != null ? target - pct : null;
               return (
-                <Link key={rs.label} to={rs.link} style={{ textDecoration: 'none', display: 'block' }}>
+                <Link key={f.id} to="/frameworks" style={{ textDecoration: 'none', display: 'block' }}>
                   <div className="space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{rs.label}</p>
-                      <p className="text-lg font-bold" style={{ color: barColor }}>{pct}%</p>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-sm font-semibold truncate" style={{ color: 'hsl(var(--text-1))' }}>{f.name}</p>
+                      <p className="text-lg font-bold flex-shrink-0" style={{ color: barColor }} title={pct == null ? 'No score recorded yet' : undefined}>
+                        {pct == null ? '—' : `${pct}%`}
+                      </p>
                     </div>
                     <div className="w-full h-2 bg-raised">
-                      <div className="h-full transition-all" style={{ width: `${pct}%`, background: barColor }} />
+                      {pct != null && <div className="h-full transition-all" style={{ width: `${Math.min(100, Math.max(0, pct))}%`, background: barColor }} />}
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span style={{ color: 'hsl(var(--text-4))' }}>Target: {rs.target}%</span>
-                      <span className="px-1.5 py-0.5 font-medium" style={{ background: gapColor, color: pct >= 85 ? 'hsl(var(--s-ok-tx))' : pct >= 70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))', borderRadius: 0 }}>
-                        {gapPct > 0 ? `${gapPct}% gap` : '✓ Met'}
+                      <span style={{ color: 'hsl(var(--text-4))' }}>
+                        {pct == null ? 'No score recorded yet' : target != null ? `Target: ${target}%` : 'No target set'}
                       </span>
+                      {gapPct != null && (
+                        <span className="px-1.5 py-0.5 font-medium" style={{
+                          background: gapPct <= 0 ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))',
+                          color: gapPct <= 0 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))',
+                          borderRadius: 0,
+                        }}>
+                          {gapPct > 0 ? `${gapPct}% gap` : '✓ Met'}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </Link>
               );
             })}
           </div>
+          )}
         </CardContent>
       </Card>
 
@@ -851,20 +804,28 @@ export default function Overview() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={riskTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: ct.axis }} />
-                <YAxis
-                  tick={{ fill: ct.axis, fontSize: 11 }}
-                  label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }}
-                />
-                <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-                <Legend wrapperStyle={{ fontSize: 11, color: ct.axis }} />
-                <Line type="monotone" dataKey="open" stroke="hsl(var(--r-hi-tx))" strokeWidth={2} dot={false} name="Open Risks" />
-                <Line type="monotone" dataKey="critical" stroke="hsl(var(--s-er-tx))" strokeWidth={2} dot={false} name="Critical" />
-              </LineChart>
-            </ResponsiveContainer>
+            {riskTrendHasData ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={riskTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: ct.axis }} />
+                  <YAxis
+                    tick={{ fill: ct.axis, fontSize: 11 }}
+                    label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }}
+                  />
+                  <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: ct.axis }} />
+                  <Line type="monotone" dataKey="open" stroke="hsl(var(--r-hi-tx))" strokeWidth={2} dot={false} name="Open Risks" />
+                  <Line type="monotone" dataKey="critical" stroke="hsl(var(--s-er-tx))" strokeWidth={2} dot={false} name="Critical" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center" style={{ height: 220, color: 'hsl(var(--text-4))' }}>
+                <ChartLine size={28} className="mb-2 opacity-40" />
+                <p className="text-sm">No risks recorded in the last 6 months</p>
+                <p className="text-xs mt-1">The trend appears as risks are added to the register — nothing is simulated.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -882,6 +843,13 @@ export default function Overview() {
           </Link>
         </CardHeader>
         <CardContent className="p-0">
+          {incidentsError ? (
+            <div className="px-4 py-6">
+              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--destructive))' }}>
+                Incidents could not be loaded: {(incidentsError as Error).message}
+              </p>
+            </div>
+          ) : (
           <table className="w-full">
             <thead style={{ background: 'hsl(var(--bg-muted))' }}>
               <tr>
@@ -908,13 +876,14 @@ export default function Overview() {
                     <td className="px-4 py-2.5">
                       <Badge style={{ background: stBg, color: stColor, borderRadius: 0, fontSize: 10, textTransform: 'capitalize' }}>{inc.status}</Badge>
                     </td>
-                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{inc.linkedModel ?? inc.linked_model ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(inc.reportedDate ?? inc.detected_at ?? inc.created_at ?? '')}</td>
+                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{inc.affected_models?.[0] ?? '—'}</td>
+                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(inc.detected_at ?? inc.created_at ?? '')}</td>
                   </tr>
                 );
               })}
             </tbody>
           </table>
+          )}
         </CardContent>
       </Card>
 
@@ -933,29 +902,52 @@ export default function Overview() {
             </Link>
           </CardHeader>
           <CardContent className="p-0">
+            {/* Real audit_log events via useAuditLogData — same source as /audit-trail. */}
+            {activityLoading ? (
+              <div className="px-4 py-3 space-y-3" role="status" aria-label="Loading recent activity">
+                {[1, 2, 3].map(i => (
+                  <div key={i} style={{ height: 36, background: 'hsl(var(--bg-raised))', opacity: 1 - i * 0.2 }} />
+                ))}
+              </div>
+            ) : activityError ? (
+              <div role="alert" className="px-4 py-6">
+                <p className="text-sm font-semibold" style={{ color: 'hsl(var(--destructive))' }}>
+                  Recent activity could not be loaded: {(activityError as Error).message}
+                </p>
+              </div>
+            ) : recentActivity.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-10" style={{ color: 'hsl(var(--text-4))' }}>
+                <Clock size={24} className="mb-2 opacity-40" />
+                <p className="text-sm">No audit events recorded yet</p>
+                <p className="text-xs mt-1">Platform actions appear here automatically as they happen.</p>
+              </div>
+            ) : (
             <div className="divide-y" style={{ borderColor: 'hsl(var(--border))' }}>
-              {recentActivity.map(entry => {
-                const sc = statusColor(entry.category);
-                return (
-                  <div key={entry.id} className="px-4 py-3 flex items-start gap-3 border-b border-[hsl(var(--border))]/30 last:border-b-0 hover:bg-[hsl(var(--muted)/0.3)] transition-colors">
-                    <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10, textTransform: 'capitalize', flexShrink: 0, marginTop: 2 }}>
-                      {entry.category.replace('_', ' ')}
-                    </Badge>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>
-                        {entry.action}
-                      </p>
-                      <p className="text-xs truncate" style={{ color: 'hsl(var(--text-3))' }}>
-                        {entry.entity} · {entry.actor}
-                      </p>
-                    </div>
-                    <span className="text-xs flex-shrink-0 font-mono" style={{ color: 'hsl(var(--text-4))' }}>
-                      {formatDate((entry.timestamp ?? '').split('T')[0])}
-                    </span>
+              {recentActivity.map(entry => (
+                <Link
+                  key={entry.id}
+                  to={`/audit-trail?open=${encodeURIComponent(entry.id)}`}
+                  className="px-4 py-3 flex items-start gap-3 border-b border-[hsl(var(--border))]/30 last:border-b-0 hover:bg-[hsl(var(--muted)/0.3)] transition-colors"
+                  style={{ textDecoration: 'none' }}
+                >
+                  <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10, flexShrink: 0, marginTop: 2 }}>
+                    {(entry.module || 'general').replace(/_/g, ' ')}
+                  </Badge>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>
+                      {entry.action}
+                    </p>
+                    <p className="text-xs truncate" style={{ color: 'hsl(var(--text-3))' }}>
+                      {entry.entityName ?? (entry.entityId ? 'Unavailable' : '—')} · {entry.actorName}
+                    </p>
                   </div>
-                );
-              })}
+                  <span className="text-xs flex-shrink-0 font-mono" style={{ color: 'hsl(var(--text-4))' }}>
+                    {formatDate((entry.createdAt ?? '').split('T')[0])}
+                  </span>
+                </Link>
+              ))}
             </div>
+            )}
           </CardContent>
         </Card>
 
@@ -1159,7 +1151,7 @@ export default function Overview() {
               </tr>
             </thead>
             <tbody>
-              {risks.filter((r: any) => r.status === 'open').slice(0, 5).map(r => {
+              {risks.filter((r: any) => isOpenRiskStatus(r.status)).slice(0, 5).map(r => {
                 const sc = severityColor((r.severity ?? 'medium') as Parameters<typeof severityColor>[0]);
                 return (
                   <tr key={r.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>

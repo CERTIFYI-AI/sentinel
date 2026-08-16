@@ -24,15 +24,16 @@ import {
 import { toast } from 'sonner';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
-// Import existing seed data
+// Import existing seed data.
+// NOTE: no AUDIT_LOG import — the audit trail is genuinely append-only and
+// records real actor actions; seeding fabricated audit events would forge
+// the evidence chain, so there is deliberately no "Audit Trail" card here.
 import {
   USERS, MODELS, AGENTS, DATASETS, VENDORS, RISKS, BIAS_AUDITS,
-  EVIDENCE, INCIDENTS, AUDIT_LOG, THREATS, VULNERABILITIES,
-  RED_TEAM_EXERCISES, CONTROLS, FRAMEWORKS, POLICIES,
+  EVIDENCE, CONTROLS, FRAMEWORKS, POLICIES,
   HITL_REVIEWS, REGULATIONS, GUARDRAIL_EVENTS, TRUST_POLICIES,
   HITL_ITEMS, GAPS, ATTACK_SURFACE, TRACES, FALLBACK_LOG,
-  EXPLAINABILITY_REPORTS, CONFORMITY_ASSESSMENTS, USE_CASES,
-  DATA_GOVERNANCE, NOTIFICATION_TEMPLATES,
+  USE_CASES, DATA_GOVERNANCE, NOTIFICATION_TEMPLATES,
 } from '../data/seed';
 
 // Import extended seed data
@@ -100,7 +101,8 @@ const DATA_SECTIONS: DataSection[] = [
       { key: 'controls', label: 'Controls', count: CONTROLS.length, icon: 'ShieldCheck', source: 'seed' },
       { key: 'policies', label: 'Policies', count: POLICIES.length, icon: 'FileText', source: 'seed' },
       { key: 'evidence', label: 'Evidence', count: EVIDENCE.length, icon: 'Eye', source: 'seed' },
-      { key: 'audit_log', label: 'Audit Trail', count: AUDIT_LOG.length, icon: 'ClipboardText', source: 'seed' },
+      // No 'Audit Trail' card: audit_log is append-only and must only ever
+      // contain real actor actions — seeding fake audit events would forge it.
       { key: 'audits', label: 'Audits', count: SEED_AUDITS.length, icon: 'ClipboardText', source: 'seedData' },
       { key: 'audit_findings', label: 'Audit Findings', count: SEED_AUDIT_FINDINGS.length, icon: 'MagnifyingGlass', source: 'seedData' },
       { key: 'documents', label: 'Documents', count: SEED_DOCUMENTS.length, icon: 'FileText', source: 'seedData' },
@@ -223,26 +225,29 @@ export default function ImportSampleData() {
           };
 
           const mapping = tableMap[key];
-          if (mapping) {
-            const { error } = await supabase.from(mapping.table).upsert(mapping.data as Record<string, unknown>[], { onConflict: 'id' });
-            if (error) throw error;
+          if (!mapping) {
+            // Never fake success: a category without a table mapping writes
+            // nothing, so "Imported" would be a lie. Surface it per-card.
+            throw new Error('No database table is mapped for this category — nothing was imported.');
           }
-        }
-
-        // Simulate import delay for local mode
-        if (!connected) {
-          await new Promise((r) => setTimeout(r, 300 + Math.random() * 400));
+          const { error } = await supabase.from(mapping.table).upsert(mapping.data as Record<string, unknown>[], { onConflict: 'id' });
+          if (error) throw error;
+        } else {
+          // No backend → nothing can be written. Say so instead of simulating.
+          throw new Error('Supabase is not configured — nothing was imported.');
         }
 
         setCategoryStates((prev) => ({ ...prev, [key]: { status: 'imported' } }));
         toast.success(`Imported ${key.replace(/_/g, ' ')}`);
+        return true;
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Unknown error';
         setCategoryStates((prev) => ({
           ...prev,
           [key]: { status: 'error', error: msg },
         }));
-        toast.error(`Failed to import ${key}: ${msg}`);
+        toast.error(`Failed to import ${key.replace(/_/g, ' ')}: ${msg}`);
+        return false;
       }
     },
     [connected]
@@ -251,11 +256,15 @@ export default function ImportSampleData() {
   const importAll = useCallback(async () => {
     setIsImportingAll(true);
     const allKeys = DATA_SECTIONS.flatMap((s) => s.categories.map((c) => c.key));
+    let ok = 0;
+    let failed = 0;
     for (const key of allKeys) {
-      await importCategory(key);
+      (await importCategory(key)) ? ok++ : failed++;
     }
     setIsImportingAll(false);
-    toast.success('All sample data imported successfully!');
+    // Honest summary — success toast only when every category actually wrote.
+    if (failed === 0) toast.success(`All ${ok} sample data categories imported.`);
+    else toast.error(`Imported ${ok} of ${allKeys.length} categories — ${failed} failed (see per-card errors).`);
   }, [importCategory]);
 
   const resetAll = useCallback(async () => {

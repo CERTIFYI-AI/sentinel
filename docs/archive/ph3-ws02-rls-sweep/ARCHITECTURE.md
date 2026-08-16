@@ -50,7 +50,7 @@ These get `ws02_catalog_read` (`SELECT true` for authenticated) plus
 - `ws02_org_svc` — `ALL TO service_role`
 
 ## Migration mechanics
-`20260421_ws02_tenancy_sweep.sql` contains one `BEGIN` and one `COMMIT`, and
+`20260421000014_ws02_tenancy_sweep.sql` contains one `BEGIN` and one `COMMIT`, and
 operates as a single transaction. The core sweep loop iterates every
 `public.*` base table (excluding the skip list) and, for each, executes
 six idempotent phases:

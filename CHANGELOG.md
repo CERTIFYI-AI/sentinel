@@ -6,6 +6,42 @@
 
 ## Unreleased
 
+### Compliance & Regulatory elevated to a critical module
+
+* **Write paths repaired at the database** — the tenancy era added `org_id
+  NOT NULL` columns without DB defaults across the compliance cluster, so
+  every client create/edit on policies, controls, control tests, conformity
+  assessments, documents and approvals died on a NOT NULL violation (services
+  correctly never send scoping columns). Defaults added; rows stranded in the
+  literal `'default'` tenant healed.
+* **RLS hardening** — dropped a cross-tenant read policy on `audit_findings`
+  (predicate `true`); enabled RLS on `control_evaluation_history`; removed the
+  permissive UPDATE/DELETE policies that let the append-only `audit_log` /
+  `audit_logs` be edited, so the deny policies actually deny.
+* **Full policy lifecycle** — template → sanitized rich-text section editor →
+  version history with compare/restore → submit-for-approval bound to the
+  multi-step `policy_change` workflow → publish-on-approve → employee
+  acknowledgment (new `policy_acknowledgments` table, synced from AI Literacy
+  training attendees) → published-policy visibility in the Trust Center.
+* **Autopilot crash fixed** — pages demanding org context synchronously threw
+  to the error boundary during the async tenant hydrate on every reload/token
+  refresh; a tenancy gate in `ProtectedLayout` plus in-place re-hydration fixes
+  it platform-wide (also GovernanceMesh, JIT Elevation, SSO Providers).
+* **Audit trail consolidated** — one canonical append-only `/audit-trail`
+  (with `?open=`/`?module=` deep links); Overview's fabricated activity feed
+  replaced with the real audit log; dead duplicate audit component and service
+  removed; fabricated Overview scorecard/alerts/trend arrays deleted.
+* **Interlink graph made real** — the `controls` table was empty after a
+  from-zero replay, making every control interlink vacuous; a canonical
+  ISO 42001 / EU AI Act / NRB control set seeds it, and risk↔control,
+  finding↔control↔risk, evidence↔control now resolve. Conformity, AI-literacy
+  and trust-center seeds moved off slugs/phantom uuids onto real ids.
+* **Honesty fixes** — regulator-notify agent no longer reports success for
+  filings it didn't persist; statutory deadlines derive from a shared window
+  map (Art. 73, GDPR-33, NIS2, DORA) instead of hand-typed values; transparency
+  provenance no longer labels human-authored reports as mesh-generated;
+  Art. 12 `logAction` added across the compliance and regulatory services.
+
 ### Platform interlink rollout and privacy repair
 
 * **Security** — closed cross-tenant RLS holes on `webhook_endpoints`, `agents`,

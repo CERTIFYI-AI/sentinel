@@ -13,55 +13,52 @@ export async function hitlAgent(ctx: AgentContext): Promise<AgentResult> {
     ctx.event.event_type === 'HITL_REVIEW_REQUIRED'
   if (!isHighRisk) return { status: 'skipped', error: 'not-high-risk' }
 
-  // Column names must match the real `hitl_reviews` table; tenant_id is filled
-  // by the DB default. This record IS the Art. 14 human-oversight path — if the
-  // insert fails the escalation never reaches a human, so the result is checked
-  // rather than assumed.
-  const entityType = p.modelId ? 'model' : 'risk'
-  const entityId = (p.modelId as string) ?? (p.riskId as string)
-
+  // Real hitl_reviews columns only (title is NOT NULL; tenant_id drives the
+  // org RLS policy, so it must follow org_id explicitly here — the DB default
+  // resolves per-session and agents can run outside a user session).
+  const reason = (p.reason as string) ?? `Auto-escalation from ${ctx.event.event_type}`
+  const slaDeadline = new Date(Date.now() + 24 * 3600 * 1000).toISOString()
   const review = await safeInsert<{ id: string }>('hitl_reviews', {
-    title:         `Review required: ${p.modelName ?? entityId ?? 'unknown entity'}`,
-    entity_type:   entityType,
-    entity_id:     entityId,
-    trigger_reason: (p.reason as string) ?? `Auto-escalation from ${ctx.event.event_type}`,
-    priority:      p.severity === 'CRITICAL' ? 'P0' : 'P1',
-    status:        'open',
-    sla_deadline:  new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-    context: {
-      eventType: ctx.event.event_type,
-      severity: p.severity ?? null,
-      blocksDeployment: true,
-      createdBy: 'HITLAgent',
-    },
+    org_id:      ctx.orgId,
+    tenant_id:   ctx.orgId,
+    entity_type: p.modelId ? 'model' : 'risk',
+    entity_id:   (p.modelId as string) ?? (p.riskId as string),
+    entity_name: (p.modelName as string) ?? (p.riskId as string) ?? null,
+    model_id:    (p.modelId as string) ?? null,
+    title:       `HITL review: ${p.modelName ?? p.riskId ?? ctx.event.event_type}`,
+    reason,
+    trigger_reason: reason,
+    review_type: 'escalation',
+    priority:    p.severity === 'CRITICAL' ? 'critical' : 'high',
+    risk_level:  p.severity === 'CRITICAL' ? 'critical' : 'high',
+    status:      'pending',
+    sla_hours:   24,
+    sla_deadline: slaDeadline,
+    blocks_deployment: true,
+    metadata:    { created_by: 'HITLAgent', event_type: ctx.event.event_type },
   })
 
   if (!review?.id) {
-    // Do not emit HITL_REVIEW_REQUIRED for a review that was never recorded —
-    // that would report oversight the platform cannot evidence.
+    // This record IS the Art. 14 human-oversight path — do not emit
+    // HITL_REVIEW_REQUIRED for a review that was never recorded; that would
+    // report oversight the platform cannot evidence.
     ctx.log('HITL review insert failed; escalation not recorded')
     return { status: 'failed', error: 'hitl-review-insert-failed' }
   }
 
-  // Mirror the review into the work queue so it carries an owner and an SLA
-  // alongside every other governance finding. Columns match the real `tasks`
-  // table (see taskService); tenant_id is defaulted DB-side.
+  // tasks has due_date (not due_at) and linked_entity_* (not metadata);
+  // status/priority use the canonical taskService vocabulary.
   await safeInsert('tasks', {
-    title:       `HITL Review: ${p.modelName ?? p.riskId ?? 'unknown'}`,
+    org_id: ctx.orgId,
+    tenant_id: ctx.orgId,
+    title:  `HITL Review: ${p.modelName ?? p.riskId ?? 'unknown'}`,
     description: `Human review required — raised by HITLAgent from ${ctx.event.event_type}.`,
-    status:      'todo',
-    priority:    p.severity === 'CRITICAL' ? 'critical' : 'high',
-    categories:  ['hitl'],
-    due_date:    new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-    sla_due_at:  new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
-    auto_generated: true,
-    linked_entity_type: entityType,
-    linked_entity_id:   entityId,
-    linked_items: {
-      source: `HITL ${review.id}`,
-      sourceType: 'hitl_review',
-      sourceLink: '/hitl',
-    },
+    type:   'HITL_REVIEW',
+    priority: p.severity === 'CRITICAL' ? 'critical' : 'high',
+    status: 'todo',
+    due_date: slaDeadline,
+    linked_entity_type: 'hitl_review',
+    linked_entity_id: review.id,
   })
 
   await ctx.emit('HITL_REVIEW_REQUIRED', 'hitl', {

@@ -155,3 +155,43 @@ Triggered by SOC, guardrail violation, or manual operator report.
 4. Insert matching row into `agent_registry` via migration.
 5. (Optional) Server-side counterpart in `supabase/functions/_shared/agentRunner.ts`.
 6. Add Vitest unit test in `dashboard/src/agents/__tests__/`.
+
+---
+
+## 8. Continuous Sentinel Fleet (Agentic Mesh layer)
+
+The mesh has two run modes recorded in `agent_registry.run_mode`:
+
+| Run mode | Agents | Trigger | Where it runs |
+|---|---|---|---|
+| `event` | 27 cascade agents | A bus event (`MODEL_REGISTERED`, …) | Browser (`dashboard/src/agents/`) + edge dispatcher |
+| `continuous` | 10 always-on sentinels | Interval sweeps | Browser runner (`sentinelRunner.ts`) + `mesh-sentinels` edge function on pg_cron |
+
+The 10 sentinels — `PolicyEnforcement`, `DriftDetection`, `BiasMonitor`,
+`DataLineage`, `IncidentTriage`, `ComplianceCheck`, `AccessAudit`,
+`Explainability`, `ChangeDetection`, `Reporting` — sweep real org data
+(trust traces, drift/fairness telemetry, datasets, incidents, controls,
+credentials, explanations, model fingerprints) and **emit into the same
+governance bus**, so a sentinel interception fans out through the existing
+reactive cascades. One mesh, one ledger.
+
+Storage:
+
+| Object | Purpose |
+|---|---|
+| `agent_registry.run_mode/enterprise_problem/agentic_solution/sweep_interval_minutes` | Fleet catalog + card copy |
+| `mesh_agent_state` | Per-org heartbeat, pause state, last sweep status/findings (RLS org-isolated) |
+| `mesh_model_fingerprints` | ChangeDetection baseline hashes per `ai_models.id` |
+| `agent_executions` (`event_type = 'SENTINEL_SWEEP'`) | Sweep ledger — same table as cascade executions |
+
+Honest-status contract: the `/governance-mesh` page derives RUNNING / STALE /
+PAUSED / NEVER RUN purely from `mesh_agent_state` heartbeats vs the sweep
+interval — a sentinel is never displayed as running unless a real sweep
+recently wrote its heartbeat. Sweeps report what they actually scanned
+(`output.summary`) and findings deep-link to the governed entities by
+canonical id.
+
+Implementations: `dashboard/src/agents/sentinels/*` (client, RLS-scoped),
+`supabase/functions/mesh-sentinels/index.ts` (server, service-role,
+explicitly org-scoped per query), scheduled by the guarded pg_cron block in
+`supabase/migrations/20260816000001_agentic_mesh_fleet.sql`.

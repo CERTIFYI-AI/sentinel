@@ -14,8 +14,14 @@
 
 2. **Create Supabase project** at supabase.com
 
-3. **Run migrations** in Supabase SQL Editor (in order):
-   - `supabase/migrations/006_core.sql`
+3. **Apply the full migration history** (Supabase CLI):
+   ```bash
+   supabase link --project-ref <your-project-ref>
+   supabase db reset          # or: supabase db push (existing project)
+   ```
+   This applies everything in `supabase/migrations/` — schema, RLS policies
+   and the idempotent, fully fictional demo seeds. Do **not** apply single
+   files by hand; ordering matters (see `supabase/migrations/README.md`).
 
 4. **Configure environment**
    ```bash
@@ -35,6 +41,21 @@
    npm run build
    npx wrangler deploy
    ```
+
+## First sign-in
+
+The seeds create demo *data*, not demo *logins* — no credentials ship in this
+repo. Create your own user and link it to the demo organisation:
+
+1. Supabase Studio → **Authentication → Users → Add user**.
+2. SQL editor:
+   ```sql
+   insert into user_profiles (id, org_id, full_name, role)
+   values ('<auth-user-uuid>', '00000000-0000-0000-0000-000000000001', 'Your Name', 'org_admin');
+   ```
+3. Sign in at `http://localhost:5000`.
+
+All seeded content is fictional; see the note in the root README.
 
 ## Environment Variables
 | Variable | Description |

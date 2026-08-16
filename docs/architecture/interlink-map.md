@@ -190,7 +190,7 @@ above silently becomes zero everywhere.
 
 The 2026-08-16 audit found TIA seeds, DPIA seeds and the entire interlink
 rollout existing only in the live database; they are now in
-`20260816_privacy_seeds_and_interlinks.sql`. Gate 3 checks this.
+`20260816000009_privacy_seeds_and_interlinks.sql`. Gate 3 checks this.
 
 ## Adding an interlink
 

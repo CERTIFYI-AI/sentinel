@@ -27,7 +27,7 @@ statement, and neither is "an isolation policy exists". The only sound check is
 that **no permissive policy lacks a tenant predicate**.
 
 All four tables were empty when found, so this closed a latent hole rather than
-an active exposure. Fixed in `supabase/migrations/20260816_fix_cross_tenant_rls.sql`,
+an active exposure. Fixed in `supabase/migrations/20260816000007_fix_cross_tenant_rls.sql`,
 which carries a regression query to re-run after any RLS change. That query is
 now part of Gate 4.
 
@@ -63,8 +63,14 @@ every new RLS policy must use `current_user_org_id()`.
 **Status:** Open · **Severity:** P1 · **Owner:** Governance mesh
 
 `riskAssessmentAgent` and `hitlAgent` were corrected on 2026-08-16 to write the
-real column names on `risks`, `hitl_reviews` and `tasks`. The other 24 agents
-have **not** been verified against their target schemas.
+real column names on `risks`, `hitl_reviews` and `tasks` (both verified with a
+rolled-back insert against the from-zero replayed schema, not only the live
+DB — the live DB carries era-drift columns like `risks.assessment_date` and
+`tasks.sla_due_at` that a fresh deployment does not have). The telemetry
+repair wave additionally corrected `notificationAgent`, `regulatorNotifyAgent`,
+`complianceMappingAgent`, `incidentResponseAgent` and the sweep sentinels
+against their target tables. The remaining registered agents have **not**
+been verified against their target schemas.
 
 `safeInsert` catches an insert error, logs a console warning and returns null,
 so a mismatched agent fails silently — the cascade appears to run, the agent
@@ -195,6 +201,97 @@ the Validation Lab — and presents a scored view over it. This is defensible
 (Benchmarks *is* a view over completed runs) but the relationship is implicit.
 Either give it its own scoring/benchmark records, or document it explicitly as a
 derived view so it is not mistaken for an independent evidence source.
+
+---
+
+## TD-005 — `fn_audit_trigger` silently drops audit rows on tables lacking `name`/`title`
+
+**Status:** Open · **Severity:** P1 (audit integrity) · **Owner:** Platform team
+
+`fn_audit_trigger` builds its audit-log entry from `new.name` / `new.title`.
+On tables that carry **neither** column (e.g. `approvals`,
+`policy_acknowledgments`), the trigger errors internally and the audit row is
+**silently swallowed** — the business write succeeds, the trail entry does
+not. This is platform-wide and predates the 2026-08-16 controls/evidence
+wave: any table wired to `trg_audit` without a `name` or `title` column has an
+incomplete Art. 12 trail while appearing fully instrumented. Fix direction:
+make the trigger resolve the display label defensively
+(`coalesce(to_jsonb(new)->>'name', to_jsonb(new)->>'title', new.id::text)`)
+so a missing column degrades to the id instead of dropping the row, and add a
+regression query that walks `pg_trigger` for `trg_audit` tables lacking both
+columns.
+
+---
+
+## TD-006 — `controls` carries triplicated business-code and clause columns
+
+**Status:** Open · **Severity:** P2 · **Owner:** Compliance platform
+
+The `controls` table accumulated three business-code columns
+(`control_id`, `control_ref`, `code`) and three clause columns
+(`clause`, `clause_ref`, `clause_reference`) across eras, plus paired
+date/text test columns (`last_tested_date`/`last_tested`/`last_tested_at`,
+`next_test_date`/`next_test_at`). Readers coalesce
+(`control_ref ?? control_id`, `clause_ref ?? clause_reference ?? clause`),
+which works but means a writer that fills only one column is invisible to a
+reader that checks another first. Canonical set going forward:
+`control_ref`, `clause_ref`, `last_tested_at`, `next_test_at` (what
+`controlService.ts` writes). Migration direction: backfill the canonical
+columns from the legacy ones, then drop the legacy columns behind a view or
+leave them nullable-and-unwritten with a schema comment.
+
+---
+
+## TD-007 — Two parallel evidence-custody ledgers; ws04 explorer unreachable
+
+**Status:** Open · **Severity:** P2 · **Owner:** Evidence/Trust
+
+Evidence custody exists twice: the `evidence_chain` hash-chain ledger read by
+the Evidence page's Chain tab, and the ws04 `evidence_artifacts` +
+`evidence_custody_events` pair behind `/evidence/custody/:artifactId`
+(`EvidenceCustodyExplorer.tsx`). Both artifact tables are empty on the
+replayed schema, no producer writes them, and **nothing links to the explorer
+route** — it is unreachable except by typing a URL, and it would render
+against empty tables. A planned Chain-tab inbound link was deliberately NOT
+added on 2026-08-16 because it would deep-link into an empty, producer-less
+module. Consolidation direction: fold custody onto `evidence_chain` (the
+ledger that actually receives writes), port anything the explorer UI does
+better into the Chain tab, and retire `evidence_artifacts` /
+`evidence_custody_events` and the orphan route in the same change.
+
+---
+
+## TD-008 — Conformity / Frameworks writes lack Art. 12 audit logging
+
+**Status:** Open · **Severity:** P2 · **Owner:** Compliance platform
+
+The 2026-08-16 compliance elevation added `logAction` (EU AI Act Art. 12
+traceability) to `complianceOpsService`, `evidenceService`, `policyService`,
+`oversightService` and `regulatoryOpsService`, and DB-side `trg_audit` covers
+`controls`, `evidence`, `policies`, `policy_acknowledgments` and the audit
+tables. `conformityService` and `frameworkService` still write without a
+`logAction` call, and their tables carry no `trg_audit`, so marking a
+conformity assessment complete or editing a framework leaves no audit row.
+Add `logAction` on their save/delete paths (the `dpiaService` pattern) or
+extend `trg_audit` to `conformity_assessments` and `frameworks`.
+
+---
+
+## TD-009 — Main Overview still carries fabricated dashboard sections
+
+**Status:** Open · **Severity:** P2 · **Owner:** Platform team
+
+The 2026-08-16 audit-consolidation wave removed the fabricated Recent Activity
+feed, regulatory scorecard, alert items and synthesized trend arrays from
+`pages/Overview.tsx`, replacing them with real derivations. Several hardcoded
+sections remain and are display-only invented data (no measurement provenance):
+the SLA Countdown table (`REM-00x`), the Cross-Module Dependency Map SVG
+(`MDL-001` business codes), the Model Risk Heat Map, the Real-Time Trust Score
+(86), the Compliance Calendar strip, the AI System Governance Coverage table,
+the supply-chain / shadow-AI / kill-switch stat cards, and the hardcoded
+"System Operational" badge. Each should be derived from its real source
+(risks, remediation_plans, compliance_calendar, ai_models) or removed with an
+honest empty state — the same treatment the removed sections received.
 
 ---
 

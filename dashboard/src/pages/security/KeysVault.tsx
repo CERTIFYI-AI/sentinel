@@ -1,6 +1,6 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -13,7 +13,7 @@ import {
 } from '../../components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
-  Key, MagnifyingGlass, Plus, Eye, EyeSlash, PencilSimple, Trash,
+  Key, MagnifyingGlass, Plus, Eye, PencilSimple, Trash, Copy,
   ArrowsClockwise, X, Lock, ShieldCheck, Warning, CheckCircle,
 } from '@phosphor-icons/react';
 import {
@@ -22,38 +22,14 @@ import {
 import { formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useChartTheme } from '../../hooks/useChartTheme';
-import { useEffect } from 'react'
-import { useApiKeys } from '../../hooks/queries/useSecurity'
+import { useKeys } from '../../hooks/useSecurityGroup';
+import type { KeyRecord } from '../../services/securityGroupService';
+import { PageSkeleton } from '../../components/ui/PageSkeleton';
 
+const PROVIDERS = ['OpenAI', 'Anthropic', 'AWS', 'Azure', 'GCP', 'Pinecone', 'HuggingFace', 'LangChain', 'Cohere', 'Other'];
+const STATUSES = ['active', 'rotated', 'expired', 'revoked'];
 
-interface ApiKey {
-  id: string;
-  name: string;
-  provider: string;
-  keyPrefix: string;
-  maskedKey: string;
-  status: 'active' | 'rotated' | 'revoked' | 'expired';
-  scopes: string[];
-  owner: string;
-  createdAt: string;
-  lastUsed: string;
-  expiresAt: string;
-  usageCount: number;
-  description: string;
-}
-
-const MOCK_KEYS: ApiKey[] = [
-  { id: 'KEY-001', name: 'OpenAI Production', provider: 'OpenAI', keyPrefix: 'sk-prod', maskedKey: 'sk-prod-••••••••••••••••••••••••••••••••••••••••••••••••', status: 'active', scopes: ['gpt-4', 'gpt-3.5', 'embeddings'], owner: 'Maria Santos', createdAt: '2026-01-10', lastUsed: '2026-04-05', expiresAt: '2027-01-10', usageCount: 45200, description: 'Primary OpenAI API key for production LLM inference.' },
-  { id: 'KEY-002', name: 'Anthropic Claude Key', provider: 'Anthropic', keyPrefix: 'sk-ant', maskedKey: 'sk-ant-••••••••••••••••••••••••••••••••••••••••••••••••', status: 'active', scopes: ['claude-3-opus', 'claude-3-sonnet'], owner: 'Maria Santos', createdAt: '2026-02-01', lastUsed: '2026-04-04', expiresAt: '2027-02-01', usageCount: 12800, description: 'Anthropic API key for Claude model family.' },
-  { id: 'KEY-003', name: 'AWS Bedrock Access Key', provider: 'AWS', keyPrefix: 'AKIA', maskedKey: 'AKIA••••••••••••••••', status: 'active', scopes: ['bedrock:InvokeModel', 's3:GetObject'], owner: 'David Kim', createdAt: '2026-01-15', lastUsed: '2026-04-03', expiresAt: '2026-07-15', usageCount: 8900, description: 'AWS IAM access key for Bedrock model inference and S3 data access.' },
-  { id: 'KEY-004', name: 'Pinecone Vector DB Key', provider: 'Pinecone', keyPrefix: 'pc-', maskedKey: 'pc-••••••••••••••••••••••••••••••••••', status: 'active', scopes: ['index:read', 'index:write', 'namespace:manage'], owner: 'Maria Santos', createdAt: '2026-02-20', lastUsed: '2026-04-05', expiresAt: '2027-02-20', usageCount: 23400, description: 'Pinecone API key for vector similarity search and retrieval.' },
-  { id: 'KEY-005', name: 'HuggingFace Token', provider: 'HuggingFace', keyPrefix: 'hf_', maskedKey: 'hf_••••••••••••••••••••••••••••••••••', status: 'rotated', scopes: ['read', 'write', 'inference'], owner: 'Maria Santos', createdAt: '2026-01-05', lastUsed: '2026-03-20', expiresAt: '2027-01-05', usageCount: 3400, description: 'HuggingFace access token for model downloads and inference API.' },
-  { id: 'KEY-006', name: 'LangSmith Tracing Key', provider: 'LangChain', keyPrefix: 'ls__', maskedKey: 'ls__••••••••••••••••••••••••••••••••••••••', status: 'active', scopes: ['traces:write', 'runs:read'], owner: 'David Kim', createdAt: '2026-03-01', lastUsed: '2026-04-05', expiresAt: '2027-03-01', usageCount: 88100, description: 'LangSmith API key for LLM run tracing and observability.' },
-  { id: 'KEY-007', name: 'Azure OpenAI Key', provider: 'Azure', keyPrefix: 'az-', maskedKey: 'az-••••••••••••••••••••••••••••••••', status: 'expired', scopes: ['gpt-4-turbo', 'embeddings'], owner: 'James Patel', createdAt: '2025-10-01', lastUsed: '2026-03-28', expiresAt: '2026-03-31', usageCount: 6700, description: 'Azure OpenAI Service key for EU-region inference (expired).' },
-  { id: 'KEY-008', name: 'Cohere API Key', provider: 'Cohere', keyPrefix: 'co-', maskedKey: 'co-••••••••••••••••••••••••••••••••••••', status: 'revoked', scopes: ['generate', 'embed', 'classify'], owner: 'Maria Santos', createdAt: '2026-01-20', lastUsed: '2026-02-15', expiresAt: '2027-01-20', usageCount: 1200, description: 'Cohere API key (revoked following vendor security advisory).' },
-];
-
-function statusStyle(status: string) {
+function statusStyle(status?: string) {
   switch (status) {
     case 'active': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
     case 'rotated': return { bg: '#3b82f620', text: '#3b82f6', border: '#3b82f640' };
@@ -63,97 +39,146 @@ function statusStyle(status: string) {
   }
 }
 
-function statusIcon(status: string) {
+function statusIcon(status?: string) {
   if (status === 'active') return <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
   if (status === 'rotated') return <ArrowsClockwise size={14} style={{ color: '#3b82f6' }} />;
   if (status === 'expired') return <Warning size={14} style={{ color: '#eab308' }} />;
   return <X size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
 }
 
-const EMPTY_KEY: Omit<ApiKey, 'id'> = {
-  name: '', provider: 'OpenAI', keyPrefix: 'sk-', maskedKey: '',
-  status: 'active', scopes: [], owner: '', createdAt: new Date().toISOString().split('T')[0],
-  lastUsed: '', expiresAt: '', usageCount: 0, description: '',
+function safeDate(v?: string) {
+  if (!v) return '—';
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? '—' : formatDate(v);
+}
+function isExpired(v?: string) {
+  if (!v) return false;
+  const d = new Date(v);
+  return !isNaN(d.getTime()) && d < new Date();
+}
+
+type CreateForm = {
+  name: string; provider: string; keyPrefix: string; owner: string;
+  scopesText: string; expiresAt: string; secret: string; linkedAgentId: string;
+};
+const EMPTY_CREATE: CreateForm = {
+  name: '', provider: 'OpenAI', keyPrefix: 'sk-', owner: '',
+  scopesText: '', expiresAt: '', secret: '', linkedAgentId: '',
 };
 
 export default function KeysVault() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
 
-  const { data: supabaseKeys = [] } = useApiKeys()
-  const { data: keys, setData: setKeys } = useSupabaseTable('keysvault_table', MOCK_KEYS);
-  useEffect(() => { if (supabaseKeys.length > 0) setKeys(supabaseKeys as any) }, [supabaseKeys]);
+  const { items: keys, isLoading, error, save, rotate, revoke, remove, isSaving } = useKeys();
+
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterProvider, setFilterProvider] = useState('all');
-  const [revealedKeys, setRevealedKeys] = useState<Set<string>>(new Set());
 
-  const [viewItem, setViewItem] = useState<ApiKey | null>(null);
-  const [editItem, setEditItem] = useState<ApiKey | null>(null);
-  const [deleteItem, setDeleteItem] = useState<ApiKey | null>(null);
-  const [revokeItem, setRevokeItem] = useState<ApiKey | null>(null);
-  const [rotateItem, setRotateItem] = useState<ApiKey | null>(null);
+  const [viewItem, setViewItem] = useState<KeyRecord | null>(null);
+  const [editItem, setEditItem] = useState<KeyRecord | null>(null);
+  const [deleteItem, setDeleteItem] = useState<KeyRecord | null>(null);
+  const [revokeItem, setRevokeItem] = useState<KeyRecord | null>(null);
+  const [rotateItem, setRotateItem] = useState<KeyRecord | null>(null);
+  const [rotateSecret, setRotateSecret] = useState('');
+  const [rotatePrefix, setRotatePrefix] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
-  const [formData, setFormData] = useState<Omit<ApiKey, 'id'>>(EMPTY_KEY);
+  const [formData, setFormData] = useState<CreateForm>(EMPTY_CREATE);
+
+  if (isLoading) return <PageSkeleton title="Keys Vault" showStats rows={6} />;
 
   const filtered = keys.filter(k => {
     const q = search.toLowerCase();
-    const matchSearch = !q || k.name.toLowerCase().includes(q) || k.provider.toLowerCase().includes(q) || k.owner.toLowerCase().includes(q);
+    const matchSearch = !q || (k.name ?? '').toLowerCase().includes(q) || (k.provider ?? '').toLowerCase().includes(q) || (k.owner ?? '').toLowerCase().includes(q);
     const matchStat = filterStatus === 'all' || k.status === filterStatus;
     const matchProv = filterProvider === 'all' || k.provider === filterProvider;
     return matchSearch && matchStat && matchProv;
   });
 
-  const usageData = keys.filter(k => k.status === 'active').map(k => ({ name: k.provider, usage: k.usageCount }));
-  const providers = Array.from(new Set(keys.map(k => k.provider)));
+  // Aggregate usage per provider (sum) so duplicate providers don't produce
+  // duplicate x-axis categories.
+  const usageData = Array.from(
+    keys.filter(k => k.status === 'active').reduce((acc, k) => {
+      const key = k.provider || '—';
+      acc.set(key, (acc.get(key) || 0) + (k.usageCount ?? 0));
+      return acc;
+    }, new Map<string, number>())
+  ).map(([name, usage]) => ({ name, usage }));
+  const providers = Array.from(new Set(keys.map(k => k.provider).filter(Boolean))) as string[];
 
   const stats = [
     { label: 'Total Keys', value: keys.length, icon: Key },
     { label: 'Active', value: keys.filter(k => k.status === 'active').length, icon: ShieldCheck },
     { label: 'Expired / Revoked', value: keys.filter(k => k.status === 'expired' || k.status === 'revoked').length, icon: Warning },
-    { label: 'Total API Calls', value: keys.reduce((s, k) => s + k.usageCount, 0).toLocaleString(), icon: Lock },
+    { label: 'Total API Calls', value: keys.reduce((s, k) => s + (k.usageCount ?? 0), 0).toLocaleString(), icon: Lock },
   ];
 
-  function toggleReveal(id: string) {
-    setRevealedKeys(prev => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id); else next.add(id);
-      return next;
-    });
+  function copyPrefix(prefix?: string) {
+    if (!prefix) return;
+    navigator.clipboard?.writeText(prefix).then(
+      () => toast.success('Key prefix copied'),
+      () => toast.error('Copy failed'),
+    );
   }
 
-  function handleCreate() {
-    const id = `KEY-${String(keys.length + 1).padStart(3, '0')}`;
-    const masked = `${formData.keyPrefix}${'•'.repeat(40)}`;
-    setKeys(prev => [...prev, { ...formData, id, maskedKey: masked }]);
-    setCreateOpen(false);
-    setFormData(EMPTY_KEY);
+  async function handleCreate() {
+    if (!formData.name.trim()) { toast.error('Key name is required'); return; }
+    const scopes = formData.scopesText.split(',').map(s => s.trim()).filter(Boolean);
+    try {
+      await save({
+        id: crypto.randomUUID(),
+        name: formData.name,
+        provider: formData.provider,
+        keyPrefix: formData.keyPrefix,
+        owner: formData.owner,
+        scopes,
+        status: 'active',
+        expiresAt: formData.expiresAt || undefined,
+        linkedAgentId: formData.linkedAgentId || undefined,
+        secret: formData.secret || undefined,
+      } as any);
+      setCreateOpen(false);
+      setFormData(EMPTY_CREATE);
+    } catch { /* hook toasts error */ }
   }
 
-  function handleEdit() {
+  async function handleEdit() {
     if (!editItem) return;
-    setKeys(prev => prev.map(k => k.id === editItem.id ? editItem : k));
-    setEditItem(null);
+    try {
+      // The date input holds yyyy-MM-dd — convert back to an ISO timestamptz.
+      const expiresAt = editItem.expiresAt
+        ? new Date(`${editItem.expiresAt.slice(0, 10)}T00:00:00Z`).toISOString()
+        : undefined;
+      await save({ ...editItem, expiresAt });
+      setEditItem(null);
+    } catch { /* hook toasts error */ }
   }
 
-  function handleDelete() {
-    if (!deleteItem) return;
-    setKeys(prev => prev.filter(k => k.id !== deleteItem.id));
-    setDeleteItem(null);
+  async function handleDelete() {
+    if (!deleteItem?.id) return;
+    try { await remove(deleteItem.id); setDeleteItem(null); } catch { /* hook toasts error */ }
   }
 
-  function handleRevoke() {
-    if (!revokeItem) return;
-    setKeys(prev => prev.map(k => k.id === revokeItem.id ? { ...k, status: 'revoked' } : k));
-    setRevokeItem(null);
+  async function handleRevoke() {
+    if (!revokeItem?.id) return;
+    try { await revoke(revokeItem.id); setRevokeItem(null); } catch { /* hook toasts error */ }
   }
 
-  function handleRotate() {
-    if (!rotateItem) return;
-    const newPrefix = rotateItem.keyPrefix;
-    const newMasked = `${newPrefix}${'•'.repeat(40)} (rotated)`;
-    setKeys(prev => prev.map(k => k.id === rotateItem.id ? { ...k, status: 'rotated', maskedKey: newMasked, lastUsed: new Date().toISOString().split('T')[0] } : k));
-    setRotateItem(null);
+  function openRotate(k: KeyRecord) {
+    setRotateItem(k);
+    setRotatePrefix(k.keyPrefix ?? '');
+    setRotateSecret('');
+  }
+
+  async function handleRotate() {
+    if (!rotateItem?.id) return;
+    if (!rotateSecret.trim()) { toast.error('Enter the new secret to rotate'); return; }
+    try {
+      await rotate({ id: rotateItem.id, prefix: rotatePrefix || (rotateItem.keyPrefix ?? ''), secret: rotateSecret });
+      setRotateItem(null);
+      setRotateSecret('');
+    } catch { /* hook toasts error */ }
   }
 
   return (
@@ -167,11 +192,19 @@ export default function KeysVault() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button size="sm" onClick={() => { setFormData(EMPTY_KEY); setCreateOpen(true); }}>
+          <Button size="sm" onClick={() => { setFormData(EMPTY_CREATE); setCreateOpen(true); }}>
             <Plus size={14} /> Add Key
           </Button>
         </div>
       </div>
+
+      {/* Query error state */}
+      {error && (
+        <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load keys</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{(error as Error).message}</p>
+        </div>
+      )}
 
       {/* Stat Cards */}
       <div className="grid grid-cols-4 gap-4">
@@ -189,22 +222,24 @@ export default function KeysVault() {
       </div>
 
       {/* Usage Chart */}
-      <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>API Usage by Provider (Active Keys)</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={usageData}>
-              <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-              <XAxis dataKey="name" tick={{ fontSize: 11, fill: ct.axis }} />
-              <YAxis tick={{ fontSize: 11, fill: ct.axis }} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
-              <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-              <Bar dataKey="usage" fill={ct.brand} radius={0} name="API Calls" />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      {usageData.length > 0 && (
+        <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>API Usage by Provider (Active Keys)</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={usageData}>
+                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: ct.axis }} />
+                <YAxis tick={{ fontSize: 11, fill: ct.axis }} allowDecimals={false} label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }} />
+                <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
+                <Bar dataKey="usage" fill={ct.brand} radius={0} name="API Calls" />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Search + Filter */}
       <div className="flex items-center gap-3">
@@ -216,7 +251,7 @@ export default function KeysVault() {
           <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
           <SelectContent style={{ borderRadius: 0 }}>
             <SelectItem value="all">All Statuses</SelectItem>
-            {['active', 'rotated', 'expired', 'revoked'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            {STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
           </SelectContent>
         </Select>
         <Select value={filterProvider} onValueChange={setFilterProvider}>
@@ -235,13 +270,15 @@ export default function KeysVault() {
           {filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16" style={{ color: 'hsl(var(--text-3))' }}>
               <Key size={40} />
-              <p className="mt-3 text-sm font-medium">No keys match your filters</p>
+              <p className="mt-3 text-sm font-medium">
+                {keys.length === 0 ? 'No keys registered yet. Add a key to start tracking.' : 'No keys match your filters'}
+              </p>
             </div>
           ) : (
             <table className="w-full">
               <thead style={{ background: 'hsl(var(--bg-muted))' }}>
                 <tr>
-                  {['Name', 'Provider', 'Masked Key', 'Status', 'Scopes', 'Owner', 'Last Used', 'Expires', 'Actions'].map(h => (
+                  {['Name', 'Provider', 'Key Prefix', 'Status', 'Scopes', 'Owner', 'Last Used', 'Expires', 'Actions'].map(h => (
                     <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
                   ))}
                 </tr>
@@ -258,20 +295,17 @@ export default function KeysVault() {
                   >
                     <td className="p-3">
                       <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{k.name}</p>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{k.id}</p>
                     </td>
                     <td className="p-3">
-                      <Badge variant="outline" style={{ borderRadius: 0, fontSize: 11 }}>{k.provider}</Badge>
+                      <Badge variant="outline" style={{ borderRadius: 0, fontSize: 11 }}>{k.provider || '—'}</Badge>
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                         <code className="text-xs font-mono" style={{ color: 'hsl(var(--text-2))' }}>
-                          {revealedKeys.has(k.id) ? k.maskedKey : `${k.keyPrefix}${'•'.repeat(16)}`}
+                          {(k.keyPrefix ?? '')}{'••••'}
                         </code>
-                        <button onClick={() => toggleReveal(k.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
-                          {revealedKeys.has(k.id)
-                            ? <EyeSlash size={13} style={{ color: 'hsl(var(--text-3))' }} />
-                            : <Eye size={13} style={{ color: 'hsl(var(--text-3))' }} />}
+                        <button onClick={() => copyPrefix(k.keyPrefix)} title="Copy prefix" style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 2 }}>
+                          <Copy size={13} style={{ color: 'hsl(var(--text-3))' }} />
                         </button>
                       </div>
                     </td>
@@ -285,22 +319,22 @@ export default function KeysVault() {
                     </td>
                     <td className="p-3">
                       <div className="flex flex-wrap gap-1">
-                        {k.scopes.slice(0, 2).map(s => (
+                        {(k.scopes ?? []).slice(0, 2).map(s => (
                           <Badge key={s} variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>{s}</Badge>
                         ))}
-                        {k.scopes.length > 2 && <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>+{k.scopes.length - 2}</span>}
+                        {(k.scopes ?? []).length > 2 && <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>+{(k.scopes ?? []).length - 2}</span>}
                       </div>
                     </td>
-                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{k.owner}</td>
-                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(k.lastUsed)}</td>
-                    <td className="p-3 text-xs" style={{ color: new Date(k.expiresAt) < new Date() ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-3))' }}>
-                      {formatDate(k.expiresAt)}
+                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{k.owner || '—'}</td>
+                    <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{safeDate(k.lastUsedAt)}</td>
+                    <td className="p-3 text-xs" style={{ color: isExpired(k.expiresAt) ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-3))' }}>
+                      {safeDate(k.expiresAt)}
                     </td>
                     <td className="p-3">
                       <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                         <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(k)}><Eye size={14} /></Button>
                         {k.status === 'active' && (
-                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#3b82f6' }} onClick={() => setRotateItem(k)}>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#3b82f6' }} onClick={() => openRotate(k)}>
                             <ArrowsClockwise size={14} />
                           </Button>
                         )}
@@ -332,7 +366,7 @@ export default function KeysVault() {
                   <Badge style={{ background: statusStyle(viewItem.status).bg, color: statusStyle(viewItem.status).text, border: `1px solid ${statusStyle(viewItem.status).border}`, borderRadius: 0 }}>
                     {viewItem.status}
                   </Badge>
-                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.provider}</Badge>
+                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.provider || '—'}</Badge>
                 </div>
               </SheetHeader>
               <Tabs defaultValue="details">
@@ -342,11 +376,12 @@ export default function KeysVault() {
                 </TabsList>
                 <TabsContent value="details" className="mt-4 space-y-3">
                   {[
-                    { label: 'Key ID', value: viewItem.id },
-                    { label: 'Owner', value: viewItem.owner },
-                    { label: 'Created', value: formatDate(viewItem.createdAt) },
-                    { label: 'Last Used', value: formatDate(viewItem.lastUsed) },
-                    { label: 'Expires', value: formatDate(viewItem.expiresAt) },
+                    { label: 'Owner', value: viewItem.owner || '—' },
+                    { label: 'Created', value: safeDate(viewItem.createdAt) },
+                    { label: 'Last Used', value: safeDate(viewItem.lastUsedAt) },
+                    { label: 'Expires', value: safeDate(viewItem.expiresAt) },
+                    { label: 'Rotated', value: safeDate(viewItem.rotatedAt) },
+                    { label: 'Revoked', value: safeDate(viewItem.revokedAt) },
                   ].map(r => (
                     <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                       <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
@@ -356,25 +391,36 @@ export default function KeysVault() {
                   <div>
                     <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-2))' }}>Scopes</p>
                     <div className="flex flex-wrap gap-1">
-                      {viewItem.scopes.map(s => <Badge key={s} variant="outline" style={{ borderRadius: 0, fontSize: 11 }}>{s}</Badge>)}
+                      {(viewItem.scopes ?? []).length > 0
+                        ? (viewItem.scopes ?? []).map(s => <Badge key={s} variant="outline" style={{ borderRadius: 0, fontSize: 11 }}>{s}</Badge>)
+                        : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>None</span>}
                     </div>
                   </div>
-                  <div className="p-3 mt-2" style={{ background: 'hsl(var(--bg-muted))' }}>
-                    <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Masked Key</p>
-                    <code className="text-xs" style={{ color: 'hsl(var(--text-2))', wordBreak: 'break-all' }}>{viewItem.maskedKey}</code>
+                  <div className="p-3 mt-2 flex items-center justify-between" style={{ background: 'hsl(var(--bg-muted))' }}>
+                    <div>
+                      <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Key Prefix</p>
+                      <code className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{(viewItem.keyPrefix ?? '—')}{viewItem.keyPrefix ? '••••' : ''}</code>
+                    </div>
+                    {viewItem.keyPrefix && (
+                      <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => copyPrefix(viewItem.keyPrefix)}>
+                        <Copy size={13} /> Copy
+                      </Button>
+                    )}
                   </div>
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+                    The secret is never stored or displayed — only a one-way hash and this prefix are retained.
+                  </p>
                 </TabsContent>
                 <TabsContent value="usage" className="mt-4">
                   <div className="text-center py-6">
-                    <p className="text-4xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{viewItem.usageCount.toLocaleString()}</p>
+                    <p className="text-4xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{(viewItem.usageCount ?? 0).toLocaleString()}</p>
                     <p className="text-sm mt-2" style={{ color: 'hsl(var(--text-3))' }}>Total API Calls</p>
                   </div>
-                  <p className="text-sm mt-2" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
                 </TabsContent>
               </Tabs>
               <div className="flex gap-2 mt-6">
                 {viewItem.status === 'active' && (
-                  <Button size="sm" onClick={() => { setRotateItem(viewItem); setViewItem(null); }}>
+                  <Button size="sm" onClick={() => { openRotate(viewItem); setViewItem(null); }}>
                     <ArrowsClockwise size={14} /> Rotate
                   </Button>
                 )}
@@ -394,18 +440,28 @@ export default function KeysVault() {
           <DialogHeader><DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Edit API Key</DialogTitle></DialogHeader>
           {editItem && (
             <div className="space-y-3">
-              {[{ label: 'Name', key: 'name' }, { label: 'Owner', key: 'owner' }, { label: 'Description', key: 'description' }, { label: 'Expires At', key: 'expiresAt', type: 'date' }].map(f => (
+              {[{ label: 'Name', key: 'name' }, { label: 'Owner', key: 'owner' }, { label: 'Expires At', key: 'expiresAt', type: 'date' }].map(f => (
                 <div key={f.key}>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                  <Input type={f.type || 'text'} value={(editItem as any)[f.key] || ''} onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} style={{ borderRadius: 0 }} />
+                  <Input
+                    type={f.type || 'text'}
+                    // Date inputs need yyyy-MM-dd; expiresAt is stored as an ISO timestamptz.
+                    value={f.type === 'date' ? ((editItem as any)[f.key] || '').slice(0, 10) : (editItem as any)[f.key] || ''}
+                    onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)}
+                    style={{ borderRadius: 0 }}
+                  />
                 </div>
               ))}
               <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Scopes (comma-separated)</label>
+                <Input value={(editItem.scopes ?? []).join(', ')} onChange={e => setEditItem(prev => prev ? { ...prev, scopes: e.target.value.split(',').map(s => s.trim()).filter(Boolean) } : null)} style={{ borderRadius: 0 }} />
+              </div>
+              <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
-                <Select value={editItem.status} onValueChange={v => setEditItem(prev => prev ? { ...prev, status: v as any } : null)}>
+                <Select value={editItem.status} onValueChange={v => setEditItem(prev => prev ? { ...prev, status: v } : null)}>
                   <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
-                    {['active', 'rotated', 'expired', 'revoked'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -413,7 +469,7 @@ export default function KeysVault() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditItem(null)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleEdit} style={{ borderRadius: 0 }}>Save Changes</Button>
+            <Button onClick={handleEdit} disabled={isSaving} style={{ borderRadius: 0 }}>Save Changes</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -423,19 +479,27 @@ export default function KeysVault() {
         <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 520 }}>
           <DialogHeader><DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Add API Key</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            {[{ label: 'Name', key: 'name' }, { label: 'Key Prefix (e.g. sk-)', key: 'keyPrefix' }, { label: 'Owner', key: 'owner' }, { label: 'Description', key: 'description' }].map(f => (
+            {[{ label: 'Name', key: 'name' }, { label: 'Key Prefix (e.g. sk-)', key: 'keyPrefix' }, { label: 'Owner', key: 'owner' }].map(f => (
               <div key={f.key}>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
                 <Input value={(formData as any)[f.key] || ''} onChange={e => setFormData(prev => ({ ...prev, [f.key]: e.target.value }))} style={{ borderRadius: 0 }} />
               </div>
             ))}
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Secret (hashed on save, never stored in clear)</label>
+              <Input type="password" value={formData.secret} onChange={e => setFormData(prev => ({ ...prev, secret: e.target.value }))} placeholder="Paste the raw secret to hash" style={{ borderRadius: 0 }} />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Scopes (comma-separated)</label>
+              <Input value={formData.scopesText} onChange={e => setFormData(prev => ({ ...prev, scopesText: e.target.value }))} placeholder="e.g. gpt-4, embeddings" style={{ borderRadius: 0 }} />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Provider</label>
                 <Select value={formData.provider} onValueChange={v => setFormData(prev => ({ ...prev, provider: v }))}>
                   <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
-                    {['OpenAI', 'Anthropic', 'AWS', 'Azure', 'GCP', 'Pinecone', 'HuggingFace', 'LangChain', 'Cohere', 'Other'].map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
+                    {PROVIDERS.map(p => <SelectItem key={p} value={p}>{p}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -447,7 +511,7 @@ export default function KeysVault() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreateOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
-            <Button onClick={handleCreate} style={{ borderRadius: 0 }} disabled={!formData.name}>Add Key</Button>
+            <Button onClick={handleCreate} style={{ borderRadius: 0 }} disabled={!formData.name || isSaving}>Add Key</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -458,12 +522,22 @@ export default function KeysVault() {
           <AlertDialogHeader>
             <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Rotate Key</AlertDialogTitle>
             <AlertDialogDescription>
-              Rotate <strong>{rotateItem?.name}</strong>? The old key will be invalidated and a new one will be generated. Update all dependent services.
+              Rotate <strong>{rotateItem?.name}</strong>? A new key hash is stored and the previous hash is invalidated. Update all dependent services.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-3 py-1">
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>New Key Prefix</label>
+              <Input value={rotatePrefix} onChange={e => setRotatePrefix(e.target.value)} style={{ borderRadius: 0 }} />
+            </div>
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>New Secret (hashed on save)</label>
+              <Input type="password" value={rotateSecret} onChange={e => setRotateSecret(e.target.value)} placeholder="Paste the new raw secret" style={{ borderRadius: 0 }} />
+            </div>
+          </div>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRotate} style={{ background: '#3b82f6', borderRadius: 0 }}>Rotate Key</AlertDialogAction>
+            <AlertDialogAction onClick={handleRotate} disabled={isSaving} style={{ background: '#3b82f6', borderRadius: 0 }}>Rotate Key</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -474,7 +548,7 @@ export default function KeysVault() {
           <AlertDialogHeader>
             <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Revoke Key</AlertDialogTitle>
             <AlertDialogDescription>
-              Revoke <strong>{revokeItem?.name}</strong>? This will immediately block all requests using this key.
+              Revoke <strong>{revokeItem?.name}</strong>? The key is marked revoked and its hash is no longer accepted for authentication.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

@@ -16,9 +16,11 @@
 // RPC (audit_log_verify_chain) that do not exist in this project's database,
 // so its "chain verification" could never display real data.
 
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { ClockCounterClockwise, Export, Eye, Warning } from '@phosphor-icons/react';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { ClockCounterClockwise, Export, Eye, Warning, X } from '@phosphor-icons/react';
+import { auditWriteHealthy } from '@/lib/auditLogger';
+import { formatExport } from '@/services/auditLogService';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -61,7 +63,12 @@ const ENTITY_ROUTES: Record<string, (id: string) => string> = {
   ai_model: id => `/models/inventory/${id}`,
   use_case: id => `/use-cases/${id}`,
   risk: id => `/risks?open=${id}`,
-  control: id => `/controls/${id}`,
+  control: id => `/compliance/controls?open=${id}`,
+  policy: id => `/policies?open=${id}`,
+  evidence: id => `/evidence-vault?open=${id}`,
+  filing: id => `/regulator-filings?open=${id}`,
+  hitl_review: id => `/hitl/${id}`,
+  approval: id => `/workflows?open=${id}`,
 };
 
 function entityRoute(e: AuditLogRecord): string | null {
@@ -107,11 +114,34 @@ function JsonBlock({ label, value, tone }: {
 export default function AuditTrail() {
   const { logs, isLoading, error } = useAuditLogData();
   const { orgName } = useSettingsStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // ?module=<x> deep-links a pre-filtered view (platform pattern: dismissible
+  // chip below); it seeds the module filter and stays in the URL until
+  // dismissed so the link remains shareable.
+  const moduleParam = searchParams.get('module');
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState('all');
-  const [moduleFilter, setModuleFilter] = useState('all');
+  const [moduleFilter, setModuleFilter] = useState(moduleParam ?? 'all');
   const [actorFilter, setActorFilter] = useState('all');
   const [viewItem, setViewItem] = useState<AuditLogRecord | null>(null);
+  const [healthBannerDismissed, setHealthBannerDismissed] = useState(false);
+
+  // ?open=<id> opens that event's detail drawer once data is loaded
+  // (platform pattern — see pages/audits/AuditManagement.tsx), then drops
+  // the param so closing the drawer doesn't re-open it.
+  useEffect(() => {
+    const openId = searchParams.get('open');
+    if (!openId || isLoading) return;
+    const match = logs.find(e => e.id === openId);
+    if (match) setViewItem(match);
+    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('open'); return next; }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, logs.length]);
+
+  const clearModuleParam = () => {
+    setModuleFilter('all');
+    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('module'); return next; }, { replace: true });
+  };
 
   const modules = useMemo(
     () => Array.from(new Set(logs.map(e => e.module).filter(Boolean))).sort(),
@@ -139,15 +169,10 @@ export default function AuditTrail() {
 
   const handleExport = () => {
     if (!filtered.length) return;
-    const headers = ['id', 'created_at', 'actor', 'actor_role', 'module', 'action', 'entity_type', 'entity_name', 'entity_id'];
-    const rows = filtered.map(e => [
-      e.id, e.createdAt, e.actorName, e.actorRole ?? '', e.module, e.action,
-      e.entityType, e.entityName ?? '', e.entityId ?? '',
-    ].map(v => JSON.stringify(v ?? '')).join(','));
-    const csv = [headers.join(','), ...rows].join('\n');
+    const { body, mime, ext } = formatExport(filtered, 'csv');
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `audit-trail-${new Date().toISOString().split('T')[0]}.csv`;
+    a.href = URL.createObjectURL(new Blob([body], { type: mime }));
+    a.download = `audit-trail-${new Date().toISOString().split('T')[0]}.${ext}`;
     a.click();
   };
 
@@ -168,6 +193,43 @@ export default function AuditTrail() {
         }
       />
 
+      {/* Writer health — auditWriteHealthy flips false after any failed
+          audit_log insert, meaning the trail below may be incomplete. */}
+      {!auditWriteHealthy && !healthBannerDismissed && (
+        <div role="alert" className="p-3 flex items-center gap-2" style={{
+          background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-tx))', borderRadius: 0,
+        }}>
+          <Warning size={16} style={{ color: 'hsl(var(--s-wn-tx))', flexShrink: 0 }} />
+          <span className="text-sm" style={{ color: 'hsl(var(--s-wn-tx))' }}>
+            Audit writes are failing — recent actions may be missing from this trail.
+          </span>
+          <button
+            className="ml-auto p-1"
+            aria-label="Dismiss warning"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--s-wn-tx))' }}
+            onClick={() => setHealthBannerDismissed(true)}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
+      {/* Deep-link filter chip — dismissible, platform pattern */}
+      {moduleParam && moduleFilter === moduleParam && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+            <span>Filtered to module <strong>{moduleParam.replace(/_/g, ' ')}</strong></span>
+            <button
+              aria-label="Clear module filter"
+              onClick={clearModuleParam}
+              className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
+
       {error ? (
         <div role="alert" className="p-4 flex items-center gap-2" style={{
           background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--destructive))', borderRadius: 0,
@@ -179,13 +241,14 @@ export default function AuditTrail() {
         </div>
       ) : (
         <>
-          {/* Stats — derived from loaded events only */}
+          {/* Stats — derived from loaded events only; an empty log shows an
+              honest "—" rather than a fabricated zero count. */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Total Events', value: logs.length },
-              { label: 'Showing', value: filtered.length },
-              { label: 'Actors', value: actors.length },
-              { label: 'Modules', value: modules.length },
+              { label: 'Total Events', value: logs.length === 0 ? '—' : logs.length },
+              { label: 'Showing', value: logs.length === 0 ? '—' : filtered.length },
+              { label: 'Actors', value: logs.length === 0 ? '—' : actors.length },
+              { label: 'Modules', value: logs.length === 0 ? '—' : modules.length },
             ].map(stat => (
               <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
                 <CardContent className="pt-5">
@@ -215,7 +278,13 @@ export default function AuditTrail() {
                 key: 'module',
                 label: 'Module',
                 value: moduleFilter === 'all' ? '' : moduleFilter,
-                onChange: v => setModuleFilter(v || 'all'),
+                onChange: v => {
+                  setModuleFilter(v || 'all');
+                  // Manual filter change supersedes the ?module= deep link.
+                  if (moduleParam && v !== moduleParam) {
+                    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('module'); return next; }, { replace: true });
+                  }
+                },
                 options: modules.map(m => ({ label: m.replace(/_/g, ' '), value: m })),
               },
               {
@@ -227,7 +296,7 @@ export default function AuditTrail() {
               },
             ]}
             activeFilterCount={activeFilterCount}
-            onClearAll={() => { setSearch(''); setDateRange('all'); setModuleFilter('all'); setActorFilter('all'); }}
+            onClearAll={() => { setSearch(''); setDateRange('all'); setActorFilter('all'); clearModuleParam(); }}
             trailing={
               <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} event{filtered.length !== 1 ? 's' : ''}</span>
             }

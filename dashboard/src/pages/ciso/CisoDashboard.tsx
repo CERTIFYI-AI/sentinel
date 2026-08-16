@@ -36,6 +36,7 @@ import { useRisksData } from '../../hooks/useRisksData';
 import { useIncidentData } from '../../hooks/useIncidentData';
 import { useFrameworksData } from '../../hooks/useFrameworksData';
 import { useVendorsData } from '../../hooks/useVendorsData';
+import { useHitlReviews, useApprovals } from '../../hooks/useRiskIncidents';
 import { agentRecordHooks } from '../../hooks/queries/useAgentGovCrud';
 import type { RiskRecord } from '../../services/riskService';
 import type { IncidentRecord } from '../../services/incidentService';
@@ -126,10 +127,13 @@ function OverviewTab() {
   const navigate = useNavigate();
   const { models, isLoading: modelsLoading } = useModelsData();
   const { risks, isLoading: risksLoading } = useRisksData();
-  const { incidents, isLoading: incidentsLoading } = useIncidentData();
+  const { incidents, isLoading: incidentsLoading, error: incidentsError } = useIncidentData();
   const { frameworks, isLoading: frameworksLoading } = useFrameworksData();
   const { vendors, isLoading: vendorsLoading } = useVendorsData();
   const { data: agents = [], isLoading: agentsLoading } = agentRecordHooks.useList();
+  // Oversight surfaces — pending human decisions are an executive risk signal.
+  const hitl = useHitlReviews();
+  const approvalsQ = useApprovals();
 
   const loading = modelsLoading || risksLoading || incidentsLoading || frameworksLoading || agentsLoading || vendorsLoading;
   if (loading) {
@@ -155,7 +159,7 @@ function OverviewTab() {
     { label: 'Models in Production', value: String(productionModels), icon: Robot, color: '#3b82f6' },
     { label: 'Open Risks', value: String(openRisks.length), icon: Warning, color: 'hsl(var(--s-er-tx))' },
     { label: 'Open Severity-5 Risks', value: String(openSevereRisks), icon: Gauge, color: 'hsl(var(--destructive))' },
-    { label: 'Active Incidents', value: String(activeIncidents), icon: Fire, color: 'hsl(var(--r-hi-tx))' },
+    { label: 'Active Incidents', value: incidentsError ? '—' : String(activeIncidents), icon: Fire, color: 'hsl(var(--r-hi-tx))' },
     { label: 'Active Agents', value: String(activeAgents), icon: Robot, color: 'hsl(var(--tag-purple))' },
     { label: 'Avg Framework Score', value: avgFrameworkScore != null ? `${avgFrameworkScore}%` : '—', icon: Shield, color: 'hsl(var(--s-ok-tx))' },
   ];
@@ -186,7 +190,7 @@ function OverviewTab() {
     { label: 'Model Inventory', path: '/models', icon: Brain, count: `${models.length} models`, color: '#3b82f6' },
     { label: 'Risk Register', path: '/risk', icon: Warning, count: `${openRisks.length} open risks`, color: 'hsl(var(--s-er-tx))' },
     { label: 'Compliance', path: '/compliance', icon: Shield, count: avgFrameworkScore != null ? `${avgFrameworkScore}% avg score` : `${frameworks.length} frameworks`, color: 'hsl(var(--s-ok-tx))' },
-    { label: 'Incidents', path: '/risk/incidents', icon: Fire, count: `${activeIncidents} active`, color: 'hsl(var(--r-hi-tx))' },
+    { label: 'Incidents', path: '/risk/incidents', icon: Fire, count: incidentsError ? 'unavailable' : `${activeIncidents} active`, color: 'hsl(var(--r-hi-tx))' },
     { label: 'Agents', path: '/agents', icon: Robot, count: `${agents.length} registered`, color: 'hsl(var(--tag-purple))' },
     { label: 'Vendors', path: '/vendors', icon: Buildings, count: `${vendors.length} vendors`, color: 'hsl(var(--s-in-tx))' },
   ];
@@ -201,6 +205,13 @@ function OverviewTab() {
       .map(i => ({ key: `inc-${i.id}`, kind: 'Incident', label: i.title || i.description || 'Untitled incident', severity: String(i.severity).toLowerCase(), path: `/risk/incidents?open=${i.id}` })),
   ];
 
+  // Oversight tiles — pending HITL reviews (with blocking count) and pending
+  // approvals (with overdue-by-due_at count), both from real oversight tables.
+  const pendingHitl = hitl.items.filter(r => r.status === 'pending' || r.status === 'info_requested');
+  const blockingHitl = pendingHitl.filter(r => r.blocksDeployment && r.status === 'pending').length;
+  const pendingApprovals = approvalsQ.items.filter(a => a.status === 'pending');
+  const overdueApprovals = pendingApprovals.filter(a => a.dueAt && new Date(a.dueAt).getTime() < Date.now()).length;
+
   return (
     <div className="space-y-6">
       {/* KPI Stats — live counts */}
@@ -214,6 +225,69 @@ function OverviewTab() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Oversight attention tiles — pending human decisions (Art. 14 posture) */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => navigate('/hitl')}
+          className="text-left hover:bg-muted/30 transition-colors"
+          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: 16 }}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>Pending HITL Reviews</p>
+              {hitl.isLoading ? (
+                <p className="text-2xl font-bold mt-1" style={{ color: 'hsl(var(--text-4))' }}>…</p>
+              ) : hitl.error ? (
+                <p className="text-xs mt-2" style={{ color: 'hsl(var(--destructive))' }}>Unavailable: {(hitl.error as Error).message}</p>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold mt-1" style={{ color: pendingHitl.length > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>
+                    {pendingHitl.length}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: blockingHitl > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--text-3))' }}>
+                    {blockingHitl > 0 ? `${blockingHitl} blocking deployment` : 'None blocking deployment'}
+                  </p>
+                </>
+              )}
+            </div>
+            <ClipboardText size={20} style={{ color: 'hsl(var(--s-wn-tx))', flexShrink: 0 }} />
+          </div>
+          <p className="text-[11px] mt-2 flex items-center gap-1" style={{ color: 'hsl(var(--brand))' }}>
+            Open HITL Review Center <ArrowRight size={10} />
+          </p>
+        </button>
+
+        <button
+          onClick={() => navigate('/workflows')}
+          className="text-left hover:bg-muted/30 transition-colors"
+          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: 16 }}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>Pending Approvals</p>
+              {approvalsQ.isLoading ? (
+                <p className="text-2xl font-bold mt-1" style={{ color: 'hsl(var(--text-4))' }}>…</p>
+              ) : approvalsQ.error ? (
+                <p className="text-xs mt-2" style={{ color: 'hsl(var(--destructive))' }}>Unavailable: {(approvalsQ.error as Error).message}</p>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold mt-1" style={{ color: pendingApprovals.length > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>
+                    {pendingApprovals.length}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: overdueApprovals > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--text-3))' }}>
+                    {overdueApprovals > 0 ? `${overdueApprovals} past their due date` : 'None past their due date'}
+                  </p>
+                </>
+              )}
+            </div>
+            <CheckCircle size={20} style={{ color: 'hsl(var(--brand))', flexShrink: 0 }} />
+          </div>
+          <p className="text-[11px] mt-2 flex items-center gap-1" style={{ color: 'hsl(var(--brand))' }}>
+            Open Approval Workflows <ArrowRight size={10} />
+          </p>
+        </button>
       </div>
 
       {/* Charts Row — computed from live records (no historical snapshots are stored, so no trend series is shown) */}
@@ -244,7 +318,11 @@ function OverviewTab() {
             <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Incidents by Severity</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center">
-            {incidentSeverity.length === 0 ? (
+            {incidentsError ? (
+              <p className="text-sm py-10 text-center px-3" style={{ color: 'hsl(var(--destructive))' }}>
+                Incidents could not be loaded: {(incidentsError as Error).message}
+              </p>
+            ) : incidentSeverity.length === 0 ? (
               <p className="text-sm py-10 text-center" style={{ color: 'hsl(var(--text-4))' }}>No incidents recorded.</p>
             ) : (
               <>

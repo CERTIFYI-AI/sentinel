@@ -8,8 +8,9 @@
 // guessed link. The former demo-table stepper with simulated scoring and the
 // fake "Generate PDF" action were dropped — findings shown here come straight
 // from the assessment record.
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 import {
   Eye, Trash, Plus, ClipboardText, Warning, CheckCircle, Info, Clock,
   Cube, StackSimple, ArrowSquareOut, FileText,
@@ -23,11 +24,13 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/u
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { useConformityData } from '../../hooks/useConformityData';
 import { useFrameworksData } from '../../hooks/useFrameworksData';
 import { useModelsData } from '../../hooks/useModelsData';
 import type { ConformityAssessmentRecord } from '../../services/conformityService';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 
 function formatDate(d?: string | null): string {
   if (!d) return '—';
@@ -75,18 +78,53 @@ interface NewAssessmentForm {
 
 const EMPTY_FORM: NewAssessmentForm = { title: '', framework_id: '', model_id: '', assessment_body: '', valid_until: '' };
 
+// Resolve evidence_ids to real evidence titles — an id renders as its
+// resolved label or "Unavailable", never as a raw id.
+async function fetchEvidenceLabels(ids: readonly string[]): Promise<Map<string, string>> {
+  if (!isSupabaseConfigured() || !supabase || ids.length === 0) return new Map();
+  const { data, error } = await supabase
+    .from('evidence')
+    .select('id, title')
+    .in('id', ids as string[]);
+  if (error) throw new Error(error.message);
+  return new Map((data ?? []).map((r: { id: string; title: string | null }) => [r.id, r.title ?? 'Unavailable']));
+}
+
 export default function ConformityAssessment() {
   const { assessments, isLoading, error, save, remove, isSaving } = useConformityData();
   const { frameworks } = useFrameworksData();
   const { models } = useModelsData();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [selected, setSelected] = useState<ConformityAssessmentRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<ConformityAssessmentRecord | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
   const [form, setForm] = useState<NewAssessmentForm>(EMPTY_FORM);
 
+  // Deep link: ?open=<id> opens that assessment once data is loaded
+  // (platform pattern — see pages/audits/AuditManagement.tsx).
+  useEffect(() => {
+    const openId = searchParams.get('open');
+    if (!openId || isLoading) return;
+    const match = assessments.find(a => a.id === openId || a.assessment_id === openId);
+    if (match) setSelected(match);
+    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('open'); return next; }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, assessments.length]);
+
   const resolveFramework = (ref?: string | null) => frameworks.find((f: any) => f.id === ref);
-  const resolveModel = (ref?: string | null) => models.find(m => m.id === ref || m.slug === ref);
+  // Models resolve by ai_models.id ONLY (one id-space); legacy slug refs are
+  // gone from the seeds, and an unresolved ref renders "Unavailable".
+  const resolveModel = (ref?: string | null) => models.find(m => m.id === ref);
+
+  // Evidence labels for the assessment open in the detail sheet.
+  const selectedEvidenceIds = selected?.evidence_ids ?? [];
+  const evidenceQuery = useQuery({
+    queryKey: ['conformity-evidence-labels', selectedEvidenceIds],
+    queryFn: () => fetchEvidenceLabels(selectedEvidenceIds),
+    enabled: selectedEvidenceIds.length > 0,
+    staleTime: 60_000,
+  });
 
   const total = assessments.length;
   const completed = assessments.filter(a => (a.status || '').toLowerCase() === 'completed').length;
@@ -153,21 +191,18 @@ export default function ConformityAssessment() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <ClipboardText size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Conformity Assessment</h1>
-          </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-            ISO 42001 Clause 9 and EU AI Act Annex IV assessment management
-          </p>
-        </div>
-        <Button onClick={() => { setForm(EMPTY_FORM); setCreateOpen(true); }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-          <Plus size={14} /> New Assessment
-        </Button>
-      </div>
+      {/* Header — platform primitive */}
+      <PageHeader
+        title="Conformity Assessment"
+        subtitle="ISO 42001 Clause 9 and EU AI Act Annex IV assessment management"
+        icon={ClipboardText}
+        breadcrumbs={[{ label: 'Home', href: '/' }, { label: 'Conformity Assessment' }]}
+        actions={
+          <Button onClick={() => { setForm(EMPTY_FORM); setCreateOpen(true); }} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+            <Plus size={14} /> New Assessment
+          </Button>
+        }
+      />
 
       {error && (
         <div className="p-3 text-sm" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', color: 'hsl(var(--s-er-tx))' }}>
@@ -383,13 +418,29 @@ export default function ConformityAssessment() {
                         <FileText size={11} /> Evidence Vault
                       </Link>
                     </div>
+                  ) : evidenceQuery.isLoading ? (
+                    <p className="text-xs py-3 px-3" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }}>
+                      Resolving evidence…
+                    </p>
+                  ) : evidenceQuery.error ? (
+                    <p className="text-xs py-3 px-3" role="alert" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }}>
+                      Failed to resolve evidence: {(evidenceQuery.error as Error).message}
+                    </p>
                   ) : (
                     <div className="flex flex-wrap gap-1.5">
-                      {(selected.evidence_ids || []).map(id => (
-                        <Link key={id} to={`/evidence-vault?open=${id}`} className="font-mono text-[11px] px-2 py-0.5 hover:underline" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>
-                          {id}
-                        </Link>
-                      ))}
+                      {(selected.evidence_ids || []).map(id => {
+                        // Resolved title or "Unavailable" — never a raw id.
+                        const label = evidenceQuery.data?.get(id);
+                        return label ? (
+                          <Link key={id} to={`/evidence-vault?open=${id}`} className="text-[11px] px-2 py-0.5 hover:underline" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>
+                            {label}
+                          </Link>
+                        ) : (
+                          <span key={id} title="Evidence reference could not be resolved" className="text-[11px] px-2 py-0.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }}>
+                            Unavailable
+                          </span>
+                        );
+                      })}
                     </div>
                   )}
                 </div>

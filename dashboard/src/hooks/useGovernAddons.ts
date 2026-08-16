@@ -78,13 +78,116 @@ export function useVendorOptions() {
     queryFn: async () => {
       const { supabase, isSupabaseConfigured } = await import('@/lib/supabase')
       if (!isSupabaseConfigured() || !supabase) return [] as { id: string; name: string }[]
+      // vendors has no is_deleted column — soft deletes live in deleted_at.
+      // Display name prefers vendor_name but the seeds populate `name`, so
+      // fall back (both can exist; vendor_name may be an empty string).
       const { data, error } = await supabase
-        .from('vendors').select('id, vendor_name').eq('is_deleted', false).order('vendor_name')
+        .from('vendors').select('id, name, vendor_name').is('deleted_at', null).order('name')
       if (error) throw new Error(error.message)
-      return (data ?? []).map((v: any) => ({ id: v.id as string, name: v.vendor_name as string }))
+      return (data ?? []).map((v: any) => ({
+        id: v.id as string,
+        name: ((v.vendor_name as string | null)?.trim() || (v.name as string | null)) ?? 'Unavailable',
+      }))
     },
   })
-  return { vendors: q.data ?? [], loading: q.isLoading }
+  return {
+    vendors: q.data ?? [],
+    loading: q.isLoading,
+    // Surface the load failure so pickers can render an inline error instead
+    // of a silent empty list.
+    error: (q.error as Error | null) ?? null,
+  }
+}
+
+/**
+ * Published policies for outward-facing surfaces (Trust Center "Policies"
+ * section): the published-policy visibility leg of the policy lifecycle.
+ * Live query — never a typed-in list.
+ */
+export interface PublishedPolicyOption {
+  id: string
+  title: string
+  category: string | null
+  version: string | null
+  effectiveDate: string | null
+}
+export function usePublishedPolicies() {
+  const q = useQuery({
+    queryKey: ['published-policy-options'],
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { supabase, isSupabaseConfigured } = await import('@/lib/supabase')
+      if (!isSupabaseConfigured() || !supabase) return [] as PublishedPolicyOption[]
+      const { data, error } = await supabase
+        .from('policies')
+        .select('id, title, category, version, effective_date')
+        .eq('status', 'published')
+        .is('deleted_at', null)
+        .order('title')
+      if (error) throw new Error(error.message)
+      return (data ?? []).map((p: any): PublishedPolicyOption => ({
+        id: p.id as string,
+        title: (p.title as string) ?? '',
+        category: p.category ?? null,
+        version: p.version ?? null,
+        effectiveDate: p.effective_date ?? null,
+      }))
+    },
+  })
+  return { policies: q.data ?? [], loading: q.isLoading, error: (q.error as Error | null) ?? null }
+}
+
+/**
+ * Bindable targets for Trust Center resources: real documents and PUBLISHED
+ * transparency reports, so a public resource resolves to a governed record
+ * instead of a freehand string.
+ */
+export interface TrustResourceTarget { id: string; title: string; uri: string | null }
+export function useTrustResourceTargets() {
+  const docs = useQuery({
+    queryKey: ['trust-resource-documents'],
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { supabase, isSupabaseConfigured } = await import('@/lib/supabase')
+      if (!isSupabaseConfigured() || !supabase) return [] as TrustResourceTarget[]
+      const { data, error } = await supabase
+        .from('documents')
+        .select('id, title, uri, external_link')
+        .is('deleted_at', null)
+        .order('title')
+      if (error) throw new Error(error.message)
+      return (data ?? []).map((d: any): TrustResourceTarget => ({
+        id: d.id as string,
+        title: (d.title as string | null) || 'Untitled document',
+        uri: d.external_link ?? d.uri ?? null,
+      }))
+    },
+  })
+  const reports = useQuery({
+    queryKey: ['trust-resource-transparency-reports'],
+    staleTime: 60_000,
+    queryFn: async () => {
+      const { supabase, isSupabaseConfigured } = await import('@/lib/supabase')
+      if (!isSupabaseConfigured() || !supabase) return [] as TrustResourceTarget[]
+      const { data, error } = await supabase
+        .from('transparency_reports')
+        .select('id, title, url, status')
+        .eq('status', 'PUBLISHED')
+        .order('title')
+      if (error) throw new Error(error.message)
+      return (data ?? []).map((r: any): TrustResourceTarget => ({
+        id: r.id as string,
+        title: (r.title as string) ?? '',
+        uri: r.url ?? null,
+      }))
+    },
+  })
+  return {
+    documents: docs.data ?? [],
+    transparencyReports: reports.data ?? [],
+    loading: docs.isLoading || reports.isLoading,
+    error: ((docs.error ?? reports.error) as Error | null) ?? null,
+  }
 }
 
 export function useTrustCenter() {

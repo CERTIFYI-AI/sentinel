@@ -122,7 +122,7 @@ export function hasPermission(
 
 /**
  * Canonical role identifiers, mirroring the `org_role_enum` in Postgres
- * migration `20260421_ws04_rbac_depth.sql`.
+ * migration `20260421000018_ws04_rbac_depth.sql`.
  */
 export const CANONICAL_ROLES = [
   "org_admin",

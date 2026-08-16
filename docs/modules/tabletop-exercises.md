@@ -24,3 +24,6 @@ Plan → Invite participants → Launch → Capture injects, decisions, timings 
 
 ## Evidence Chain
 Completed exercise package is hashed into `evidence_chain` to prove exercise cadence (ISO 22301 clause 8.5 and DORA annual exercise mandate).
+
+## Data backing (wired 2026-08)
+- `public.tabletop_exercises` (org-scoped RLS `tte_org`) — the real table, now consumed by the page (`useTabletops`): CHECK-constrained type/status, findings + action items jsonb, `readiness_score`, `linked_playbook_id` → incident_playbooks.

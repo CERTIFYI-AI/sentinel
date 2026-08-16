@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
-import { useState, useCallback } from 'react';
+import { useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
-  Bug, Eye, PencilSimple, Trash, MagnifyingGlass, Plus,
-  ShieldWarning, Fire, CheckCircle, Warning, Upload, Clock,
-  Target, Shield, Wrench, ArrowRight,
+  Bug, Eye, Trash, CheckCircle, Warning, Clock,
+  Target, Wrench, X,
 } from '@phosphor-icons/react';
-import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
+import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../../components/ui/select';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { VULNERABILITIES, Vulnerability, severityColor, statusColor, formatDate } from '../../data/seed';
+import { InterlinkChip } from '../../components/ui/InterlinkChip';
+import { severityColor, statusColor, formatDate } from '../../data/seed';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { useAttackSurfaceData } from '../../hooks/useAttackSurfaceData';
+import { useVulns } from '../../hooks/useSecurityGroup';
+import type { VulnRecord } from '../../services/securityGroupService';
+import { useModelsData } from '../../hooks/useModelsData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { StatCardRow } from '../../components/ui/StatCardRow';
@@ -26,39 +25,13 @@ import { FilterBar } from '../../components/ui/FilterBar';
 import type { StatCardRowItem } from '../../components/ui/StatCardRow';
 
 
-// ── Types ─────────────────────────────────────────────────────────────────────
+// ── CVSS Badge (cvssScore is a string in the DB — parse before formatting) ─────
 
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
-
-// ── Metric Tile ───────────────────────────────────────────────────────────────
-
-function MetricTile({ label, value, variant, icon, sub }: {
-  label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info'; icon: React.ReactNode; sub?: string;
-}) {
-  const vs = {
-    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-  };
-  const s = vs[variant];
-  return (
-    <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
-          <div className="p-1.5" style={{ background: s.bg, borderRadius: 0 }}>{icon}</div>
-        </div>
-        <div className="text-2xl font-bold" style={{ color: s.color }}>{value}</div>
-        {sub && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>{sub}</p>}
-      </CardContent>
-    </Card>
-  );
-}
-
-// ── CVSS Badge ────────────────────────────────────────────────────────────────
-
-function cvssBadge(cvss: number) {
+function cvssBadge(raw?: string) {
+  const cvss = parseFloat(raw ?? '');
+  if (Number.isNaN(cvss)) {
+    return <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>;
+  }
   let bg: string, color: string, fontWeight = 400;
   if (cvss >= 9.0) { bg = 'hsl(var(--s-er-bg))'; color = 'hsl(var(--destructive))'; fontWeight = 700; }
   else if (cvss >= 7.0) { bg = 'hsl(var(--s-er-bg))'; color = 'hsl(var(--destructive))'; }
@@ -75,118 +48,100 @@ function cvssBadge(cvss: number) {
 
 export default function VulnTracker() {
   const { orgName } = useSettingsStore();
-  const { items: attackSurfaceItems, isLoading: asLoading, saveAttackSurface, removeAttackSurface } = useAttackSurfaceData();
-  // Use attack_surface_assets from Supabase (confirmed has data), fallback to seed VULNERABILITIES
-  const [vulns, setVulns] = useState<Vulnerability[]>(
-    attackSurfaceItems.length > 0 ? attackSurfaceItems as any : [...VULNERABILITIES]
-  );
+  const { items: vulns, isLoading, error, save, remove, isSaving } = useVulns();
+  const { models } = useModelsData();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const modelParam = searchParams.get('model');
+
   const [search, setSearch] = useState('');
   const [filterSeverity, setFilterSeverity] = useState<string>('all');
   const [filterStatus, setFilterStatus] = useState<string>('all');
-  const [selectedVuln, setSelectedVuln] = useState<Vulnerability | null>(null);
+  const [selectedVuln, setSelectedVuln] = useState<VulnRecord | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [patchTarget, setPatchTarget] = useState<Vulnerability | null>(null);
+  const [patchTarget, setPatchTarget] = useState<VulnRecord | null>(null);
   const [patchEvidence, setPatchEvidence] = useState('');
-  const [deleteTarget, setDeleteTarget] = useState<Vulnerability | null>(null);
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [deleteTarget, setDeleteTarget] = useState<VulnRecord | null>(null);
 
-  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, text, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-  }, []);
+  const modelName = (id: string) => models.find(m => m.id === id)?.name ?? 'Unavailable';
 
-  // All hooks called above — safe to do early return now
-  if (asLoading) return <PageSkeleton />;
+  if (isLoading) return <PageSkeleton title="Vulnerability Tracker" showStats rows={6} />;
 
   const filtered = vulns.filter(v => {
-    if (search && !v.title.toLowerCase().includes(search.toLowerCase()) && !v.cve.toLowerCase().includes(search.toLowerCase()) && !v.id.toLowerCase().includes(search.toLowerCase())) return false;
+    if (modelParam && v.affectedModelId !== modelParam) return false;
+    const q = search.toLowerCase();
+    if (q && !(v.title ?? '').toLowerCase().includes(q) && !(v.cveRef ?? '').toLowerCase().includes(q) && !(v.vulnId ?? '').toLowerCase().includes(q)) return false;
     if (filterSeverity !== 'all' && v.severity !== filterSeverity) return false;
     if (filterStatus !== 'all' && v.status !== filterStatus) return false;
     return true;
   });
 
-  const criticalCount = vulns.filter(v => v.cvss >= 9.0).length;
+  // KPIs and the severity filter share one basis: the `severity` field.
+  // Canonical statuses (matches seeds/migration): open | in_remediation |
+  // resolved | false_positive — a patched vulnerability is `resolved`.
+  const criticalCount = vulns.filter(v => v.severity === 'critical').length;
   const highCount = vulns.filter(v => v.severity === 'high').length;
-  const patchedCount = vulns.filter(v => v.status === 'patched').length;
+  const patchedCount = vulns.filter(v => v.status === 'resolved').length;
 
   const handlePatch = async () => {
     if (!patchTarget) return;
-    const now = new Date().toISOString().split('T')[0];
-    setVulns(prev => prev.map(v =>
-      v.id === patchTarget.id ? { ...v, status: 'patched', patchDate: now } : v
-    ));
-    await saveAttackSurface({ ...patchTarget, status: 'patched', patchDate: now }).catch(() => {});
-    toast(`${patchTarget.id} (${patchTarget.cve}) marked as patched. Evidence: "${patchEvidence.slice(0, 40)}..."`, 'success');
-    setPatchTarget(null);
-    setPatchEvidence('');
+    try {
+      await save({
+        ...patchTarget,
+        status: 'resolved',
+        patchDate: new Date().toISOString().slice(0, 10),
+        patchEvidence: patchEvidence.trim() || undefined,
+      });
+      setPatchTarget(null);
+      setPatchEvidence('');
+    } catch { /* hook toasts error */ }
   };
 
   const handleDelete = async () => {
-    if (!deleteTarget) return;
-    setVulns(prev => prev.filter(v => v.id !== deleteTarget.id));
-    await removeAttackSurface(deleteTarget.id).catch(() => {});
-    toast(`${deleteTarget.id} removed from tracker`, 'info');
-    setDeleteTarget(null);
+    if (!deleteTarget?.id) return;
+    try {
+      await remove(deleteTarget.id);
+      if (selectedVuln?.id === deleteTarget.id) { setSheetOpen(false); setSelectedVuln(null); }
+      setDeleteTarget(null);
+    } catch { /* hook toasts error */ }
   };
 
-  const openDetail = (v: Vulnerability) => { setSelectedVuln(v); setSheetOpen(true); };
+  const openDetail = (v: VulnRecord) => { setSelectedVuln(v); setSheetOpen(true); };
 
   const vulnKpiCards: StatCardRowItem[] = [
-    {
-      label: 'Total CVEs',
-      value: String(vulns.length),
-      icon: <Bug size={18} weight="fill" style={{ color: 'hsl(var(--s-in-tx))' }} />,
-    },
-    {
-      label: 'Critical (CVSS 9+)',
-      value: String(criticalCount),
-      icon: <Fire size={18} weight="fill" style={{ color: 'hsl(var(--destructive))' }} />,
-      delta: 'Immediate patching required',
-      deltaDir: 'up' as const,
-      isPositiveUp: false,
-    },
-    {
-      label: 'High Severity',
-      value: String(highCount),
-      icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />,
-      delta: 'Patch within 7 days',
-      deltaDir: 'up' as const,
-      isPositiveUp: false,
-    },
-    {
-      label: 'Patched',
-      value: String(patchedCount),
-      icon: <CheckCircle size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />,
-      delta: 'Remediated',
-      deltaDir: 'up' as const,
-      isPositiveUp: true,
-    },
+    { label: 'Total CVEs', value: String(vulns.length), icon: <Bug size={18} weight="fill" style={{ color: 'hsl(var(--s-in-tx))' }} /> },
+    { label: 'Critical', value: String(criticalCount), icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--destructive))' }} /> },
+    { label: 'High Severity', value: String(highCount), icon: <Warning size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} /> },
+    { label: 'Patched', value: String(patchedCount), icon: <CheckCircle size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} /> },
   ];
 
   return (
     <div className="space-y-6">
-      {/* Toast */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-        {toasts.map(t => (
-          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
-          }}>{t.text}</div>
-        ))}
-      </div>
-
       {/* Page Header */}
       <PageHeader
         title="Vulnerability Tracker"
-        subtitle="CVE tracking and remediation pipeline"
+        subtitle={`${orgName} — CVE tracking and remediation pipeline`}
         breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Vulnerabilities' }]}
-        actions={
-          <Button variant="outline" style={{ borderRadius: 0 }}>
-            <Upload size={14} />Import Scan Results
-          </Button>
-        }
       />
+
+      {/* Real query error state */}
+      {error && (
+        <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load vulnerabilities</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{(error as Error).message}</p>
+        </div>
+      )}
+
+      {/* Model-scoped filter chip (deep-link from a model) */}
+      {modelParam && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+            <span>Filtered to <strong>{modelName(modelParam)}</strong></span>
+            <button aria-label="Clear model filter" onClick={() => setSearchParams({})} className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer">
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* CVE KPI Row */}
       <StatCardRow cards={vulnKpiCards} />
@@ -216,8 +171,9 @@ export default function VulnTracker() {
             onChange: v => setFilterStatus(v || 'all'),
             options: [
               { label: 'Open', value: 'open' },
-              { label: 'In Progress', value: 'in_progress' },
-              { label: 'Patched', value: 'patched' },
+              { label: 'In remediation', value: 'in_remediation' },
+              { label: 'Resolved', value: 'resolved' },
+              { label: 'False positive', value: 'false_positive' },
             ],
           },
         ]}
@@ -232,7 +188,7 @@ export default function VulnTracker() {
             <table className="w-full text-sm">
               <thead>
                 <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                  {['ID', 'CVE', 'CVSS', 'Severity', 'Affected Component', 'Status', 'Patch Date', 'Assigned To', 'Actions'].map(h => (
+                  {['ID', 'CVE', 'CVSS', 'Severity', 'Affected Component', 'Model', 'Status', 'Patch Date', 'Assigned To', 'Actions'].map(h => (
                     <th key={h} className="px-4 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                   ))}
                 </tr>
@@ -240,34 +196,36 @@ export default function VulnTracker() {
               <tbody>
                 {filtered.map(v => {
                   const sc = severityColor(v.severity);
-                  const stc = statusColor(v.status);
+                  const stc = statusColor(v.status || 'open');
                   return (
                     <tr key={v.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
-                      <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{v.id}</td>
-                      <td className="px-4 py-3 text-xs font-mono text-destructive">{v.cve}</td>
-                      <td className="px-4 py-3">{cvssBadge(v.cvss)}</td>
+                      <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{v.vulnId || '—'}</td>
+                      <td className="px-4 py-3 text-xs font-mono text-destructive">{v.cveRef || '—'}</td>
+                      <td className="px-4 py-3">{cvssBadge(v.cvssScore)}</td>
                       <td className="px-4 py-3">
                         <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>
-                          {v.severity.toUpperCase()}
+                          {(v.severity || 'medium').toUpperCase()}
                         </Badge>
                       </td>
-                      <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{v.component}</td>
+                      <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{v.affectedComponent || '—'}</td>
+                      <td className="px-4 py-3">
+                        {v.affectedModelId
+                          ? <InterlinkChip label={modelName(v.affectedModelId)} to={`/models/inventory/${v.affectedModelId}`} />
+                          : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
+                      </td>
                       <td className="px-4 py-3">
                         <Badge style={{ background: stc.bg, color: stc.text, border: `1px solid ${stc.border}`, borderRadius: 0, fontSize: 10 }}>
-                          {v.status.replace('_', ' ').charAt(0).toUpperCase() + v.status.replace('_', ' ').slice(1)}
+                          {(() => { const s = (v.status || 'open').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); })()}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{v.patchDate ? formatDate(v.patchDate) : '—'}</td>
-                      <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-1))' }}>{v.assignee}</td>
+                      <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-1))' }}>{v.assignee || '—'}</td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-1">
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(v)}>
                             <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
                           </Button>
-                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(v)}>
-                            <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
-                          </Button>
-                          {v.status !== 'patched' && (
+                          {v.status !== 'resolved' && v.status !== 'false_positive' && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setPatchTarget(v); setPatchEvidence(''); }}>
                               <Wrench size={14} className="text-[hsl(var(--s-ok-tx))]" />
                             </Button>
@@ -281,7 +239,11 @@ export default function VulnTracker() {
                   );
                 })}
                 {filtered.length === 0 && (
-                  <tr><td colSpan={9} className="px-4 py-8 text-center text-xs" style={{ color: 'hsl(var(--text-4))' }}>No vulnerabilities match.</td></tr>
+                  <tr><td colSpan={10} className="px-4 py-10 text-center text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                    {vulns.length === 0
+                      ? 'No vulnerabilities recorded yet.'
+                      : 'No vulnerabilities match the current filters.'}
+                  </td></tr>
                 )}
               </tbody>
             </table>
@@ -295,7 +257,7 @@ export default function VulnTracker() {
         onClose={() => { setPatchTarget(null); setPatchEvidence(''); }}
         onConfirm={handlePatch}
         type="info"
-        title={`Patch ${patchTarget?.cve}`}
+        title={`Patch ${patchTarget?.cveRef ?? 'Vulnerability'}`}
         message={
           <div className="space-y-3">
             <p>Mark <strong>{patchTarget?.title}</strong> as patched?</p>
@@ -309,7 +271,7 @@ export default function VulnTracker() {
             />
           </div>
         }
-        confirmLabel="Mark Patched"
+        confirmLabel={isSaving ? 'Saving…' : 'Mark Patched'}
       />
 
       {/* Delete ConfirmDialog */}
@@ -319,7 +281,7 @@ export default function VulnTracker() {
         onConfirm={handleDelete}
         type="danger"
         title="Delete Vulnerability"
-        message={<p>Delete <strong>{deleteTarget?.id} ({deleteTarget?.cve})</strong> from the tracker? This creates an audit entry.</p>}
+        message={<p>Delete <strong>{deleteTarget?.vulnId} ({deleteTarget?.cveRef})</strong> from the tracker? This creates an audit entry.</p>}
         confirmLabel="Delete"
       />
 
@@ -331,7 +293,7 @@ export default function VulnTracker() {
               <SheetHeader>
                 <SheetTitle className="flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
                   <Bug size={18} weight="fill" style={{ color: severityColor(selectedVuln.severity).text }} />
-                  {selectedVuln.id} — {selectedVuln.cve}
+                  {selectedVuln.vulnId || 'Vulnerability'} — {selectedVuln.cveRef || selectedVuln.title}
                 </SheetTitle>
               </SheetHeader>
               <Tabs defaultValue="overview" className="mt-4">
@@ -350,36 +312,36 @@ export default function VulnTracker() {
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>CVSS Score</span>
-                      <div className="mt-1">{cvssBadge(selectedVuln.cvss)}</div>
+                      <div className="mt-1">{cvssBadge(selectedVuln.cvssScore)}</div>
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Severity</span>
                       <div className="mt-1">
                         <Badge style={{ background: severityColor(selectedVuln.severity).bg, color: severityColor(selectedVuln.severity).text, borderRadius: 0, fontSize: 11 }}>
-                          {selectedVuln.severity.toUpperCase()}
+                          {(selectedVuln.severity || 'medium').toUpperCase()}
                         </Badge>
                       </div>
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Status</span>
                       <div className="mt-1">
-                        <Badge style={{ background: statusColor(selectedVuln.status).bg, color: statusColor(selectedVuln.status).text, borderRadius: 0, fontSize: 11 }}>
-                          {selectedVuln.status.replace('_', ' ')}
+                        <Badge style={{ background: statusColor(selectedVuln.status || 'open').bg, color: statusColor(selectedVuln.status || 'open').text, borderRadius: 0, fontSize: 11 }}>
+                          {(() => { const s = (selectedVuln.status || 'open').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); })()}
                         </Badge>
                       </div>
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Discovered</span>
-                      <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(selectedVuln.discovered)}</p>
+                      <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedVuln.discoveredAt ? formatDate(selectedVuln.discoveredAt) : '—'}</p>
                     </div>
                   </div>
                   <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                     <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Description</span>
-                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedVuln.description}</p>
+                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedVuln.description || '—'}</p>
                   </div>
                   <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                     <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Assigned To</span>
-                    <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedVuln.assignee}</p>
+                    <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedVuln.assignee || '—'}</p>
                   </div>
                 </TabsContent>
 
@@ -387,29 +349,22 @@ export default function VulnTracker() {
                   <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                     <div className="flex items-center gap-2">
                       <Target size={14} style={{ color: 'hsl(var(--brand))' }} />
-                      <span className="text-sm font-mono" style={{ color: 'hsl(var(--text-1))' }}>{selectedVuln.component}</span>
+                      <span className="text-sm font-mono" style={{ color: 'hsl(var(--text-1))' }}>{selectedVuln.affectedComponent || '—'}</span>
                     </div>
                     <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>Primary</Badge>
                   </div>
-                  <p className="text-xs px-3" style={{ color: 'hsl(var(--text-4))' }}>Additional asset mapping requires integration with CMDB.</p>
+                  {selectedVuln.affectedModelId && (
+                    <div className="flex items-center justify-between p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Affected Model</span>
+                      <InterlinkChip label={modelName(selectedVuln.affectedModelId)} to={`/models/inventory/${selectedVuln.affectedModelId}`} />
+                    </div>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="remediation" className="space-y-3 mt-4">
                   <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                     <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Recommended Action</span>
-                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>
-                      {selectedVuln.cvss >= 9.0
-                        ? 'CRITICAL — Patch immediately. Isolate affected component until patched.'
-                        : selectedVuln.cvss >= 7.0
-                        ? 'HIGH — Schedule patch within 7 days. Apply temporary mitigations.'
-                        : 'MODERATE — Schedule patch within 30 days. Monitor for exploitation.'}
-                    </p>
-                  </div>
-                  <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
-                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>SLA Deadline</span>
-                    <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>
-                      {selectedVuln.cvss >= 9.0 ? '24 hours' : selectedVuln.cvss >= 7.0 ? '7 days' : '30 days'}
-                    </p>
+                    <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedVuln.remediation || 'No remediation guidance recorded.'}</p>
                   </div>
                 </TabsContent>
 
@@ -419,7 +374,10 @@ export default function VulnTracker() {
                       <CheckCircle size={14} weight="fill" className="text-[hsl(var(--s-ok-tx))] mt-0.5" />
                       <div>
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Patched on {formatDate(selectedVuln.patchDate)}</p>
-                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>By {selectedVuln.assignee}</p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>By {selectedVuln.assignee || '—'}</p>
+                        {selectedVuln.patchEvidence && (
+                          <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>Evidence: {selectedVuln.patchEvidence}</p>
+                        )}
                       </div>
                     </div>
                   ) : (
@@ -427,7 +385,7 @@ export default function VulnTracker() {
                       <Warning size={14} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} className="mt-0.5" />
                       <div>
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--s-wn-tx))' }}>Not yet patched</p>
-                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Assigned to {selectedVuln.assignee} — awaiting fix deployment.</p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Assigned to {selectedVuln.assignee || '—'} — awaiting fix deployment.</p>
                       </div>
                     </div>
                   )}
@@ -435,7 +393,7 @@ export default function VulnTracker() {
                     <Clock size={14} style={{ color: 'hsl(var(--text-4))' }} className="mt-0.5" />
                     <div>
                       <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Vulnerability discovered</p>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(selectedVuln.discovered)}</p>
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{selectedVuln.discoveredAt ? formatDate(selectedVuln.discoveredAt) : '—'}</p>
                     </div>
                   </div>
                 </TabsContent>

@@ -3,6 +3,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const queryClient = new QueryClient()
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams, useLocation } from 'react-router-dom';
 import { TenantProvider } from './context/TenantContext';
+import { useTenant } from './hooks/useTenant';
+import { isSupabaseConfigured } from './lib/supabase';
 import React from 'react';
 import { lazy, Suspense, useEffect } from 'react';
 import { PageSkeleton } from './components/ui/PageSkeleton';
@@ -258,6 +260,10 @@ function PublicRoute() {
 function ProtectedLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const tenantId = useAuthStore((s) => s.user?.tenantId ?? 'default');
+  // Tenancy gate: pages must never render (and call useRequiredOrgId) while
+  // the tenant context is still resolving — a hard reload or TOKEN_REFRESHED
+  // used to throw inside pages and strand the ErrorBoundary.
+  const { status: tenantStatus, error: tenantError } = useTenant();
 
   // Deferred to avoid blocking initial render
   useRealtimeEvents({
@@ -271,6 +277,13 @@ function ProtectedLayout() {
     return <Navigate to="/login" replace />;
   }
 
+  // A real Supabase deployment with no resolvable session means the login has
+  // expired — send the user back to sign in. Without Supabase (demo mode) the
+  // tenant context is always 'unauthenticated'; pages handle the null orgId.
+  if (tenantStatus === 'unauthenticated' && isSupabaseConfigured()) {
+    return <Navigate to="/login" replace />;
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-[hsl(var(--bg-page))]">
       <SkipLink />
@@ -281,9 +294,24 @@ function ProtectedLayout() {
           {/* Main landmark — WCAG 2.4.1 Bypass Blocks / 1.3.1 Info & Relationships */}
           <main id="main-content" role="main" tabIndex={-1} className="flex-1 overflow-auto bg-sentinel-background p-4 lg:p-5 focus:outline-none">
             <ErrorBoundary>
-              <Suspense fallback={<PageSkeleton />}>
-                <Outlet />
-              </Suspense>
+              {tenantStatus === 'loading' && isSupabaseConfigured() ? (
+                <PageSkeleton />
+              ) : tenantStatus === 'error' ? (
+                <div role="alert" className="p-4" style={{
+                  background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', borderRadius: 0,
+                }}>
+                  <p className="text-sm font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>
+                    Could not resolve your organization
+                  </p>
+                  <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+                    {tenantError?.message ?? 'Tenant resolution failed.'} Reload the page or sign in again.
+                  </p>
+                </div>
+              ) : (
+                <Suspense fallback={<PageSkeleton />}>
+                  <Outlet />
+                </Suspense>
+              )}
             </ErrorBoundary>
           </main>
           <RightSidebar />
@@ -351,7 +379,7 @@ export default function App() {
           <Route path="/compliance/gap-analysis" element={<GapAnalysis />} />
           <Route path="/compliance/policies" element={<Navigate to="/policies" replace />} />
           <Route path="/policies" element={<Policies />} />
-          <Route path="/risk" element={<Navigate to="/risks" replace />} />
+          <Route path="/risk" element={<RedirectWithQuery to="/risks" />} />
           <Route path="/risk/matrix" element={<RiskMatrix />} />
           <Route path="/risk/vendors" element={<Navigate to="/vendors" replace />} />
           <Route path="/risk/incidents" element={<IncidentLog />} />
@@ -426,7 +454,7 @@ export default function App() {
           <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
           <Route path="/ciso" element={<Suspense fallback={<Loading />}><CisoDashboard /></Suspense>} />
           <Route path="/ciso/report" element={<Suspense fallback={<Loading />}><BoardReport /></Suspense>} />
-          <Route path="/risk/register" element={<Navigate to="/risks" replace />} />
+          <Route path="/risk/register" element={<RedirectWithQuery to="/risks" />} />
           <Route path="/risk/:id" element={<RecordDeepLink to="/risks" />} />
           <Route path="/models/:id" element={<ParamRedirect to="/models/inventory" />} />
           <Route path="/policies/:id" element={<PolicyDetail />} />

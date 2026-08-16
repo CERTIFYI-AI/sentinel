@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Eye, MagnifyingGlass, Funnel, Export, Plus, Warning,
   ShieldCheck, Clock, User, GridFour,
-  X, Scales, Target,
+  X, Scales, Target, PencilSimple, Trash, Flag, Wrench, HandCoins, UsersThree,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '../../components/ui/card';
@@ -24,29 +24,51 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { InterlinkChip } from '../../components/ui/InterlinkChip';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { Checkbox } from '../../components/ui/checkbox';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useRisksData, type RiskRecord } from '../../hooks/useRisksData';
+import { useModelsData } from '../../hooks/useModelsData';
+import { useIncidents, useRemediations, useFinancialRisks, useHitlReviews } from '../../hooks/useRiskIncidents';
 import { fetchAllControls } from '../../services/controlService';
+import { scoreBand } from '../../services/riskService';
+import { exportCsv } from '@/lib/exportUtils';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface RiskItem {
   id: string;
+  riskId: string | null;       // business code (e.g. RSK-001); id stays the uuid key
   title: string;
   description: string;
   category: string;
   likelihood: number;
   impact: number;
   score: number;
+  residualLikelihood: number | null;
+  residualImpact: number | null;
   owner: string;
   treatmentStatus: string;
+  statusRaw: string;
   overdue: boolean;
   frameworkMapping: string[];
   treatmentPlan: string;
+  treatment: string | null;
   controlIds: string[];
+  modelIds: string[];
+  incidentIds: string[];
   createdDate: string;
   lastUpdated: string;
   deadline: string | null;
+  nextReviewDate: string | null;
+  reviewFrequency: string | null;
+  reviewOverdue: boolean;
+  isEscalated: boolean;
+  escalationReason: string | null;
+  kriMetric: string | null;
+  kriThreshold: number | null;
+  kriCurrentValue: number | null;
 }
 
 const DEFAULT_CATEGORIES = ['AI Model', 'Data', 'Operational', 'Compliance', 'Security', 'Third-Party'];
@@ -57,33 +79,50 @@ function toItem(r: RiskRecord): RiskItem {
   const status = r.status || 'Open';
   const settled = /mitigated|closed|resolved|accepted/i.test(status);
   const overdue = !!r.deadline && !settled && new Date(r.deadline).getTime() < Date.now();
+  const reviewOverdue = !!r.next_review_date && !settled
+    && new Date(r.next_review_date).getTime() < Date.now();
   return {
     id: r.id,
+    riskId: r.risk_id ?? null,
     title: r.title,
     description: r.description ?? '',
     category: r.category || 'Uncategorized',
     likelihood: r.likelihood,
     impact: r.impact,
     score: r.risk_score,
+    residualLikelihood: r.residual_likelihood ?? null,
+    residualImpact: r.residual_impact ?? null,
     owner: r.owner || '',
     treatmentStatus: status.replace(/^[a-z]/, c => c.toUpperCase()),
+    statusRaw: status.toLowerCase(),
     overdue,
     frameworkMapping: r.frameworks ?? [],
     treatmentPlan: r.mitigation ?? '',
+    treatment: r.treatment ?? null,
     controlIds: r.linked_control_ids ?? [],
+    modelIds: r.linked_model_ids ?? [],
+    incidentIds: r.linked_incident_ids ?? [],
     createdDate: (r.created_at ?? '').slice(0, 10),
     lastUpdated: (r.updated_at ?? '').slice(0, 10),
     deadline: r.deadline ? r.deadline.slice(0, 10) : null,
+    nextReviewDate: r.next_review_date ? r.next_review_date.slice(0, 10) : null,
+    reviewFrequency: r.review_frequency ?? null,
+    reviewOverdue,
+    isEscalated: r.is_escalated ?? false,
+    escalationReason: r.escalation_reason ?? null,
+    kriMetric: r.kri_metric ?? null,
+    kriThreshold: r.kri_threshold ?? null,
+    kriCurrentValue: r.kri_current_value ?? null,
   };
 }
 
 // ── Score Color Helper ───────────────────────────────────────────────────────
+// Delegates to the platform's single source of truth for score banding
+// (riskService.scoreBand) — never duplicate the thresholds here.
 
 function scoreColor(score: number): { bg: string; text: string; label: string } {
-  if (score >= 20) return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))', label: 'Critical' };
-  if (score >= 12) return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', label: 'High' };
-  if (score >= 6) return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', label: 'Medium' };
-  return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', label: 'Low' };
+  const b = scoreBand(score);
+  return { bg: b.bg, text: b.text, label: b.label };
 }
 
 function treatmentColor(status: string): { bg: string; text: string } {
@@ -106,10 +145,22 @@ function categoryColor(cat: string): { bg: string; text: string } {
   return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
 }
 
+function formatMoney(n: number | null | undefined, currency: string): string {
+  if (n == null) return '—';
+  try {
+    return new Intl.NumberFormat('en', {
+      style: 'currency', currency, notation: 'compact', maximumFractionDigits: 1,
+    }).format(n);
+  } catch {
+    return `${currency} ${n.toLocaleString()}`;
+  }
+}
+
 // ── MetricTile ───────────────────────────────────────────────────────────────
 
-function MetricTile({ label, value, variant }: {
+function MetricTile({ label, value, variant, onClick, active }: {
   label: string; value: string | number; variant: 'default' | 'error' | 'warn' | 'ok';
+  onClick?: () => void; active?: boolean;
 }) {
   const colors = {
     default: { bg: 'hsl(var(--bg-surface))', text: 'hsl(var(--text-1))', border: 'hsl(var(--border))' },
@@ -118,20 +169,39 @@ function MetricTile({ label, value, variant }: {
     ok: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-bg))' },
   };
   const c = colors[variant];
-  return (
-    <Card style={{ borderRadius: 0, background: c.bg, border: `1px solid ${c.border}` }}>
+  const card = (
+    <Card style={{
+      borderRadius: 0,
+      background: c.bg,
+      border: active ? '1px solid hsl(var(--brand))' : `1px solid ${c.border}`,
+      outline: active ? '1px solid hsl(var(--brand))' : undefined,
+    }}>
       <CardContent className="px-4 py-3">
         <p className="text-xs font-medium mb-1" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
         <p className="text-2xl font-bold" style={{ color: c.text }}>{value}</p>
       </CardContent>
     </Card>
   );
+  if (!onClick) return card;
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={!!active}
+      className="text-left w-full cursor-pointer focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--brand))]"
+      style={{ borderRadius: 0 }}
+    >
+      {card}
+    </button>
+  );
 }
 
 // ── 5x5 Heat Map ─────────────────────────────────────────────────────────────
 
 function riskShortLabel(r: RiskItem): string {
-  // Legacy ids read like 'risk-001'; uuid ids are truncated for the cell chip.
+  // Prefer the business code (RSK-001). Legacy ids read like 'risk-001';
+  // uuid ids are truncated for the cell chip — never shown in full.
+  if (r.riskId) return r.riskId;
   return r.id.length > 10 ? r.id.slice(0, 6) : r.id;
 }
 
@@ -240,10 +310,10 @@ function HeatMap({ risks, onCellClick }: { risks: RiskItem[]; onCellClick: (r: R
         <div className="flex items-center gap-4 mt-4 pt-3" style={{ borderTop: '1px solid hsl(var(--border))' }}>
           <span className="text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>Legend:</span>
           {[
-            { label: 'Critical (>=20)', color: 'hsl(var(--destructive))' },
-            { label: 'High (12-19)', color: 'hsl(var(--s-wn-tx))' },
-            { label: 'Medium (6-11)', color: 'hsl(var(--s-wn-tx))' },
-            { label: 'Low (<6)', color: 'hsl(var(--s-ok-tx))' },
+            { label: 'Critical (>=20)', color: scoreBand(20).text },
+            { label: 'High (12-19)', color: scoreBand(12).text },
+            { label: 'Medium (6-11)', color: scoreBand(6).text },
+            { label: 'Low (<6)', color: scoreBand(1).text },
           ].map(l => (
             <div key={l.label} className="flex items-center gap-1">
               <div style={{ width: 10, height: 10, background: l.color, borderRadius: 0, opacity: 0.3 }} />
@@ -307,13 +377,20 @@ function MiniMatrix({ likelihood, impact }: { likelihood: number; impact: number
 
 export default function RiskRegisterNew() {
   const { orgName } = useSettingsStore();
-  const { risks: records, isLoading, error, saveRisk, isSaving } = useRisksData();
+  const { risks: records, isLoading, error, saveRisk, removeRisk, isSaving } = useRisksData();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string>('all');
+  const [escalatedOnly, setEscalatedOnly] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [detailTab, setDetailTab] = useState('overview');
+  const [deleteTarget, setDeleteTarget] = useState<RiskItem | null>(null);
+
+  // Interlinked records for the detail Sheet — all real, org-scoped queries.
+  const { items: remediations, isLoading: remLoading } = useRemediations();
+  const { items: financialRisks, isLoading: finLoading } = useFinancialRisks();
+  const { items: hitlReviews, isLoading: hitlLoading } = useHitlReviews();
 
   // Controls lookup for resolving linked_control_ids → names (never raw uuids)
   const { data: controls = [] } = useQuery({
@@ -329,22 +406,115 @@ export default function RiskRegisterNew() {
     return m;
   }, [controls]);
 
+  // Model + incident lookups — resolve ids to names at render (never raw uuids)
+  const { models } = useModelsData();
+  const modelName = (id: string) => models.find(m => m.id === id)?.name ?? 'Unavailable';
+  const { items: incidents } = useIncidents();
+  const incidentLabel = (id: string) => {
+    const inc = incidents.find(i => i.id === id);
+    if (!inc) return 'Unavailable';
+    return inc.incidentId ? `${inc.incidentId} — ${inc.title}` : inc.title;
+  };
+
+  // Deep link: /risks?model=<uuid> filters to risks linked to that model
+  const modelParam = searchParams.get('model');
+  const clearModelFilter = () => {
+    searchParams.delete('model');
+    setSearchParams(searchParams, { replace: true });
+  };
+
   const risks: RiskItem[] = useMemo(() => (records as RiskRecord[]).map(toItem), [records]);
   const selectedRisk = useMemo(
     () => risks.find(r => r.id === selectedId) ?? null,
     [risks, selectedId],
   );
 
-  // ── Add Risk dialog state ──────────────────────────────────────────────────
+  // Incidents linked from EITHER side of the seam: ids stored on the risk
+  // (risks.linked_incident_ids) merged with incidents whose linked_risk_ids
+  // contains this risk — so the interlink works regardless of which side
+  // wrote the link.
+  const mergedIncidentIds = useMemo(() => {
+    if (!selectedRisk) return [] as string[];
+    const setIds = new Set(selectedRisk.incidentIds);
+    for (const inc of incidents) {
+      if (inc.id && (inc.linkedRiskIds ?? []).includes(selectedRisk.id)) setIds.add(inc.id);
+    }
+    return Array.from(setIds);
+  }, [selectedRisk, incidents]);
+
+  // Interlinked records for the selected risk — filtered client-side from the
+  // real org-scoped tables (remediation_plans.risk_id, hitl_reviews.linked_risk_id,
+  // financial_risks.linked_risk_id).
+  const riskRemediations = useMemo(
+    () => (selectedRisk ? remediations.filter(p => p.riskId === selectedRisk.id) : []),
+    [remediations, selectedRisk],
+  );
+  const riskHitl = useMemo(
+    () => (selectedRisk ? hitlReviews.filter(h => h.linkedRiskId === selectedRisk.id) : []),
+    [hitlReviews, selectedRisk],
+  );
+  const riskFinancials = useMemo(
+    () => (selectedRisk ? financialRisks.filter(f => f.linkedRiskId === selectedRisk.id) : []),
+    [financialRisks, selectedRisk],
+  );
+
+  // ── Add / Edit Risk dialog state ───────────────────────────────────────────
+  const NONE = '__none__';
+  const STATUS_OPTIONS = ['open', 'assessed', 'in_progress', 'mitigated', 'accepted', 'closed'];
+  const TREATMENT_OPTIONS = ['accept', 'mitigate', 'transfer', 'avoid'];
+  const REVIEW_FREQUENCIES = ['monthly', 'quarterly', 'semiannual', 'annual'];
+  const EMPTY_FORM = {
+    title: '', category: 'AI Model', likelihood: 3, impact: 3,
+    description: '', owner: '', treatmentPlan: '', framework: '',
+    status: 'open', treatment: NONE,
+    residualLikelihood: NONE, residualImpact: NONE,
+    deadline: '', nextReviewDate: '', reviewFrequency: NONE,
+    isEscalated: false, escalationReason: '',
+    kriMetric: '', kriThreshold: '', kriCurrentValue: '',
+  };
   const [addOpen, setAddOpen] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
-  const [newCategory, setNewCategory] = useState('AI Model');
-  const [newLikelihood, setNewLikelihood] = useState(3);
-  const [newImpact, setNewImpact] = useState(3);
-  const [newDescription, setNewDescription] = useState('');
-  const [newOwner, setNewOwner] = useState('');
-  const [newTreatment, setNewTreatment] = useState('');
-  const [newFramework, setNewFramework] = useState('');
+  const [editId, setEditId] = useState<string | null>(null);
+  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const set = <K extends keyof typeof EMPTY_FORM>(k: K, v: (typeof EMPTY_FORM)[K]) =>
+    setForm(f => ({ ...f, [k]: v }));
+
+  const openCreate = () => {
+    setEditId(null);
+    setForm({ ...EMPTY_FORM });
+    setAddOpen(true);
+  };
+
+  const openEditDialog = (r: RiskItem) => {
+    setEditId(r.id);
+    setForm({
+      title: r.title,
+      category: r.category || 'AI Model',
+      likelihood: r.likelihood,
+      impact: r.impact,
+      description: r.description,
+      owner: r.owner,
+      treatmentPlan: r.treatmentPlan,
+      framework: r.frameworkMapping.join(', '),
+      status: r.statusRaw || 'open',
+      treatment: r.treatment ?? NONE,
+      residualLikelihood: r.residualLikelihood != null ? String(r.residualLikelihood) : NONE,
+      residualImpact: r.residualImpact != null ? String(r.residualImpact) : NONE,
+      deadline: r.deadline ?? '',
+      nextReviewDate: r.nextReviewDate ?? '',
+      reviewFrequency: r.reviewFrequency ?? NONE,
+      isEscalated: r.isEscalated,
+      escalationReason: r.escalationReason ?? '',
+      kriMetric: r.kriMetric ?? '',
+      kriThreshold: r.kriThreshold != null ? String(r.kriThreshold) : '',
+      kriCurrentValue: r.kriCurrentValue != null ? String(r.kriCurrentValue) : '',
+    });
+    setAddOpen(true);
+  };
+
+  // Keep an unknown legacy status (e.g. "mitigating") selectable when editing.
+  const statusOptions = STATUS_OPTIONS.includes(form.status)
+    ? STATUS_OPTIONS
+    : [form.status, ...STATUS_OPTIONS];
 
   // ── Deep link: /risks?open=<id> opens that record ──────────────────────────
   const openParam = searchParams.get('open');
@@ -376,17 +546,24 @@ export default function RiskRegisterNew() {
 
   const filtered = useMemo(() => {
     return risks.filter(r => {
-      if (search && !r.title.toLowerCase().includes(search.toLowerCase()) && !r.id.toLowerCase().includes(search.toLowerCase())) return false;
+      if (modelParam && !r.modelIds.includes(modelParam)) return false;
+      if (search && !r.title.toLowerCase().includes(search.toLowerCase()) && !r.id.toLowerCase().includes(search.toLowerCase()) && !(r.riskId ?? '').toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && r.category !== filterCategory) return false;
+      if (escalatedOnly && !r.isEscalated) return false;
       return true;
     });
-  }, [risks, search, filterCategory]);
+  }, [risks, search, filterCategory, modelParam, escalatedOnly]);
 
-  // ── Metrics ────────────────────────────────────────────────────────────────
-  const totalRisks = risks.length;
-  const criticalHighCount = risks.filter(r => r.score >= 12).length;
-  const mitigatedCount = risks.filter(r => /mitigated|closed|resolved/i.test(r.treatmentStatus)).length;
-  const openCount = risks.filter(r => /open/i.test(r.treatmentStatus)).length;
+  // ── Metrics — computed over the FILTERED set so KPIs, heat map and table
+  // always describe the same rows; tiles are relabelled when a filter scopes
+  // the register (model deep-link, category, search, escalated).
+  const scoped = !!modelParam || filterCategory !== 'all' || !!search || escalatedOnly;
+  const kpiSuffix = scoped ? ' (filtered)' : '';
+  const totalRisks = filtered.length;
+  const criticalHighCount = filtered.filter(r => /Critical|High/.test(scoreBand(r.score).label)).length;
+  const mitigatedCount = filtered.filter(r => /mitigated|closed|resolved/i.test(r.treatmentStatus)).length;
+  const openCount = filtered.filter(r => /open/i.test(r.treatmentStatus)).length;
+  const escalatedCount = filtered.filter(r => r.isEscalated).length;
 
   // ── Detail Drawer ──────────────────────────────────────────────────────────
   const openDetail = (risk: RiskItem) => {
@@ -395,48 +572,86 @@ export default function RiskRegisterNew() {
     setSheetOpen(true);
   };
 
-  // ── Export CSV ─────────────────────────────────────────────────────────────
+  // ── Export CSV — business code as identity, plus residual/status/owner ─────
   const exportCSV = () => {
-    const headers = ['Risk ID', 'Title', 'Category', 'Likelihood', 'Impact', 'Risk Score', 'Owner', 'Treatment Status', 'Framework Mapping', 'Created', 'Last Updated'];
-    const rows = filtered.map(r => [
-      r.id, `"${r.title.replace(/"/g, '""')}"`, r.category, r.likelihood, r.impact, r.score,
-      r.owner, r.treatmentStatus, `"${r.frameworkMapping.join('; ')}"`, r.createdDate, r.lastUpdated,
-    ]);
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `risk-register-${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    toast.success('Risk register exported as CSV');
+    if (filtered.length === 0) { toast.error('There are no risks to export.'); return; }
+    exportCsv(
+      filtered.map(r => ({
+        'Risk ID': riskShortLabel(r),
+        'Title': r.title,
+        'Category': r.category,
+        'Likelihood': r.likelihood,
+        'Impact': r.impact,
+        'Risk Score': r.score,
+        'Band': scoreBand(r.score).label,
+        'Residual Score': r.residualLikelihood != null && r.residualImpact != null
+          ? r.residualLikelihood * r.residualImpact : '',
+        'Status': r.treatmentStatus,
+        'Treatment': r.treatment ?? '',
+        'Owner': r.owner,
+        'Deadline': r.deadline ?? '',
+        'Next Review': r.nextReviewDate ?? '',
+        'Escalated': r.isEscalated ? 'yes' : 'no',
+        'Framework Mapping': r.frameworkMapping.join('; '),
+        'Created': r.createdDate,
+        'Last Updated': r.lastUpdated,
+      })),
+      `risk-register-${new Date().toISOString().split('T')[0]}.csv`,
+    );
+    toast.success(`Exported ${filtered.length} risk${filtered.length === 1 ? '' : 's'} as CSV`);
   };
 
-  // ── Add Risk (persists via riskService; writes throw on failure) ──────────
-  const handleAddRisk = async () => {
-    if (!newTitle.trim()) { toast.error('Risk title is required'); return; }
-    if (!newDescription.trim()) { toast.error('Description is required'); return; }
-    if (!newOwner.trim()) { toast.error('Risk owner is required'); return; }
+  // ── Save (add or edit) — persists via riskService; writes throw on failure ─
+  const handleSaveRisk = async () => {
+    if (!form.title.trim()) { toast.error('Risk title is required'); return; }
+    if (!form.description.trim()) { toast.error('Description is required'); return; }
+    if (!form.owner.trim()) { toast.error('Risk owner is required'); return; }
+    if (form.kriThreshold.trim() !== '' && Number.isNaN(Number(form.kriThreshold))) { toast.error('KRI threshold must be a number'); return; }
+    if (form.kriCurrentValue.trim() !== '' && Number.isNaN(Number(form.kriCurrentValue))) { toast.error('KRI current value must be a number'); return; }
     try {
       await saveRisk({
-        title: newTitle.trim(),
-        description: newDescription.trim(),
-        category: newCategory,
-        likelihood: newLikelihood,
-        impact: newImpact,
-        risk_score: newLikelihood * newImpact,
-        status: 'Open',
-        owner: newOwner.trim(),
-        mitigation: newTreatment.trim(),
-        frameworks: newFramework.trim()
-          ? newFramework.split(',').map(f => f.trim()).filter(Boolean)
+        ...(editId ? { id: editId } : {}),
+        title: form.title.trim(),
+        description: form.description.trim(),
+        category: form.category,
+        likelihood: form.likelihood,
+        impact: form.impact,
+        risk_score: form.likelihood * form.impact,
+        status: form.status,
+        owner: form.owner.trim(),
+        mitigation: form.treatmentPlan.trim(),
+        frameworks: form.framework.trim()
+          ? form.framework.split(',').map(f => f.trim()).filter(Boolean)
           : [],
+        treatment: form.treatment === NONE ? null : form.treatment,
+        residual_likelihood: form.residualLikelihood === NONE ? null : Number(form.residualLikelihood),
+        residual_impact: form.residualImpact === NONE ? null : Number(form.residualImpact),
+        deadline: form.deadline || null,
+        next_review_date: form.nextReviewDate || null,
+        review_frequency: form.reviewFrequency === NONE ? null : form.reviewFrequency,
+        is_escalated: form.isEscalated,
+        escalation_reason: form.isEscalated ? (form.escalationReason.trim() || null) : null,
+        kri_metric: form.kriMetric.trim() || null,
+        kri_threshold: form.kriThreshold.trim() === '' ? null : Number(form.kriThreshold),
+        kri_current_value: form.kriCurrentValue.trim() === '' ? null : Number(form.kriCurrentValue),
       });
       // Success toast fires from the mutation only after the write resolved.
       setAddOpen(false);
-      setNewTitle(''); setNewCategory('AI Model'); setNewLikelihood(3); setNewImpact(3);
-      setNewDescription(''); setNewOwner(''); setNewTreatment(''); setNewFramework('');
+      setEditId(null);
+      setForm({ ...EMPTY_FORM });
     } catch {
       // Error toast fires from the mutation; keep the dialog open so nothing
       // the user typed is lost.
+    }
+  };
+
+  // ── Delete — behind a ConfirmDialog; the service throws on failure ─────────
+  const confirmDelete = async () => {
+    if (!deleteTarget) return false;
+    await removeRisk(deleteTarget.id);
+    if (selectedId === deleteTarget.id) {
+      setSelectedId(null);
+      closeSheet(false);
     }
   };
 
@@ -487,7 +702,7 @@ export default function RiskRegisterNew() {
           <Button
             size="sm"
             style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
-            onClick={() => setAddOpen(true)}
+            onClick={openCreate}
           >
             <Plus size={14} />
             Add Risk
@@ -495,16 +710,35 @@ export default function RiskRegisterNew() {
         </div>
       </div>
 
-      {/* KPI Tiles */}
-      <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Total Risks" value={totalRisks} variant="default" />
-        <MetricTile label="Critical / High" value={criticalHighCount} variant="error" />
-        <MetricTile label="Mitigated" value={mitigatedCount} variant="ok" />
-        <MetricTile label="Open" value={openCount} variant="warn" />
+      {/* KPI Tiles — computed over the same filtered set the table shows */}
+      <div className="grid grid-cols-5 gap-4">
+        <MetricTile label={`Total Risks${kpiSuffix}`} value={totalRisks} variant="default" />
+        <MetricTile label={`Critical / High${kpiSuffix}`} value={criticalHighCount} variant="error" />
+        <MetricTile label={`Mitigated${kpiSuffix}`} value={mitigatedCount} variant="ok" />
+        <MetricTile label={`Open${kpiSuffix}`} value={openCount} variant="warn" />
+        <MetricTile
+          label={escalatedOnly ? 'Escalated (filtering)' : `Escalated${kpiSuffix}`}
+          value={escalatedCount}
+          variant="error"
+          active={escalatedOnly}
+          onClick={() => setEscalatedOnly(v => !v)}
+        />
       </div>
 
-      {/* Heat Map */}
-      <HeatMap risks={risks} onCellClick={openDetail} />
+      {/* Heat Map — same filtered set as the KPIs and the table */}
+      <HeatMap risks={filtered} onCellClick={openDetail} />
+
+      {/* Model-scoped filter chip (deep-link from a model) */}
+      {modelParam && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+            <span>Filtered to <strong>{modelName(modelParam)}</strong></span>
+            <button aria-label="Clear model filter" onClick={clearModelFilter} className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer">
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
 
       {/* Search & Filters */}
       <div className="flex items-center gap-3">
@@ -541,7 +775,7 @@ export default function RiskRegisterNew() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                {['Risk ID', 'Title', 'Category', 'Likelihood', 'Impact', 'Risk Score', 'Owner', 'Treatment Status', 'Framework Mapping', ''].map(h => (
+                {['Risk ID', 'Title', 'Category', 'Models', 'Likelihood', 'Impact', 'Risk Score', 'Residual', 'Owner', 'Treatment Status', 'Framework Mapping', ''].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                 ))}
               </tr>
@@ -549,7 +783,7 @@ export default function RiskRegisterNew() {
             <tbody>
               {risks.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center">
+                  <td colSpan={12} className="px-4 py-12 text-center">
                     <ShieldCheck size={32} className="mx-auto mb-2 opacity-40" />
                     <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>No risks recorded yet</p>
                     <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
@@ -559,7 +793,7 @@ export default function RiskRegisterNew() {
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center">
+                  <td colSpan={12} className="px-4 py-12 text-center">
                     <Warning size={32} className="mx-auto mb-2 opacity-40" />
                     <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>No risks match your filters</p>
                   </td>
@@ -577,7 +811,14 @@ export default function RiskRegisterNew() {
                       onClick={() => openDetail(r)}
                     >
                       <td className="px-4 py-3">
-                        <span className="text-xs font-mono font-medium" title={r.id} style={{ color: 'hsl(var(--brand))' }}>{riskShortLabel(r)}</span>
+                        <span className="inline-flex items-center gap-1">
+                          <span className="text-xs font-mono font-medium" title={r.id} style={{ color: 'hsl(var(--brand))' }}>{riskShortLabel(r)}</span>
+                          {r.isEscalated && (
+                            <span title={r.escalationReason ? `Escalated: ${r.escalationReason}` : 'Escalated'}>
+                              <Flag size={12} weight="fill" aria-label="Escalated" style={{ color: 'hsl(var(--destructive))' }} />
+                            </span>
+                          )}
+                        </span>
                       </td>
                       <td className="px-4 py-3 max-w-[260px]">
                         <p className="text-xs font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>{r.title}</p>
@@ -586,6 +827,27 @@ export default function RiskRegisterNew() {
                         <Badge style={{ background: cc.bg, color: cc.text, borderRadius: 0, fontSize: 10 }}>
                           {r.category}
                         </Badge>
+                      </td>
+                      <td className="px-4 py-3 max-w-[180px]">
+                        {r.modelIds.length === 0 ? (
+                          <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>—</span>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {r.modelIds.slice(0, 1).map(id => (
+                              <InterlinkChip
+                                key={id}
+                                label={modelName(id)}
+                                to={`/models/inventory/${id}`}
+                                onClick={e => e.stopPropagation()}
+                              />
+                            ))}
+                            {r.modelIds.length > 1 && (
+                              <span className="text-[10px] px-1" style={{ color: 'hsl(var(--text-4))' }}>
+                                +{r.modelIds.length - 1}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{r.likelihood}</span>
@@ -599,12 +861,36 @@ export default function RiskRegisterNew() {
                         </Badge>
                       </td>
                       <td className="px-4 py-3">
+                        {r.residualLikelihood != null && r.residualImpact != null ? (() => {
+                          const rs = r.residualLikelihood * r.residualImpact;
+                          const rc = scoreColor(rs);
+                          return (
+                            <span title={`Residual: ${r.residualLikelihood} × ${r.residualImpact}`}>
+                              <Badge style={{ background: rc.bg, color: rc.text, borderRadius: 0, fontSize: 11, fontWeight: 700 }}>
+                                {rs} — {rc.label}
+                              </Badge>
+                            </span>
+                          );
+                        })() : (
+                          <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3">
                         <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{r.owner || 'Unassigned'}</span>
                       </td>
                       <td className="px-4 py-3">
-                        <Badge style={{ background: tc.bg, color: tc.text, borderRadius: 0, fontSize: 10 }}>
-                          {r.overdue ? 'Overdue' : r.treatmentStatus}
-                        </Badge>
+                        <div className="flex flex-wrap items-center gap-1">
+                          <Badge style={{ background: tc.bg, color: tc.text, borderRadius: 0, fontSize: 10 }}>
+                            {r.overdue ? 'Overdue' : r.treatmentStatus}
+                          </Badge>
+                          {r.reviewOverdue && (
+                            <span title={`Next review was due ${r.nextReviewDate}`}>
+                              <Badge style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>
+                                Review overdue
+                              </Badge>
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 max-w-[200px]">
                         {r.frameworkMapping.length === 0 ? (
@@ -630,14 +916,35 @@ export default function RiskRegisterNew() {
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          style={{ borderRadius: 0 }}
-                          onClick={(e) => { e.stopPropagation(); openDetail(r); }}
-                        >
-                          <Eye size={14} />
-                        </Button>
+                        <div className="flex items-center">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`View ${riskShortLabel(r)}`}
+                            style={{ borderRadius: 0 }}
+                            onClick={(e) => { e.stopPropagation(); openDetail(r); }}
+                          >
+                            <Eye size={14} />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`Edit ${riskShortLabel(r)}`}
+                            style={{ borderRadius: 0 }}
+                            onClick={(e) => { e.stopPropagation(); openEditDialog(r); }}
+                          >
+                            <PencilSimple size={14} />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            aria-label={`Delete ${riskShortLabel(r)}`}
+                            style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}
+                            onClick={(e) => { e.stopPropagation(); setDeleteTarget(r); }}
+                          >
+                            <Trash size={14} />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -654,7 +961,7 @@ export default function RiskRegisterNew() {
           {selectedRisk && (
             <>
               <SheetHeader className="pb-4" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <span className="text-xs font-mono" title={selectedRisk.id} style={{ color: 'hsl(var(--brand))' }}>{riskShortLabel(selectedRisk)}</span>
                   <Badge style={{ background: scoreColor(selectedRisk.score).bg, color: scoreColor(selectedRisk.score).text, borderRadius: 0, fontSize: 10, fontWeight: 700 }}>
                     Score: {selectedRisk.score}
@@ -662,22 +969,45 @@ export default function RiskRegisterNew() {
                   <Badge style={{ background: treatmentColor(selectedRisk.overdue ? 'Overdue' : selectedRisk.treatmentStatus).bg, color: treatmentColor(selectedRisk.overdue ? 'Overdue' : selectedRisk.treatmentStatus).text, borderRadius: 0, fontSize: 10 }}>
                     {selectedRisk.overdue ? 'Overdue' : selectedRisk.treatmentStatus}
                   </Badge>
+                  {selectedRisk.isEscalated && (
+                    <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
+                      <Flag size={10} weight="fill" className="mr-1" /> Escalated
+                    </Badge>
+                  )}
                 </div>
                 <SheetTitle className="text-base" style={{ color: 'hsl(var(--text-1))' }}>
                   {selectedRisk.title}
                 </SheetTitle>
+                <div className="flex items-center gap-2 pt-2">
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    style={{ borderRadius: 0 }}
+                    onClick={() => openEditDialog(selectedRisk)}
+                  >
+                    <PencilSimple size={13} /> Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    style={{ borderRadius: 0, borderColor: 'hsl(var(--destructive))', color: 'hsl(var(--destructive))' }}
+                    onClick={() => setDeleteTarget(selectedRisk)}
+                  >
+                    <Trash size={13} /> Delete
+                  </Button>
+                </div>
               </SheetHeader>
 
               <Tabs value={detailTab} onValueChange={setDetailTab} className="mt-4">
-                <TabsList className="w-full justify-start gap-0" style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
-                  {['overview', 'assessment', 'treatment', 'controls', 'history'].map(tab => (
+                <TabsList className="w-full justify-start gap-0 flex-wrap h-auto" style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
+                  {['overview', 'assessment', 'treatment', 'controls', 'remediation', 'hitl', 'financial', 'history'].map(tab => (
                     <TabsTrigger
                       key={tab}
                       value={tab}
                       className="text-xs capitalize"
                       style={{ borderRadius: 0 }}
                     >
-                      {tab === 'assessment' ? 'Risk Assessment' : tab === 'treatment' ? 'Treatment Plan' : tab === 'controls' ? 'Controls Linked' : tab.charAt(0).toUpperCase() + tab.slice(1)}
+                      {tab === 'assessment' ? 'Assessment' : tab === 'hitl' ? 'HITL' : tab.charAt(0).toUpperCase() + tab.slice(1)}
                     </TabsTrigger>
                   ))}
                 </TabsList>
@@ -720,6 +1050,32 @@ export default function RiskRegisterNew() {
                         <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.lastUpdated}</span>
                       </div>
                     </div>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Linked Models</p>
+                    {selectedRisk.modelIds.length === 0 ? (
+                      <p className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>No models linked to this risk yet.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedRisk.modelIds.map(id => (
+                          <InterlinkChip key={id} label={modelName(id)} to={`/models/inventory/${id}`} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Linked Incidents</p>
+                    {/* Merged from risks.linked_incident_ids AND incidents.linked_risk_ids —
+                        the seam works regardless of which side wrote the link. */}
+                    {mergedIncidentIds.length === 0 ? (
+                      <p className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>No incidents linked to this risk.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {mergedIncidentIds.map(id => (
+                          <InterlinkChip key={id} label={incidentLabel(id)} to={`/risk/incidents?open=${id}`} />
+                        ))}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Framework Mapping</p>
@@ -775,6 +1131,24 @@ export default function RiskRegisterNew() {
                       {selectedRisk.likelihood} (Likelihood) x {selectedRisk.impact} (Impact)
                     </p>
                   </div>
+                  {selectedRisk.residualLikelihood != null && selectedRisk.residualImpact != null && (
+                    <div className="p-4 text-center" style={{
+                      background: scoreColor(selectedRisk.residualLikelihood * selectedRisk.residualImpact).bg,
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 0,
+                    }}>
+                      <p className="text-[10px] font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Residual Risk Score</p>
+                      <p className="text-3xl font-bold" style={{ color: scoreColor(selectedRisk.residualLikelihood * selectedRisk.residualImpact).text }}>
+                        {selectedRisk.residualLikelihood * selectedRisk.residualImpact}
+                      </p>
+                      <p className="text-sm font-semibold mt-1" style={{ color: scoreColor(selectedRisk.residualLikelihood * selectedRisk.residualImpact).text }}>
+                        {scoreColor(selectedRisk.residualLikelihood * selectedRisk.residualImpact).label} Residual Risk
+                      </p>
+                      <p className="text-[10px] mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                        {selectedRisk.residualLikelihood} (Residual Likelihood) x {selectedRisk.residualImpact} (Residual Impact)
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs font-semibold mb-3" style={{ color: 'hsl(var(--text-4))' }}>Position on Risk Matrix</p>
                     <MiniMatrix likelihood={selectedRisk.likelihood} impact={selectedRisk.impact} />
@@ -792,6 +1166,11 @@ export default function RiskRegisterNew() {
                       <Badge style={{ background: treatmentColor(selectedRisk.treatmentStatus).bg, color: treatmentColor(selectedRisk.treatmentStatus).text, borderRadius: 0, fontSize: 10 }}>
                         {selectedRisk.treatmentStatus}
                       </Badge>
+                      {selectedRisk.treatment && (
+                        <Badge className="capitalize" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>
+                          {selectedRisk.treatment}
+                        </Badge>
+                      )}
                     </div>
                     {selectedRisk.treatmentPlan ? (
                       <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>
@@ -820,6 +1199,53 @@ export default function RiskRegisterNew() {
                     <div className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <p className="text-[10px] font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Treatment Deadline</p>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.deadline}</span>
+                    </div>
+                  )}
+                  {(selectedRisk.nextReviewDate || selectedRisk.reviewFrequency) && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                        <p className="text-[10px] font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Next Review</p>
+                        <span className="text-xs" style={{ color: selectedRisk.reviewOverdue ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>
+                          {selectedRisk.nextReviewDate ?? '—'}{selectedRisk.reviewOverdue ? ' (overdue)' : ''}
+                        </span>
+                      </div>
+                      <div className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                        <p className="text-[10px] font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Review Frequency</p>
+                        <span className="text-xs capitalize" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.reviewFrequency ?? '—'}</span>
+                      </div>
+                    </div>
+                  )}
+                  {(selectedRisk.kriMetric || selectedRisk.kriThreshold != null || selectedRisk.kriCurrentValue != null) && (
+                    <div className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <p className="text-[10px] font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Key Risk Indicator</p>
+                      <div className="grid grid-cols-3 gap-3">
+                        <div>
+                          <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Metric</p>
+                          <p className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.kriMetric ?? '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Threshold</p>
+                          <p className="text-xs font-mono" style={{ color: 'hsl(var(--text-1))' }}>{selectedRisk.kriThreshold ?? '—'}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Current</p>
+                          <p className="text-xs font-mono" style={{
+                            color: selectedRisk.kriThreshold != null && selectedRisk.kriCurrentValue != null && selectedRisk.kriCurrentValue >= selectedRisk.kriThreshold
+                              ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))',
+                          }}>{selectedRisk.kriCurrentValue ?? '—'}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  {selectedRisk.isEscalated && (
+                    <div className="p-3 flex items-start gap-2" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--destructive))', borderRadius: 0 }}>
+                      <Flag size={16} weight="fill" style={{ color: 'hsl(var(--destructive))', marginTop: 1 }} />
+                      <div>
+                        <p className="text-xs font-semibold" style={{ color: 'hsl(var(--destructive))' }}>Escalated</p>
+                        <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-2))' }}>
+                          {selectedRisk.escalationReason || 'No escalation reason recorded.'}
+                        </p>
+                      </div>
                     </div>
                   )}
                   {selectedRisk.overdue && (
@@ -889,6 +1315,139 @@ export default function RiskRegisterNew() {
                   </div>
                 </TabsContent>
 
+                {/* Remediation Tab — remediation_plans where risk_id = this risk */}
+                <TabsContent value="remediation" className="mt-4 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Wrench size={16} style={{ color: 'hsl(var(--text-4))' }} />
+                    <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Remediation Plans</span>
+                    <span className="text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))', borderRadius: 0 }}>
+                      {riskRemediations.length}
+                    </span>
+                  </div>
+                  {remLoading ? (
+                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Loading remediation plans…</p>
+                  ) : riskRemediations.length === 0 ? (
+                    <div className="p-8 text-center" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <Wrench size={24} className="mx-auto mb-2 opacity-40" />
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No remediation plans reference this risk yet.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {riskRemediations.map(p => (
+                        <div key={p.id} className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                          <div className="flex items-center justify-between gap-2">
+                            <InterlinkChip
+                              label={p.planRef ? `${p.planRef} — ${p.title}` : p.title || 'Unavailable'}
+                              to={`/remediation-tracker?open=${p.id}`}
+                            />
+                            <Badge className="capitalize" style={{ background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>
+                              {p.status.replace(/_/g, ' ')}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2 mt-2">
+                            <div className="flex-1 h-1.5" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                              <div style={{
+                                width: `${Math.min(100, Math.max(0, p.progressPct))}%`,
+                                height: '100%',
+                                background: p.progressPct >= 100 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--brand))',
+                              }} />
+                            </div>
+                            <span className="text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{p.progressPct}%</span>
+                          </div>
+                          {p.dueDate && (
+                            <p className="text-[10px] mt-1" style={{ color: 'hsl(var(--text-4))' }}>Due {p.dueDate.slice(0, 10)}</p>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* HITL Tab — hitl_reviews where linked_risk_id = this risk */}
+                <TabsContent value="hitl" className="mt-4 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <UsersThree size={16} style={{ color: 'hsl(var(--text-4))' }} />
+                    <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Human Oversight Reviews</span>
+                    <span className="text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))', borderRadius: 0 }}>
+                      {riskHitl.length}
+                    </span>
+                  </div>
+                  {hitlLoading ? (
+                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Loading oversight reviews…</p>
+                  ) : riskHitl.length === 0 ? (
+                    <div className="p-8 text-center" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <UsersThree size={24} className="mx-auto mb-2 opacity-40" />
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No HITL reviews are linked to this risk.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {riskHitl.map(h => (
+                        <div key={h.id} className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <InterlinkChip label={h.title || 'Unavailable'} to={`/hitl/${h.id}`} />
+                            <div className="flex items-center gap-1">
+                              {h.blocksDeployment && (
+                                <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 10 }}>
+                                  Blocking
+                                </Badge>
+                              )}
+                              <Badge className="capitalize" style={{
+                                background: h.status === 'pending' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--bg-surface))',
+                                color: h.status === 'pending' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-3))',
+                                borderRadius: 0, fontSize: 10,
+                              }}>
+                                {h.status.replace(/_/g, ' ')}
+                              </Badge>
+                            </div>
+                          </div>
+                          <p className="text-[10px] mt-1.5" style={{ color: 'hsl(var(--text-4))' }}>
+                            {h.assignedTo ? `Assigned to ${h.assignedTo}` : 'Unassigned'}
+                            {h.slaDeadline ? ` · SLA ${h.slaDeadline.slice(0, 10)}` : ''}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
+                {/* Financial Tab — financial_risks where linked_risk_id = this risk */}
+                <TabsContent value="financial" className="mt-4 space-y-4">
+                  <div className="flex items-center gap-2 mb-2">
+                    <HandCoins size={16} style={{ color: 'hsl(var(--text-4))' }} />
+                    <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Financial Quantifications</span>
+                    <span className="text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))', borderRadius: 0 }}>
+                      {riskFinancials.length}
+                    </span>
+                  </div>
+                  {finLoading ? (
+                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Loading quantifications…</p>
+                  ) : riskFinancials.length === 0 ? (
+                    <div className="p-8 text-center" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                      <HandCoins size={24} className="mx-auto mb-2 opacity-40" />
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No financial quantifications are linked to this risk.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {riskFinancials.map(f => (
+                        <div key={f.id} className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                          <div className="flex items-center justify-between gap-2 flex-wrap">
+                            <InterlinkChip
+                              label={f.finRef ? `${f.finRef} — ${f.title}` : f.title || 'Unavailable'}
+                              to={`/financial-risk?open=${f.id}`}
+                            />
+                            <span className="text-xs font-mono font-semibold" style={{ color: 'hsl(var(--destructive))' }}>
+                              ALE {formatMoney(f.annualizedLossExpectancy, f.currency)}
+                            </span>
+                          </div>
+                          <p className="text-[10px] mt-1.5 capitalize" style={{ color: 'hsl(var(--text-4))' }}>
+                            {f.methodology} · {f.status}{f.lastQuantified ? ` · quantified ${f.lastQuantified}` : ''}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </TabsContent>
+
                 {/* History Tab — derived from real record timestamps only */}
                 <TabsContent value="history" className="mt-4 space-y-4">
                   <div className="flex items-center gap-2 mb-2">
@@ -930,18 +1489,18 @@ export default function RiskRegisterNew() {
         </SheetContent>
       </Sheet>
 
-      {/* ── Add Risk Dialog ───────────────────────────────────────────────── */}
-      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); }}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 560 }} className="max-h-[90vh] overflow-y-auto">
+      {/* ── Add / Edit Risk Dialog ────────────────────────────────────────── */}
+      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) { setEditId(null); setForm({ ...EMPTY_FORM }); } }}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 600 }} className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Register New Risk</DialogTitle>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>{editId ? 'Edit Risk' : 'Register New Risk'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-1">
               <Label className="text-xs font-medium">Risk Title *</Label>
               <Input
-                value={newTitle}
-                onChange={e => setNewTitle(e.target.value)}
+                value={form.title}
+                onChange={e => set('title', e.target.value)}
                 placeholder="e.g. Model drift in production scoring pipeline"
                 style={{ borderRadius: 0 }}
               />
@@ -949,10 +1508,10 @@ export default function RiskRegisterNew() {
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Category *</Label>
-                <Select value={newCategory} onValueChange={setNewCategory}>
+                <Select value={form.category} onValueChange={v => set('category', v)}>
                   <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
-                    {addCategories.map(c => (
+                    {(addCategories.includes(form.category) ? addCategories : [form.category, ...addCategories]).map(c => (
                       <SelectItem key={c} value={c}>{c}</SelectItem>
                     ))}
                   </SelectContent>
@@ -961,8 +1520,8 @@ export default function RiskRegisterNew() {
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Risk Owner *</Label>
                 <Input
-                  value={newOwner}
-                  onChange={e => setNewOwner(e.target.value)}
+                  value={form.owner}
+                  onChange={e => set('owner', e.target.value)}
                   placeholder="e.g. Sarah Chen"
                   style={{ borderRadius: 0 }}
                 />
@@ -970,8 +1529,33 @@ export default function RiskRegisterNew() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
+                <Label className="text-xs font-medium">Status</Label>
+                <Select value={form.status} onValueChange={v => set('status', v)}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {statusOptions.map(s => (
+                      <SelectItem key={s} value={s} className="capitalize">{s.replace(/_/g, ' ')}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Treatment Strategy</Label>
+                <Select value={form.treatment} onValueChange={v => set('treatment', v)}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value={NONE}>Not decided</SelectItem>
+                    {TREATMENT_OPTIONS.map(t => (
+                      <SelectItem key={t} value={t} className="capitalize">{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
                 <Label className="text-xs font-medium">Likelihood (1–5)</Label>
-                <Select value={String(newLikelihood)} onValueChange={v => setNewLikelihood(Number(v))}>
+                <Select value={String(form.likelihood)} onValueChange={v => set('likelihood', Number(v))}>
                   <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
                     {[1, 2, 3, 4, 5].map(n => (
@@ -982,7 +1566,7 @@ export default function RiskRegisterNew() {
               </div>
               <div className="space-y-1">
                 <Label className="text-xs font-medium">Impact (1–5)</Label>
-                <Select value={String(newImpact)} onValueChange={v => setNewImpact(Number(v))}>
+                <Select value={String(form.impact)} onValueChange={v => set('impact', Number(v))}>
                   <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
                     {[1, 2, 3, 4, 5].map(n => (
@@ -992,23 +1576,51 @@ export default function RiskRegisterNew() {
                 </Select>
               </div>
             </div>
-            <div className="flex items-center gap-3 p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
-              <div className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Risk Score</div>
-              <div className="text-2xl font-black" style={{
-                color: newLikelihood * newImpact >= 15 ? 'hsl(var(--destructive))' : newLikelihood * newImpact >= 8 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))',
-              }}>
-                {newLikelihood * newImpact}
+            {/* Score preview — same unified bands as everywhere else */}
+            {(() => {
+              const s = form.likelihood * form.impact;
+              const b = scoreBand(s);
+              return (
+                <div className="flex items-center gap-3 p-3" style={{ background: b.bg, border: '1px solid hsl(var(--border))' }}>
+                  <div className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>Risk Score</div>
+                  <div className="text-2xl font-black" style={{ color: b.text }}>{s}</div>
+                  <div className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                    {b.label} (Likelihood {form.likelihood} × Impact {form.impact})
+                  </div>
+                </div>
+              );
+            })()}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Residual Likelihood (1–5)</Label>
+                <Select value={form.residualLikelihood} onValueChange={v => set('residualLikelihood', v)}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value={NONE}>Not assessed</SelectItem>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              <div className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                {newLikelihood * newImpact >= 15 ? 'Critical' : newLikelihood * newImpact >= 8 ? 'High' : newLikelihood * newImpact >= 4 ? 'Medium' : 'Low'}
-                {' '}(Likelihood {newLikelihood} × Impact {newImpact})
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Residual Impact (1–5)</Label>
+                <Select value={form.residualImpact} onValueChange={v => set('residualImpact', v)}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value={NONE}>Not assessed</SelectItem>
+                    {[1, 2, 3, 4, 5].map(n => (
+                      <SelectItem key={n} value={String(n)}>{n}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Description *</Label>
               <Textarea
-                value={newDescription}
-                onChange={e => setNewDescription(e.target.value)}
+                value={form.description}
+                onChange={e => set('description', e.target.value)}
                 placeholder="Describe the risk, its source, and potential consequences..."
                 rows={3}
                 style={{ borderRadius: 0 }}
@@ -1017,18 +1629,108 @@ export default function RiskRegisterNew() {
             <div className="space-y-1">
               <Label className="text-xs font-medium">Treatment Plan</Label>
               <Textarea
-                value={newTreatment}
-                onChange={e => setNewTreatment(e.target.value)}
+                value={form.treatmentPlan}
+                onChange={e => set('treatmentPlan', e.target.value)}
                 placeholder="Proposed mitigation or remediation steps..."
                 rows={2}
                 style={{ borderRadius: 0 }}
               />
             </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Treatment Deadline</Label>
+                <Input
+                  type="date"
+                  value={form.deadline}
+                  onChange={e => set('deadline', e.target.value)}
+                  style={{ borderRadius: 0 }}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Next Review Date</Label>
+                <Input
+                  type="date"
+                  value={form.nextReviewDate}
+                  onChange={e => set('nextReviewDate', e.target.value)}
+                  style={{ borderRadius: 0 }}
+                />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Review Frequency</Label>
+                <Select value={form.reviewFrequency} onValueChange={v => set('reviewFrequency', v)}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value={NONE}>Not set</SelectItem>
+                    {REVIEW_FREQUENCIES.map(f => (
+                      <SelectItem key={f} value={f} className="capitalize">{f}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="p-3 space-y-2" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
+              <Label className="text-xs font-semibold">Key Risk Indicator</Label>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-1">
+                  <Label className="text-[11px]">Metric</Label>
+                  <Input
+                    value={form.kriMetric}
+                    onChange={e => set('kriMetric', e.target.value)}
+                    placeholder="e.g. Drift PSI"
+                    style={{ borderRadius: 0 }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px]">Threshold</Label>
+                  <Input
+                    type="number"
+                    value={form.kriThreshold}
+                    onChange={e => set('kriThreshold', e.target.value)}
+                    placeholder="e.g. 0.2"
+                    style={{ borderRadius: 0 }}
+                  />
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-[11px]">Current Value</Label>
+                  <Input
+                    type="number"
+                    value={form.kriCurrentValue}
+                    onChange={e => set('kriCurrentValue', e.target.value)}
+                    placeholder="e.g. 0.12"
+                    style={{ borderRadius: 0 }}
+                  />
+                </div>
+              </div>
+            </div>
+            <div className="p-3 space-y-2" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="risk-escalated"
+                  checked={form.isEscalated}
+                  onCheckedChange={v => set('isEscalated', v === true)}
+                />
+                <Label htmlFor="risk-escalated" className="text-xs font-medium cursor-pointer">
+                  Escalated to senior management
+                </Label>
+              </div>
+              {form.isEscalated && (
+                <div className="space-y-1">
+                  <Label className="text-[11px]">Escalation Reason</Label>
+                  <Textarea
+                    value={form.escalationReason}
+                    onChange={e => set('escalationReason', e.target.value)}
+                    placeholder="Why this risk was escalated..."
+                    rows={2}
+                    style={{ borderRadius: 0 }}
+                  />
+                </div>
+              )}
+            </div>
             <div className="space-y-1">
               <Label className="text-xs font-medium">Framework Mapping</Label>
               <Input
-                value={newFramework}
-                onChange={e => setNewFramework(e.target.value)}
+                value={form.framework}
+                onChange={e => set('framework', e.target.value)}
                 placeholder="e.g. EU AI Act Art. 9, ISO 42001 A.6.1 (comma-separated)"
                 style={{ borderRadius: 0 }}
               />
@@ -1039,12 +1741,23 @@ export default function RiskRegisterNew() {
             <Button variant="outline" onClick={() => setAddOpen(false)} disabled={isSaving} style={{ borderRadius: 0 }}>
               Cancel
             </Button>
-            <Button onClick={handleAddRisk} disabled={isSaving} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-              <Plus size={14} />{isSaving ? 'Saving…' : 'Register Risk'}
+            <Button onClick={handleSaveRisk} disabled={isSaving} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+              <Plus size={14} />{isSaving ? 'Saving…' : editId ? 'Save Changes' : 'Register Risk'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* ── Delete confirmation — the service throws, the dialog stays open on failure */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        title="Delete Risk"
+        message={`Delete ${deleteTarget ? riskShortLabel(deleteTarget) : ''} — "${deleteTarget?.title}"? The risk is soft-deleted and disappears from the register.`}
+        confirmLabel="Delete"
+        type="danger"
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
     </div>
   );
 }

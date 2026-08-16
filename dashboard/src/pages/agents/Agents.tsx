@@ -47,6 +47,7 @@ import { useChartTheme } from '../../hooks/useChartTheme'
 import { useAuthStore } from '../../stores/authStore'
 import { agentRecordHooks } from '../../hooks/queries/useAgentGovCrud'
 import { upsertIncident, type IncidentRecord } from '../../services/incidentService'
+import { useQueryClient } from '@tanstack/react-query'
 import { formatNumber, formatDate } from '../../data/seed'
 import type { AgentRecord, AgentStatus, AgentType, AgentRiskTier as RiskTier } from '../../types/agentGov'
 
@@ -742,6 +743,7 @@ function RegistrySection() {
 
 function ShadowSection({ onOpenRegistry }: { onOpenRegistry: () => void }) {
   const navigate = useNavigate()
+  const qc = useQueryClient()
   const ct = useChartTheme()
   const user = useAuthStore(s => s.user)
   const { data: agents = [], isLoading, error, refetch } = agentRecordHooks.useList()
@@ -809,6 +811,10 @@ function ShadowSection({ onOpenRegistry }: { onOpenRegistry: () => void }) {
       if (!rec) {
         toast.error('Failed to create incident')
       } else {
+        // Both incident query namespaces read this table — refresh them so
+        // the Incident Log shows the new row immediately.
+        qc.invalidateQueries({ queryKey: ['incidents'] })
+        qc.invalidateQueries({ queryKey: ['ri-incidents'] })
         toast.success(`Incident created for ${agent.name ?? agent.id}`, {
           action: { label: 'View incidents', onClick: () => navigate('/risk/incidents') },
         })

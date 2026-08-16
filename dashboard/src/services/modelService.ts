@@ -1,4 +1,3 @@
-import { emitEvent } from '../lib/governance/eventBus'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 export type ModelRecord = {
@@ -49,39 +48,30 @@ export async function upsertModel(record: Partial<ModelRecord>): Promise<ModelRe
   const isNew = !record.id
   const { data, error } = await supabase.from('ai_models').upsert(record).select().single()
   if (error) { console.warn('[modelService] upsert:', error.message); throw new Error(error.message) }
-
-  const model = data as ModelRecord
-
-  // Registering a model is the event that starts the governance cascade: the
-  // mesh opens the initial risk, maps controls, queues the fairness scan and
-  // raises HITL review where the tier demands it. Without this emit the 26
-  // registered agents never run — they were dormant because nothing in the
-  // product ever called emitEvent.
-  //
-  // Deliberately fire-and-forget and never rethrow: an agent failure must not
-  // roll back or fail the user's save. Cascade outcomes are observable in
-  // Agent Control and governance_events, not in this call's result.
-  if (isNew && model?.id) {
-    void emitEvent(
-      'MODEL_REGISTERED',
-      'model-registry',
-      {
-        modelId:         model.id,
-        modelName:       (model as any).name,
-        modelType:       (model as any).model_type,
-        vendor:          (model as any).vendor,
-        riskTier:        (model as any).risk_tier,
-        euAiActClass:    (model as any).risk_tier,
-        purpose:         (model as any).description,
-        ownerId:         (model as any).business_owner,
-        deploymentScope: (model as any).lifecycle_stage,
-        dataSensitivity: (model as any).data_sensitivity,
-      },
-      (model as any).org_id ?? '',
-    ).catch((e) => console.warn('[modelService] cascade emit failed:', e))
+  const saved = data as ModelRecord
+  if (isNew && saved?.id) {
+    // Registering a model is the head of the largest governance cascade
+    // (11 registered agents): the mesh opens the initial risk, maps controls
+    // and raises HITL review where the tier demands it. Payload follows the
+    // declared ModelRegisteredPayload contract. Deliberately fire-and-forget
+    // and never rethrown: an agent failure must not roll back or fail the
+    // user's save — cascade outcomes are observable in Agent Control and
+    // governance_events, not in this call's result.
+    const tierNum = Number(String((saved as any).risk_tier ?? '').replace(/\D/g, '')) || 3
+    const { governanceBus } = await import('../lib/governance/eventBus')
+    void governanceBus.emit('MODEL_REGISTERED', 'ai-inventory', {
+      modelId: saved.id,
+      modelName: (saved as any).name ?? 'Unnamed model',
+      modelType: 'OTHER',
+      owner: (saved as any).business_owner ?? (saved as any).technical_owner ?? 'unassigned',
+      riskTier: (Math.min(4, Math.max(1, tierNum)) as 1 | 2 | 3 | 4),
+      purpose: (saved as any).purpose ?? (saved as any).description ?? 'unspecified',
+      vendor: (saved as any).vendor ?? undefined,
+      deploymentScope: ((saved as any).deployment_env ?? 'DEV').toUpperCase().includes('PROD') ? 'PROD' : 'DEV',
+      dataSensitivity: 'CONFIDENTIAL',
+    })
   }
-
-  return model
+  return saved
 }
 
 export async function deleteModel(id: string): Promise<void> {

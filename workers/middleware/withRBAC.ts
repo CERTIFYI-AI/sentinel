@@ -45,7 +45,7 @@ export interface WithRBACOptions {
   /**
    * Optional override for the RPC name. Default `has_permission`.
    * Matches the Postgres helper installed by
-   * supabase/migrations/20260421_ws04_rbac_depth.sql.
+   * supabase/migrations/20260421000018_ws04_rbac_depth.sql.
    */
   readonly rpcName?: string;
 }

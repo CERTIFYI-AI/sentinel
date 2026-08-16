@@ -16,8 +16,8 @@ supabase db push
 ```
 This applies every migration in `supabase/migrations/` including:
 - Prior migrations (core_grc_tables, frameworks_schema, risk_schema_v2, model_schema_v2, task_schema_v2, custom_roles, add_tenant_id)
-- New activation migration `20260420_functional_integration.sql` (creates 31 missing tables with RLS + realtime + audit triggers)
-- New seed `20260420_functional_seed.sql` (2 demo rows per table)
+- New activation migration `20260420160001_functional_integration.sql` (creates 31 missing tables with RLS + realtime + audit triggers)
+- New seed `20260420160002_functional_seed.sql` (2 demo rows per table)
 
 ## Step 2 — Generate types (optional, already committed)
 ```bash
