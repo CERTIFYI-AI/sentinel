@@ -13,6 +13,7 @@ import {
   Sparkle, FileText, ListBullets, CalendarCheck, Copy, Plus,
   ShieldCheck, CaretRight, Bank, Siren, UsersThree, CurrencyDollar, Crosshair,
   SealCheck, Vault, Pulse, CheckSquare, Megaphone, GraduationCap,
+  Leaf, Lightning, Recycle,
 } from '@phosphor-icons/react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -947,6 +948,33 @@ function ModelDetailView({ model }: { model: Model }) {
               source={backlinks?.aiTrainings}
               loading={backlinksLoading}
               viewAllTo="/ai-literacy"
+            />
+            {/* Sustainability footprint. Carbon/energy/ESG were previously
+                unreachable from the model they describe — the modules held no
+                model_id at all, so a model could not surface its own footprint. */}
+            <BacklinkCard
+              title="Carbon Records"
+              icon={<Leaf size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.carbonRecords}
+              loading={backlinksLoading}
+              viewAllTo={`/carbon-ledger?model=${model.id}`}
+              itemTo={item => `/carbon-ledger?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="Energy Readings"
+              icon={<Lightning size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.energyMetrics}
+              loading={backlinksLoading}
+              viewAllTo={`/energy-efficiency?model=${model.id}`}
+              itemTo={item => `/energy-efficiency?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="ESG Reports"
+              icon={<Recycle size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.esgReports}
+              loading={backlinksLoading}
+              viewAllTo={`/esg-reports?model=${model.id}`}
+              itemTo={item => `/esg-reports?open=${item.id}`}
             />
           </div>
         </div>

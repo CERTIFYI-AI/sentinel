@@ -180,7 +180,7 @@ function TrustPreview({ doc, stats, vendorNameById, resolveResource, publishedPo
             {subVendors.map((v) => (
               <div key={v.id} className="flex items-center justify-between px-3 py-2 text-sm">
                 <span>{v.name ?? 'Unavailable'}</span>
-                <button className="text-[11px] text-[hsl(var(--brand))] hover:underline" onClick={() => nav('/vendors')}>
+                <button className="text-[11px] text-[hsl(var(--brand))] hover:underline" onClick={() => nav(`/vendors/${v.id}`)}>
                   vendor record
                 </button>
               </div>

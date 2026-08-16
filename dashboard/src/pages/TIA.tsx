@@ -141,9 +141,12 @@ export default function TIA() {
     ) },
     { key: 'vendorId', header: 'Recipient', render: (t) => {
       const name = vendorName(t.vendorId)
+      // Deep-link to the vendor record, not the list: the uuid is already in
+      // hand, and landing on an unfiltered list makes the reader search for the
+      // recipient they just clicked.
       if (name) return (
         <button className="text-xs text-[hsl(var(--brand))] hover:underline"
-          onClick={(e) => { e.stopPropagation(); nav('/vendors') }}>{name}</button>
+          onClick={(e) => { e.stopPropagation(); nav(`/vendors/${t.vendorId}`) }}>{name}</button>
       )
       return <span className="text-xs text-[hsl(var(--text-4))]">{t.vendorId ? 'Unavailable' : '—'}</span>
     } },
