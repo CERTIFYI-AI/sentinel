@@ -1,278 +1,404 @@
-import { useState } from 'react'
-import { useSupabaseTable } from '@/hooks/useSupabaseTable'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Plugs, Plus, X, Warning, ArrowClockwise, Trash } from '@phosphor-icons/react'
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// Integrations — the platform's connectivity surface: inbound/outbound
+// connectors (credit bureau, regulator reporting, core banking, payments,
+// SIEM, SSO, ticketing, messaging) and outbound webhook endpoints.
+//
+// Backed by the canonical org-scoped `integrations` and `webhook_endpoints`
+// tables. Webhook signing secrets are shown exactly once at creation; only a
+// sha256 digest is persisted.
+
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import {
+  ArrowsClockwise, Broadcast, Copy, Plugs, Plus, Warning,
+} from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Switch } from '@/components/ui/switch'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { DataTable, type Column } from '@/components/ui/DataTable'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { FormDialog, Field } from '@/components/evals/FormDialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
+import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
+import { useIntegrations, useWebhooks } from '@/hooks/useIntegrations'
+import { useRBAC } from '@/hooks/useRBAC'
+import {
+  INTEGRATION_CATEGORIES,
+  type IntegrationCategory, type IntegrationHealth,
+  type IntegrationRecord, type IntegrationStatus,
+} from '@/services/integrationsService'
 
-
-type IntegrationStatus = 'Connected' | 'Disconnected' | 'Error' | 'Pending Setup'
-type IntegrationCategory = 'AI Provider' | 'Data Source' | 'Compliance Tool' | 'Monitoring' | 'Identity' | 'Notification' | 'Ticketing'
-
-interface Integration {
-  id: string
-  name: string
-  category: IntegrationCategory
-  status: IntegrationStatus
-  description: string
-  lastSync?: string
-  dataFlows: string[]
-  apiVersion?: string
-  healthCheck?: 'passing' | 'failing' | 'degraded'
-  authMethod: string
-  connectedDate?: string
-  error?: string
+const CATEGORY_LABEL: Record<IntegrationCategory, string> = {
+  credit_bureau: 'Credit bureau', regulator: 'Regulator', core_banking: 'Core banking',
+  payments: 'Payments', monitoring: 'Monitoring', identity: 'Identity',
+  ticketing: 'Ticketing', communication: 'Communication', mlops: 'MLOps',
+  storage: 'Storage', other: 'Other',
 }
 
-const SEED: Integration[] = [
-  { id: 'INT-001', name: 'OpenAI', category: 'AI Provider', status: 'Connected', description: 'GPT-4o and GPT-4o-mini APIs for LoanProcessorAgent and other production agents', lastSync: '2026-04-10 09:15:00', dataFlows: ['Model inference requests', 'Usage metering', 'Safety logs'], apiVersion: 'v1', healthCheck: 'passing', authMethod: 'API Key (rotated every 90 days)', connectedDate: '2025-08-15' },
-  { id: 'INT-002', name: 'Anthropic', category: 'AI Provider', status: 'Connected', description: 'Claude 3.5 Sonnet and Claude 3 Haiku for FraudInvestigatorAgent and DataQualityPatrolAgent', lastSync: '2026-04-10 08:55:00', dataFlows: ['Model inference requests', 'Safety filter events'], apiVersion: 'v1', healthCheck: 'passing', authMethod: 'API Key (rotated every 90 days)', connectedDate: '2026-01-10' },
-  { id: 'INT-003', name: 'Experian Credit Bureau', category: 'Data Source', status: 'Connected', description: 'Real-time credit bureau data for Credit Scoring and Loan Approval models', lastSync: '2026-04-07 04:00:00', dataFlows: ['Credit reports', 'Score updates', 'Inquiry records'], healthCheck: 'degraded', authMethod: 'mTLS Certificate', connectedDate: '2024-06-01', error: 'API latency elevated (avg 4.2s vs SLA 2s) — contact Experian support' },
-  { id: 'INT-004', name: 'Splunk', category: 'Monitoring', status: 'Connected', description: 'Security information and event management — AI system logs, anomaly detection, SIEM integration', lastSync: '2026-04-10 09:20:00', dataFlows: ['Audit logs', 'Security events', 'Model inference logs', 'Performance metrics'], healthCheck: 'passing', authMethod: 'Service Account Token', connectedDate: '2025-03-01' },
-  { id: 'INT-005', name: 'Okta', category: 'Identity', status: 'Connected', description: 'SSO and MFA for all Sentinel platform users. SCIM provisioning for automated user lifecycle management.', lastSync: '2026-04-10 09:18:00', dataFlows: ['User authentication', 'Group sync', 'MFA events'], healthCheck: 'passing', authMethod: 'OAuth 2.0 / SAML 2.0', connectedDate: '2024-01-15' },
-  { id: 'INT-006', name: 'Jira', category: 'Ticketing', status: 'Connected', description: 'Automatic ticket creation for compliance findings, risk items, HITL overflows, and remediation tasks', lastSync: '2026-04-10 09:10:00', dataFlows: ['Compliance tickets', 'Risk action items', 'Incident tickets', 'Audit findings'], healthCheck: 'passing', authMethod: 'API Token', connectedDate: '2025-09-01' },
-  { id: 'INT-007', name: 'PagerDuty', category: 'Notification', status: 'Connected', description: 'On-call alerting for critical AI incidents, model performance degradation, and kill switch events', lastSync: '2026-04-10 09:00:00', dataFlows: ['Critical alerts', 'Incident escalations', 'On-call schedules'], healthCheck: 'passing', authMethod: 'Integration Key', connectedDate: '2025-09-01' },
-  { id: 'INT-008', name: 'Hugging Face Hub', category: 'AI Provider', status: 'Error', description: 'Model repository and inference API for open-source model access', lastSync: '2026-04-08 14:00:00', dataFlows: ['Model downloads', 'Inference requests'], healthCheck: 'failing', authMethod: 'API Token', connectedDate: '2026-02-20', error: 'Authentication token expired — requires rotation. Click reconnect to update.' },
-  { id: 'INT-009', name: 'AWS CloudWatch', category: 'Monitoring', status: 'Connected', description: 'Infrastructure monitoring for AWS-hosted AI compute workloads, cost tracking, and energy metrics', lastSync: '2026-04-10 09:15:00', dataFlows: ['Infrastructure metrics', 'Cost data', 'Energy consumption', 'GPU utilization'], healthCheck: 'passing', authMethod: 'IAM Role (cross-account)', connectedDate: '2024-06-01' },
-  { id: 'INT-010', name: 'Slack', category: 'Notification', status: 'Pending Setup', description: 'Real-time notifications for compliance alerts, HITL reviews, and governance events to team channels', dataFlows: ['Compliance alerts', 'HITL notifications', 'Daily summaries'], authMethod: 'OAuth 2.0' },
+const STATUSES: [IntegrationStatus, string][] = [
+  ['connected', 'Connected'], ['degraded', 'Degraded'], ['error', 'Error'],
+  ['disconnected', 'Disconnected'], ['configuring', 'Configuring'],
 ]
 
-const STATUS_STYLE: Record<IntegrationStatus, { bg: string; color: string }> = {
-  Connected: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-  Disconnected: { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))' },
-  Error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  'Pending Setup': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+const statusTone: Record<IntegrationStatus, string> = {
+  connected: 'bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]',
+  degraded: 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]',
+  error: 'bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]',
+  disconnected: 'bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]',
+  configuring: 'bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]',
 }
 
-const HEALTH_DOT: Record<string, string> = {
-  passing: 'hsl(var(--s-ok-tx))',
-  degraded: 'hsl(var(--s-wn-tx))',
-  failing: 'hsl(var(--destructive))',
+const healthTone: Record<IntegrationHealth, string> = {
+  passing: 'text-[hsl(var(--s-ok-tx))]',
+  degraded: 'text-[hsl(var(--s-wn-tx))]',
+  failing: 'text-[hsl(var(--s-er-tx))]',
+  unknown: 'text-[hsl(var(--text-4))]',
 }
 
-const CAT_COLORS: Record<IntegrationCategory, string> = {
-  'AI Provider': 'hsl(var(--brand))',
-  'Data Source': 'hsl(var(--s-ok-tx))',
-  'Compliance Tool': 'hsl(var(--tag-purple))',
-  Monitoring: 'hsl(var(--s-in-tx))',
-  Identity: 'hsl(var(--s-wn-tx))',
-  Notification: 'hsl(var(--s-wn-tx))',
-  Ticketing: 'hsl(var(--text-3))',
+const AUTH_METHODS = ['API Key', 'OAuth 2.0', 'Service Account Token', 'mTLS Certificate', 'IAM Role', 'SAML 2.0', 'Integration Key']
+
+const EMPTY: Partial<IntegrationRecord> = {
+  name: '', provider: '', category: 'other', status: 'configuring',
+  authMethod: 'API Key', description: '', dataFlows: [], health: 'unknown',
+  direction: 'inbound', ownerName: '', config: {},
 }
 
-const BLANK_INT = { name: '', category: 'AI Provider' as IntegrationCategory, description: '', authMethod: 'API Key', apiVersion: '', }
+function relativeTime(iso?: string | null): string {
+  if (!iso) return 'never'
+  const diffMs = Date.now() - new Date(iso).getTime()
+  const mins = Math.round(diffMs / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.round(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  return `${Math.round(hrs / 24)}d ago`
+}
 
 export default function IntegrationsPage() {
-  const { data: integrations, setData: setIntegrations } = useSupabaseTable<Integration>('integrations_table', SEED)
-  const [selected, setSelected] = useState<Integration | null>(null)
-  const [catFilter, setCatFilter] = useState<string>('All')
-  const [showCreate, setShowCreate] = useState(false)
-  const [form, setForm] = useState(BLANK_INT)
-  const [deleteTarget, setDeleteTarget] = useState<Integration | null>(null)
+  const { can } = useRBAC()
+  const integrations = useIntegrations()
+  const webhooks = useWebhooks()
 
-  const filtered = catFilter === 'All' ? integrations : integrations.filter(i => i.category === catFilter)
-  const categories = ['All', ...Array.from(new Set(integrations.map(i => i.category)))]
+  const [tab, setTab] = useState('connectors')
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<IntegrationRecord | null>(null)
+  const [form, setForm] = useState<Partial<IntegrationRecord>>(EMPTY)
+  const [toDelete, setToDelete] = useState<IntegrationRecord | null>(null)
 
-  const stats = {
-    connected: integrations.filter(i => i.status === 'Connected').length,
-    errors: integrations.filter(i => i.status === 'Error').length,
-    pending: integrations.filter(i => i.status === 'Pending Setup').length,
-    total: integrations.length,
-  }
+  const [hookFormOpen, setHookFormOpen] = useState(false)
+  const [hookForm, setHookForm] = useState({ url: '', description: '', eventTypes: '' })
+  const [revealedSecret, setRevealedSecret] = useState<string | null>(null)
+  const [hookToDelete, setHookToDelete] = useState<string | null>(null)
 
-  function handleCreate() {
-    if (!form.name || !form.category) { toast.error('Name and category are required'); return }
-    const newInt: Integration = {
-      id: `INT-${String(integrations.length + 1).padStart(3, '0')}`,
-      name: form.name, category: form.category, description: form.description || 'No description provided.',
-      status: 'Pending Setup', dataFlows: [], authMethod: form.authMethod || 'API Key',
-      apiVersion: form.apiVersion || undefined, connectedDate: undefined, healthCheck: undefined,
+  const set = <K extends keyof IntegrationRecord>(k: K, v: IntegrationRecord[K] | undefined) =>
+    setForm((f) => ({ ...f, [k]: v }))
+
+  function openCreate() { setEditing(null); setForm(EMPTY); setFormOpen(true) }
+  function openEdit(i: IntegrationRecord) { setEditing(i); setForm({ ...i }); setFormOpen(true) }
+
+  function submit() {
+    const onError = (e: any) => toast.error(e?.message ?? 'Failed to save integration')
+    if (editing) {
+      integrations.update.mutate({ id: editing.id, patch: form }, {
+        onSuccess: () => { toast.success('Integration updated'); setFormOpen(false) }, onError,
+      })
+    } else {
+      integrations.create.mutate(form, {
+        onSuccess: () => { toast.success('Integration added'); setFormOpen(false) }, onError,
+      })
     }
-    setIntegrations(p => [...p, newInt])
-    setShowCreate(false)
-    setForm(BLANK_INT)
-    toast.success(`${newInt.name} integration added — complete setup to connect`)
   }
 
-  function handleDelete() {
-    if (!deleteTarget) return
-    setIntegrations(p => p.filter(i => i.id !== deleteTarget.id))
-    if (selected?.id === deleteTarget.id) setSelected(null)
-    toast.success(`${deleteTarget.name} integration removed`)
-    setDeleteTarget(null)
+  /** Records a sync attempt against the real row — no simulated results. */
+  function markSynced(i: IntegrationRecord) {
+    integrations.update.mutate(
+      { id: i.id, patch: { lastSyncAt: new Date().toISOString() } },
+      {
+        onSuccess: () => toast.success(`${i.name}: sync timestamp recorded`),
+        onError: (e: any) => toast.error(e?.message ?? 'Failed to record sync'),
+      },
+    )
   }
+
+  function submitWebhook() {
+    const eventTypes = hookForm.eventTypes.split(',').map((s) => s.trim()).filter(Boolean)
+    webhooks.create.mutate(
+      { url: hookForm.url.trim(), description: hookForm.description.trim() || undefined, eventTypes },
+      {
+        onSuccess: (res) => {
+          setHookFormOpen(false)
+          setHookForm({ url: '', description: '', eventTypes: '' })
+          setRevealedSecret(res.secret)
+        },
+        onError: (e: any) => toast.error(e?.message ?? 'Failed to create endpoint'),
+      },
+    )
+  }
+
+  const stats = useMemo(() => ({
+    connected: integrations.data.filter((i) => i.status === 'connected').length,
+    attention: integrations.data.filter((i) => i.status === 'error' || i.status === 'degraded').length,
+    inbound: integrations.data.filter((i) => i.direction !== 'outbound').length,
+    hooks: webhooks.data.filter((w) => w.isActive).length,
+  }), [integrations.data, webhooks.data])
+
+  const columns: Column<IntegrationRecord>[] = [
+    { key: 'name', header: 'Integration', sortable: true, render: (i) => (
+      <div>
+        <div className="text-sm font-medium text-[hsl(var(--text-1))]">{i.name}</div>
+        <div className="text-xs text-[hsl(var(--text-4))]">{i.provider ?? '—'} · {CATEGORY_LABEL[i.category]}</div>
+      </div>
+    ) },
+    { key: 'status', header: 'Status', sortable: true, render: (i) => (
+      <span className={`inline-flex px-2 py-0.5 text-[11px] font-medium capitalize ${statusTone[i.status]}`}>{i.status}</span>
+    ) },
+    { key: 'health', header: 'Health', render: (i) => (
+      <span className={`text-xs font-medium capitalize ${healthTone[i.health]}`}>{i.health}</span>
+    ) },
+    { key: 'direction', header: 'Direction', render: (i) => (
+      <span className="text-xs capitalize text-[hsl(var(--text-3))]">{i.direction}</span>
+    ) },
+    { key: 'dataFlows', header: 'Data flows', render: (i) => i.dataFlows.length ? (
+      <div className="flex flex-wrap gap-1">
+        {i.dataFlows.slice(0, 2).map((f) => (
+          <span key={f} className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-muted))] px-1.5 py-0.5 text-[10px]">{f}</span>
+        ))}
+        {i.dataFlows.length > 2 && <span className="text-[10px] text-[hsl(var(--text-4))]">+{i.dataFlows.length - 2}</span>}
+      </div>
+    ) : <span className="text-xs text-[hsl(var(--text-4))]">—</span> },
+    { key: 'lastSyncAt', header: 'Last sync', sortable: true, render: (i) => (
+      <span className="font-mono text-xs text-[hsl(var(--text-3))]">{relativeTime(i.lastSyncAt)}</span>
+    ) },
+    { key: 'ownerName', header: 'Owner', sortable: true },
+  ]
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <Plugs size={20} weight="fill" className="text-[hsl(var(--brand))]" />
-            Integrations
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Connected systems — AI providers, data sources, monitoring, identity, and notification services</p>
-        </div>
-        <button onClick={() => { setForm(BLANK_INT); setShowCreate(true) }} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90"><Plus size={14} /> Add Integration</button>
-      </div>
+    <div>
+      <PageHeader
+        title="Integrations"
+        subtitle="Connectors and outbound webhooks that move governance data in and out of the platform"
+        icon={Plugs}
+        actions={can('create') ? (
+          <Button size="sm" icon={<Plus />} onClick={tab === 'webhooks' ? () => setHookFormOpen(true) : openCreate}>
+            {tab === 'webhooks' ? 'Add Endpoint' : 'Add Integration'}
+          </Button>
+        ) : undefined}
+      />
 
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Total Integrations', value: stats.total, color: 'hsl(var(--text-1))' },
-          { label: 'Connected', value: stats.connected, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Errors', value: stats.errors, color: 'hsl(var(--destructive))' },
-          { label: 'Pending Setup', value: stats.pending, color: 'hsl(var(--s-in-tx))' },
-        ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-            <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-          </div>
-        ))}
-      </div>
+      <Card className="mb-4">
+        <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-4">
+          <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Connected</p><p className="font-mono text-xl font-bold text-[hsl(var(--s-ok-tx))]">{stats.connected}</p></div>
+          <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Need attention</p><p className="font-mono text-xl font-bold text-[hsl(var(--s-er-tx))]">{stats.attention}</p></div>
+          <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Ingesting data</p><p className="font-mono text-xl font-bold">{stats.inbound}</p></div>
+          <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Active webhooks</p><p className="font-mono text-xl font-bold">{stats.hooks}</p></div>
+        </CardContent>
+      </Card>
 
-      <div className="flex gap-2 flex-wrap">
-        {categories.map(c => (
-          <button key={c} onClick={() => setCatFilter(c)} className="text-[11px] px-2.5 py-1 border transition-colors" style={catFilter === c ? { background: 'hsl(var(--brand))', color: 'white', borderColor: 'hsl(var(--brand))' } : { borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
-            {c}
-          </button>
-        ))}
-      </div>
+      <Tabs value={tab} onValueChange={setTab}>
+        <TabsList>
+          <TabsTrigger value="connectors">Connectors</TabsTrigger>
+          <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
+        </TabsList>
 
-      <div className="grid grid-cols-2 gap-4">
-        {filtered.map(int => (
-          <div key={int.id} className="rounded border border-[hsl(var(--border))] bg-surface p-4 cursor-pointer hover:border-[hsl(var(--brand)/0.4)] transition-colors" onClick={() => setSelected(int)}>
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 flex items-center justify-center border border-[hsl(var(--border))] bg-raised">
-                  <Plugs size={18} style={{ color: CAT_COLORS[int.category] }} />
+        <TabsContent value="connectors" className="mt-4">
+          <Card className="p-4">
+            {integrations.isLoading ? <TableSkeleton cols={7} />
+              : integrations.isError ? <ErrorState message={integrations.error?.message} onRetry={() => integrations.refetch()} />
+              : integrations.data.length === 0 ? (
+                <EmptyState title="No integrations configured"
+                  message="Connect the systems that feed governance data — credit bureau extracts, core banking events, regulator reporting, monitoring."
+                  actionLabel={can('create') ? 'Add an integration' : undefined}
+                  onAction={can('create') ? openCreate : undefined} />
+              ) : (
+                <DataTable
+                  data={integrations.data} columns={columns} searchKey="name" searchPlaceholder="Search integrations…"
+                  onEdit={can('update') ? openEdit : undefined}
+                  onDelete={can('delete') ? (i) => setToDelete(i) : undefined}
+                  actions={can('update') ? (i) => (
+                    <Button variant="ghost" size="sm" icon={<ArrowsClockwise />} title="Record a sync"
+                      onClick={(e) => { e.stopPropagation(); markSynced(i) }} />
+                  ) : undefined}
+                />
+              )}
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="webhooks" className="mt-4">
+          <Card className="p-4">
+            {webhooks.isLoading ? <TableSkeleton cols={5} />
+              : webhooks.isError ? <ErrorState message={webhooks.error?.message} onRetry={() => webhooks.refetch()} />
+              : webhooks.data.length === 0 ? (
+                <EmptyState title="No webhook endpoints"
+                  message="Push governance events — risk-tier changes, failed validations, guardrail blocks — to your own systems."
+                  actionLabel={can('create') ? 'Add an endpoint' : undefined}
+                  onAction={can('create') ? () => setHookFormOpen(true) : undefined} />
+              ) : (
+                <div className="divide-y divide-[hsl(var(--border))]">
+                  {webhooks.data.map((w) => (
+                    <div key={w.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Broadcast size={14} className="text-[hsl(var(--text-4))]" />
+                          <span className="truncate font-mono text-sm text-[hsl(var(--text-1))]">{w.url}</span>
+                          {w.failureCount > 0 && (
+                            <span className="inline-flex items-center gap-1 bg-[hsl(var(--s-er-bg))] px-1.5 py-0.5 text-[10px] text-[hsl(var(--s-er-tx))]">
+                              <Warning size={10} /> {w.failureCount} failures
+                            </span>
+                          )}
+                        </div>
+                        {w.description && <p className="mt-0.5 text-xs text-[hsl(var(--text-3))]">{w.description}</p>}
+                        <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                          {w.eventTypes.map((e) => (
+                            <span key={e} className="border border-[hsl(var(--border))] bg-[hsl(var(--bg-muted))] px-1.5 py-0.5 font-mono text-[10px]">{e}</span>
+                          ))}
+                        </div>
+                        <p className="mt-1 text-[11px] text-[hsl(var(--text-4))]">
+                          {w.secretPrefix ? `${w.secretPrefix}…` : 'no secret'} · last success {relativeTime(w.lastSuccessAt)} · {w.maxRetries} retries · {w.timeoutSec}s timeout
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Switch checked={w.isActive} disabled={!can('update')}
+                          onCheckedChange={(v) => webhooks.toggle.mutate({ id: w.id, isActive: v }, {
+                            onError: (e: any) => toast.error(e?.message ?? 'Failed to update endpoint'),
+                          })} />
+                        {can('delete') && (
+                          <Button variant="ghost" size="sm" onClick={() => setHookToDelete(w.id)}>Remove</Button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-[hsl(var(--text-1))]">{int.name}</h3>
-                  <span className="text-[10px]" style={{ color: CAT_COLORS[int.category] }}>{int.category}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {int.healthCheck && <div className="w-2 h-2 rounded-full" style={{ background: HEALTH_DOT[int.healthCheck] }} title={int.healthCheck} />}
-                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[int.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{int.status}</span>
-              </div>
-            </div>
-            <p className="text-xs text-[hsl(var(--text-4))] mb-2 line-clamp-2">{int.description}</p>
-            {int.error && (
-              <div className="flex items-start gap-1.5 p-2 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)] mb-2">
-                <Warning size={12} className="text-[hsl(var(--destructive))] flex-shrink-0 mt-0.5" />
-                <p className="text-[10px] text-[hsl(var(--destructive))]">{int.error}</p>
-              </div>
-            )}
-            <div className="flex items-center justify-between">
-              <p className="text-[10px] text-[hsl(var(--text-4))]">{int.lastSync ? `Last sync: ${int.lastSync}` : 'Not connected'}</p>
-              <div className="flex gap-1 items-center">
-                {int.status === 'Error' && (
-                  <button onClick={e => { e.stopPropagation(); toast.success(`${int.name} reconnected`) }} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Reconnect</button>
-                )}
-                {int.status === 'Pending Setup' && (
-                  <button onClick={e => { e.stopPropagation(); toast.info(`Setting up ${int.name}`) }} className="text-[10px] px-2 py-0.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Set Up</button>
-                )}
-                <button onClick={e => { e.stopPropagation(); setDeleteTarget(int) }} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><Trash size={12} /></button>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
+              )}
+          </Card>
+        </TabsContent>
+      </Tabs>
 
-      {selected && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[440px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
-              <div><p className="text-[10px] text-[hsl(var(--text-4))]">{selected.category}</p><h2 className="text-base font-semibold text-[hsl(var(--text-1))]">{selected.name}</h2></div>
-              <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
-            </div>
-            <div className="p-4 space-y-4">
-              <div className="flex gap-2">
-                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
-                {selected.healthCheck && <span className="text-[11px] px-2 py-0.5 font-medium flex items-center gap-1" style={{ background: selected.healthCheck === 'passing' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))', color: HEALTH_DOT[selected.healthCheck] }}><div className="w-1.5 h-1.5 rounded-full" style={{ background: HEALTH_DOT[selected.healthCheck] }} />{selected.healthCheck}</span>}
-              </div>
-              <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">{selected.description}</p>
-              {selected.error && <div className="flex items-start gap-2 p-3 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)]"><Warning size={14} className="text-[hsl(var(--destructive))] flex-shrink-0 mt-0.5" /><p className="text-sm text-[hsl(var(--destructive))]">{selected.error}</p></div>}
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Auth Method', value: selected.authMethod },
-                  { label: 'API Version', value: selected.apiVersion ?? 'N/A' },
-                  { label: 'Connected Date', value: selected.connectedDate ?? 'N/A' },
-                  { label: 'Last Sync', value: selected.lastSync ?? 'Never' },
-                ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
-                    <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
-                    <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
-                  </div>
-                ))}
-              </div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Data Flows</p><div className="space-y-1">{selected.dataFlows.map(f => <div key={f} className="text-xs text-[hsl(var(--text-2))] p-2 bg-raised border border-[hsl(var(--border))]">{f}</div>)}</div></div>
-            </div>
-            <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => toast.success(`${selected.name} synced`)} className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><ArrowClockwise size={14} /> Sync Now</button>
-              {selected.status === 'Error' && <button onClick={() => { toast.success(`${selected.name} reconnected`); setSelected(null) }} className="flex-1 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Reconnect</button>}
-              <button onClick={() => { setDeleteTarget(selected); setSelected(null) }} className="px-3 py-2 border border-[hsl(var(--destructive)/0.3)] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(var(--s-er-bg))]"><Trash size={14} /></button>
-            </div>
-          </div>
+      {/* Integration create / edit */}
+      <FormDialog
+        open={formOpen} onOpenChange={setFormOpen}
+        title={editing ? `Edit ${editing.name}` : 'Add Integration'}
+        description="Connectors move governance data between the platform and your systems of record."
+        submitLabel={editing ? 'Save changes' : 'Add'}
+        busy={integrations.create.isPending || integrations.update.isPending}
+        disabled={!form.name?.trim()}
+        onSubmit={submit}
+      >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Name" required><Input value={form.name ?? ''} onChange={(e) => set('name', e.target.value)} placeholder="Credit bureau extract" /></Field>
+          <Field label="Provider"><Input value={form.provider ?? ''} onChange={(e) => set('provider', e.target.value)} /></Field>
+          <Field label="Category">
+            <Select value={form.category ?? 'other'} onValueChange={(v) => set('category', v as IntegrationCategory)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{INTEGRATION_CATEGORIES.map((c) => <SelectItem key={c} value={c}>{CATEGORY_LABEL[c]}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Status">
+            <Select value={form.status ?? 'configuring'} onValueChange={(v) => set('status', v as IntegrationStatus)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{STATUSES.map(([v, l]) => <SelectItem key={v} value={v}>{l}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Health">
+            <Select value={form.health ?? 'unknown'} onValueChange={(v) => set('health', v as IntegrationHealth)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{(['passing', 'degraded', 'failing', 'unknown'] as IntegrationHealth[]).map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Direction">
+            <Select value={form.direction ?? 'inbound'} onValueChange={(v) => set('direction', v as IntegrationRecord['direction'])}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{(['inbound', 'outbound', 'bidirectional'] as const).map((d) => <SelectItem key={d} value={d}>{d}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Auth method">
+            <Select value={form.authMethod ?? 'API Key'} onValueChange={(v) => set('authMethod', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{AUTH_METHODS.map((a) => <SelectItem key={a} value={a}>{a}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Owner"><Input value={form.ownerName ?? ''} onChange={(e) => set('ownerName', e.target.value)} /></Field>
         </div>
-      )}
+        <Field label="Description"><Textarea rows={2} value={form.description ?? ''} onChange={(e) => set('description', e.target.value)} /></Field>
+        <Field label="Data flows" hint="Comma-separated">
+          <Input value={(form.dataFlows ?? []).join(', ')}
+            onChange={(e) => set('dataFlows', e.target.value.split(',').map((s) => s.trim()).filter(Boolean))} />
+        </Field>
+      </FormDialog>
 
-      {/* Add Integration Modal */}
-      {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowCreate(false)} />
-          <div className="relative bg-surface border border-[hsl(var(--border))] w-full max-w-md mx-4 shadow-2xl">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
-              <h2 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-                <Plugs size={15} className="text-[hsl(var(--brand))]" />
-                Add Integration
-              </h2>
-              <button onClick={() => setShowCreate(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
-            </div>
-            <div className="p-5 space-y-4">
-              <div>
-                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Integration Name *</label>
-                <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Vertex AI, Datadog, ServiceNow..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-              </div>
-              <div>
-                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Category *</label>
-                <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v as IntegrationCategory }))}>
-                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {['AI Provider', 'Data Source', 'Compliance Tool', 'Monitoring', 'Identity', 'Notification', 'Ticketing'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Auth Method</label>
-                <Select value={form.authMethod} onValueChange={v => setForm(p => ({ ...p, authMethod: v }))}>
-                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {['API Key', 'OAuth 2.0', 'Service Account Token', 'mTLS Certificate', 'IAM Role', 'SAML 2.0', 'Integration Key'].map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className="text-[10px] font-medium text-[hsl(var(--text-4))] uppercase tracking-wide mb-1 block">Description</label>
-                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} placeholder="Describe what this integration is used for..." className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" />
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setShowCreate(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
-              <button onClick={handleCreate} className="px-4 py-2 text-sm font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Add Integration</button>
-            </div>
+      {/* Webhook create */}
+      <FormDialog
+        open={hookFormOpen} onOpenChange={setHookFormOpen}
+        title="Add Webhook Endpoint"
+        description="The signing secret is generated now and shown once — only its digest is stored."
+        submitLabel="Create endpoint"
+        busy={webhooks.create.isPending}
+        disabled={!hookForm.url.trim() || !hookForm.eventTypes.trim()}
+        onSubmit={submitWebhook}
+      >
+        <Field label="Endpoint URL" required>
+          <Input value={hookForm.url} onChange={(e) => setHookForm((f) => ({ ...f, url: e.target.value }))}
+            placeholder="https://ops.example.com/hooks/governance" />
+        </Field>
+        <Field label="Description"><Input value={hookForm.description} onChange={(e) => setHookForm((f) => ({ ...f, description: e.target.value }))} /></Field>
+        <Field label="Event types" required hint="Comma-separated, e.g. model.risk_tier_changed, validation.completed">
+          <Input value={hookForm.eventTypes} onChange={(e) => setHookForm((f) => ({ ...f, eventTypes: e.target.value }))} />
+        </Field>
+      </FormDialog>
+
+      {/* One-time secret reveal */}
+      <Dialog open={!!revealedSecret} onOpenChange={(o) => { if (!o) { setRevealedSecret(null); toast.success('Endpoint created') } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Signing secret</DialogTitle>
+            <DialogDescription>
+              Copy it now — only a sha256 digest is stored, so this value cannot be shown again.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex items-center gap-2">
+            <code className="flex-1 break-all border border-[hsl(var(--border))] bg-[hsl(var(--bg-muted))] p-2 font-mono text-xs">{revealedSecret}</code>
+            <Button size="sm" variant="secondary" icon={<Copy />} onClick={() => {
+              if (revealedSecret) navigator.clipboard?.writeText(revealedSecret)
+              toast.success('Copied')
+            }}>Copy</Button>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
-        open={!!deleteTarget}
-        onOpenChange={o => !o && setDeleteTarget(null)}
-        onConfirm={handleDelete}
-        title="Remove integration?"
-        description={`Disconnect and remove ${deleteTarget?.name}. Any data flows relying on this integration will stop.`}
-        isDestructive
-        confirmLabel="Remove"
+        open={!!toDelete}
+        onOpenChange={(o) => !o && setToDelete(null)}
+        title={`Remove ${toDelete?.name ?? ''}?`}
+        description="The integration is soft-deleted; historical sync records are retained."
+        isDestructive confirmLabel="Remove"
+        onConfirm={() => {
+          if (!toDelete) return
+          integrations.remove.mutate(toDelete.id, {
+            onSuccess: () => { toast.success('Integration removed'); setToDelete(null) },
+            onError: (e: any) => toast.error(e?.message ?? 'Failed to remove'),
+          })
+        }}
+      />
+
+      <ConfirmDialog
+        open={!!hookToDelete}
+        onOpenChange={(o) => !o && setHookToDelete(null)}
+        title="Remove webhook endpoint?"
+        description="Events will stop being delivered to this URL immediately."
+        isDestructive confirmLabel="Remove"
+        onConfirm={() => {
+          if (!hookToDelete) return
+          webhooks.remove.mutate(hookToDelete, {
+            onSuccess: () => { toast.success('Endpoint removed'); setHookToDelete(null) },
+            onError: (e: any) => toast.error(e?.message ?? 'Failed to remove'),
+          })
+        }}
       />
     </div>
   )

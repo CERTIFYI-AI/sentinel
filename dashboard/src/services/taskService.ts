@@ -1,6 +1,19 @@
-import { supabase, isSupabaseConfigured } from '../lib/supabase'
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// Governance tasks (`tasks`) — the platform's work queue. Org-scoped via RLS
+// with tenant_id defaulted DB-side (the client never sends it), camelCase↔
+// snake_case mapped, and writes that THROW on failure so the UI can never
+// report a false success.
+//
+// The UI's flat Task shape maps onto the richer table as follows:
+//   assignee            ↔ assignees[0]        (array column, first holder)
+//   dueDate             ↔ due_date
+//   sourceType/sourceId ↔ linked_entity_type / linked_entity_id (canonical interlink)
+//   source/sourceLink   ↔ linked_items jsonb  (display label + deep link)
 
-const TENANT_ID = 'default'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { logAction } from '../lib/auditLogger'
 
 // Canonical task statuses the UI knows how to render. Anything the DB returns
 // that falls outside this set is normalised so a stray/legacy value can never
@@ -28,60 +41,96 @@ function normalizePriority(raw: unknown): string {
   return KNOWN_PRIORITIES.has(p) ? p : 'medium'
 }
 
-export async function fetchAllTasks(filters: Record<string,any> = {}): Promise<any[]> {
-  if (!isSupabaseConfigured() || !supabase) return []
-  try {
-    const { data, error } = await supabase
-      .from('tasks')
-      .select('*')
-      .order('created_at', { ascending: false })
-    if (error) {
-      console.warn('[taskService] fetch failed:', error.message)
-      return []
+/** Flatten a task row into the shape the board and table render. */
+function fromRow(row: Record<string, any>): Record<string, any> {
+  const linked = (row.linked_items ?? {}) as Record<string, any>
+  const assignees: string[] = Array.isArray(row.assignees) ? row.assignees : []
+  return {
+    ...row,
+    id: row.id,
+    title: row.title ?? '',
+    description: row.description ?? '',
+    status: normalizeStatus(row.status),
+    priority: normalizePriority(row.priority),
+    assignee: assignees[0] ?? '',
+    assignees,
+    dueDate: row.due_date ?? '',
+    source: linked.source ?? '',
+    sourceType: linked.sourceType ?? row.linked_entity_type ?? '',
+    sourceLink: linked.sourceLink ?? '',
+    linkedEntityType: row.linked_entity_type ?? null,
+    linkedEntityId: row.linked_entity_id ?? null,
+    slaDueAt: row.sla_due_at ?? null,
+    slaBreached: !!row.sla_breached,
+  }
+}
+
+/**
+ * Project the UI shape back onto real columns. Unknown keys are dropped rather
+ * than sent — Postgres rejects unknown columns, and the old code swallowed that
+ * error, which is what made failed writes look successful.
+ */
+function toRow(rec: Record<string, any>): Record<string, any> {
+  const row: Record<string, any> = {}
+  if (rec.id !== undefined) row.id = rec.id
+  if (rec.title !== undefined) row.title = rec.title
+  if (rec.description !== undefined) row.description = rec.description
+  if (rec.status !== undefined) row.status = rec.status
+  if (rec.priority !== undefined) row.priority = rec.priority
+  if (rec.dueDate !== undefined || rec.due_date !== undefined) {
+    const due = rec.dueDate ?? rec.due_date
+    row.due_date = due ? new Date(due).toISOString() : null
+  }
+  if (rec.assignees !== undefined) row.assignees = rec.assignees
+  else if (rec.assignee !== undefined) row.assignees = rec.assignee ? [rec.assignee] : []
+  if (rec.linkedEntityType !== undefined) row.linked_entity_type = rec.linkedEntityType || null
+  if (rec.linkedEntityId !== undefined) row.linked_entity_id = rec.linkedEntityId || null
+  if (rec.source !== undefined || rec.sourceLink !== undefined || rec.sourceType !== undefined) {
+    row.linked_items = {
+      source: rec.source ?? '',
+      sourceType: rec.sourceType ?? '',
+      sourceLink: rec.sourceLink ?? '',
     }
-    // Defensive mapping: never assume `data` is an array, never assume a row is a
-    // complete object, and coerce nullable columns so the UI never receives null.
-    const rows = Array.isArray(data) ? data : []
-    return rows
-      .filter((row: any) => row && typeof row === 'object')
-      .map((row: any) => ({
-        ...row,
-        id: row.id ?? row.task_id ?? `task-${Math.random().toString(36).slice(2, 10)}`,
-        assignee: row.assignee ?? '',
-        title: row.title ?? '',
-        description: row.description ?? '',
-        source: row.source ?? '',
-        dueDate: row.due_date ?? row.dueDate ?? '',
-        status: normalizeStatus(row.status),
-        priority: normalizePriority(row.priority),
-      }))
-  } catch (e) { return [] }
+  }
+  return row
+}
+
+export async function fetchAllTasks(_filters: Record<string, any> = {}): Promise<any[]> {
+  if (!isSupabaseConfigured() || !supabase) return []
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('is_deleted', false)
+    .order('created_at', { ascending: false })
+  if (error) throw new Error(error.message)
+  const rows = Array.isArray(data) ? data : []
+  return rows.filter((row: any) => row && typeof row === 'object').map(fromRow)
 }
 
 export async function upsertTask(record: Record<string, unknown>): Promise<any> {
-  if (!isSupabaseConfigured() || !supabase) return record
-  try {
-    const { data, error } = await supabase
-      .from('tasks')
-      .upsert({ ...record, tenant_id: TENANT_ID })
-      .select()
-      .single()
-    if (error) { console.warn('[taskService] upsert failed:', error.message); return record }
-    return data
-  } catch (e) { return record }
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot save.')
+  // tenant_id is intentionally omitted: the DB default (current_user_org_id())
+  // fills it, so a client can never write into another org.
+  const { data, error } = await supabase
+    .from('tasks')
+    .upsert({ ...toRow(record as Record<string, any>), updated_at: new Date().toISOString() })
+    .select()
+    .single()
+  if (error) throw new Error(error.message)
+  void logAction({ module: 'tasks', entityType: 'tasks', entityId: String(data.id), action: 'update' })
+  return fromRow(data)
 }
 
 export async function deleteTask(id: string): Promise<boolean> {
-  if (!isSupabaseConfigured() || !supabase) return false
-  try {
-    const { error } = await supabase
-      .from('tasks')
-      .delete()
-      .eq('id', id)
-      .eq('tenant_id', TENANT_ID)
-    if (error) { console.warn('[taskService] delete failed:', error.message); return false }
-    return true
-  } catch (e) { return false }
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot delete.')
+  // Soft-delete, and let RLS scope the row rather than a client-side tenant filter.
+  const { error } = await supabase
+    .from('tasks')
+    .update({ is_deleted: true, updated_at: new Date().toISOString() })
+    .eq('id', id)
+  if (error) throw new Error(error.message)
+  void logAction({ module: 'tasks', entityType: 'tasks', entityId: id, action: 'delete' })
+  return true
 }
 
 // Backward-compatible aliases

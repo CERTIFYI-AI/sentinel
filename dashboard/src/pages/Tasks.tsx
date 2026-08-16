@@ -1,5 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
+import { useState, useCallback } from 'react';
 import { useTaskData } from '../hooks/useTaskData';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -70,188 +69,9 @@ function SlaBadge({ dueDate, status }: { dueDate: string; status: TaskStatus }) 
   );
 }
 
-export const TASKS: Task[] = [
-  {
-    id: 'TSK-001',
-    title: 'Update risk assessment for LLM deployment scenarios',
-    description: 'Current risk assessment methodology does not adequately cover LLM-specific risks. Update FMEA templates and approval workflows.',
-    priority: 'critical',
-    status: 'overdue',
-    assignee: 'Raj Gupta',
-    dueDate: '2026-04-30',
-    source: 'GAP-001',
-    sourceType: 'gap',
-    sourceLink: '/gap-analysis',
-  },
-  {
-    id: 'TSK-002',
-    title: 'Complete EU AI Act Article 11 documentation',
-    description: 'Technical documentation for high-risk AI systems must meet Article 13 transparency requirements. Affected: MDL-001, MDL-004.',
-    priority: 'critical',
-    status: 'in_progress',
-    assignee: 'Raj Gupta',
-    dueDate: '2026-05-15',
-    source: 'GAP-002',
-    sourceType: 'gap',
-    sourceLink: '/gap-analysis',
-  },
-  {
-    id: 'TSK-003',
-    title: 'Implement SHAP explainability for automated credit decisions',
-    description: 'No meaningful explanation provided for automated credit decisions — violates GDPR Art. 22. Deploy SHAP pipeline on MDL-001.',
-    priority: 'high',
-    status: 'overdue',
-    assignee: 'James Patel',
-    dueDate: '2026-04-20',
-    source: 'GAP-003',
-    sourceType: 'gap',
-    sourceLink: '/gap-analysis',
-  },
-  {
-    id: 'TSK-004',
-    title: 'Remediate geographic proxy bias in MDL-001',
-    description: 'ZIP code features acting as proxy for protected class in Credit Risk Scorer. Remove features, apply adversarial debiasing, retrain.',
-    priority: 'critical',
-    status: 'in_progress',
-    assignee: 'Maria Santos',
-    dueDate: '2026-04-25',
-    source: 'RSK-001',
-    sourceType: 'risk',
-    sourceLink: '/risks',
-  },
-  {
-    id: 'TSK-005',
-    title: 'Add hallucination guardrail to Loan Approval Assistant',
-    description: 'GPT-4o generating fabricated loan terms. Implement RAG pipeline and confidence threshold guardrail on MDL-004.',
-    priority: 'high',
-    status: 'in_progress',
-    assignee: 'Raj Gupta',
-    dueDate: '2026-04-28',
-    source: 'RSK-002',
-    sourceType: 'risk',
-    sourceLink: '/risks',
-  },
-  {
-    id: 'TSK-006',
-    title: 'Renew OpenAI DPA — EU data processing',
-    description: 'Update vendor DPA agreements to include AI-specific clauses. Priority: OpenAI (expired), Pinecone (pending).',
-    priority: 'critical',
-    status: 'overdue',
-    assignee: 'James Patel',
-    dueDate: '2026-04-15',
-    source: 'GAP-005',
-    sourceType: 'gap',
-    sourceLink: '/gap-analysis',
-  },
-  {
-    id: 'TSK-007',
-    title: 'Develop AI-specific incident response playbooks',
-    description: 'Incident response does not cover AI-specific scenarios (bias incidents, LLM hallucination). Create 4 new playbook templates.',
-    priority: 'high',
-    status: 'in_progress',
-    assignee: 'Sarah Chen',
-    dueDate: '2026-05-10',
-    source: 'GAP-006',
-    sourceType: 'gap',
-    sourceLink: '/gap-analysis',
-  },
-  {
-    id: 'TSK-008',
-    title: 'Formalize prompt injection testing process',
-    description: 'No formal process for regular prompt injection testing. Create quarterly test schedule for LLM01 OWASP coverage on MDL-004.',
-    priority: 'high',
-    status: 'todo',
-    assignee: 'Maria Santos',
-    dueDate: '2026-04-25',
-    source: 'GAP-007',
-    sourceType: 'gap',
-    sourceLink: '/gap-analysis',
-  },
-  {
-    id: 'TSK-009',
-    title: 'Quarantine shadow AI agents in Marketing',
-    description: 'Unregistered LangChain agent accessing customer PII. Quarantine AGT-010, revoke data access, conduct department audit.',
-    priority: 'critical',
-    status: 'in_progress',
-    assignee: 'Sarah Chen',
-    dueDate: '2026-04-10',
-    source: 'RSK-006',
-    sourceType: 'risk',
-    sourceLink: '/risks',
-  },
-  {
-    id: 'TSK-010',
-    title: 'Expand human oversight to all high-risk AI uses',
-    description: 'Human oversight currently covers only credit decisions. Extend HITL gates to fraud detection, AML, and HR screening use cases.',
-    priority: 'medium',
-    status: 'in_progress',
-    assignee: 'James Patel',
-    dueDate: '2026-05-20',
-    source: 'GAP-008',
-    sourceType: 'gap',
-    sourceLink: '/gap-analysis',
-  },
-  {
-    id: 'TSK-011',
-    title: 'Implement automated shadow AI detection',
-    description: 'Current shadow AI detection is manual. Deploy network scanning with automated alerting. Target: weekly scan cadence.',
-    priority: 'high',
-    status: 'todo',
-    assignee: 'Sarah Chen',
-    dueDate: '2026-04-30',
-    source: 'GAP-010',
-    sourceType: 'gap',
-    sourceLink: '/gap-analysis',
-  },
-  {
-    id: 'TSK-012',
-    title: 'Tune AML false positive detection thresholds',
-    description: 'AML Transaction Monitor false positive rate trending upward causing analyst fatigue. Calibrate thresholds and add secondary scoring.',
-    priority: 'high',
-    status: 'in_progress',
-    assignee: 'David Kim',
-    dueDate: '2026-05-05',
-    source: 'RSK-011',
-    sourceType: 'risk',
-    sourceLink: '/risks',
-  },
-  {
-    id: 'TSK-013',
-    title: 'Implement GDPR Art. 22 model explainability API',
-    description: 'Automated decision-making systems lack sufficient explainability. Create explanation API endpoint with SHAP support.',
-    priority: 'high',
-    status: 'todo',
-    assignee: 'Raj Gupta',
-    dueDate: '2026-05-15',
-    source: 'RSK-012',
-    sourceType: 'risk',
-    sourceLink: '/risks',
-  },
-  {
-    id: 'TSK-014',
-    title: 'Obtain GDPR consent for AI dataset processing',
-    description: 'Consumer credit and HR datasets lack explicit AI processing consent. Obtain retroactive consent or implement anonymization.',
-    priority: 'critical',
-    status: 'done',
-    assignee: 'James Patel',
-    dueDate: '2026-03-31',
-    source: 'RSK-003',
-    sourceType: 'risk',
-    sourceLink: '/risks',
-  },
-  {
-    id: 'TSK-015',
-    title: 'Implement model lifecycle tracking in inventory',
-    description: 'Model lifecycle phases not systematically tracked. Add lifecycle state machine to model registry for all 6 models.',
-    priority: 'medium',
-    status: 'done',
-    assignee: 'Raj Gupta',
-    dueDate: '2026-04-01',
-    source: 'GAP-009',
-    sourceType: 'gap',
-    sourceLink: '/gap-analysis',
-  },
-];
+// The former hardcoded TASKS seed array lived here. Tasks now come from the
+// canonical org-scoped `tasks` table via useTaskData(); an empty org renders
+// an honest empty state rather than fabricated rows.
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -381,12 +201,11 @@ const emptyForm = {
 // ── main component ─────────────────────────────────────────────────────────
 
 export default function Tasks() {
+  // Single source of truth: the canonical org-scoped `tasks` table. Every
+  // mutation persists through save/remove — no local-only state that would
+  // make a failed write look like a success.
   const { tasks: liveTasks, isLoading, save, remove } = useTaskData();
-  const { data: tasks, setData: setTasks } = useSupabaseTable('tasks_table', TASKS);
-
-  useEffect(() => {
-    if (liveTasks.length > 0) setTasks(liveTasks as any[])
-  }, [liveTasks]);
+  const tasks = liveTasks as Task[];
   const [view, setView] = useState<'table' | 'kanban'>('table');
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -430,16 +249,25 @@ export default function Tasks() {
     }
   }
 
+  /** Persist a field change across the selection; the toast fires only after every write resolves. */
+  async function bulkPatch(patch: Partial<Task>, describe: (n: number) => string) {
+    const targets = tasks.filter(t => selectedIds.has(t.id));
+    if (!targets.length) return;
+    try {
+      await Promise.all(targets.map(t => save({ ...t, ...patch })));
+      toast.success(describe(targets.length));
+      setSelectedIds(new Set());
+    } catch {
+      // useTaskData surfaces its own error toast; keep the selection for retry.
+    }
+  }
+
   function bulkChangeStatus(status: TaskStatus) {
-    setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, status } : t));
-    toast.success(`Updated ${selectedIds.size} task${selectedIds.size > 1 ? 's' : ''} to ${status.replace('_', ' ')}`);
-    setSelectedIds(new Set());
+    void bulkPatch({ status }, n => `Updated ${n} task${n > 1 ? 's' : ''} to ${status.replace('_', ' ')}`);
   }
 
   function bulkChangePriority(priority: Severity) {
-    setTasks(prev => prev.map(t => selectedIds.has(t.id) ? { ...t, priority } : t));
-    toast.success(`Changed priority for ${selectedIds.size} task${selectedIds.size > 1 ? 's' : ''}`);
-    setSelectedIds(new Set());
+    void bulkPatch({ priority }, n => `Changed priority for ${n} task${n > 1 ? 's' : ''}`);
   }
 
   function handleDragStart(e: DragStartEvent) { setActiveId(String(e.active.id)); }
@@ -450,16 +278,16 @@ export default function Tasks() {
     if (!over) return;
     const taskId = String(active.id);
     const overId = String(over.id);
-    if (KANBAN_COLUMNS.includes(overId as TaskStatus)) {
-      setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: overId as TaskStatus } : t));
-      toast.success(`Task moved to ${statusCfg(overId).label}`);
-    } else {
-      const overTask = tasks.find(t => t.id === overId);
-      if (overTask && overTask.status !== tasks.find(t => t.id === taskId)?.status) {
-        setTasks(prev => prev.map(t => t.id === taskId ? { ...t, status: overTask.status } : t));
-        toast.success(`Task moved to ${statusCfg(overTask.status).label}`);
-      }
-    }
+    const moved = tasks.find(t => t.id === taskId);
+    if (!moved) return;
+    const target = KANBAN_COLUMNS.includes(overId as TaskStatus)
+      ? (overId as TaskStatus)
+      : tasks.find(t => t.id === overId)?.status;
+    if (!target || target === moved.status) return;
+    // Persist the column move; the board re-renders from the invalidated query.
+    void save({ ...moved, status: target })
+      .then(() => toast.success(`Task moved to ${statusCfg(target).label}`))
+      .catch(() => { /* error toast comes from useTaskData */ });
   }
 
   const filtered = tasks.filter(t => {
@@ -483,17 +311,17 @@ export default function Tasks() {
 
   function saveTask() {
     if (!form.title.trim()) return;
-    if (editTask) {
-      setTasks(prev => prev.map(t => t.id === editTask.id ? { ...editTask, ...form } : t));
-    } else {
-      const newId = `TSK-${String(tasks.length + 1).padStart(3, '0')}`;
-      setTasks(prev => [{ id: newId, ...form } as Task, ...prev]);
-    }
-    setShowAdd(false);
+    const record = editTask
+      ? { ...editTask, ...form }
+      : { id: `TSK-${Date.now().toString(36).toUpperCase()}`, ...form };
+    // Close only after the write resolves, so a failure leaves the form open.
+    void save(record as Task)
+      .then(() => setShowAdd(false))
+      .catch(() => { /* error toast comes from useTaskData */ });
   }
 
   function deleteTask(id: string) {
-    setTasks(prev => prev.filter(t => t.id !== id));
+    void remove(id).catch(() => { /* error toast comes from useTaskData */ });
   }
 
   return (
