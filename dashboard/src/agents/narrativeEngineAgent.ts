@@ -29,7 +29,7 @@ export async function narrativeEngineAgent(ctx: AgentContext): Promise<AgentResu
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       failures.push(`${audience}: ${msg}`)
-      console.error(`[NarrativeEngineAgent] ${audience} narrative did NOT persist:`, msg)
+      console.error('[NarrativeEngineAgent] %s narrative did NOT persist: %s', audience, msg)
     }
   }
 

@@ -47,7 +47,7 @@ export async function regulatorNotifyAgent(ctx: AgentContext): Promise<AgentResu
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e)
       failures.push(`${t.regulator}: ${msg}`)
-      console.error(`[RegulatorNotifyAgent] filing draft for ${t.regulator} did NOT persist:`, msg)
+      console.error('[RegulatorNotifyAgent] filing draft for %s did NOT persist: %s', t.regulator, msg)
     }
   }
 
