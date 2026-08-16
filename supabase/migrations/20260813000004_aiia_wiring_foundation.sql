@@ -4,6 +4,22 @@
 -- Applied live via Supabase MCP on 2026-08-13.
 
 -- 1. Org defaults so the frontend never sets the scoping column (RLS still enforces).
+-- (replay-safety: April-era unify loops may have stripped tenant_id on a
+--  from-zero replay; this file encodes the current model, so heal first)
+alter table public.ai_impact_assessments add column if not exists tenant_id text not null default 'default';
+alter table public.use_cases            add column if not exists tenant_id text not null default 'default';
+do $$ begin
+  -- the April-era sweep adds org_id NOT NULL on a fresh replay; this module
+  -- scopes use cases by tenant_id, so org_id must not block tenant-era rows
+  if exists (select 1 from information_schema.columns
+             where table_name='use_cases' and column_name='org_id' and is_nullable='NO') then
+    alter table public.use_cases alter column org_id drop not null;
+  end if;
+  if exists (select 1 from information_schema.columns
+             where table_name='ai_impact_assessments' and column_name='org_id' and is_nullable='NO') then
+    alter table public.ai_impact_assessments alter column org_id drop not null;
+  end if;
+end $$;
 alter table public.ai_impact_assessments alter column tenant_id set default current_user_org_id()::text;
 alter table public.use_cases            alter column tenant_id set default current_user_org_id()::text;
 alter table public.ai_risk_tiering       alter column org_id    set default current_user_org_id();

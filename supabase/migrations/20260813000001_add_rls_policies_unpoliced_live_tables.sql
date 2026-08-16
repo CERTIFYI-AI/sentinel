@@ -30,16 +30,21 @@ BEGIN
   -- from-zero replay does not have instead of failing the whole reset.
   FOREACH t IN ARRAY tenant_tables LOOP
     IF to_regclass('public.' || t) IS NULL THEN CONTINUE; END IF;
+    -- Replay-safety: this file encodes the CURRENT scoping model; earlier
+    -- April-era unify loops may have stripped tenant_id on a fresh replay.
+    -- Heal the column so the policy below always applies (no-op live).
+    EXECUTE format($h$ALTER TABLE public.%I ADD COLUMN IF NOT EXISTS tenant_id text NOT NULL DEFAULT 'default'$h$, t);
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t || '_org', t);
     EXECUTE format(
       'CREATE POLICY %I ON public.%I FOR ALL TO authenticated '
-      || 'USING (tenant_id = (current_user_org_id())::text) '
-      || 'WITH CHECK (tenant_id = (current_user_org_id())::text)',
+      || 'USING (tenant_id::text = (current_user_org_id())::text) '
+      || 'WITH CHECK (tenant_id::text = (current_user_org_id())::text)',
       t || '_org', t);
   END LOOP;
 
   FOREACH t IN ARRAY org_tables LOOP
     IF to_regclass('public.' || t) IS NULL THEN CONTINUE; END IF;
+    EXECUTE format('ALTER TABLE public.%I ADD COLUMN IF NOT EXISTS org_id uuid', t);
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t || '_org', t);
     EXECUTE format(
       'CREATE POLICY %I ON public.%I FOR ALL TO authenticated '
@@ -51,6 +56,6 @@ BEGIN
   IF to_regclass('public.training_assignments') IS NOT NULL THEN
     EXECUTE 'DROP POLICY IF EXISTS training_assignments_owner ON public.training_assignments';
     EXECUTE 'CREATE POLICY training_assignments_owner ON public.training_assignments '
-         || 'FOR ALL TO authenticated USING (user_id = (auth.uid())::text) WITH CHECK (user_id = (auth.uid())::text)';
+         || 'FOR ALL TO authenticated USING (user_id::text = (auth.uid())::text) WITH CHECK (user_id::text = (auth.uid())::text)';
   END IF;
 END $$;

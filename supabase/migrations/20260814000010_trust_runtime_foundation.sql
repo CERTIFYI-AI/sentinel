@@ -53,6 +53,19 @@ alter table public.guardrail_events
   foreign key (model_id) references public.ai_models(id) on delete set null;
 
 -- 3) Normalize model_trust_configs RLS to current_user_org_id() -------------
+-- (replay-safety: live gained these columns out-of-band; the trust seeds use
+--  them. No-op live.)
+alter table public.model_trust_configs add column if not exists toxicity_threshold numeric;
+alter table public.model_trust_configs add column if not exists hallucination_threshold numeric;
+alter table public.model_trust_configs add column if not exists pii_detection_enabled boolean default true;
+alter table public.model_trust_configs add column if not exists jailbreak_detection boolean default true;
+alter table public.model_trust_configs add column if not exists output_filtering boolean default true;
+alter table public.model_trust_configs add column if not exists cost_alert_usd numeric;
+alter table public.model_trust_configs add column if not exists token_limit_per_req integer;
+alter table public.model_trust_configs add column if not exists rate_limit_rpm integer;
+alter table public.model_trust_configs add column if not exists fallback_model_id uuid;
+alter table public.model_trust_configs add column if not exists blocked_topics text[] default '{}';
+
 alter table public.model_trust_configs alter column org_id set default current_user_org_id();
 drop policy if exists model_trust_configs_org_isolation on public.model_trust_configs;
 create policy model_trust_configs_org_isolation on public.model_trust_configs
@@ -61,7 +74,13 @@ create policy model_trust_configs_org_isolation on public.model_trust_configs
   with check (org_id = current_user_org_id());
 
 -- 4) Drop unusable camelCase table (empty, RLS enabled with zero policies) --
-drop table if exists public."TrustTrace";
+do $$ begin
+  -- on a fresh replay "TrustTrace" is a quarantine VIEW, not a table
+  execute (select case c.relkind when 'v' then 'drop view if exists public."TrustTrace" cascade'
+                  else 'drop table if exists public."TrustTrace" cascade' end
+           from pg_class c join pg_namespace n on n.oid=c.relnamespace
+           where n.nspname='public' and c.relname='TrustTrace');
+exception when others then null; end $$;
 
 -- 5) Indexes ----------------------------------------------------------------
 create index if not exists idx_live_traces_model_created      on public.live_traces (model_id, created_at desc);

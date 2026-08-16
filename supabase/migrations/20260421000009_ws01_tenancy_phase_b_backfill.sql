@@ -1,3 +1,5 @@
+-- REPLAY NOTE: backfill joins compare as text — fk columns are uuid on the
+-- live DB but text in parts of the repo-replayed schema; the cast works on both.
 -- ================================================================
 -- WS0.1 — Multi-tenancy hardening — PHASE B
 -- Adds org_id to tables that had NO tenancy column, and adds the
@@ -26,44 +28,44 @@ BEGIN;
 ALTER TABLE public.document_versions ADD COLUMN IF NOT EXISTS org_id uuid;
 UPDATE public.document_versions dv SET org_id = d.org_id
   FROM public.documents d
-  WHERE dv.document_id = d.id AND dv.org_id IS NULL;
+  WHERE dv.document_id::text = d.id::text AND dv.org_id IS NULL;
 
 -- incident_workflow_steps.incident_id → incidents.org_id
 ALTER TABLE public.incident_workflow_steps ADD COLUMN IF NOT EXISTS org_id uuid;
 UPDATE public.incident_workflow_steps s SET org_id = i.org_id
   FROM public.incidents i
-  WHERE s.incident_id = i.id AND s.org_id IS NULL;
+  WHERE s.incident_id::text = i.id::text AND s.org_id IS NULL;
 
 -- workflow_step_actions.workflow_instance_id → workflow_instances.org_id
 ALTER TABLE public.workflow_step_actions ADD COLUMN IF NOT EXISTS org_id uuid;
 UPDATE public.workflow_step_actions a SET org_id = w.org_id
   FROM public.workflow_instances w
-  WHERE a.workflow_instance_id = w.id AND a.org_id IS NULL;
+  WHERE a.workflow_instance_id::text = w.id::text AND a.org_id IS NULL;
 
 -- event_cascade_links.parent_event_id → governance_events.org_id
 -- (NB. already has org_id from governance-mesh work; no-op guard.)
 ALTER TABLE public.event_cascade_links ADD COLUMN IF NOT EXISTS org_id uuid;
 UPDATE public.event_cascade_links l SET org_id = g.org_id
   FROM public.governance_events g
-  WHERE l.parent_event_id = g.id AND l.org_id IS NULL;
+  WHERE l.parent_event_id::text = g.id::text AND l.org_id IS NULL;
 
 -- audit_findings.audit_id → audits.org_id (audits was unified in Phase A)
 ALTER TABLE public.audit_findings ADD COLUMN IF NOT EXISTS org_id uuid;
 UPDATE public.audit_findings f SET org_id = a.org_id
   FROM public.audits a
-  WHERE f.audit_id = a.id AND f.org_id IS NULL;
+  WHERE f.audit_id::text = a.id::text AND f.org_id IS NULL;
 
 -- vendor_questionnaires.vendor_id → vendors.org_id
 ALTER TABLE public.vendor_questionnaires ADD COLUMN IF NOT EXISTS org_id uuid;
 UPDATE public.vendor_questionnaires q SET org_id = v.org_id
   FROM public.vendors v
-  WHERE q.vendor_id = v.id AND q.org_id IS NULL;
+  WHERE q.vendor_id::text = v.id::text AND q.org_id IS NULL;
 
 -- training_assignments.user_id → user_profiles.org_id
 ALTER TABLE public.training_assignments ADD COLUMN IF NOT EXISTS org_id uuid;
 UPDATE public.training_assignments ta SET org_id = u.org_id
   FROM public.user_profiles u
-  WHERE ta.user_id = u.id AND ta.org_id IS NULL;
+  WHERE ta.user_id::text = u.id::text AND ta.org_id IS NULL;
 
 -- observability_metrics is infra-wide; treat as global-by-default.
 ALTER TABLE public.observability_metrics ADD COLUMN IF NOT EXISTS org_id uuid;

@@ -24,6 +24,7 @@ ALTER TABLE controls
 
 ALTER TABLE incidents
   ADD COLUMN IF NOT EXISTS org_id uuid,
+  ADD COLUMN IF NOT EXISTS incident_type text,
   ADD COLUMN IF NOT EXISTS opened_at timestamptz,
   ADD COLUMN IF NOT EXISTS owner_id uuid,
   ADD COLUMN IF NOT EXISTS created_by uuid,
@@ -37,6 +38,8 @@ ALTER TABLE risks
 
 ALTER TABLE vendors
   ADD COLUMN IF NOT EXISTS org_id uuid,
+  ADD COLUMN IF NOT EXISTS vendor_name text,
+  ADD COLUMN IF NOT EXISTS what_does_vendor_provide text,
   ADD COLUMN IF NOT EXISTS tier text,
   ADD COLUMN IF NOT EXISTS due_diligence_status text,
   ADD COLUMN IF NOT EXISTS contact_email text,
@@ -47,6 +50,12 @@ ALTER TABLE vendors
 
 ALTER TABLE tasks
   ADD COLUMN IF NOT EXISTS org_id uuid,
+  ADD COLUMN IF NOT EXISTS assignees text[] DEFAULT '{}',
+  ADD COLUMN IF NOT EXISTS priority text,
+  ADD COLUMN IF NOT EXISTS due_date timestamptz,
+  ADD COLUMN IF NOT EXISTS linked_entity_type text,
+  ADD COLUMN IF NOT EXISTS linked_entity_id text,
+  ADD COLUMN IF NOT EXISTS linked_items jsonb DEFAULT '{}',
   ADD COLUMN IF NOT EXISTS type text,
   ADD COLUMN IF NOT EXISTS severity text,
   ADD COLUMN IF NOT EXISTS owner text,
@@ -69,3 +78,15 @@ ALTER TABLE bias_audits
   ADD COLUMN IF NOT EXISTS results jsonb,
   ADD COLUMN IF NOT EXISTS is_deleted boolean DEFAULT false,
   ADD COLUMN IF NOT EXISTS updated_at timestamptz DEFAULT now();
+
+ALTER TABLE use_cases
+  ADD COLUMN IF NOT EXISTS title text,
+  ADD COLUMN IF NOT EXISTS owner text,
+  ADD COLUMN IF NOT EXISTS approval_workflow text,
+  ADD COLUMN IF NOT EXISTS ai_risk_classification text,
+  ADD COLUMN IF NOT EXISTS high_risk_role text,
+  ADD COLUMN IF NOT EXISTS geography text,
+  ADD COLUMN IF NOT EXISTS applicable_regulations text[],
+  ADD COLUMN IF NOT EXISTS goal text,
+  ADD COLUMN IF NOT EXISTS target_industry text,
+  ADD COLUMN IF NOT EXISTS compliance_score numeric;

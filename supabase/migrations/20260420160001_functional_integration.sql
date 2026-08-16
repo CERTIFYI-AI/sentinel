@@ -35,7 +35,7 @@ EXCEPTION WHEN OTHERS THEN
   RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
-fall-back define if missing
+-- fall-back define if missing
 do $$ begin
   if not exists (select 1 from pg_proc where proname='get_org_id') then
     create or replace function public.get_org_id() returns uuid
@@ -85,13 +85,25 @@ begin
         created_at timestamptz not null default now(),
         updated_at timestamptz not null default now()
       );
+    $f$, t);
+
+    -- REPLAY NOTE: tables that pre-exist this loop (repo-created or from the
+    -- 007 replay baseline) may lack the standard scoping columns that the
+    -- indexes and policies below reference. Add them idempotently BEFORE the
+    -- index/policy statements — no-op on the live database.
+    execute format('alter table public.%I add column if not exists org_id uuid', t);
+    execute format($f$alter table public.%I add column if not exists tenant_id text not null default 'default'$f$, t);
+    execute format('alter table public.%I add column if not exists created_at timestamptz not null default now()', t);
+    execute format('alter table public.%I add column if not exists updated_at timestamptz not null default now()', t);
+
+    execute format($f$
       alter table public.%I enable row level security;
       create index if not exists %I on public.%I (org_id, created_at desc);
       create index if not exists %I on public.%I (tenant_id);
       drop trigger if exists trg_set_updated_at on public.%I;
       create trigger trg_set_updated_at before update on public.%I
         for each row execute function public.set_updated_at();
-    $f$, t, t, t||'_org_created_idx', t, t||'_tenant_idx', t, t, t);
+    $f$, t, t||'_org_created_idx', t, t||'_tenant_idx', t, t, t);
 
     -- Tenant isolation RLS
     execute format($f$

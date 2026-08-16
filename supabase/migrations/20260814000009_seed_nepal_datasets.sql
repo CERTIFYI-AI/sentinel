@@ -242,7 +242,10 @@ WHERE NOT EXISTS (
   SELECT 1 FROM public.data_quality_assessments q
   WHERE q.dataset_id = d.id AND q.assessed_at = v.assessed_at
     AND q.model_id IS NOT DISTINCT FROM v.model_id
-);
+)
+-- replay-safety: on a fresh environment the registry rows carry different
+-- uuids than the live project; only link assessments to models that exist
+AND (v.model_id IS NULL OR EXISTS (SELECT 1 FROM public.ai_models m WHERE m.id = v.model_id));
 
 -- ── 3. DSAR requests ─────────────────────────────────────────────────────────
 

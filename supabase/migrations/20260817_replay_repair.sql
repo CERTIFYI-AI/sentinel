@@ -56,7 +56,8 @@ BEGIN
      AND to_regclass('public.incidents') IS NOT NULL THEN
     ALTER TABLE tasks
       ADD COLUMN IF NOT EXISTS linked_control_id uuid REFERENCES controls(id),
-      ADD COLUMN IF NOT EXISTS linked_framework_id uuid REFERENCES frameworks(id),
+      -- frameworks.id is TEXT (catalog slugs like 'iso-42001')
+      ADD COLUMN IF NOT EXISTS linked_framework_id text REFERENCES frameworks(id),
       ADD COLUMN IF NOT EXISTS linked_risk_id uuid REFERENCES risks(id),
       ADD COLUMN IF NOT EXISTS linked_incident_id uuid REFERENCES incidents(id),
       ADD COLUMN IF NOT EXISTS watchers uuid[] DEFAULT '{}',

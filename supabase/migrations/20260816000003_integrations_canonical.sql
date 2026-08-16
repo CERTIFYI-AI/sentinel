@@ -55,6 +55,12 @@ create index if not exists integrations_category_idx on public.integrations (cat
 alter table public.webhook_endpoints
   add column if not exists tenant_id text,
   add column if not exists last_success_at timestamptz;
+do $$ begin
+  if exists (select 1 from information_schema.columns
+             where table_name='webhook_endpoints' and column_name='org_id' and is_nullable='NO') then
+    alter table public.webhook_endpoints alter column org_id drop not null;
+  end if;
+end $$;
 
 alter table public.webhook_endpoints
   alter column tenant_id set default (current_user_org_id())::text;

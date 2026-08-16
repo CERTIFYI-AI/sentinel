@@ -8,6 +8,31 @@
 
 -- 1. Org scoping: let the DB fill tenant_id (same discipline as ai_models),
 --    so the client never supplies the scoping column.
+-- (replay-safety: April-era unify loops strip tenant_id / soft-delete columns
+--  on a from-zero replay; this file encodes the canonical model, heal first)
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS tenant_id text NOT NULL DEFAULT 'default';
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS is_deleted boolean NOT NULL DEFAULT false;
+DO $$ BEGIN
+  -- April-era sweep marks org_id NOT NULL on a fresh replay; datasets are
+  -- tenant-scoped in the canonical model
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name='datasets' AND column_name='org_id' AND is_nullable='NO') THEN
+    ALTER TABLE public.datasets ALTER COLUMN org_id DROP NOT NULL;
+  END IF;
+END $$;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS type text;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS classification text;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS status text;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS owner text;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS license text;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS format text;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS demographic_data boolean;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS known_biases text;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS bias_mitigation text;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS collection_method text;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS preprocessing_steps text;
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS used_in_models text[];
+ALTER TABLE public.datasets ADD COLUMN IF NOT EXISTS used_in_use_cases text[];
 ALTER TABLE public.datasets
   ALTER COLUMN tenant_id SET DEFAULT (current_user_org_id())::text;
 

@@ -177,6 +177,10 @@ def first_balanced_group(s: str) -> str | None:
 class Replay:
     def __init__(self) -> None:
         self.tables: dict[str, dict[str, str]] = {}
+        # tables whose full CREATE TABLE was parsed; only these get
+        # column-existence checks (tables born inside dynamic DO macros are
+        # only partially known through their later ALTERs)
+        self.fully_known: set[str] = set()
         self.funcs: set[str] = set()
         self.problems: list[str] = []
 
@@ -184,6 +188,7 @@ class Replay:
         self.problems.append(f"{fname}: {msg}")
 
     def parse_create_table(self, t: str, body: str) -> None:
+        self.fully_known.add(t)
         cols = self.tables.setdefault(t, {})
         for part in split_top(body):
             m = re.match(r'^"?([a-zA-Z_][a-zA-Z0-9_]*)"?\s+(.+)$', part.strip(), re.S)
@@ -290,9 +295,10 @@ def main() -> int:
                 if tgt in rp.tables:
                     cols = [c.strip().strip('"').lower() for c in im.group(2).split(",")]
                     tcols = rp.tables[tgt]
-                    for c in cols:
-                        if c not in tcols:
-                            rp.problem(f.name, f"INSERT into {tgt}: unknown column {c}")
+                    if tgt in rp.fully_known:
+                        for c in cols:
+                            if c not in tcols:
+                                rp.problem(f.name, f"INSERT into {tgt}: unknown column {c}")
                     row = first_balanced_group(im.group(3))
                     if row is not None:
                         vals = split_top(row)

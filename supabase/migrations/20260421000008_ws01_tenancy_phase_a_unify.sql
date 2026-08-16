@@ -8,8 +8,6 @@
 -- Canonical demo data lives in the 202608xx seed migrations.
 -- See supabase/migrations/README.md.
 
-DO $seed$
-BEGIN
   -- ================================================================
   -- WS0.1 — Multi-tenancy hardening — PHASE A (unify tenant_id → org_id)
   -- ================================================================
@@ -29,13 +27,8 @@ BEGIN
   -- Pre-conditions:
   --   - `organizations` table exists with uuid primary key.
   --   - A "default" organization row is guaranteed;
-EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000008_ws01_tenancy_phase_a_unify.sql', SQLERRM;
-END $seed$;
 
-DO $seed$
-BEGIN
-  created here if missing.
+-- created here if missing.
   --
   -- Post-conditions:
   --   - Every listed table has `org_id uuid NOT NULL REFERENCES organizations(id)`.
@@ -44,11 +37,7 @@ BEGIN
   --
   -- Rollback: see 20260421_ws01_tenancy_phase_a_unify.rollback.sql
   -- ================================================================
-  
-  BEGIN;
-EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000008_ws01_tenancy_phase_a_unify.sql', SQLERRM;
-END $seed$;
+-- BEGIN;
 
 DO $seed$
 BEGIN
@@ -118,6 +107,8 @@ DECLARE
 BEGIN
   FOREACH t IN ARRAY target_tables
   LOOP
+    -- Replay-safety: some tables in this list exist only on the live DB.
+    CONTINUE WHEN to_regclass('public.' || t) IS NULL;
     -- 2a. Ensure org_id column exists.
     IF NOT EXISTS (
       SELECT 1 FROM information_schema.columns
@@ -166,7 +157,10 @@ BEGIN
       SELECT 1 FROM information_schema.columns
       WHERE table_schema='public' AND table_name=t AND column_name='tenant_id'
     ) THEN
-      EXECUTE format('ALTER TABLE public.%I DROP COLUMN tenant_id;', t);
+      -- CASCADE: on a from-zero replay, tenant-era RLS policies still depend
+      -- on the column (live had already shed them). Dropping them here is
+      -- correct — this migration replaces tenant scoping with org scoping.
+      EXECUTE format('ALTER TABLE public.%I DROP COLUMN tenant_id CASCADE;', t);
     END IF;
   END LOOP;
 END $$;

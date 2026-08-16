@@ -116,6 +116,9 @@ BEGIN
         ON tb.table_schema = c.table_schema AND tb.table_name = c.table_name
      WHERE c.table_schema = 'public'
        AND c.column_name = 'org_id'
+       -- uuid-typed org_id only: doc-era tables carry org_id TEXT and get
+       -- their ::text-cast policies from the 202608xx isolation migrations
+       AND c.data_type = 'uuid'
        AND tb.table_type = 'BASE TABLE'
        AND c.table_name !~ '^[A-Z]'  -- skip quarantined PascalCase
   LOOP

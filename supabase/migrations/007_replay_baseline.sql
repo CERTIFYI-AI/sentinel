@@ -25,6 +25,11 @@
 -- re-applies the same definition as a safe no-op).
 create or replace function public.current_user_org_id() returns uuid language sql stable security definer set search_path='' as $$ select org_id from public.user_profiles where id = auth.uid() limit 1; $$;
 
+-- auth.current_org_id() also exists only on the live database (created
+-- out-of-band); 20260421000006_phase4_foundation.sql and later files use it
+-- in policies. Same resolution semantics as current_user_org_id().
+create or replace function auth.current_org_id() returns uuid language sql stable security definer as $$ select org_id from public.user_profiles where id = auth.uid() limit 1; $$;
+
 -- ---------------------------------------------------------------------------
 -- Event bus core (definitions from migrations/002 + 003, the pre-Supabase
 -- home of these tables; later mesh migrations ALTER them into final shape).
@@ -120,30 +125,16 @@ CREATE TABLE IF NOT EXISTS public.training_assignments (
   deleted_at timestamptz
 );
 
+-- user_profiles gained an auth-mapping column on the live DB that
+-- 20260420160000_org_modules_full_wire.sql's get_org_id() reads.
+ALTER TABLE user_profiles ADD COLUMN IF NOT EXISTS user_id uuid;
+
 -- ---------------------------------------------------------------------------
 -- Live-only tables, derived from later migrations + the service layer.
+-- (agent_gov_registry / agent_gov_credentials are intentionally NOT here:
+--  they are doc-era tables created canonically by 20260702000001 — creating
+--  them earlier lets the ws02 org-unify sweep mangle their tenant shape.)
 -- ---------------------------------------------------------------------------
-CREATE TABLE IF NOT EXISTS agent_gov_credentials (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id text,
-  org_id uuid,
-  doc jsonb,
-  state text,
-  version numeric,
-  created_at timestamptz DEFAULT now()
-);
-
-CREATE TABLE IF NOT EXISTS agent_gov_registry (
-  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  tenant_id text,
-  org_id uuid,
-  doc jsonb,
-  state text,
-  model_id uuid,
-  version numeric,
-  created_at timestamptz DEFAULT now()
-);
-
 CREATE TABLE IF NOT EXISTS agent_workflows (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid,
@@ -269,7 +260,7 @@ CREATE TABLE IF NOT EXISTS bias_audit_records (
   org_id text,
   doc jsonb,
   state text,
-  model_id uuid,
+  model_id text,
   version numeric,
   updated_at timestamptz DEFAULT now(),
   created_at timestamptz DEFAULT now()
@@ -427,7 +418,7 @@ CREATE TABLE IF NOT EXISTS explainability_profiles (
   org_id text,
   doc jsonb,
   state text,
-  model_id uuid,
+  model_id text,
   version numeric,
   updated_at timestamptz DEFAULT now(),
   created_at timestamptz DEFAULT now()
@@ -463,7 +454,7 @@ CREATE TABLE IF NOT EXISTS guardrail_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid,
   policy_id text,
-  model_id text,
+  model_id uuid,
   action text,
   severity text,
   latency_ms numeric,
@@ -511,7 +502,7 @@ CREATE TABLE IF NOT EXISTS live_traces (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid,
   trace_ref text,
-  model_id text,
+  model_id uuid,
   action text,
   status text,
   tokens_in numeric,
@@ -547,7 +538,7 @@ CREATE TABLE IF NOT EXISTS metric_profiles (
   org_id text,
   doc jsonb,
   state text,
-  model_id uuid,
+  model_id text,
   version numeric,
   updated_at timestamptz DEFAULT now(),
   created_at timestamptz DEFAULT now()
@@ -814,7 +805,7 @@ CREATE TABLE IF NOT EXISTS session_traces (
   org_id text,
   doc jsonb,
   state text,
-  model_id uuid,
+  model_id text,
   version numeric,
   updated_at timestamptz DEFAULT now(),
   created_at timestamptz DEFAULT now()
@@ -892,6 +883,16 @@ CREATE TABLE IF NOT EXISTS workflow_step_actions (
   org_id uuid,
   workflow_instance_id uuid,
   created_at timestamptz DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS user_roles (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid,
+  org_id uuid,
+  role text,
+  deleted_at timestamptz,
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
 );
 
 -- model_efficiency (live-only; shape from modelEfficiencyService.ts, extended

@@ -37,13 +37,27 @@ END $$;
 
 -- 2. Release FKs held by tables that remain (their clusters consolidate later).
 --    "Dataset" is empty, so these constraints reference no rows.
-ALTER TABLE IF EXISTS public."Model"     DROP CONSTRAINT IF EXISTS "Model_datasetId_fkey";
-ALTER TABLE IF EXISTS public."BiasAudit" DROP CONSTRAINT IF EXISTS "BiasAudit_datasetId_fkey";
+-- (replay-safety: on a from-zero replay these PascalCase names are quarantine
+--  VIEWS, not tables — only drop constraints when they are real tables)
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+             WHERE n.nspname='public' AND c.relname='Model' AND c.relkind='r') THEN
+    ALTER TABLE public."Model" DROP CONSTRAINT IF EXISTS "Model_datasetId_fkey";
+  END IF;
+  IF EXISTS (SELECT 1 FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+             WHERE n.nspname='public' AND c.relname='BiasAudit' AND c.relkind='r') THEN
+    ALTER TABLE public."BiasAudit" DROP CONSTRAINT IF EXISTS "BiasAudit_datasetId_fkey";
+  END IF;
+END $$;
 
 -- 3. Drop the legacy cluster (order: dependents first).
 DROP TABLE IF EXISTS public.model_dataset_links;
 DROP TABLE IF EXISTS public.dataset_registry;
-DROP TABLE IF EXISTS public."Dataset";
+DO $$ BEGIN
+  EXECUTE (SELECT CASE c.relkind WHEN 'v' THEN 'DROP VIEW IF EXISTS public."Dataset" CASCADE' ELSE 'DROP TABLE IF EXISTS public."Dataset" CASCADE' END
+           FROM pg_class c JOIN pg_namespace n ON n.oid=c.relnamespace
+           WHERE n.nspname='public' AND c.relname='Dataset');
+EXCEPTION WHEN OTHERS THEN NULL; END $$;
 DROP TABLE IF EXISTS public.datasetregistry_table;
 DROP TABLE IF EXISTS public.datalineage_table;
 DROP TABLE IF EXISTS public.dataquality_table;

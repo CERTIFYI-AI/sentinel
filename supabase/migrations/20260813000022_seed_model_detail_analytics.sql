@@ -1,3 +1,14 @@
+-- REPLAY NOTE: the April-era unify loops drop bias_audits.tenant_id on a
+-- from-zero replay, but the live table carries it today (re-added when the
+-- module was consolidated). Heal before seeding — no-op live.
+ALTER TABLE bias_audits ADD COLUMN IF NOT EXISTS tenant_id text NOT NULL DEFAULT 'default';
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name='bias_audits' AND column_name='org_id' AND is_nullable='NO') THEN
+    ALTER TABLE bias_audits ALTER COLUMN org_id DROP NOT NULL;
+  END IF;
+END $$;
+
 -- Idempotent demo analytics for the Model Detail tabs, keyed to the registry
 -- uuid of "CreditScore AI v3" (+ a FraudShield ML performance series). These are
 -- real rows in real tables read by the dashboard's analytics service; production

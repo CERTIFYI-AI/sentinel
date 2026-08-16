@@ -16,3 +16,18 @@ SELECT * FROM (VALUES
   ('00000000-0000-0000-0000-000000000001'::uuid,'Customer Support Copilot','customer-support-copilot-v2','llm','Anthropic','v2.3.0','production','medium',35,85,'Jordan Lee','Tom Weber','EU AI Act',87,'warning','Support agent assist','limited_risk',false)
 ) AS v(org_id,name,slug,model_type,provider,version,lifecycle_stage,risk_tier,risk_score,trust_score,business_owner,technical_owner,framework,fairness_score,drift_status,use_case,eu_ai_act_category,is_regulated)
 WHERE NOT EXISTS (SELECT 1 FROM public.ai_models m WHERE m.org_id = v.org_id AND m.name = v.name);
+
+-- Registered live via the agent-control / shadow-AI modules but never
+-- committed as a seed; the trust-runtime seeds (20260814000011) require them.
+-- Same idempotent NOT EXISTS guard as above.
+INSERT INTO public.ai_models
+  (org_id, name, slug, model_type, provider, version, lifecycle_stage, risk_tier,
+   risk_score, trust_score, business_owner, technical_owner, framework,
+   fairness_score, drift_status, use_case, eu_ai_act_category, is_regulated)
+SELECT * FROM (VALUES
+  ('00000000-0000-0000-0000-000000000001'::uuid,'DocumentParser GPT','documentparser-gpt','llm','OpenAI','v1.2.0','production','medium',38,81,'Alex Rivera','Sara Cohen','EU AI Act',89,'stable','Contract and form parsing','limited_risk',false),
+  ('00000000-0000-0000-0000-000000000001'::uuid,'CreditScore AI v3','creditscore-ai-v3','classification','Internal','v3.0.4','production','high',70,71,'Maria Santos','Raj Mehta','EU AI Act',76,'warning','Thin-file credit scoring','high_risk',true),
+  ('00000000-0000-0000-0000-000000000001'::uuid,'HRScreener Bot','hrscreener-bot','llm','Internal','v0.9.1','staging','high',66,64,'Priya Patel','Tom Weber','EU AI Act',69,'warning','CV screening and shortlisting','high_risk',true),
+  ('00000000-0000-0000-0000-000000000001'::uuid,'FraudShield ML','fraudshield-ml','other','Internal','v1.4.2','production','high',44,86,'David Kim','Sara Cohen','EU AI Act',90,'stable','Card-fraud scoring','high_risk',true)
+) AS v(org_id,name,slug,model_type,provider,version,lifecycle_stage,risk_tier,risk_score,trust_score,business_owner,technical_owner,framework,fairness_score,drift_status,use_case,eu_ai_act_category,is_regulated)
+WHERE NOT EXISTS (SELECT 1 FROM public.ai_models m WHERE m.org_id = v.org_id AND m.name = v.name);

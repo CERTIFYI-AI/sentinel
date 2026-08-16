@@ -127,10 +127,12 @@ GRANT  EXECUTE ON FUNCTION public.global_search(text, text, int) TO service_role
 -- Fix notifications RLS
 DROP POLICY IF EXISTS notif_owner_all  ON public.notifications;
 DROP POLICY IF EXISTS notif_owner_rls  ON public.notifications;
+-- (text-cast comparison: notifications.user_id is TEXT in the repo-replayed
+-- schema and uuid live — the cast works identically on both)
 CREATE POLICY notif_owner_rls ON public.notifications
   FOR ALL
-  USING  (user_id = auth.uid())
-  WITH CHECK (user_id = auth.uid());
+  USING  (user_id::text = (auth.uid())::text)
+  WITH CHECK (user_id::text = (auth.uid())::text);
 
 -- Fix executive_digests RLS
 DROP POLICY IF EXISTS exec_digest_org_read           ON public.executive_digests;

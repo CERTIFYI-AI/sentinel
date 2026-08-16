@@ -69,9 +69,21 @@ CREATE TABLE IF NOT EXISTS public.notifications (
   read_at     timestamptz,
   created_at  timestamptz NOT NULL DEFAULT now()
 );
+-- REPLAY NOTE: notifications pre-exists from 20260418000002_core_grc_tables
+-- (tenant era: user_id TEXT, no org_id). Heal the columns this section needs,
+-- and compare user_id as text so the policy works on both schemas. No-op on
+-- the live database.
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS org_id uuid;
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS is_read boolean NOT NULL DEFAULT false;
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS read_at timestamptz;
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS resource_type text;
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS resource_id text;
+ALTER TABLE public.notifications ADD COLUMN IF NOT EXISTS url_path text;
 CREATE INDEX IF NOT EXISTS notif_user_unread_idx ON public.notifications (user_id, org_id, is_read, created_at DESC);
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-CREATE POLICY notif_owner_all ON public.notifications FOR ALL USING (user_id = auth.uid() AND org_id = auth.current_org_id()) WITH CHECK (user_id = auth.uid() AND org_id = auth.current_org_id());
+DROP POLICY IF EXISTS notif_owner_all ON public.notifications;
+CREATE POLICY notif_owner_all ON public.notifications FOR ALL USING (user_id::text = (auth.uid())::text AND org_id = auth.current_org_id()) WITH CHECK (user_id::text = (auth.uid())::text AND org_id = auth.current_org_id());
+DROP POLICY IF EXISTS notif_svc_all ON public.notifications;
 CREATE POLICY notif_svc_all   ON public.notifications FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
 
 -- executive_digests table (N-11 fix)

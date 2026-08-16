@@ -14,6 +14,18 @@
 --    RLS on these tables checks tenant_id = current_user_org_id()::text, so a
 --    client-side insert that omits the column now passes without the client
 --    ever choosing its own tenant.
+-- REPLAY NOTE: April-era unify loops strip tenant_id on a from-zero replay;
+-- this file encodes the canonical model, so heal the scoping columns first
+-- (no-op on the live database).
+ALTER TABLE IF EXISTS public.evidence ADD COLUMN IF NOT EXISTS tenant_id text NOT NULL DEFAULT 'default';
+ALTER TABLE IF EXISTS public.conformity_assessments ADD COLUMN IF NOT EXISTS tenant_id text NOT NULL DEFAULT 'default';
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns
+             WHERE table_name='evidence' AND column_name='org_id' AND is_nullable='NO') THEN
+    ALTER TABLE public.evidence ALTER COLUMN org_id DROP NOT NULL;
+  END IF;
+END $$;
+
 ALTER TABLE public.evidence
   ALTER COLUMN tenant_id SET DEFAULT (public.current_user_org_id())::text;
 

@@ -190,7 +190,13 @@ DECLARE
     'audit_findings','document_versions','event_cascade_links',
     'incident_workflow_steps','vendor_questionnaires','workflow_step_actions',
     -- schema-migration artifacts:
-    'schema_migrations','supabase_migrations'
+    'schema_migrations','supabase_migrations',
+    -- bias_audits stays tenant-scoped in the canonical 202608xx model
+    'bias_audits',
+    -- Replay-safety: every 007_replay_baseline table post-dates this sweep
+    -- on the live database (they are live-only precisely because they were
+    -- created after the org-unify era). Never convert them here.
+    'agent_registry','agent_workflows','ai_impact_assessments','ai_models','ai_risk_tiering','api_keys','approvals','audit_findings','audits','bias_audit_records','conformity_assessments','consent_records','cost_token_usage','dataset_catalog_entries','demo_users','departments','document_versions','documents','dsar_requests','eval_monitoring_configs','exceptions','explainability_profiles','fallback_logs','framework_bindings','genai_risk_profiles','governance_events','guardrail_events','guardrails','incident_workflow_steps','kill_switch_events','live_traces','maturity_assessments','metric_profiles','model_dna','model_efficiency','model_lifecycle_stages','model_performance_metrics','mrc_votes','prompt_registry','protected_attribute_catalog','red_team_campaigns','red_team_findings','remediation_plans','risk_register','scenario_campaigns','scenario_templates','security_scans','security_threats','security_vulnerabilities','session_traces','tool_call_logs','training_assignments','trust_config','trust_policies','user_roles','validation_runs','workflow_instances','workflow_step_actions'
   ];
 BEGIN
   FOR t IN
@@ -202,6 +208,14 @@ BEGIN
        AND c.relname NOT LIKE 'pg_%'
        AND c.relname NOT LIKE '\_%' ESCAPE '\'  -- skip internal helpers
        AND c.relname <> ALL (skip_tables)
+       -- Replay-safety: skip tables whose existing org_id is TEXT (doc-era
+       -- family) — the uuid FK/backfill below cannot apply to them; their
+       -- ::text-cast policies come from the 202608xx isolation migrations.
+       AND NOT EXISTS (
+         SELECT 1 FROM information_schema.columns ic
+          WHERE ic.table_schema='public' AND ic.table_name=c.relname
+            AND ic.column_name='org_id' AND ic.data_type <> 'uuid'
+       )
   LOOP
     -- 4a. Ensure org_id exists.
     IF NOT EXISTS (
@@ -263,7 +277,7 @@ EXCEPTION WHEN OTHERS THEN
   RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000014_ws02_tenancy_sweep.sql', SQLERRM;
 END $seed$;
 
-we still enable RLS so the only
+-- we still enable RLS so the only
 --    permitted write path is the service-role (migrations, edge functions).
 -- ---------------------------------------------------------------------------
 DO $$
@@ -304,7 +318,7 @@ EXCEPTION WHEN OTHERS THEN
   RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000014_ws02_tenancy_sweep.sql', SQLERRM;
 END $seed$;
 
-only service_role can write.
+-- only service_role can write.
 -- ---------------------------------------------------------------------------
 DO $$
 BEGIN

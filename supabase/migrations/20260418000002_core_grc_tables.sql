@@ -493,7 +493,9 @@ CREATE INDEX IF NOT EXISTS idx_vendors_tenant ON vendors(tenant_id);
 
 -- ── Datasets ──────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS datasets (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- text PK: the live table keys datasets by text ids; the canonical
+  -- 20260814 datasets consolidation declares text FKs against it.
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   tenant_id TEXT NOT NULL DEFAULT 'default',
   name TEXT NOT NULL,
   version TEXT DEFAULT '1.0',
@@ -655,7 +657,8 @@ CREATE INDEX IF NOT EXISTS idx_ei_tenant ON evidence_items(tenant_id);
 
 -- ── Guardrail Rules ───────────────────────────────────────
 CREATE TABLE IF NOT EXISTS guardrail_rules (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- text PK: live keys guardrail rules by text refs ('grl-pii-high')
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   tenant_id TEXT NOT NULL DEFAULT 'default',
   name TEXT NOT NULL,
   rule_type TEXT DEFAULT 'injection',
@@ -672,9 +675,13 @@ CREATE INDEX IF NOT EXISTS idx_gr_tenant ON guardrail_rules(tenant_id);
 
 -- ── Use Cases ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS use_cases (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- text PK: the live table keys use cases by text refs ('UC-CREDIT-001');
+  -- uuid here broke the canonical AIIA seeds on from-zero replay.
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   tenant_id TEXT NOT NULL DEFAULT 'default',
-  name TEXT NOT NULL,
+  -- live rows are keyed on title; name stays for the legacy readers but can
+  -- no longer be NOT NULL on a from-zero replay
+  name TEXT,
   description TEXT,
   department TEXT,
   status TEXT DEFAULT 'active',
@@ -688,7 +695,8 @@ CREATE INDEX IF NOT EXISTS idx_uc_tenant ON use_cases(tenant_id);
 
 -- ── Tasks ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS tasks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- text PK: live keys tasks by text refs ('task-001')
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   tenant_id TEXT NOT NULL DEFAULT 'default',
   title TEXT NOT NULL,
   description TEXT,
@@ -868,19 +876,35 @@ ALTER TABLE shadow_ai_findings ENABLE ROW LEVEL SECURITY;
 
 -- Allow anonymous/service role access (the anon key is used by the frontend)
 -- RLS policies that allow access (anon key has full access in dev mode)
-CREATE POLICY IF NOT EXISTS "allow_all_risks" ON risks FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_models" ON model_inventory FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_incidents" ON incidents FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_controls" ON controls FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_evidence" ON evidence FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_hitl" ON hitl_reviews FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_policies" ON policies FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_audit_logs" ON audit_logs FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_notifications" ON notifications FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_agents" ON agents FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_bias_audits" ON bias_audits FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_vendors" ON vendors FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_datasets" ON datasets FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_trust_traces" ON trust_traces FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_guardrail_rules" ON guardrail_rules FOR ALL USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "allow_all_shadow_ai" ON shadow_ai_findings FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_risks" ON risks;
+CREATE POLICY "allow_all_risks" ON risks FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_models" ON model_inventory;
+CREATE POLICY "allow_all_models" ON model_inventory FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_incidents" ON incidents;
+CREATE POLICY "allow_all_incidents" ON incidents FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_controls" ON controls;
+CREATE POLICY "allow_all_controls" ON controls FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_evidence" ON evidence;
+CREATE POLICY "allow_all_evidence" ON evidence FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_hitl" ON hitl_reviews;
+CREATE POLICY "allow_all_hitl" ON hitl_reviews FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_policies" ON policies;
+CREATE POLICY "allow_all_policies" ON policies FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_audit_logs" ON audit_logs;
+CREATE POLICY "allow_all_audit_logs" ON audit_logs FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_notifications" ON notifications;
+CREATE POLICY "allow_all_notifications" ON notifications FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_agents" ON agents;
+CREATE POLICY "allow_all_agents" ON agents FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_bias_audits" ON bias_audits;
+CREATE POLICY "allow_all_bias_audits" ON bias_audits FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_vendors" ON vendors;
+CREATE POLICY "allow_all_vendors" ON vendors FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_datasets" ON datasets;
+CREATE POLICY "allow_all_datasets" ON datasets FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_trust_traces" ON trust_traces;
+CREATE POLICY "allow_all_trust_traces" ON trust_traces FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_guardrail_rules" ON guardrail_rules;
+CREATE POLICY "allow_all_guardrail_rules" ON guardrail_rules FOR ALL USING (true) WITH CHECK (true);
+DROP POLICY IF EXISTS "allow_all_shadow_ai" ON shadow_ai_findings;
+CREATE POLICY "allow_all_shadow_ai" ON shadow_ai_findings FOR ALL USING (true) WITH CHECK (true);
