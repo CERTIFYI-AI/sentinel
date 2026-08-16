@@ -1,3 +1,8 @@
+## <small>1.61.3 (2026-08-16)</small>
+
+* Merge main ([8e936c2](https://github.com/CERTIFYI-AI/sentinel/commit/8e936c2))
+* fix(privacy): repair DSR silent write failure, wire Consent, migrate DPIA ([4efdf67](https://github.com/CERTIFYI-AI/sentinel/commit/4efdf67))
+
 ## <small>1.61.2 (2026-08-16)</small>
 
 * fix(compliance): migrate RoPA, TIA and Compliance Controls off demo tables ([ab8db91](https://github.com/CERTIFYI-AI/sentinel/commit/ab8db91))
