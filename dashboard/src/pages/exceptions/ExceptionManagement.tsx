@@ -1,321 +1,60 @@
-import { useState, useMemo } from 'react';
+// SPDX-License-Identifier: Apache-2.0
+// Exception Management — real org-scoped backend (exceptions via
+// useExceptions). Statuses are lowercase in data (pending | approved |
+// denied | expired | under_review); TitleCase labels are applied at render.
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   MagnifyingGlass, Eye, ShieldWarning, ClockCountdown, Warning,
   CheckCircle, Export, Plus, ArrowsClockwise,
   UserCircle, CalendarBlank, Prohibit, HourglassMedium,
-  X, Trash, ArrowRight, Buildings, ArrowSquareOut,
+  X, Trash, Buildings, ArrowSquareOut,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from '../../components/ui/sheet';
+import { Sheet, SheetContent, SheetTitle } from '../../components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
-import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../../components/ui/select';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
-} from '../../components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '../../components/ui/alert-dialog';
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
+import { toast } from 'sonner';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useAuthStore } from '../../stores/authStore';
+import { useExceptions } from '../../hooks/useRiskIncidents';
+import type { ExceptionRecord } from '../../services/incidentResponseService';
+import { useModelsData } from '@/hooks/useModelsData';
+import { useRisksData } from '@/hooks/useRisksData';
+import { InterlinkChip } from '@/components/ui/InterlinkChip';
+import { exportCsv } from '@/lib/exportUtils';
+import PageSkeleton from '../../components/ui/PageSkeleton';
 
+// ── Constants ────────────────────────────────────────────────────────────────
+const STATUS_LABELS: Record<string, string> = {
+  pending: 'Pending',
+  approved: 'Approved',
+  denied: 'Denied',
+  expired: 'Expired',
+  under_review: 'Under Review',
+};
+const statusLabel = (s: string) => STATUS_LABELS[s] ?? s;
 
-// ── Types ────────────────────────────────────────────────────────────────────
-type ExceptionStatus = 'Pending' | 'Approved' | 'Denied' | 'Expired' | 'Under Review';
-type RiskLevel = 'Low' | 'Medium' | 'High' | 'Critical';
-
-interface ApprovalStep {
-  role: string;
-  name: string;
-  decision: 'Approved' | 'Pending' | 'Denied' | 'N/A';
-  date: string;
-  notes: string;
-}
-
-interface RenewalRecord {
-  version: string;
-  requestedDate: string;
-  status: string;
-  expiryDate: string;
-  notes: string;
-}
-
-interface CompensatingControl {
-  control: string;
-  description: string;
-  effectiveness: 'High' | 'Medium' | 'Low';
-}
-
-interface Exception {
-  id: string;
-  policy: string;
-  policyRef: string;
-  requestedBy: string;
-  requestedDate: string;
-  approver: string;
-  status: ExceptionStatus;
-  riskAccepted: RiskLevel;
-  likelihood: number;
-  impact: number;
-  riskScore: number;
-  expiryDate: string;
-  compensatingControls: string;
-  description: string;
-  justification: string;
-  riskAnalysis: string;
-  impactScope: string;
-  affectedSystems: string[];
-  frameworkMapping: string[];
-  regulatoryRef: string;
-  controlDetails: CompensatingControl[];
-  approvalChain: ApprovalStep[];
-  renewalHistory: RenewalRecord[];
-  tags: string[];
-}
-
-// ── Seed Data ────────────────────────────────────────────────────────────────
-const SEED_EXCEPTIONS: Exception[] = [
-  {
-    id: 'EXC-001',
-    policy: 'Data Retention Policy',
-    policyRef: 'DRP-4.2',
-    requestedBy: 'Sarah Chen',
-    requestedDate: '2026-01-10',
-    approver: 'James Rodriguez',
-    status: 'Approved',
-    riskAccepted: 'Medium',
-    likelihood: 2,
-    impact: 4,
-    riskScore: 8,
-    expiryDate: '2026-09-30',
-    compensatingControls: 'Enhanced encryption + access logging',
-    description: 'PII retention extension — 18-month retention for model retraining. Standard policy limits PII retention to 6 months, but the credit scoring model retraining pipeline requires 18 months of historical PII data to maintain accuracy above the 95% threshold mandated by the model validation team.',
-    justification: 'Model performance degrades below acceptable thresholds without 18 months of historical PII data. The credit scoring model v3.1 requires this extended window for feature engineering across seasonal financial patterns. Reducing retention to 6 months caused a 12% increase in false positive rates during Q4 2025 testing.',
-    riskAnalysis: 'Extended PII retention increases data breach exposure surface. If compromised, up to 2.4M customer records spanning 18 months would be at risk versus 800K under standard 6-month retention. Regulatory penalty exposure under GDPR Art. 5(1)(e) estimated at EUR 2–4M. Probability of breach assessed at Low given compensating controls.',
-    impactScope: 'Credit Scoring Division — 2.4M customer records',
-    affectedSystems: ['Credit Scoring Model v3.1', 'Customer Data Lake', 'Feature Engineering Pipeline'],
-    frameworkMapping: ['GDPR Art. 5(1)(e)', 'ISO 42001 A.8.4', 'NIST AI RMF 2.3'],
-    regulatoryRef: 'GDPR Art. 5(1)(e) — Storage limitation',
-    controlDetails: [
-      { control: 'Enhanced AES-256 Encryption', description: 'All PII fields encrypted at rest with dedicated key rotation every 30 days managed by HSM. Column-level encryption applied to all 47 PII fields.', effectiveness: 'High' },
-      { control: 'Comprehensive Access Logging', description: 'All read/write operations on extended-retention PII logged to immutable audit trail with real-time SIEM alerting on anomalous access patterns.', effectiveness: 'High' },
-    ],
-    approvalChain: [
-      { role: 'Data Protection Officer', name: 'Elena Vasquez', decision: 'Approved', date: '2026-01-15', notes: 'Compensating controls adequate. Review in 6 months.' },
-      { role: 'CISO', name: 'James Rodriguez', decision: 'Approved', date: '2026-01-18', notes: 'Approved with quarterly access audit requirement.' },
-      { role: 'Chief Risk Officer', name: 'Michael Torres', decision: 'Approved', date: '2026-01-20', notes: 'Residual risk acceptable given business justification.' },
-    ],
-    renewalHistory: [
-      { version: 'v1.0', requestedDate: '2025-07-15', status: 'Expired', expiryDate: '2026-01-15', notes: 'Initial exception for 12-month retention.' },
-      { version: 'v2.0', requestedDate: '2026-01-10', status: 'Active', expiryDate: '2026-09-30', notes: 'Renewed with extended 18-month window and additional controls.' },
-    ],
-    tags: ['PII', 'GDPR', 'Data Retention'],
-  },
-  {
-    id: 'EXC-002',
-    policy: 'Model Validation & Bias Audit Policy',
-    policyRef: 'MVBA-2.1',
-    requestedBy: 'David Park',
-    requestedDate: '2026-03-20',
-    approver: 'Elena Vasquez',
-    status: 'Under Review',
-    riskAccepted: 'Medium',
-    likelihood: 3,
-    impact: 4,
-    riskScore: 12,
-    expiryDate: '2026-06-20',
-    compensatingControls: 'Post-deployment monitoring + 30-day audit deadline',
-    description: 'Model deployment without full bias audit — credit scoring v2.1 expedited deployment. Regulatory deadline requires deployment by April 1, but the full bias audit cycle takes 45 days. Requesting exception to deploy with partial audit and complete the full audit within 30 days post-deployment.',
-    justification: 'OCC regulatory guidance effective April 1, 2026 requires updated credit scoring methodology. Failure to deploy by deadline exposes Acme Financial Corp to regulatory action and potential enforcement. Partial bias audit covering 4 of 7 protected classes has been completed with satisfactory results.',
-    riskAnalysis: 'Deploying without full bias audit creates risk of discriminatory outcomes in the 3 uncovered protected classes (age, disability, veteran status). Historical data shows these classes represent 18% of applicant pool. Potential fair lending violations could result in CFPB enforcement action estimated at $5–15M.',
-    impactScope: 'Consumer Lending — 850K credit applications/month',
-    affectedSystems: ['Credit Scoring v2.1', 'Underwriting Engine', 'Fair Lending Dashboard'],
-    frameworkMapping: ['EU AI Act Art. 10', 'NIST AI RMF GOVERN 1.2', 'ISO 42001 A.9.4', 'SR 11-7'],
-    regulatoryRef: 'EU AI Act Art. 10 — Data and data governance',
-    controlDetails: [
-      { control: 'Real-time Bias Monitoring', description: 'Automated disparate impact ratio monitoring across all 7 protected classes with 4-hour alerting threshold.', effectiveness: 'High' },
-      { control: '30-Day Full Audit Deadline', description: 'Hard deadline of April 30, 2026 for completion of remaining 3 protected class audits. Auto-rollback triggered if deadline missed.', effectiveness: 'Medium' },
-      { control: 'Shadow Model Comparison', description: 'v1.9 model maintained in shadow mode for A/B comparison. Any statistically significant divergence triggers review.', effectiveness: 'High' },
-    ],
-    approvalChain: [
-      { role: 'Model Risk Manager', name: 'Lisa Chang', decision: 'Approved', date: '2026-03-22', notes: 'Partial audit results satisfactory. 30-day completion is achievable.' },
-      { role: 'Chief Compliance Officer', name: 'Elena Vasquez', decision: 'Pending', date: '', notes: '' },
-      { role: 'Chief Risk Officer', name: 'Michael Torres', decision: 'N/A', date: '', notes: '' },
-    ],
-    renewalHistory: [],
-    tags: ['Bias Audit', 'EU AI Act', 'Credit'],
-  },
-  {
-    id: 'EXC-003',
-    policy: 'Third-Party Data Processing Agreement Policy',
-    policyRef: 'TPDP-1.4',
-    requestedBy: 'Priya Sharma',
-    requestedDate: '2026-02-05',
-    approver: 'James Rodriguez',
-    status: 'Approved',
-    riskAccepted: 'High',
-    likelihood: 3,
-    impact: 5,
-    riskScore: 15,
-    expiryDate: '2026-06-15',
-    compensatingControls: 'Data anonymization pre-flight + DLP gateway',
-    description: 'Third-party API without DPA — using OpenAI API before DPA signed. The NLP team needs to integrate OpenAI GPT-4 for customer query classification, but the Data Processing Agreement negotiation with OpenAI is still in legal review.',
-    justification: 'Customer service response time SLA is being breached at 34% rate. The GPT-4 integration is projected to reduce average response time by 60% and is a Board-level priority for Q1 2026. Legal review of the DPA is expected to complete by May 2026.',
-    riskAnalysis: 'Processing data through OpenAI API without a signed DPA creates GDPR Art. 28 compliance risk. If non-anonymized data is inadvertently transmitted, regulatory exposure under GDPR is estimated at EUR 10–20M (2–4% of annual turnover).',
-    impactScope: 'Customer Service Division — 120K queries/month',
-    affectedSystems: ['Customer Query Classifier', 'Support Ticket Router', 'OpenAI API Gateway'],
-    frameworkMapping: ['GDPR Art. 28', 'ISO 27001 A.15.1', 'NIST AI RMF MAP 5.2'],
-    regulatoryRef: 'GDPR Art. 28 — Processor obligations',
-    controlDetails: [
-      { control: 'Data Anonymization Pre-flight', description: 'All PII stripped and replaced with synthetic tokens before API transmission. Named entity recognition removes 23 PII categories. k-anonymity threshold of k=5 enforced.', effectiveness: 'High' },
-      { control: 'API Gateway DLP Inspection', description: 'All outbound API calls inspected by DLP gateway. Any payload containing detected PII patterns is blocked and logged.', effectiveness: 'High' },
-      { control: 'Data Residency Verification', description: 'Weekly verification that OpenAI API endpoints resolve to approved regions.', effectiveness: 'Medium' },
-    ],
-    approvalChain: [
-      { role: 'Data Protection Officer', name: 'Elena Vasquez', decision: 'Approved', date: '2026-02-10', notes: 'Anonymization controls reviewed and tested. Acceptable for temporary use.' },
-      { role: 'CISO', name: 'James Rodriguez', decision: 'Approved', date: '2026-02-12', notes: 'DLP gateway inspection mandatory. Weekly PII leakage reports required.' },
-      { role: 'General Counsel', name: 'Robert Kim', decision: 'Approved', date: '2026-02-14', notes: 'Temporary approval only. DPA must be signed by June 15 or integration must cease.' },
-    ],
-    renewalHistory: [
-      { version: 'v1.0', requestedDate: '2026-02-05', status: 'Active', expiryDate: '2026-06-15', notes: 'Initial exception. Hard deadline tied to DPA signature.' },
-    ],
-    tags: ['Third-Party', 'GDPR', 'OpenAI'],
-  },
-  {
-    id: 'EXC-004',
-    policy: 'AI System Logging & Auditability Policy',
-    policyRef: 'ASLA-3.1',
-    requestedBy: 'Marcus Johnson',
-    requestedDate: '2026-01-25',
-    approver: 'Elena Vasquez',
-    status: 'Approved',
-    riskAccepted: 'Medium',
-    likelihood: 2,
-    impact: 3,
-    riskScore: 6,
-    expiryDate: '2026-07-31',
-    compensatingControls: 'Sampling at 10% + anomaly alerting',
-    description: 'Reduced logging for performance — high-frequency trading model. The HFT model executes 50,000 predictions per second and full logging creates unacceptable latency (>2ms added per prediction).',
-    justification: 'Full logging adds 2.3ms latency per prediction, which translates to $4.2M estimated annual revenue loss in high-frequency trading scenarios. 10% sampling provides statistically valid audit coverage (99.9% CI).',
-    riskAnalysis: 'Reduced logging creates gaps in audit trail for 90% of predictions. In a regulatory investigation, inability to reproduce specific trading decisions could result in enforcement action. SEC/FINRA examination risk assessed as Medium.',
-    impactScope: 'Quantitative Trading Division — 50K predictions/second',
-    affectedSystems: ['HFT Prediction Engine v4.0', 'Trade Execution Platform', 'Market Risk Dashboard'],
-    frameworkMapping: ['SR 11-7 Model Risk Management', 'SEC Regulation SCI', 'ISO 42001 A.9.6'],
-    regulatoryRef: 'SR 11-7 — Supervisory Guidance on Model Risk Management',
-    controlDetails: [
-      { control: '10% Statistical Sampling', description: 'Uniform random sampling of 10% of all predictions with full feature vector, model output, and confidence score logging.', effectiveness: 'High' },
-      { control: 'Anomaly-Triggered Full Capture', description: 'When anomaly detection flags unusual prediction patterns, logging automatically escalates to 100% capture for 60 seconds.', effectiveness: 'High' },
-      { control: 'Daily Reconciliation Report', description: 'Automated daily reconciliation comparing sampled predictions against actual trading outcomes.', effectiveness: 'Medium' },
-    ],
-    approvalChain: [
-      { role: 'Head of Model Risk', name: 'Lisa Chang', decision: 'Approved', date: '2026-01-28', notes: 'Statistical sampling methodology reviewed. 10% rate provides adequate coverage.' },
-      { role: 'Chief Compliance Officer', name: 'Elena Vasquez', decision: 'Approved', date: '2026-01-30', notes: 'Anomaly trigger mechanism must be tested monthly.' },
-      { role: 'Head of Trading Technology', name: 'Andrew Wells', decision: 'Approved', date: '2026-02-01', notes: 'Performance impact verified. 10% sampling adds <0.1ms latency.' },
-    ],
-    renewalHistory: [
-      { version: 'v1.0', requestedDate: '2025-08-01', status: 'Expired', expiryDate: '2026-01-31', notes: 'Initial exception at 5% sampling rate.' },
-      { version: 'v2.0', requestedDate: '2026-01-25', status: 'Active', expiryDate: '2026-07-31', notes: 'Renewed with increased sampling rate (5% → 10%) and anomaly trigger.' },
-    ],
-    tags: ['Logging', 'HFT', 'SR 11-7'],
-  },
-  {
-    id: 'EXC-005',
-    policy: 'Model Lifecycle Management Policy',
-    policyRef: 'MLM-5.3',
-    requestedBy: 'Tom Nakamura',
-    requestedDate: '2025-07-10',
-    approver: 'James Rodriguez',
-    status: 'Expired',
-    riskAccepted: 'High',
-    likelihood: 3,
-    impact: 4,
-    riskScore: 12,
-    expiryDate: '2026-01-15',
-    compensatingControls: 'Monthly manual review + escalation protocol',
-    description: 'Legacy model grandfathered — fraud detection v1.2. The fraud detection model v1.2 has been in production for 4 years without undergoing the new model validation framework introduced in 2025.',
-    justification: 'Fraud detection v1.2 processes $2.8B in transactions monthly with a 97.3% accuracy rate. Taking the model offline for validation would leave a coverage gap of 2–3 months, increasing fraud losses by an estimated $12M.',
-    riskAnalysis: 'Operating an unvalidated legacy model creates regulatory risk under SR 11-7. Concept drift analysis shows a 3.2% degradation in precision over the past 12 months. Estimated incremental fraud losses: $1.8M annually.',
-    impactScope: 'Fraud Operations — $2.8B monthly transaction volume',
-    affectedSystems: ['Fraud Detection v1.2', 'Transaction Monitoring Platform', 'Case Management System'],
-    frameworkMapping: ['SR 11-7', 'OCC 2011-12', 'ISO 42001 A.9.3'],
-    regulatoryRef: 'SR 11-7 — Model Validation requirements',
-    controlDetails: [
-      { control: 'Monthly Manual Review', description: 'Dedicated fraud analyst team reviews 500 random flagged and unflagged transactions monthly.', effectiveness: 'Medium' },
-      { control: 'Escalation Protocol', description: 'Any detected accuracy degradation >1% triggers immediate escalation to Model Risk Committee with 48-hour response SLA.', effectiveness: 'Medium' },
-    ],
-    approvalChain: [
-      { role: 'Head of Fraud Operations', name: 'Karen Mitchell', decision: 'Approved', date: '2025-07-15', notes: 'Business continuity requires continued operation.' },
-      { role: 'CISO', name: 'James Rodriguez', decision: 'Approved', date: '2025-07-18', notes: 'Approved for 6 months. Must not be renewed without v2.0 timeline.' },
-      { role: 'Chief Risk Officer', name: 'Michael Torres', decision: 'Approved', date: '2025-07-20', notes: 'Conditional on monthly review cadence. No further extensions.' },
-    ],
-    renewalHistory: [
-      { version: 'v1.0', requestedDate: '2025-01-10', status: 'Expired', expiryDate: '2025-07-10', notes: 'Initial grandfathering exception.' },
-      { version: 'v2.0', requestedDate: '2025-07-10', status: 'Expired', expiryDate: '2026-01-15', notes: 'Final renewal. CRO mandated no further extensions.' },
-    ],
-    tags: ['Legacy Model', 'Fraud', 'SR 11-7'],
-  },
-  {
-    id: 'EXC-006',
-    policy: 'Cross-Border Data Transfer Policy',
-    policyRef: 'CBDT-2.2',
-    requestedBy: 'Anna Kowalski',
-    requestedDate: '2026-03-28',
-    approver: 'Robert Kim',
-    status: 'Under Review',
-    riskAccepted: 'High',
-    likelihood: 3,
-    impact: 5,
-    riskScore: 15,
-    expiryDate: '2026-09-28',
-    compensatingControls: 'SCCs + encryption in transit + TIA',
-    description: 'Cross-border transfer temporary approval — EU to US model training. The ML team needs to transfer anonymized EU customer behavioral data to US-based GPU training infrastructure for the next-generation recommendation engine.',
-    justification: 'US-based GPU cluster provides 8× training throughput compared to available EU infrastructure. The recommendation engine v3.0 is a strategic Board priority with a Q2 2026 launch deadline. Estimated revenue impact of delay: $8M in Q3 2026.',
-    riskAnalysis: 'EU-to-US data transfer without adequacy decision creates GDPR Chapter V compliance risk. Post-Schrems II, SCCs alone may be insufficient. Potential penalties of EUR 10–20M. Transfer Impact Assessment identifies US surveillance risk as Medium.',
-    impactScope: 'EU Operations — 1.2M customer behavioral profiles',
-    affectedSystems: ['EU Data Lake', 'US Training Cluster', 'Recommendation Engine v3.0', 'Data Transfer Gateway'],
-    frameworkMapping: ['GDPR Chapter V', 'EDPB Recommendations 01/2020', 'ISO 27001 A.18.1'],
-    regulatoryRef: 'GDPR Chapter V — Transfers of personal data to third countries',
-    controlDetails: [
-      { control: 'Standard Contractual Clauses (SCCs)', description: 'EU Commission 2021 SCCs executed between EU entity (data exporter) and US entity (data importer). Module 4 applied with supplementary measures per EDPB Recommendations.', effectiveness: 'Medium' },
-      { control: 'End-to-End Encryption in Transit', description: 'TLS 1.3 with AES-256-GCM for all data transfers. Dedicated VPN tunnel between EU and US data centers.', effectiveness: 'High' },
-      { control: 'Transfer Impact Assessment', description: 'Documented TIA per EDPB guidance covering US legal framework analysis, supplementary technical measures, and data minimization verification.', effectiveness: 'Medium' },
-    ],
-    approvalChain: [
-      { role: 'Data Protection Officer', name: 'Elena Vasquez', decision: 'Approved', date: '2026-03-30', notes: 'TIA completed. SCCs and encryption provide adequate supplementary measures.' },
-      { role: 'General Counsel', name: 'Robert Kim', decision: 'Pending', date: '', notes: '' },
-      { role: 'Chief Risk Officer', name: 'Michael Torres', decision: 'N/A', date: '', notes: '' },
-    ],
-    renewalHistory: [],
-    tags: ['Cross-Border', 'GDPR', 'Schrems II'],
-  },
-];
-
+const RISK_LEVELS = ['Low', 'Medium', 'High', 'Critical'];
 const FRAMEWORK_OPTIONS = ['GDPR', 'EU AI Act', 'ISO 42001', 'ISO 27001', 'NIST AI RMF', 'SOC 2', 'SR 11-7', 'CCPA', 'DORA', 'MAS TRM', 'PCI DSS', 'HIPAA'];
 const APPROVER_OPTIONS = ['Chief Risk Officer', 'CISO', 'Data Protection Officer', 'Chief Compliance Officer', 'General Counsel', 'Head of Model Risk', 'Board Risk Committee'];
 
-const EFFECTIVENESS_COLOR: Record<string, { bg: string; text: string }> = {
-  High: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' },
-  Medium: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' },
-  Low: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' },
-};
-const EFFECTIVENESS_FALLBACK = { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' };
-const effectivenessColor = (k: string) => EFFECTIVENESS_COLOR[k] ?? EFFECTIVENESS_FALLBACK;
-
-// ── Helpers ────────────────────────────────────────────────────────────────
-function fmt(d: string) {
-  if (!d) return '--';
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(d?: string | null) {
+  if (!d) return '—';
   return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function isExpiringSoon(expiryDate: string): boolean {
+function isExpiringSoon(expiryDate?: string | null): boolean {
   if (!expiryDate) return false;
   const expiry = new Date(expiryDate).getTime();
   const now = Date.now();
@@ -329,71 +68,34 @@ function riskScoreColor(score: number) {
   return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
 }
 
-function statusStyle(status: ExceptionStatus): { bg: string; text: string; border: string } {
+function statusStyle(status: string): { bg: string; text: string; border: string } {
   switch (status) {
-    case 'Approved': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
-    case 'Pending': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' };
-    case 'Under Review': return { bg: 'hsl(220 80% 56% / 0.12)', text: 'hsl(220 80% 50%)', border: 'hsl(220 80% 56% / 0.3)' };
-    case 'Denied': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
-    case 'Expired': return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))', border: 'hsl(var(--border))' };
+    case 'approved': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
+    case 'pending': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' };
+    case 'under_review': return { bg: 'hsl(220 80% 56% / 0.12)', text: 'hsl(220 80% 50%)', border: 'hsl(220 80% 56% / 0.3)' };
+    case 'denied': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
     default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))', border: 'hsl(var(--border))' };
   }
 }
 
-function riskLevelStyle(r: RiskLevel) {
+function riskLevelStyle(r?: string | null) {
   switch (r) {
-    case 'Critical': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
+    case 'Critical':
     case 'High': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
     case 'Medium': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
     default: return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
   }
 }
 
-function approvalStepStyle(decision: ApprovalStep['decision']) {
+function decisionStyle(decision: string | null) {
   switch (decision) {
-    case 'Approved': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
-    case 'Denied': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
-    case 'Pending': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
+    case 'approved': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
+    case 'denied': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
+    case null: return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
     default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))' };
   }
 }
-
-// ── Mini toast ────────────────────────────────────────────────────────────────
-function showToast(message: string, type: 'success' | 'error' | 'info' = 'success') {
-  const colors = {
-    success: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' },
-    error: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
-    info: { bg: 'hsl(var(--bg-surface))', text: 'hsl(var(--text-1))', border: 'hsl(var(--border))' },
-  };
-  const c = colors[type];
-  const el = document.createElement('div');
-  el.textContent = message;
-  Object.assign(el.style, {
-    position: 'fixed', bottom: '24px', right: '24px', zIndex: '9999',
-    background: c.bg, color: c.text, border: `1px solid ${c.border}`,
-    padding: '10px 20px', fontSize: '13px',     boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-  });
-  document.body.appendChild(el);
-  setTimeout(() => el.remove(), 3000);
-}
-
-// ── CSV Export ────────────────────────────────────────────────────────────────
-function exportCsv(data: Exception[]) {
-  const headers = ['ID', 'Policy', 'Policy Ref', 'Requested By', 'Approver', 'Status', 'Risk Level', 'Risk Score', 'Expiry Date', 'Impact Scope', 'Frameworks', 'Regulatory Ref'];
-  const rows = data.map(e => [
-    e.id, e.policy, e.policyRef, e.requestedBy, e.approver, e.status, e.riskAccepted,
-    e.riskScore, e.expiryDate, e.impactScope, e.frameworkMapping.join('; '), e.regulatoryRef,
-  ]);
-  const csv = [headers.join(','), ...rows.map(r => r.map(c => `"${String(c).replace(/"/g, '""')}"`).join(','))].join('\n');
-  const blob = new Blob([csv], { type: 'text/csv' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `exceptions-${new Date().toISOString().split('T')[0]}.csv`;
-  a.click();
-  URL.revokeObjectURL(url);
-  showToast('Exceptions exported to CSV');
-}
+const decisionLabel = (d: string | null) => d === null ? 'Pending' : d.charAt(0).toUpperCase() + d.slice(1);
 
 // ── MetricTile ────────────────────────────────────────────────────────────────
 function MetricTile({ label, value, sub, icon, color }: {
@@ -415,27 +117,28 @@ function MetricTile({ label, value, sub, icon, color }: {
 }
 
 // ── StatusBadge ───────────────────────────────────────────────────────────────
-function StatusBadge({ status }: { status: ExceptionStatus }) {
+function StatusBadge({ status }: { status: string }) {
   const s = statusStyle(status);
   return (
     <span className="text-[11px] font-semibold px-2 py-0.5" style={{ background: s.bg, color: s.text, border: `1px solid ${s.border}` }}>
-      {status}
+      {statusLabel(status)}
     </span>
   );
 }
 
 // ── RiskBadge ─────────────────────────────────────────────────────────────────
-function RiskBadge({ level }: { level: RiskLevel }) {
+function RiskBadge({ level }: { level?: string | null }) {
   const s = riskLevelStyle(level);
   return (
     <span className="text-[11px] font-semibold px-2 py-0.5" style={{ background: s.bg, color: s.text }}>
-      {level}
+      {level ?? '—'}
     </span>
   );
 }
 
 // ── ScorePill ─────────────────────────────────────────────────────────────────
-function ScorePill({ score }: { score: number }) {
+function ScorePill({ score }: { score?: number | null }) {
+  if (score == null) return <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>;
   const c = riskScoreColor(score);
   return (
     <span className="font-mono font-bold text-xs px-2 py-0.5" style={{ background: c.bg, color: c.text }}>{score}</span>
@@ -443,11 +146,14 @@ function ScorePill({ score }: { score: number }) {
 }
 
 // ── ApprovalTimeline ──────────────────────────────────────────────────────────
-function ApprovalTimeline({ chain }: { chain: ApprovalStep[] }) {
+function ApprovalTimeline({ chain }: { chain: ExceptionRecord['approvalChain'] }) {
+  if (!chain.length) {
+    return <p className="text-xs text-center py-8" style={{ color: 'hsl(var(--text-4))' }}>No approval steps recorded yet.</p>;
+  }
   return (
     <div className="space-y-3">
       {chain.map((step, i) => {
-        const s = approvalStepStyle(step.decision);
+        const s = decisionStyle(step.decision);
         return (
           <div key={i} className="flex gap-3">
             <div className="flex flex-col items-center">
@@ -459,15 +165,14 @@ function ApprovalTimeline({ chain }: { chain: ApprovalStep[] }) {
             </div>
             <div className="pb-4 flex-1 min-w-0">
               <div className="flex items-center gap-2 flex-wrap mb-1">
-                <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{step.name}</span>
-                <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{step.role}</span>
-                <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: s.bg, color: s.text }}>{step.decision}</span>
+                <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{step.role}</span>
+                <span className="text-[10px] font-semibold px-1.5 py-0.5" style={{ background: s.bg, color: s.text }}>{decisionLabel(step.decision)}</span>
                 {step.date && <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{fmt(step.date)}</span>}
               </div>
               {step.notes && (
                 <p className="text-xs italic" style={{ color: 'hsl(var(--text-3))' }}>"{step.notes}"</p>
               )}
-              {!step.notes && step.decision === 'Pending' && (
+              {!step.notes && step.decision === null && (
                 <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Awaiting review</p>
               )}
             </div>
@@ -482,23 +187,34 @@ function ApprovalTimeline({ chain }: { chain: ApprovalStep[] }) {
 // MAIN COMPONENT
 // ═════════════════════════════════════════════════════════════════════════════
 const EMPTY_FORM = {
-  policy: '', policyRef: '', requestedBy: '', approver: 'Chief Risk Officer', department: '',
-  riskAccepted: 'Medium' as RiskLevel, likelihood: 2, impact: 3,
-  expiryDate: '', description: '', justification: '', riskAnalysis: '',
+  title: '', policyRef: '', requestedBy: '', approver: 'Chief Risk Officer', department: '',
+  riskAccepted: 'Medium', likelihood: 2, impact: 3,
+  expiryDate: '', description: '', justification: '',
   impactScope: '', regulatoryRef: '', frameworkMapping: [] as string[],
   affectedSystems: [] as string[], compensatingControls: '', tags: [] as string[],
+  linkedRiskId: '', linkedModelIds: [] as string[],
 };
 
 export default function ExceptionManagement() {
   const { orgName } = useSettingsStore();
-  const [exceptions, setExceptions] = useState<Exception[]>(SEED_EXCEPTIONS);
+  const { user } = useAuthStore();
+  const { items: exceptions, isLoading, error, save, remove, isSaving } = useExceptions();
+  const { models } = useModelsData();
+  const { risks } = useRisksData();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openParam = searchParams.get('open');
+
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
   const [filterRisk, setFilterRisk] = useState<string>('all');
 
   // Detail drawer
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [selected, setSelected] = useState<Exception | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const selected = useMemo(
+    () => exceptions.find(e => e.id === selectedId) ?? null,
+    [exceptions, selectedId],
+  );
 
   // Create dialog
   const [createOpen, setCreateOpen] = useState(false);
@@ -508,26 +224,42 @@ export default function ExceptionManagement() {
 
   // Approve/Deny dialog
   const [decisionOpen, setDecisionOpen] = useState(false);
-  const [decision, setDecision] = useState<'Approved' | 'Denied'>('Approved');
+  const [decision, setDecision] = useState<'approved' | 'denied'>('approved');
   const [decisionNotes, setDecisionNotes] = useState('');
-  const [decisionTarget, setDecisionTarget] = useState<Exception | null>(null);
+  const [decisionBy, setDecisionBy] = useState('');
+  const [decisionTarget, setDecisionTarget] = useState<ExceptionRecord | null>(null);
 
   // Delete confirm
-  const [deleteTarget, setDeleteTarget] = useState<Exception | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<ExceptionRecord | null>(null);
 
   // Renewal dialog
   const [renewalOpen, setRenewalOpen] = useState(false);
   const [renewalDate, setRenewalDate] = useState('');
   const [renewalNotes, setRenewalNotes] = useState('');
 
+  // Deep link: ?open=<id or exceptionId> opens the detail drawer.
+  useEffect(() => {
+    if (!openParam || isLoading) return;
+    const match = exceptions.find(e => e.id === openParam || e.exceptionId === openParam);
+    if (match?.id) { setSelectedId(match.id); setSheetOpen(true); }
+  }, [openParam, exceptions, isLoading]);
+
+  const modelName = (id: string) => models.find(m => m.id === id)?.name ?? 'Unavailable';
+  const riskTitle = (id: string) => risks.find(r => r.id === id)?.title ?? 'Risk';
+  const currentUserName = user?.fullName ?? user?.email ?? '';
+  const currentUserRole = user?.role ?? '';
+
   // ── Derived ──────────────────────────────────────────────────────────────
   const filtered = useMemo(() => {
     return exceptions.filter(exc => {
       if (search) {
         const q = search.toLowerCase();
-        const match = exc.id.toLowerCase().includes(q) || exc.policy.toLowerCase().includes(q) ||
-          exc.requestedBy.toLowerCase().includes(q) || exc.description.toLowerCase().includes(q) ||
-          exc.impactScope.toLowerCase().includes(q) || exc.tags.some(t => t.toLowerCase().includes(q));
+        const match = (exc.exceptionId ?? exc.id ?? '').toLowerCase().includes(q)
+          || exc.title.toLowerCase().includes(q)
+          || (exc.requestedBy ?? '').toLowerCase().includes(q)
+          || (exc.description ?? '').toLowerCase().includes(q)
+          || (exc.impactScope ?? '').toLowerCase().includes(q)
+          || exc.tags.some(t => t.toLowerCase().includes(q));
         if (!match) return false;
       }
       if (filterStatus !== 'all' && exc.status !== filterStatus) return false;
@@ -536,120 +268,153 @@ export default function ExceptionManagement() {
     });
   }, [exceptions, search, filterStatus, filterRisk]);
 
-  const activeCount = exceptions.filter(e => e.status === 'Approved').length;
-  const pendingCount = exceptions.filter(e => e.status === 'Pending' || e.status === 'Under Review').length;
-  const expiringSoon = exceptions.filter(e => e.status === 'Approved' && isExpiringSoon(e.expiryDate)).length;
-  const expiredCount = exceptions.filter(e => e.status === 'Expired').length;
-  const highRiskCount = exceptions.filter(e => (e.riskAccepted === 'High' || e.riskAccepted === 'Critical') && e.status === 'Approved').length;
+  const activeCount = exceptions.filter(e => e.status === 'approved').length;
+  const pendingCount = exceptions.filter(e => e.status === 'pending' || e.status === 'under_review').length;
+  const expiringSoon = exceptions.filter(e => e.status === 'approved' && isExpiringSoon(e.expiryDate)).length;
+  const expiredCount = exceptions.filter(e => e.status === 'expired').length;
+  const highRiskCount = exceptions.filter(e => (e.riskAccepted === 'High' || e.riskAccepted === 'Critical') && e.status === 'approved').length;
 
   // ── Handlers ─────────────────────────────────────────────────────────────
-  const openDetail = (exc: Exception) => { setSelected(exc); setSheetOpen(true); };
-
-  const handleCreate = () => {
-    if (!form.policy.trim() || !form.description.trim() || !form.justification.trim()) {
-      showToast('Please fill in all required fields', 'error'); return;
+  const openDetail = (exc: ExceptionRecord) => { setSelectedId(exc.id ?? null); setSheetOpen(true); };
+  const closeSheet = (open: boolean) => {
+    setSheetOpen(open);
+    if (!open && openParam) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('open');
+      setSearchParams(next, { replace: true });
     }
-    const id = `EXC-${String(exceptions.length + 1).padStart(3, '0')}`;
-    const riskScore = form.likelihood * form.impact;
-    const newExc: Exception = {
-      id,
-      policy: form.policy,
-      policyRef: form.policyRef || `POL-${String(exceptions.length + 1).padStart(3, '0')}`,
-      requestedBy: form.requestedBy || 'Current User',
+  };
+
+  const handleCreate = async () => {
+    if (!form.title.trim() || !form.description.trim() || !form.justification.trim()) {
+      toast.error('Please fill in all required fields'); return;
+    }
+    const record: ExceptionRecord = {
+      // id omitted — the service generates it.
+      title: form.title.trim(),
+      policyRef: form.policyRef.trim() || null,
+      requestedBy: form.requestedBy.trim() || currentUserName || null,
       requestedDate: new Date().toISOString().split('T')[0],
       approver: form.approver,
-      status: 'Pending',
+      status: 'pending',
       riskAccepted: form.riskAccepted,
       likelihood: form.likelihood,
       impact: form.impact,
-      riskScore,
-      expiryDate: form.expiryDate || new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
-      compensatingControls: form.compensatingControls || 'To be defined',
-      description: form.description,
-      justification: form.justification,
-      riskAnalysis: form.riskAnalysis || 'Risk analysis pending.',
-      impactScope: form.impactScope || 'Scope to be assessed',
+      riskScore: form.likelihood * form.impact,
+      expiryDate: form.expiryDate || null,
+      compensatingControls: form.compensatingControls.trim() || null,
+      description: form.description.trim(),
+      justification: form.justification.trim(),
+      impactScope: form.impactScope.trim() || null,
+      department: form.department.trim() || null,
       affectedSystems: form.affectedSystems,
       frameworkMapping: form.frameworkMapping,
-      regulatoryRef: form.regulatoryRef,
-      controlDetails: [],
+      regulatoryRef: form.regulatoryRef.trim() || null,
+      renewalCount: 0,
       approvalChain: [
-        { role: form.approver, name: form.approver, decision: 'Pending', date: '', notes: '' },
+        { role: form.approver, decision: null, date: null, notes: null },
       ],
       renewalHistory: [],
       tags: form.tags,
+      linkedRiskId: form.linkedRiskId || null,
+      linkedModelIds: form.linkedModelIds,
     };
-    setExceptions(prev => [newExc, ...prev]);
-    setCreateOpen(false);
-    setForm({ ...EMPTY_FORM });
-    setSystemInput(''); setTagInput('');
-    showToast(`Exception request ${id} submitted for approval`);
+    try {
+      await save(record); // hook toasts success; throws on failure
+      setCreateOpen(false);
+      setForm({ ...EMPTY_FORM });
+      setSystemInput(''); setTagInput('');
+    } catch { /* hook surfaces the error toast */ }
   };
 
-  const openDecision = (exc: Exception, d: 'Approved' | 'Denied') => {
+  const openDecision = (exc: ExceptionRecord, d: 'approved' | 'denied') => {
     setDecisionTarget(exc);
     setDecision(d);
     setDecisionNotes('');
+    setDecisionBy(currentUserName);
     setDecisionOpen(true);
   };
 
-  const handleDecision = () => {
+  const handleDecision = async () => {
     if (!decisionTarget) return;
-    setExceptions(prev => prev.map(e => {
-      if (e.id !== decisionTarget.id) return e;
-      const updatedChain = e.approvalChain.map((step, idx) => {
-        if (step.decision === 'Pending' && idx === e.approvalChain.findIndex(s => s.decision === 'Pending')) {
-          return { ...step, decision, date: new Date().toISOString().split('T')[0], notes: decisionNotes };
-        }
-        return step;
-      });
-      const allApproved = updatedChain.every(s => s.decision === 'Approved' || s.decision === 'N/A');
-      const anyDenied = updatedChain.some(s => s.decision === 'Denied');
-      const newStatus: ExceptionStatus = anyDenied ? 'Denied' : allApproved ? 'Approved' : 'Under Review';
-      return { ...e, status: newStatus, approvalChain: updatedChain };
-    }));
-    if (selected?.id === decisionTarget.id) {
-      setSelected(prev => {
-        if (!prev) return prev;
-        const updatedChain = prev.approvalChain.map((step, idx) => {
-          if (step.decision === 'Pending' && idx === prev.approvalChain.findIndex(s => s.decision === 'Pending')) {
-            return { ...step, decision, date: new Date().toISOString().split('T')[0], notes: decisionNotes };
-          }
-          return step;
-        });
-        const allApproved = updatedChain.every(s => s.decision === 'Approved' || s.decision === 'N/A');
-        const anyDenied = updatedChain.some(s => s.decision === 'Denied');
-        return { ...prev, status: anyDenied ? 'Denied' : allApproved ? 'Approved' : 'Under Review', approvalChain: updatedChain };
-      });
-    }
-    setDecisionOpen(false);
-    showToast(`Exception ${decisionTarget.id} ${decision.toLowerCase()} with notes recorded`, decision === 'Approved' ? 'success' : 'info');
-  };
-
-  const handleDelete = (exc: Exception) => {
-    setExceptions(prev => prev.filter(e => e.id !== exc.id));
-    if (selected?.id === exc.id) setSheetOpen(false);
-    setDeleteTarget(null);
-    showToast(`Exception ${exc.id} deleted`);
-  };
-
-  const handleRenewal = () => {
-    if (!selected) return;
-    const newVersion = `v${selected.renewalHistory.length + 1 + 1}.0`;
-    const renewal: RenewalRecord = {
-      version: newVersion,
-      requestedDate: new Date().toISOString().split('T')[0],
-      status: 'Pending',
-      expiryDate: renewalDate || new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
-      notes: renewalNotes,
+    const actor = currentUserRole
+      ? `${currentUserRole}${decisionBy.trim() ? ` (${decisionBy.trim()})` : ''}`
+      : (decisionBy.trim() || 'Reviewer');
+    const step = {
+      role: actor,
+      decision,
+      date: new Date().toISOString().split('T')[0],
+      notes: decisionNotes.trim() || null,
     };
-    setExceptions(prev => prev.map(e =>
-      e.id === selected.id ? { ...e, status: 'Pending', expiryDate: renewal.expiryDate, renewalHistory: [...e.renewalHistory, renewal] } : e
-    ));
-    setSelected(prev => prev ? { ...prev, status: 'Pending', expiryDate: renewal.expiryDate, renewalHistory: [...prev.renewalHistory, renewal] } : prev);
-    setRenewalOpen(false);
-    setRenewalDate(''); setRenewalNotes('');
-    showToast(`Renewal request for ${selected.id} submitted`);
+    const updated: ExceptionRecord = {
+      ...decisionTarget,
+      status: decision === 'denied' ? 'denied' : 'approved',
+      approver: decisionBy.trim() || decisionTarget.approver,
+      approvalChain: [
+        // Resolve the open (pending) step if one exists, else append.
+        ...decisionTarget.approvalChain.map((s, i) =>
+          s.decision === null && i === decisionTarget.approvalChain.findIndex(x => x.decision === null)
+            ? { ...s, decision: step.decision, date: step.date, notes: step.notes }
+            : s),
+        ...(decisionTarget.approvalChain.some(s => s.decision === null) ? [] : [step]),
+      ],
+    };
+    try {
+      await save(updated); // hook toasts success; throws on failure
+      setDecisionOpen(false);
+    } catch { /* hook surfaces the error toast */ }
+  };
+
+  const handleDelete = async (exc: ExceptionRecord) => {
+    if (!exc.id) return;
+    try {
+      await remove(exc.id);
+      if (selectedId === exc.id) { setSheetOpen(false); setSelectedId(null); }
+      setDeleteTarget(null);
+    } catch { /* hook surfaces the error toast */ }
+  };
+
+  const handleRenewal = async () => {
+    if (!selected) return;
+    const newExpiry = renewalDate || new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0];
+    const updated: ExceptionRecord = {
+      ...selected,
+      status: 'pending',
+      expiryDate: newExpiry,
+      renewalCount: selected.renewalCount + 1,
+      renewalHistory: [
+        ...selected.renewalHistory,
+        { date: new Date().toISOString().split('T')[0], by: currentUserName || undefined, notes: renewalNotes.trim() || undefined },
+      ],
+    };
+    try {
+      await save(updated); // hook toasts success; throws on failure
+      setRenewalOpen(false);
+      setRenewalDate(''); setRenewalNotes('');
+    } catch { /* hook surfaces the error toast */ }
+  };
+
+  const handleExport = () => {
+    if (!filtered.length) { toast.error('No exceptions to export'); return; }
+    exportCsv(
+      filtered.map(e => ({
+        id: e.exceptionId ?? e.id ?? '',
+        title: e.title,
+        policy_ref: e.policyRef ?? '',
+        requested_by: e.requestedBy ?? '',
+        approver: e.approver ?? '',
+        status: statusLabel(e.status),
+        risk_level: e.riskAccepted ?? '',
+        risk_score: e.riskScore ?? '',
+        expiry_date: e.expiryDate ?? '',
+        impact_scope: e.impactScope ?? '',
+        frameworks: e.frameworkMapping.join('; '),
+        regulatory_ref: e.regulatoryRef ?? '',
+        linked_risk: e.linkedRiskId ?? '',
+        linked_models: (e.linkedModelIds ?? []).map(modelName).join('; '),
+      })),
+      `exceptions-${new Date().toISOString().split('T')[0]}.csv`,
+    );
   };
 
   const addSystem = () => {
@@ -675,8 +440,18 @@ export default function ExceptionManagement() {
     }));
   };
 
-  // ── Current user can make decision if there's a pending step ─────────────
-  const canDecide = (exc: Exception) => exc.status === 'Pending' || exc.status === 'Under Review';
+  const toggleModel = (id: string) => {
+    setForm(f => ({
+      ...f,
+      linkedModelIds: f.linkedModelIds.includes(id)
+        ? f.linkedModelIds.filter(x => x !== id)
+        : [...f.linkedModelIds, id],
+    }));
+  };
+
+  const canDecide = (exc: ExceptionRecord) => exc.status === 'pending' || exc.status === 'under_review';
+
+  if (isLoading) return <PageSkeleton title="Exception Management" showStats rows={6} />;
 
   return (
     <div className="space-y-6">
@@ -690,7 +465,7 @@ export default function ExceptionManagement() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={() => exportCsv(filtered)}>
+          <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={handleExport}>
             <Export size={14} />Export CSV
           </Button>
           <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => setCreateOpen(true)}>
@@ -698,6 +473,14 @@ export default function ExceptionManagement() {
           </Button>
         </div>
       </div>
+
+      {/* Real query error state */}
+      {error != null && (
+        <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load exceptions</p>
+          <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{(error as Error).message}</p>
+        </div>
+      )}
 
       {/* KPI Row */}
       <div className="grid grid-cols-5 gap-3">
@@ -725,8 +508,9 @@ export default function ExceptionManagement() {
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent style={{ borderRadius: 0 }}>
-            {['all', 'Approved', 'Pending', 'Under Review', 'Denied', 'Expired'].map(s => (
-              <SelectItem key={s} value={s}>{s === 'all' ? 'All Statuses' : s}</SelectItem>
+            <SelectItem value="all">All Statuses</SelectItem>
+            {Object.entries(STATUS_LABELS).map(([v, l]) => (
+              <SelectItem key={v} value={v}>{l}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -735,8 +519,9 @@ export default function ExceptionManagement() {
             <SelectValue placeholder="Risk Level" />
           </SelectTrigger>
           <SelectContent style={{ borderRadius: 0 }}>
-            {['all', 'Low', 'Medium', 'High', 'Critical'].map(r => (
-              <SelectItem key={r} value={r}>{r === 'all' ? 'All Risk Levels' : r}</SelectItem>
+            <SelectItem value="all">All Risk Levels</SelectItem>
+            {RISK_LEVELS.map(r => (
+              <SelectItem key={r} value={r}>{r}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -760,8 +545,8 @@ export default function ExceptionManagement() {
               </thead>
               <tbody>
                 {filtered.map(exc => {
-                  const expiring = exc.status === 'Approved' && isExpiringSoon(exc.expiryDate);
-                  const isExp = exc.status === 'Expired';
+                  const expiring = exc.status === 'approved' && isExpiringSoon(exc.expiryDate);
+                  const isExp = exc.status === 'expired';
                   const leftColor = isExp ? 'hsl(var(--s-er-tx))' : expiring ? 'hsl(var(--s-wn-tx))' : 'transparent';
                   return (
                     <tr key={exc.id}
@@ -769,16 +554,16 @@ export default function ExceptionManagement() {
                       style={{ borderBottom: '1px solid hsl(var(--border))', borderLeft: `3px solid ${leftColor}` }}
                       onClick={() => openDetail(exc)}>
                       <td className="px-3 py-2">
-                        <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{exc.id}</span>
+                        <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{exc.exceptionId ?? exc.id}</span>
                       </td>
                       <td className="px-3 py-2 max-w-[200px]">
-                        <p className="text-xs font-semibold truncate" style={{ color: 'hsl(var(--text-1))' }}>{exc.policy}</p>
-                        <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{exc.policyRef}</p>
+                        <p className="text-xs font-semibold truncate" style={{ color: 'hsl(var(--text-1))' }}>{exc.title}</p>
+                        <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{exc.policyRef ?? '—'}</p>
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-1">
                           <UserCircle size={12} style={{ color: 'hsl(var(--text-4))' }} />
-                          <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{exc.requestedBy}</span>
+                          <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{exc.requestedBy ?? '—'}</span>
                         </div>
                       </td>
                       <td className="px-3 py-2"><StatusBadge status={exc.status} /></td>
@@ -814,12 +599,12 @@ export default function ExceptionManagement() {
                             <>
                               <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px]"
                                 style={{ color: 'hsl(var(--s-ok-tx))' }}
-                                onClick={() => openDecision(exc, 'Approved')}>
+                                onClick={() => openDecision(exc, 'approved')}>
                                 <CheckCircle size={12} />
                               </Button>
                               <Button variant="ghost" size="sm" className="h-6 px-1.5 text-[10px]"
                                 style={{ color: 'hsl(var(--s-er-tx))' }}
-                                onClick={() => openDecision(exc, 'Denied')}>
+                                onClick={() => openDecision(exc, 'denied')}>
                                 <Prohibit size={12} />
                               </Button>
                             </>
@@ -837,7 +622,9 @@ export default function ExceptionManagement() {
                 {filtered.length === 0 && (
                   <tr>
                     <td colSpan={9} className="px-3 py-12 text-center text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-                      No exceptions match your criteria.
+                      {exceptions.length === 0
+                        ? 'No exceptions recorded yet. Request the first exception to start the approval workflow.'
+                        : 'No exceptions match your criteria.'}
                     </td>
                   </tr>
                 )}
@@ -848,24 +635,34 @@ export default function ExceptionManagement() {
       </Card>
 
       {/* ── Detail Drawer ─────────────────────────────────────────────────────── */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+      <Sheet open={sheetOpen} onOpenChange={closeSheet}>
         <SheetContent side="right" className="w-[640px] sm:max-w-[640px] overflow-y-auto p-0" style={{ borderRadius: 0 }}>
           {selected && (
             <div className="flex flex-col h-full">
               {/* Header */}
               <div className="px-6 py-4 border-b" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{selected.id}</span>
+                  <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{selected.exceptionId ?? selected.id}</span>
                   <StatusBadge status={selected.status} />
                   <RiskBadge level={selected.riskAccepted} />
                   <ScorePill score={selected.riskScore} />
                 </div>
                 <SheetTitle className="text-base font-bold leading-snug" style={{ color: 'hsl(var(--text-1))' }}>
-                  {selected.policy}
+                  {selected.title}
                 </SheetTitle>
                 <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
-                  {selected.policyRef} · Requested {fmt(selected.requestedDate)} by {selected.requestedBy}
+                  {selected.policyRef ?? '—'} · Requested {fmt(selected.requestedDate)}{selected.requestedBy ? ` by ${selected.requestedBy}` : ''}
                 </p>
+                {(selected.linkedRiskId || (selected.linkedModelIds ?? []).length > 0) && (
+                  <div className="flex gap-1.5 mt-2 flex-wrap">
+                    {selected.linkedRiskId && (
+                      <InterlinkChip label={riskTitle(selected.linkedRiskId)} to={`/risks?open=${selected.linkedRiskId}`} />
+                    )}
+                    {(selected.linkedModelIds ?? []).map(id => (
+                      <InterlinkChip key={id} label={modelName(id)} to={`/models/inventory/${id}`} />
+                    ))}
+                  </div>
+                )}
                 {selected.tags.length > 0 && (
                   <div className="flex gap-1 mt-2 flex-wrap">
                     {selected.tags.map(t => (
@@ -880,16 +677,16 @@ export default function ExceptionManagement() {
                 {canDecide(selected) && (
                   <>
                     <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--s-ok-tx))', color: 'hsl(var(--bg-surface))', height: 30 }}
-                      onClick={() => openDecision(selected, 'Approved')}>
+                      onClick={() => openDecision(selected, 'approved')}>
                       <CheckCircle size={12} />Approve
                     </Button>
                     <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))', borderColor: 'hsl(var(--s-er-tx))', height: 30 }}
-                      onClick={() => openDecision(selected, 'Denied')}>
+                      onClick={() => openDecision(selected, 'denied')}>
                       <Prohibit size={12} />Deny
                     </Button>
                   </>
                 )}
-                {selected.status === 'Expired' && (
+                {(selected.status === 'expired' || selected.status === 'approved') && (
                   <Button size="sm" variant="outline" style={{ borderRadius: 0, height: 30 }}
                     onClick={() => { setRenewalDate(''); setRenewalNotes(''); setRenewalOpen(true); }}>
                     <ArrowsClockwise size={12} />Request Renewal
@@ -916,8 +713,8 @@ export default function ExceptionManagement() {
                   <TabsContent value="overview" className="px-6 pb-6 space-y-5 mt-4">
                     <div className="grid grid-cols-2 gap-4">
                       {[
-                        { label: 'Requested By', value: selected.requestedBy, icon: <UserCircle size={12} /> },
-                        { label: 'Approver', value: selected.approver, icon: <UserCircle size={12} /> },
+                        { label: 'Requested By', value: selected.requestedBy ?? '—', icon: <UserCircle size={12} /> },
+                        { label: 'Approver', value: selected.approver ?? '—', icon: <UserCircle size={12} /> },
                         { label: 'Requested Date', value: fmt(selected.requestedDate), icon: <CalendarBlank size={12} /> },
                         { label: 'Expiry Date', value: fmt(selected.expiryDate), icon: <CalendarBlank size={12} /> },
                       ].map(({ label, value, icon }) => (
@@ -933,17 +730,17 @@ export default function ExceptionManagement() {
 
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'hsl(var(--text-4))' }}>Description</p>
-                      <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>{selected.description}</p>
+                      <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>{selected.description || '—'}</p>
                     </div>
 
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'hsl(var(--text-4))' }}>Business Justification</p>
-                      <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>{selected.justification}</p>
+                      <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>{selected.justification || '—'}</p>
                     </div>
 
                     <div>
                       <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'hsl(var(--text-4))' }}>Impact Scope</p>
-                      <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{selected.impactScope}</p>
+                      <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{selected.impactScope ?? '—'}</p>
                     </div>
 
                     {selected.affectedSystems.length > 0 && (
@@ -990,9 +787,9 @@ export default function ExceptionManagement() {
                   <TabsContent value="risk" className="px-6 pb-6 space-y-5 mt-4">
                     <div className="grid grid-cols-3 gap-3">
                       {[
-                        { label: 'Likelihood', value: `${selected.likelihood} / 5`, color: 'hsl(var(--s-wn-tx))' },
-                        { label: 'Impact', value: `${selected.impact} / 5`, color: 'hsl(var(--s-er-tx))' },
-                        { label: 'Risk Score', value: selected.riskScore, color: riskScoreColor(selected.riskScore).text },
+                        { label: 'Likelihood', value: selected.likelihood != null ? `${selected.likelihood} / 5` : '—', color: 'hsl(var(--s-wn-tx))' },
+                        { label: 'Impact', value: selected.impact != null ? `${selected.impact} / 5` : '—', color: 'hsl(var(--s-er-tx))' },
+                        { label: 'Risk Score', value: selected.riskScore ?? '—', color: selected.riskScore != null ? riskScoreColor(selected.riskScore).text : 'hsl(var(--text-4))' },
                       ].map(({ label, value, color }) => (
                         <div key={label} className="p-3 text-center" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
                           <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
@@ -1000,43 +797,36 @@ export default function ExceptionManagement() {
                         </div>
                       ))}
                     </div>
-                    <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'hsl(var(--text-4))' }}>Risk Analysis</p>
-                      <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>{selected.riskAnalysis}</p>
-                    </div>
-                    <div className="p-3" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'hsl(var(--text-4))' }}>Residual Risk Accepted</p>
-                      <RiskBadge level={selected.riskAccepted} />
-                    </div>
+                    {selected.riskAccepted != null && (
+                      <div className="p-3" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'hsl(var(--text-4))' }}>Residual Risk Accepted</p>
+                        <RiskBadge level={selected.riskAccepted} />
+                      </div>
+                    )}
+                    {selected.linkedRiskId && (
+                      <div className="p-3 flex items-center justify-between" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>Linked Risk</p>
+                        <InterlinkChip label={riskTitle(selected.linkedRiskId)} to={`/risks?open=${selected.linkedRiskId}`} />
+                      </div>
+                    )}
                   </TabsContent>
 
                   {/* Controls */}
                   <TabsContent value="controls" className="px-6 pb-6 space-y-4 mt-4">
-                    <div className="p-3" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
-                      <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'hsl(var(--text-4))' }}>Summary</p>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{selected.compensatingControls}</p>
-                    </div>
-                    {selected.controlDetails.map((ctrl, i) => (
-                      <div key={i} className="p-4 space-y-2" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-                        <div className="flex items-center justify-between gap-2">
-                          <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{ctrl.control}</p>
-                          <span className="text-[10px] px-2 py-0.5 font-semibold"
-                            style={{ background: effectivenessColor(ctrl.effectiveness).bg, color: effectivenessColor(ctrl.effectiveness).text }}>
-                            {ctrl.effectiveness} Effectiveness
-                          </span>
-                        </div>
-                        <p className="text-xs leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>{ctrl.description}</p>
+                    {selected.compensatingControls ? (
+                      <div className="p-3" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
+                        <p className="text-[10px] font-semibold uppercase tracking-wide mb-1" style={{ color: 'hsl(var(--text-4))' }}>Compensating Controls</p>
+                        <p className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{selected.compensatingControls}</p>
                       </div>
-                    ))}
-                    {selected.controlDetails.length === 0 && (
-                      <p className="text-xs text-center py-8" style={{ color: 'hsl(var(--text-4))' }}>No detailed controls documented yet.</p>
+                    ) : (
+                      <p className="text-xs text-center py-8" style={{ color: 'hsl(var(--text-4))' }}>No compensating controls documented yet.</p>
                     )}
                   </TabsContent>
 
                   {/* Approval */}
                   <TabsContent value="approval" className="px-6 pb-6 mt-4">
                     <p className="text-[10px] font-semibold uppercase tracking-wide mb-4" style={{ color: 'hsl(var(--text-4))' }}>
-                      Approval Chain · {selected.approvalChain.filter(s => s.decision === 'Approved').length}/{selected.approvalChain.length} Approved
+                      Approval Chain · {selected.approvalChain.filter(s => s.decision === 'approved').length}/{selected.approvalChain.length} Approved
                     </p>
                     <ApprovalTimeline chain={selected.approvalChain} />
                   </TabsContent>
@@ -1050,18 +840,11 @@ export default function ExceptionManagement() {
                         {selected.renewalHistory.map((r, i) => (
                           <div key={i} className="p-4" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
                             <div className="flex items-center gap-2 mb-2">
-                              <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{r.version}</span>
-                              <span className="text-[10px] px-1.5 py-0.5" style={{
-                                background: r.status === 'Active' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--bg-raised))',
-                                color: r.status === 'Active' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))',
-                                border: '1px solid hsl(var(--border))',
-                              }}>{r.status}</span>
+                              <span className="font-mono text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>Renewal {i + 1}</span>
+                              <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{fmt(r.date)}</span>
                             </div>
-                            <div className="grid grid-cols-2 gap-2 text-xs">
-                              <div><span style={{ color: 'hsl(var(--text-4))' }}>Requested: </span><span style={{ color: 'hsl(var(--text-2))' }}>{fmt(r.requestedDate)}</span></div>
-                              <div><span style={{ color: 'hsl(var(--text-4))' }}>Expiry: </span><span style={{ color: 'hsl(var(--text-2))' }}>{fmt(r.expiryDate)}</span></div>
-                            </div>
-                            {r.notes && <p className="text-xs mt-2 italic" style={{ color: 'hsl(var(--text-3))' }}>{r.notes}</p>}
+                            {r.by && <p className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>Requested by {r.by}</p>}
+                            {r.notes && <p className="text-xs mt-1 italic" style={{ color: 'hsl(var(--text-3))' }}>{r.notes}</p>}
                           </div>
                         ))}
                       </div>
@@ -1089,8 +872,8 @@ export default function ExceptionManagement() {
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Policy Name <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span></Label>
-                <Input placeholder="e.g., Data Retention Policy" value={form.policy}
-                  onChange={e => setForm(f => ({ ...f, policy: e.target.value }))} style={{ borderRadius: 0 }} />
+                <Input placeholder="e.g., Data Retention Policy" value={form.title}
+                  onChange={e => setForm(f => ({ ...f, title: e.target.value }))} style={{ borderRadius: 0 }} />
               </div>
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold">Policy Reference</Label>
@@ -1135,10 +918,10 @@ export default function ExceptionManagement() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-1.5">
                   <Label className="text-xs font-semibold">Residual Risk Level</Label>
-                  <Select value={form.riskAccepted} onValueChange={v => setForm(f => ({ ...f, riskAccepted: v as RiskLevel }))}>
+                  <Select value={form.riskAccepted} onValueChange={v => setForm(f => ({ ...f, riskAccepted: v }))}>
                     <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                     <SelectContent style={{ borderRadius: 0 }}>
-                      {(['Low', 'Medium', 'High', 'Critical'] as RiskLevel[]).map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                      {RISK_LEVELS.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1147,7 +930,7 @@ export default function ExceptionManagement() {
                   <Select value={String(form.likelihood)} onValueChange={v => setForm(f => ({ ...f, likelihood: Number(v) }))}>
                     <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                     <SelectContent style={{ borderRadius: 0 }}>
-                      {[1,2,3,4,5].map(n => <SelectItem key={n} value={String(n)}>{n} — {['Rare','Unlikely','Possible','Likely','Almost Certain'][n-1]}</SelectItem>)}
+                      {[1, 2, 3, 4, 5].map(n => <SelectItem key={n} value={String(n)}>{n} — {['Rare', 'Unlikely', 'Possible', 'Likely', 'Almost Certain'][n - 1]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1156,7 +939,7 @@ export default function ExceptionManagement() {
                   <Select value={String(form.impact)} onValueChange={v => setForm(f => ({ ...f, impact: Number(v) }))}>
                     <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                     <SelectContent style={{ borderRadius: 0 }}>
-                      {[1,2,3,4,5].map(n => <SelectItem key={n} value={String(n)}>{n} — {['Insignificant','Minor','Moderate','Major','Catastrophic'][n-1]}</SelectItem>)}
+                      {[1, 2, 3, 4, 5].map(n => <SelectItem key={n} value={String(n)}>{n} — {['Insignificant', 'Minor', 'Moderate', 'Major', 'Catastrophic'][n - 1]}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -1181,12 +964,6 @@ export default function ExceptionManagement() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Risk Analysis</Label>
-              <Textarea placeholder="What risks does this exception introduce? What is the potential regulatory or financial exposure?" rows={3}
-                value={form.riskAnalysis} onChange={e => setForm(f => ({ ...f, riskAnalysis: e.target.value }))} style={{ borderRadius: 0 }} />
-            </div>
-
-            <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Compensating Controls</Label>
               <Textarea placeholder="What controls will mitigate the additional risk introduced by this exception?" rows={2}
                 value={form.compensatingControls} onChange={e => setForm(f => ({ ...f, compensatingControls: e.target.value }))} style={{ borderRadius: 0 }} />
@@ -1202,6 +979,41 @@ export default function ExceptionManagement() {
               <Label className="text-xs font-semibold">Regulatory Reference</Label>
               <Input placeholder="e.g., GDPR Art. 5(1)(e) — Storage limitation" value={form.regulatoryRef}
                 onChange={e => setForm(f => ({ ...f, regulatoryRef: e.target.value }))} style={{ borderRadius: 0 }} />
+            </div>
+
+            {/* Linked Risk */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Linked Risk</Label>
+              <Select value={form.linkedRiskId || 'none'} onValueChange={v => setForm(f => ({ ...f, linkedRiskId: v === 'none' ? '' : v }))}>
+                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="No linked risk" /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  <SelectItem value="none">No linked risk</SelectItem>
+                  {risks.map(r => <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Linked Models */}
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Linked Models</Label>
+              {models.length === 0 ? (
+                <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No models in the inventory yet.</p>
+              ) : (
+                <div className="flex flex-wrap gap-1.5">
+                  {models.map(m => (
+                    <button key={m.id} type="button"
+                      onClick={() => toggleModel(m.id)}
+                      className="text-[11px] px-2 py-1 transition-colors"
+                      style={{
+                        background: form.linkedModelIds.includes(m.id) ? 'hsl(var(--brand-subtle))' : 'hsl(var(--bg-raised))',
+                        color: form.linkedModelIds.includes(m.id) ? 'hsl(var(--brand))' : 'hsl(var(--text-3))',
+                        border: `1px solid ${form.linkedModelIds.includes(m.id) ? 'hsl(var(--brand)/0.3)' : 'hsl(var(--border))'}`,
+                      }}>
+                      {m.name}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Affected Systems */}
@@ -1272,8 +1084,9 @@ export default function ExceptionManagement() {
 
           <DialogFooter>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setCreateOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={handleCreate}>
-              Submit Exception Request
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
+              disabled={isSaving} onClick={handleCreate}>
+              {isSaving ? 'Submitting…' : 'Submit Exception Request'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1284,29 +1097,34 @@ export default function ExceptionManagement() {
         <DialogContent style={{ borderRadius: 0 }}>
           <DialogHeader>
             <DialogTitle>
-              {decision === 'Approved' ? '✓ Approve Exception' : '✕ Deny Exception'}
+              {decision === 'approved' ? '✓ Approve Exception' : '✕ Deny Exception'}
             </DialogTitle>
             {decisionTarget && (
               <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                {decisionTarget.id} — {decisionTarget.policy}
+                {decisionTarget.exceptionId ?? decisionTarget.id} — {decisionTarget.title}
               </p>
             )}
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="p-3" style={{
-              background: decision === 'Approved' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
-              border: `1px solid ${decision === 'Approved' ? 'hsl(var(--s-ok-br))' : 'hsl(var(--s-er-br))'}`,
+              background: decision === 'approved' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
+              border: `1px solid ${decision === 'approved' ? 'hsl(var(--s-ok-br))' : 'hsl(var(--s-er-br))'}`,
             }}>
-              <p className="text-xs font-semibold" style={{ color: decision === 'Approved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>
-                {decision === 'Approved'
-                  ? 'You are approving this exception. The status will advance in the approval chain.'
+              <p className="text-xs font-semibold" style={{ color: decision === 'approved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))' }}>
+                {decision === 'approved'
+                  ? 'You are approving this exception. The decision is recorded in the approval chain.'
                   : 'You are denying this exception. The requester will be notified. A denial is final.'}
               </p>
             </div>
             <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Reviewer Name {!currentUserRole && <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span>}</Label>
+              <Input placeholder="Who is making this decision?" value={decisionBy}
+                onChange={e => setDecisionBy(e.target.value)} style={{ borderRadius: 0 }} />
+            </div>
+            <div className="space-y-1.5">
               <Label className="text-xs font-semibold">Reviewer Notes <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span></Label>
               <Textarea
-                placeholder={decision === 'Approved'
+                placeholder={decision === 'approved'
                   ? 'State any conditions or requirements attached to this approval…'
                   : 'State the reason for denial and any remediation path…'}
                 rows={4} value={decisionNotes}
@@ -1319,12 +1137,12 @@ export default function ExceptionManagement() {
             <Button
               style={{
                 borderRadius: 0,
-                background: decision === 'Approved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))',
+                background: decision === 'approved' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))',
                 color: 'hsl(var(--bg-surface))',
               }}
               onClick={handleDecision}
-              disabled={!decisionNotes.trim()}>
-              {decision === 'Approved' ? 'Confirm Approval' : 'Confirm Denial'}
+              disabled={isSaving || !decisionNotes.trim() || (!currentUserRole && !decisionBy.trim())}>
+              {isSaving ? 'Saving…' : decision === 'approved' ? 'Confirm Approval' : 'Confirm Denial'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1335,7 +1153,7 @@ export default function ExceptionManagement() {
         <DialogContent style={{ borderRadius: 0 }}>
           <DialogHeader>
             <DialogTitle>Request Renewal</DialogTitle>
-            {selected && <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{selected.id} — {selected.policy}</p>}
+            {selected && <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{selected.exceptionId ?? selected.id} — {selected.title}</p>}
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
@@ -1350,8 +1168,9 @@ export default function ExceptionManagement() {
           </div>
           <DialogFooter>
             <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setRenewalOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={handleRenewal}>
-              Submit Renewal Request
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
+              disabled={isSaving} onClick={handleRenewal}>
+              {isSaving ? 'Submitting…' : 'Submit Renewal Request'}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1363,7 +1182,7 @@ export default function ExceptionManagement() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Exception?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete <strong>{deleteTarget?.id}</strong> — {deleteTarget?.policy}. This action cannot be undone.
+              This will permanently delete <strong>{deleteTarget?.exceptionId ?? deleteTarget?.id}</strong> — {deleteTarget?.title}. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
