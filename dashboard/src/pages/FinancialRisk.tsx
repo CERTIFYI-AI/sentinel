@@ -1,140 +1,237 @@
-import { useState, useMemo } from 'react'
-import { useSupabaseTable } from '@/hooks/useSupabaseTable'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
-import { exportCsv } from '@/lib/exportUtils';
-import { HandCoins, MagnifyingGlass, Plus, Eye, X, Export, TrendUp, TrendDown, ChartLine, Calculator, Target, Sliders, PencilSimple, Trash } from '@phosphor-icons/react'
+// Financial Risk Quantification — FAIR-based quantifications backed by the
+// org-scoped financial_risks table (useFinancialRisks). ALE is computed from
+// the typed LEF × loss magnitude via computeFair — never typed in directly —
+// and every figure on the page derives from the loaded rows. Models resolve
+// through ai_models.id → InterlinkChip; writes go through the hook (services
+// throw; success toasts fire only from onSuccess).
+import { useMemo, useState } from 'react'
+import { HandCoins, MagnifyingGlass, Plus, Eye, Export, PencilSimple, Trash, ShieldCheck } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, LineChart, Line, CartesianGrid, ReferenceLine, Legend, ScatterChart, Scatter, ZAxis } from 'recharts'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { InterlinkChip } from '@/components/ui/InterlinkChip'
+import { exportCsv } from '@/lib/exportUtils'
+import { useFinancialRisks } from '@/hooks/useRiskIncidents'
+import { useModelsData } from '@/hooks/useModelsData'
+import { useRisksData } from '@/hooks/useRisksData'
+import { computeFair, type FinancialRiskRecord } from '@/services/riskGroupService'
 
-
-interface FinancialRiskItem {
-  id: string
-  riskName: string
-  category: string
-  aiSystem: string
-  annualExpectedLoss: number
-  annualExpectedLossWorstCase: number
-  probability: number
-  controlEffectiveness: number
-  residualRisk: number
-  framework: string
-  status: 'Monitored' | 'Elevated' | 'Critical' | 'Mitigated'
-  lastQuantified: string
-  owner: string
-  notes: string
+const STATUS_STYLE: Record<string, React.CSSProperties> = {
+  draft:      { background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))' },
+  quantified: { background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  accepted:   { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  mitigating: { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
 }
-
-const SEED: FinancialRiskItem[] = [
-  { id: 'FRQ-001', riskName: 'Biased lending decisions — regulatory fine exposure', category: 'Regulatory', aiSystem: 'Loan Approval Model v3.0', annualExpectedLoss: 4200000, annualExpectedLossWorstCase: 12000000, probability: 0.35, controlEffectiveness: 0.55, residualRisk: 1890000, framework: 'FAIR', status: 'Critical', lastQuantified: '2026-04-01', owner: 'Sarah Chen', notes: 'Based on CFPB enforcement data: average fair lending fine $12M for institutions of similar size.' },
-  { id: 'FRQ-002', riskName: 'Credit model performance degradation — loss increase', category: 'Operational', aiSystem: 'Credit Scoring Model v2.1', annualExpectedLoss: 1800000, annualExpectedLossWorstCase: 5500000, probability: 0.20, controlEffectiveness: 0.72, residualRisk: 504000, framework: 'FAIR', status: 'Monitored', lastQuantified: '2026-03-28', owner: 'James Liu', notes: 'Model drift could cause 200bps increase in default rate across $90M loan portfolio.' },
-  { id: 'FRQ-003', riskName: 'OpenAI API outage — business interruption', category: 'Third-Party', aiSystem: 'Fraud Detection Engine v4.2', annualExpectedLoss: 890000, annualExpectedLossWorstCase: 3200000, probability: 0.15, controlEffectiveness: 0.40, residualRisk: 534000, framework: 'FAIR', status: 'Elevated', lastQuantified: '2026-04-05', owner: 'Marcus Johnson', notes: 'Based on 3 API outages in 2025, avg 4hr duration. Manual review costs $180K/hour at scale.' },
-  { id: 'FRQ-004', riskName: 'AI fraud evasion — increased fraudulent transactions', category: 'Fraud', aiSystem: 'Fraud Detection Engine v4.2', annualExpectedLoss: 2300000, annualExpectedLossWorstCase: 8700000, probability: 0.25, controlEffectiveness: 0.65, residualRisk: 805000, framework: 'FAIR', status: 'Elevated', lastQuantified: '2026-03-15', owner: 'Sarah Chen', notes: 'Adversarial attack on fraud model could enable targeted fraud bypass. Monte Carlo simulation: $2.3M AEL.' },
-  { id: 'FRQ-005', riskName: 'GDPR fine — PII in training data violation', category: 'Regulatory', aiSystem: 'Customer Churn Predictor v2.3', annualExpectedLoss: 760000, annualExpectedLossWorstCase: 22000000, probability: 0.08, controlEffectiveness: 0.60, residualRisk: 304000, framework: 'FAIR', status: 'Monitored', lastQuantified: '2026-03-20', owner: 'Maria Santos', notes: 'GDPR max fine: 4% global turnover (~$22M for Acme). Probability low post-PII scrubbing remediation.' },
-  { id: 'FRQ-006', riskName: 'Model explanation litigation — ECOA adverse action', category: 'Legal', aiSystem: 'Credit Scoring Model v2.1', annualExpectedLoss: 980000, annualExpectedLossWorstCase: 4500000, probability: 0.18, controlEffectiveness: 0.45, residualRisk: 539000, framework: 'FAIR', status: 'Elevated', lastQuantified: '2026-04-02', owner: 'Sarah Chen', notes: 'Inability to provide ECOA-compliant adverse action notices exposes to class action risk.' },
-]
-
-const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  Critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  Elevated: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  Monitored: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-  Mitigated: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-}
-
-function formatCurrency(n: number): string {
-  if (n >= 1000000) return `$${(n / 1000000).toFixed(1)}M`
-  if (n >= 1000) return `$${(n / 1000).toFixed(0)}K`
-  return `$${n}`
-}
+const statusStyle = (s?: string): React.CSSProperties =>
+  STATUS_STYLE[(s ?? '').toLowerCase()] ?? { background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }
 
 const CATEGORIES = ['Regulatory', 'Operational', 'Third-Party', 'Fraud', 'Legal', 'Reputational']
-const OWNERS = ['Sarah Chen', 'James Liu', 'Marcus Johnson', 'Maria Santos']
+const STATUSES = ['draft', 'quantified', 'accepted', 'mitigating']
+const NONE = '__none__'
+
+function formatMoney(n: number | null | undefined, currency: string): string {
+  if (n == null) return '—'
+  try {
+    return new Intl.NumberFormat('en', {
+      style: 'currency', currency, notation: 'compact', maximumFractionDigits: 1,
+    }).format(n)
+  } catch {
+    return `${currency} ${n.toLocaleString()}`
+  }
+}
+
+const EMPTY_FORM = {
+  title: '', finRef: '', scenario: '', category: 'Operational',
+  modelId: NONE, linkedRiskId: NONE, lef: '', lm: '',
+  currency: 'NPR', status: 'draft', owner: '',
+}
 
 export default function FinancialRisk() {
-  const { data: items, setData: setItems } = useSupabaseTable<FinancialRiskItem>('financialrisk_table', SEED)
-  const [selected, setSelected] = useState<FinancialRiskItem | null>(null)
+  const { items, isLoading, error, save, remove, isSaving } = useFinancialRisks()
+  const { models } = useModelsData()
+  const { risks } = useRisksData()
+  const modelName = (id: string) => models.find(m => m.id === id)?.name ?? 'Unavailable'
+  const riskTitle = (id: string) => {
+    const r = risks.find(x => x.id === id)
+    return r ? (r.risk_id ? `${r.risk_id} — ${r.title}` : r.title) : 'Unavailable'
+  }
+
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
-  const [deleteTarget, setDeleteTarget] = useState<FinancialRiskItem | null>(null)
-  const [editTarget, setEditTarget] = useState<FinancialRiskItem | null>(null)
+  const [selected, setSelected] = useState<FinancialRiskRecord | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<FinancialRiskRecord | null>(null)
+  const [editTarget, setEditTarget] = useState<FinancialRiskRecord | null>(null)
   const [showForm, setShowForm] = useState(false)
-  const [form, setForm] = useState({ riskName: '', category: 'Regulatory', aiSystem: '', annualExpectedLoss: 0, annualExpectedLossWorstCase: 0, probability: 0.1, controlEffectiveness: 0.5, residualRisk: 0, framework: 'FAIR', status: 'Monitored' as FinancialRiskItem['status'], owner: 'Sarah Chen', notes: '' })
+  const [form, setForm] = useState({ ...EMPTY_FORM })
 
-  const filtered = items.filter(r =>
-    (statusFilter === 'All' || r.status === statusFilter) &&
-    (!search || r.riskName.toLowerCase().includes(search.toLowerCase()) || r.aiSystem.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase()))
+  const filtered = useMemo(() => items.filter(r => {
+    const q = search.toLowerCase()
+    const ms = !q || r.title.toLowerCase().includes(q) || (r.finRef ?? '').toLowerCase().includes(q) || (r.category ?? '').toLowerCase().includes(q)
+    const ss = statusFilter === 'All' || (r.status ?? '').toLowerCase() === statusFilter.toLowerCase()
+    return ms && ss
+  }), [items, search, statusFilter])
+
+  // Stats — derived from the loaded rows only. ALE totals are grouped per
+  // currency so mixed-currency portfolios are never summed into a fiction.
+  const aleByCurrency = useMemo(() => {
+    const m = new Map<string, number>()
+    for (const r of items) {
+      if (r.annualizedLossExpectancy != null) {
+        m.set(r.currency, (m.get(r.currency) ?? 0) + r.annualizedLossExpectancy)
+      }
+    }
+    return m
+  }, [items])
+  const totalAleLabel = aleByCurrency.size === 0
+    ? '—'
+    : Array.from(aleByCurrency.entries()).map(([cur, sum]) => formatMoney(sum, cur)).join(' + ')
+  const quantifiedCount = items.filter(r => r.annualizedLossExpectancy != null).length
+  const mitigatingCount = items.filter(r => (r.status ?? '').toLowerCase() === 'mitigating').length
+
+  // Live FAIR computation for the dialog — displayed, never typed in.
+  const lefNum = form.lef.trim() === '' ? null : Number(form.lef)
+  const lmNum = form.lm.trim() === '' ? null : Number(form.lm)
+  const liveFair = computeFair(
+    lefNum != null && !Number.isNaN(lefNum) ? lefNum : null,
+    lmNum != null && !Number.isNaN(lmNum) ? lmNum : null,
   )
-
-  const totalAEL = items.reduce((s, r) => s + r.annualExpectedLoss, 0)
-  const totalResidual = items.reduce((s, r) => s + r.residualRisk, 0)
-  const worstCase = items.reduce((s, r) => s + r.annualExpectedLossWorstCase, 0)
 
   const openCreate = () => {
     setEditTarget(null)
-    setForm({ riskName: '', category: 'Regulatory', aiSystem: '', annualExpectedLoss: 0, annualExpectedLossWorstCase: 0, probability: 0.1, controlEffectiveness: 0.5, residualRisk: 0, framework: 'FAIR', status: 'Monitored', owner: 'Sarah Chen', notes: '' })
+    setForm({ ...EMPTY_FORM })
     setShowForm(true)
   }
 
-  const openEdit = (r: FinancialRiskItem) => {
+  const openEdit = (r: FinancialRiskRecord) => {
     setEditTarget(r)
-    setForm({ riskName: r.riskName, category: r.category, aiSystem: r.aiSystem, annualExpectedLoss: r.annualExpectedLoss, annualExpectedLossWorstCase: r.annualExpectedLossWorstCase, probability: r.probability, controlEffectiveness: r.controlEffectiveness, residualRisk: r.residualRisk, framework: r.framework, status: r.status, owner: r.owner, notes: r.notes })
+    setForm({
+      title: r.title,
+      finRef: r.finRef ?? '',
+      scenario: r.scenario ?? '',
+      category: r.category ?? 'Operational',
+      modelId: r.modelId ?? NONE,
+      linkedRiskId: r.linkedRiskId ?? NONE,
+      lef: r.lossEventFrequency != null ? String(r.lossEventFrequency) : '',
+      lm: r.lossMagnitude != null ? String(r.lossMagnitude) : '',
+      currency: r.currency || 'NPR',
+      status: r.status || 'draft',
+      owner: r.owner ?? '',
+    })
     setShowForm(true)
     setSelected(null)
   }
 
-  const saveForm = () => {
-    if (!form.riskName.trim() || !form.aiSystem.trim()) { toast.error('Risk name and AI system are required'); return }
-    if (editTarget) {
-      setItems(prev => prev.map(r => r.id === editTarget.id ? { ...r, ...form, lastQuantified: new Date().toISOString().slice(0, 10) } : r))
-      toast.success('Risk updated')
-    } else {
-      const newId = `FRQ-${String(items.length + 1).padStart(3, '0')}`
-      setItems(prev => [...prev, { ...form, id: newId, lastQuantified: new Date().toISOString().slice(0, 10) }])
-      toast.success('Risk quantification added')
+  const handleSave = async () => {
+    if (!form.title.trim()) { toast.error('A scenario title is required'); return }
+    if (lefNum != null && (Number.isNaN(lefNum) || lefNum < 0)) { toast.error('Loss event frequency must be a non-negative number'); return }
+    if (lmNum != null && (Number.isNaN(lmNum) || lmNum < 0)) { toast.error('Loss magnitude must be a non-negative number'); return }
+    const nowQuantified = lefNum != null && lmNum != null
+    try {
+      await save({
+        id: editTarget?.id,
+        finRef: form.finRef.trim() || undefined,
+        title: form.title.trim(),
+        scenario: form.scenario.trim() || undefined,
+        modelId: form.modelId === NONE ? null : form.modelId,
+        linkedRiskId: form.linkedRiskId === NONE ? null : form.linkedRiskId,
+        category: form.category,
+        methodology: editTarget?.methodology ?? 'FAIR',
+        lossEventFrequency: lefNum,
+        lossMagnitude: lmNum,
+        currency: form.currency,
+        owner: form.owner.trim() || null,
+        status: form.status,
+        // The quantification timestamp reflects the write actually happening now.
+        lastQuantified: nowQuantified ? new Date().toISOString().slice(0, 10) : editTarget?.lastQuantified ?? null,
+        controls: editTarget?.controls ?? [],
+        insurance: editTarget?.insurance ?? {},
+      })
+      // Success toast fires from the mutation only after the write resolved.
+      setShowForm(false)
+      setEditTarget(null)
+      setForm({ ...EMPTY_FORM })
+    } catch {
+      // Error toast fires from the mutation; keep the dialog open.
     }
-    setShowForm(false)
-    setEditTarget(null)
   }
 
-  const confirmDelete = () => {
-    if (!deleteTarget) return
-    setItems(prev => prev.filter(r => r.id !== deleteTarget.id))
-    toast.success(`${deleteTarget.id} removed`)
-    setDeleteTarget(null)
-    setSelected(null)
+  const confirmDelete = async () => {
+    if (!deleteTarget?.id) return
+    try {
+      await remove(deleteTarget.id)
+      setDeleteTarget(null)
+      setSelected(null)
+    } catch {
+      // Error toast fires from the mutation.
+      setDeleteTarget(null)
+    }
   }
 
-  const chartData = items.map(r => ({
-    name: r.id,
-    ael: r.annualExpectedLoss / 1000000,
-    residual: r.residualRisk / 1000000,
-  }))
+  const handleExport = () => {
+    if (filtered.length === 0) { toast.error('There are no quantifications to export.'); return }
+    exportCsv(
+      filtered.map(r => ({
+        ref: r.finRef ?? '',
+        title: r.title,
+        category: r.category ?? '',
+        model: r.modelId ? modelName(r.modelId) : '',
+        methodology: r.methodology,
+        loss_event_frequency: r.lossEventFrequency ?? '',
+        loss_magnitude: r.lossMagnitude ?? '',
+        single_loss_expectancy: r.singleLossExpectancy ?? '',
+        annualized_loss_expectancy: r.annualizedLossExpectancy ?? '',
+        currency: r.currency,
+        status: r.status,
+        owner: r.owner ?? '',
+        last_quantified: r.lastQuantified ?? '',
+      })),
+      `financial-risk-${new Date().toISOString().slice(0, 10)}.csv`,
+    )
+    toast.success(`Exported ${filtered.length} quantification${filtered.length === 1 ? '' : 's'} as CSV`)
+  }
+
+  if (isLoading) return <PageSkeleton title="Financial Risk Quantification" showStats rows={5} />
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <HandCoins size={20} weight="fill" className="text-[hsl(var(--brand))]" />
-            Financial Risk Quantification
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">FAIR-based monetary quantification of AI governance risks — Annual Expected Loss modeling</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => exportCsv(filtered as any, 'financial-risk.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
-            <Export size={14} /> Export
-          </button>
-          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-sm hover:opacity-90">
-            <Plus size={14} /> Quantify Risk
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Financial Risk Quantification"
+        subtitle="FAIR-based monetary quantification of AI risks — ALE computed from loss event frequency × loss magnitude"
+        icon={HandCoins}
+        actions={
+          <>
+            <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={handleExport} disabled={filtered.length === 0}>
+              <Export size={14} /> Export CSV
+            </Button>
+            <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={openCreate}>
+              <Plus size={14} /> Quantify Risk
+            </Button>
+          </>
+        }
+      />
 
-      <div className="grid grid-cols-3 gap-4">
+      {error && (
+        <div role="alert" className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load financial risks</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{(error as Error).message}</p>
+        </div>
+      )}
+
+      {/* Stats — computed from real rows */}
+      <div className="grid grid-cols-4 gap-4">
         {[
-          { label: 'Total Annual Expected Loss', value: formatCurrency(totalAEL), sub: 'Probability-weighted AEL across all AI risks', color: 'hsl(var(--destructive))' },
-          { label: 'Residual Risk (Post-Controls)', value: formatCurrency(totalResidual), sub: `${Math.round((totalResidual / totalAEL) * 100)}% of gross risk remains`, color: 'hsl(var(--s-wn-tx))' },
-          { label: 'Worst-Case Scenario', value: formatCurrency(worstCase), sub: '95th percentile annual loss estimate', color: 'hsl(var(--s-wn-tx))' },
+          { label: 'Quantifications', value: String(items.length), sub: `${quantifiedCount} with a computed ALE`, color: 'hsl(var(--text-1))' },
+          { label: 'Total Annualized Loss Expectancy', value: totalAleLabel, sub: aleByCurrency.size > 1 ? 'Summed per currency' : 'Across all quantified scenarios', color: 'hsl(var(--destructive))' },
+          { label: 'Mitigating', value: String(mitigatingCount), sub: 'Scenarios with active treatment', color: 'hsl(var(--s-wn-tx))' },
+          { label: 'Draft', value: String(items.filter(r => (r.status ?? '').toLowerCase() === 'draft').length), sub: 'Awaiting quantification', color: 'hsl(var(--text-4))' },
         ].map(s => (
           <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
             <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
@@ -144,350 +241,299 @@ export default function FinancialRisk() {
         ))}
       </div>
 
-      {/* Chart */}
-      <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-        <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-4">AEL vs Residual Risk by Risk ID ($ millions)</h3>
-        <ResponsiveContainer width="100%" height={200}>
-          <BarChart data={chartData} margin={{ top: 0, right: 20, bottom: 0, left: 0 }}>
-            <XAxis dataKey="name" tick={{ fontSize: 11, fill: 'hsl(var(--text-4))' }} />
-            <YAxis tick={{ fontSize: 11, fill: 'hsl(var(--text-4))' }} tickFormatter={v => `$${v}M`} />
-            <Tooltip formatter={(v: any) => [`$${Number(v).toFixed(2)}M`]} contentStyle={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }} />
-            <Bar dataKey="ael" name="Gross AEL" fill="hsl(var(--s-er-bg))" />
-            <Bar dataKey="residual" name="Residual Risk" fill="hsl(var(--brand) / 0.7)" />
-          </BarChart>
-        </ResponsiveContainer>
-      </div>
-
+      {/* Search & filter */}
       <div className="flex gap-3">
-        <div className="flex items-center gap-2 flex-1 max-w-sm border border-[hsl(var(--border))] bg-surface px-3">
-          <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search risks…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
+        <div className="relative flex-1 max-w-sm">
+          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
+          <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search quantifications…" className="pl-9" style={{ borderRadius: 0 }} />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectTrigger className="w-[180px]" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
           <SelectContent style={{ borderRadius: 0 }}>
-            {['All', 'Critical', 'Elevated', 'Monitored', 'Mitigated'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+            <SelectItem value="All">All statuses</SelectItem>
+            {STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
           </SelectContent>
         </Select>
       </div>
 
+      {/* Table */}
       <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-raised">
-              {['ID', 'Risk', 'AI System', 'Gross AEL', 'Worst Case', 'Probability', 'Control Eff.', 'Residual', 'Status', 'Actions'].map(h => (
-                <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(r => (
-              <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(r)}>
-                <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.id}</td>
-                <td className="px-4 py-3 max-w-[180px]"><p className="text-xs font-medium text-[hsl(var(--text-1))] truncate">{r.riskName}</p><p className="text-[10px] text-[hsl(var(--text-4))]">{r.category}</p></td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))] max-w-[140px] truncate">{r.aiSystem}</td>
-                <td className="px-4 py-3 font-mono text-sm font-semibold text-[hsl(var(--destructive))]">{formatCurrency(r.annualExpectedLoss)}</td>
-                <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--text-3))]">{formatCurrency(r.annualExpectedLossWorstCase)}</td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{(r.probability * 100).toFixed(0)}%</td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{(r.controlEffectiveness * 100).toFixed(0)}%</td>
-                <td className="px-4 py-3 font-mono text-sm font-semibold" style={{ color: r.residualRisk > 1000000 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>{formatCurrency(r.residualRisk)}</td>
-                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[r.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{r.status}</span></td>
-                <td className="px-4 py-3" onClick={ev => ev.stopPropagation()}>
-                  <div className="flex items-center gap-1">
-                    <button onClick={() => openEdit(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-raised"><PencilSimple size={13} /></button>
-                    <button onClick={() => setDeleteTarget(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]"><Trash size={13} /></button>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {filtered.length === 0 && <div className="text-center py-10 text-[hsl(var(--text-4))] text-sm">No risks match the current filters</div>}
-      </div>
-
-      {/* ── Monte Carlo Simulation Panel ─────────────────────────────────────── */}
-      <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <ChartLine size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
-            Monte Carlo Loss Distribution Simulation (10,000 iterations)
-          </h3>
-          <button onClick={() => toast.info('Re-running simulation...')} className="text-xs px-3 py-1 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Run Simulation</button>
-        </div>
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          {[
-            { label: 'P50 (Median)', value: '$3.8M', color: 'hsl(var(--s-ok-tx))' },
-            { label: 'P75', value: '$7.2M', color: 'hsl(var(--s-wn-tx))' },
-            { label: 'P90', value: '$12.4M', color: 'hsl(var(--r-hi-tx))' },
-            { label: 'P95 (Worst-Case)', value: formatCurrency(worstCase), color: 'hsl(var(--s-er-tx))' },
-          ].map(s => (
-            <div key={s.label} className="p-3 border border-[hsl(var(--border))] text-center">
-              <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">{s.label}</p>
-              <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
-            </div>
-          ))}
-        </div>
-        <ResponsiveContainer width="100%" height={140}>
-          <BarChart data={[
-            { loss: '<$1M', freq: 18 }, { loss: '$1-2M', freq: 24 }, { loss: '$2-4M', freq: 31 },
-            { loss: '$4-6M', freq: 14 }, { loss: '$6-9M', freq: 8 }, { loss: '$9-12M', freq: 3 }, { loss: '>$12M', freq: 2 },
-          ]} margin={{ top: 0, right: 10, bottom: 0, left: 0 }}>
-            <XAxis dataKey="loss" tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} />
-            <YAxis tick={{ fontSize: 10, fill: 'hsl(var(--text-4))' }} unit="%" />
-            <Tooltip formatter={(v: any) => [`${v}%`, 'Probability']} contentStyle={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }} />
-            <ReferenceLine x="$4-6M" stroke="#f59e0b" strokeDasharray="3 2" label={{ value: 'AEL', fill: 'hsl(var(--s-wn-tx))', fontSize: 10 }} />
-            <Bar dataKey="freq" fill="hsl(var(--brand) / 0.7)" />
-          </BarChart>
-        </ResponsiveContainer>
-        <p className="text-[10px] text-[hsl(var(--text-4))] mt-2">Simulation parameters: 10,000 iterations · Log-normal loss distribution · Inputs: probability, magnitude, and control effectiveness ranges from all 6 risks</p>
-      </div>
-
-      {/* ── FAIR Model Tuning & Risk Appetite ──────────────────────────────────── */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-4">
-            <Sliders size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
-            FAIR Model Tuning
-          </h3>
-          {[
-            { param: 'Threat Event Frequency (TEF)', min: 0.05, max: 0.5, current: 0.25 },
-            { param: 'Vulnerability (VULN)', min: 0.1, max: 0.9, current: 0.45 },
-            { param: 'Loss Magnitude (LM) — mean', min: 1, max: 25, current: 8.2, unit: 'M' },
-            { param: 'Control Strength (CS)', min: 0.3, max: 0.95, current: 0.62 },
-          ].map(p => (
-            <div key={p.param} className="mb-3">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-xs text-[hsl(var(--text-2))]">{p.param}</p>
-                <span className="text-xs font-semibold text-[hsl(var(--text-1))]">{p.current}{p.unit || ''}</span>
-              </div>
-              <input type="range" min={p.min} max={p.max} step={p.max > 5 ? 0.1 : 0.01} defaultValue={p.current}
-                className="w-full h-1.5 bg-[hsl(var(--border))] appearance-none cursor-pointer"
-                onChange={() => toast.info('Recalculating FAIR model…')} />
-              <div className="flex justify-between text-[10px] text-[hsl(var(--text-4))] mt-0.5">
-                <span>{p.min}{p.unit || ''}</span><span>{p.max}{p.unit || ''}</span>
-              </div>
-            </div>
-          ))}
-          <button onClick={() => toast.success('FAIR model recalculated')} className="w-full text-xs py-1.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">Recalculate AEL</button>
-        </div>
-
-        <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-4">
-            <Calculator size={16} className="text-[hsl(var(--brand))]" weight="duotone" />
-            Controls ROI Calculator
-          </h3>
-          <div className="space-y-3">
-            {[
-              { control: 'Bias Monitoring (real-time)', investment: 120000, riskReduction: 1500000, roi: 1150 },
-              { control: 'Explainability Platform', investment: 85000, riskReduction: 980000, roi: 1053 },
-              { control: 'Model Validation Lab', investment: 200000, riskReduction: 3200000, roi: 1500 },
-              { control: 'Data Quality Pipeline', investment: 65000, riskReduction: 420000, roi: 546 },
-            ].map(c => (
-              <div key={c.control} className="p-2 border border-[hsl(var(--border))]">
-                <p className="text-xs font-medium text-[hsl(var(--text-1))]">{c.control}</p>
-                <div className="grid grid-cols-3 gap-2 mt-1 text-[10px]">
-                  <div><p className="text-[hsl(var(--text-4))]">Investment</p><p className="font-semibold text-[hsl(var(--text-2))]">{formatCurrency(c.investment)}</p></div>
-                  <div><p className="text-[hsl(var(--text-4))]">Risk Reduction</p><p className="font-semibold text-[hsl(var(--s-ok-tx))]">{formatCurrency(c.riskReduction)}</p></div>
-                  <div><p className="text-[hsl(var(--text-4))]">ROI</p><p className="font-semibold" style={{ color: 'hsl(var(--s-ok-tx))' }}>{c.roi}%</p></div>
-                </div>
-              </div>
-            ))}
-          </div>
-          <div className="mt-3 p-2 border border-[hsl(var(--s-ok-br))] bg-[hsl(var(--s-ok-bg))]">
-            <p className="text-xs text-[hsl(var(--s-ok-tx))] font-medium">Total Portfolio ROI</p>
-            <p className="text-xl font-bold text-[hsl(var(--s-ok-tx))]">948%</p>
-            <p className="text-[10px] text-[hsl(var(--text-4))]">$470K investment → $6.1M risk reduction</p>
-          </div>
-        </div>
-      </div>
-
-      {/* ── Insurance Coverage Mapping ─────────────────────────────────────── */}
-      <div className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-        <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2 mb-4">
-          <span className="text-base">🛡</span>
-          Insurance Coverage Mapping — AI Risk Transfer Analysis
-        </h3>
-        <div className="grid grid-cols-4 gap-3 mb-4">
-          {[
-            { label: 'Total Gross Risk Exposure', value: '$14.2M', color: 'hsl(var(--destructive))' },
-            { label: 'Insured Coverage', value: '$8.5M', color: 'hsl(var(--s-ok-tx))' },
-            { label: 'Uninsured Residual', value: '$5.7M', color: 'hsl(var(--s-wn-tx))' },
-            { label: 'Coverage Ratio', value: '59.9%', color: 'hsl(var(--s-in-tx))' },
-          ].map(s => (
-            <div key={s.label} className="p-3 border border-[hsl(var(--border))] text-center">
-              <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">{s.label}</p>
-              <p className="text-xl font-bold" style={{ color: s.color }}>{s.value}</p>
-            </div>
-          ))}
-        </div>
-        <table className="w-full text-xs mb-4">
-          <thead>
-            <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-              {['Risk Category', 'Gross Exposure', 'Policy', 'Coverage Limit', 'Deductible', 'Net Gap', 'Coverage Status'].map(h => (
-                <th key={h} className="px-3 py-2 text-left font-medium text-[hsl(var(--text-4))]">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {[
-              { category: 'Bias/Discrimination Liability', gross: '$3.8M', policy: 'Tech E&O — AXA XL', limit: '$2.5M', deductible: '$250K', gap: '$1.3M', covered: true },
-              { category: 'Model Performance Failure', gross: '$4.2M', policy: 'Cyber Liability — Chubb', limit: '$3.0M', deductible: '$100K', gap: '$1.2M', covered: true },
-              { category: 'Regulatory Fines (EU AI Act)', gross: '$2.1M', policy: 'Regulatory Defense — Beazley', limit: '$1.5M', deductible: '$500K', gap: '$0.6M', covered: true },
-              { category: 'Data Privacy Breach', gross: '$1.9M', policy: 'Cyber — AIG', limit: '$1.5M', deductible: '$50K', gap: '$0.4M', covered: true },
-              { category: 'Autonomous Decision Error', gross: '$1.5M', policy: 'No applicable policy', limit: '—', deductible: '—', gap: '$1.5M', covered: false },
-              { category: 'Reputational Damage', gross: '$0.7M', policy: 'No applicable policy', limit: '—', deductible: '—', gap: '$0.7M', covered: false },
-            ].map(r => (
-              <tr key={r.category} style={{ borderBottom: '1px solid hsl(var(--border))', background: !r.covered ? 'hsl(var(--s-er-bg))' : 'transparent' }}>
-                <td className="px-3 py-2 font-medium text-[hsl(var(--text-1))]">{r.category}</td>
-                <td className="px-3 py-2 font-mono font-bold text-[hsl(var(--destructive))]">{r.gross}</td>
-                <td className="px-3 py-2 text-[hsl(var(--text-3))]">{r.policy}</td>
-                <td className="px-3 py-2 font-mono text-[hsl(var(--s-ok-tx))]">{r.limit}</td>
-                <td className="px-3 py-2 font-mono text-[hsl(var(--text-3))]">{r.deductible}</td>
-                <td className="px-3 py-2 font-mono font-bold" style={{ color: r.gap !== '$0M' && r.gap !== '—' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))' }}>{r.gap}</td>
-                <td className="px-3 py-2">
-                  <span className="text-[9px] px-2 py-0.5 font-medium" style={{
-                    background: r.covered ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
-                    color: r.covered ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
-                  }}>{r.covered ? 'Partially Covered' : 'UNINSURED GAP'}</span>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        <div className="p-3 border border-[hsl(var(--s-wn-bg))] bg-[hsl(var(--s-wn-bg))]">
-          <p className="text-xs font-semibold text-[hsl(var(--s-wn-tx))] mb-1">⚠ Coverage Gap Recommendations</p>
-          <ul className="space-y-1 text-xs text-[hsl(var(--text-3))]">
-            <li>→ Negotiate <strong>Autonomous AI Decision</strong> rider with existing E&O carrier — est. $45K/yr premium for $2M coverage</li>
-            <li>→ Explore <strong>Reputational Harm</strong> endorsement with Munich Re AI insurance product line</li>
-            <li>→ Implement additional controls (bias monitoring, kill switch) to reduce premium exposure by an estimated 18%</li>
-          </ul>
-        </div>
-      </div>
-
-      {selected && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[480px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
-              <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))] max-w-sm">{selected.riskName}</h2></div>
-              <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
-            </div>
-            <div className="p-4 space-y-4">
-              <div className="flex gap-2">
-                <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
-                <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.framework}</span>
-                <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.category}</span>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Gross AEL', value: formatCurrency(selected.annualExpectedLoss) },
-                  { label: 'Worst Case (P95)', value: formatCurrency(selected.annualExpectedLossWorstCase) },
-                  { label: 'Loss Probability', value: `${(selected.probability * 100).toFixed(0)}%` },
-                  { label: 'Control Effectiveness', value: `${(selected.controlEffectiveness * 100).toFixed(0)}%` },
-                  { label: 'Residual Risk', value: formatCurrency(selected.residualRisk) },
-                  { label: 'Owner', value: selected.owner },
-                ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
-                    <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
-                    <p className="text-sm font-semibold text-[hsl(var(--text-1))] mt-0.5">{value}</p>
-                  </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[hsl(var(--border))] bg-raised">
+                {['Ref', 'Scenario', 'Model', 'Category', 'ALE', 'Status', 'Last Quantified', 'Actions'].map(h => (
+                  <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
                 ))}
-              </div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">AI System</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))]">{selected.aiSystem}</p></div>
-              <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Notes</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))] leading-relaxed">{selected.notes}</p></div>
-            </div>
-            <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-              <button onClick={() => openEdit(selected)} className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised"><PencilSimple size={13} /> Edit</button>
-              <button onClick={() => setDeleteTarget(selected)} className="px-4 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm hover:bg-[hsl(var(--s-er-bg))]"><Trash size={13} /></button>
-            </div>
-          </div>
+              </tr>
+            </thead>
+            <tbody>
+              {items.length === 0 && !error ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-14 text-center">
+                    <HandCoins size={28} className="mx-auto mb-3 opacity-40 text-[hsl(var(--text-4))]" />
+                    <p className="text-sm text-[hsl(var(--text-2))]">No quantifications yet — add your first financial risk scenario.</p>
+                    <p className="text-xs text-[hsl(var(--text-4))] mt-1">ALE is computed from loss event frequency × loss magnitude when you quantify a scenario.</p>
+                  </td>
+                </tr>
+              ) : filtered.length === 0 ? (
+                <tr>
+                  <td colSpan={8} className="px-4 py-10 text-center text-sm text-[hsl(var(--text-4))]">No quantifications match the current filters.</td>
+                </tr>
+              ) : (
+                filtered.map(r => (
+                  <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(r)}>
+                    <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{r.finRef || '—'}</td>
+                    <td className="px-4 py-3 max-w-[240px]">
+                      <p className="text-xs font-medium text-[hsl(var(--text-1))] truncate">{r.title}</p>
+                    </td>
+                    <td className="px-4 py-3">
+                      {r.modelId
+                        ? <InterlinkChip label={modelName(r.modelId)} to={`/models/inventory/${r.modelId}`} onClick={e => e.stopPropagation()} />
+                        : <span className="text-xs text-[hsl(var(--text-4))]">—</span>}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{r.category || '—'}</td>
+                    <td className="px-4 py-3 font-mono text-sm font-semibold text-[hsl(var(--destructive))]">{formatMoney(r.annualizedLossExpectancy, r.currency)}</td>
+                    <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium capitalize" style={statusStyle(r.status)}>{r.status}</span></td>
+                    <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{r.lastQuantified || 'Not yet quantified'}</td>
+                    <td className="px-4 py-3" onClick={ev => ev.stopPropagation()}>
+                      <div className="flex items-center gap-1">
+                        <button aria-label="View" onClick={() => setSelected(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-raised"><Eye size={13} /></button>
+                        <button aria-label="Edit" onClick={() => openEdit(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-raised"><PencilSimple size={13} /></button>
+                        <button aria-label="Delete" onClick={() => setDeleteTarget(r)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]"><Trash size={13} /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
 
-      {/* ── Create / Edit Modal ─────────────────────────────────────────────── */}
-      {showForm && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowForm(false)} />
-          <div className="relative w-[560px] max-h-[90vh] overflow-y-auto bg-surface border border-[hsl(var(--border))]">
-            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
-              <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{editTarget ? 'Edit Risk Quantification' : 'Quantify New Risk'}</h2>
-              <button onClick={() => setShowForm(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
-            </div>
-            <div className="p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="col-span-2">
-                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Risk Name *</label>
-                  <input value={form.riskName} onChange={e => setForm(p => ({ ...p, riskName: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. Biased lending decisions — regulatory fine exposure" />
+      {/* Detail Sheet */}
+      <Sheet open={!!selected} onOpenChange={o => { if (!o) setSelected(null) }}>
+        <SheetContent className="w-[560px] sm:max-w-[560px] overflow-y-auto" style={{ borderRadius: 0 }}>
+          {selected && (
+            <>
+              <SheetHeader className="pb-4" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  {selected.finRef && <span className="font-mono text-xs text-[hsl(var(--brand))]">{selected.finRef}</span>}
+                  <span className="text-[11px] px-2 py-0.5 font-medium capitalize" style={statusStyle(selected.status)}>{selected.status}</span>
+                  <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.methodology}</span>
+                  {selected.category && <span className="text-[11px] px-2 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-3))]">{selected.category}</span>}
                 </div>
+                <SheetTitle className="text-base" style={{ color: 'hsl(var(--text-1))' }}>{selected.title}</SheetTitle>
+              </SheetHeader>
+
+              <div className="mt-4 space-y-4">
+                {selected.scenario && (
+                  <div>
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Scenario</p>
+                    <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed p-3 bg-raised border border-[hsl(var(--border))]">{selected.scenario}</p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { label: 'Loss Event Frequency (/yr)', value: selected.lossEventFrequency != null ? String(selected.lossEventFrequency) : '—' },
+                    { label: 'Loss Magnitude', value: formatMoney(selected.lossMagnitude, selected.currency) },
+                    { label: 'Single Loss Expectancy', value: formatMoney(selected.singleLossExpectancy, selected.currency) },
+                    { label: 'Annualized Loss Expectancy', value: formatMoney(selected.annualizedLossExpectancy, selected.currency) },
+                    { label: 'Owner', value: selected.owner || 'Unassigned' },
+                    { label: 'Last Quantified', value: selected.lastQuantified || 'Not yet quantified' },
+                  ].map(({ label, value }) => (
+                    <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
+                      <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
+                      <p className="text-sm font-semibold text-[hsl(var(--text-1))] mt-0.5">{value}</p>
+                    </div>
+                  ))}
+                </div>
+
                 <div>
-                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Category</label>
-                  <Select value={form.category} onValueChange={v => setForm(p => ({ ...p, category: v }))}>
-                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Model</p>
+                  {selected.modelId
+                    ? <InterlinkChip label={modelName(selected.modelId)} to={`/models/inventory/${selected.modelId}`} />
+                    : <p className="text-xs italic text-[hsl(var(--text-4))]">No model linked to this quantification.</p>}
                 </div>
+
                 <div>
-                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Status</label>
-                  <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as FinancialRiskItem['status'] }))}>
-                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {['Monitored', 'Elevated', 'Critical', 'Mitigated'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Linked Risk</p>
+                  {selected.linkedRiskId
+                    ? <InterlinkChip label={riskTitle(selected.linkedRiskId)} to={`/risks?open=${selected.linkedRiskId}`} />
+                    : <p className="text-xs italic text-[hsl(var(--text-4))]">No register risk linked to this quantification.</p>}
                 </div>
-                <div className="col-span-2">
-                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">AI System *</label>
-                  <input value={form.aiSystem} onChange={e => setForm(p => ({ ...p, aiSystem: e.target.value }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" placeholder="e.g. Loan Approval Model v3.0" />
-                </div>
+
+                {/* Controls ROI — real per-record data only */}
                 <div>
-                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Gross AEL ($)</label>
-                  <input type="number" value={form.annualExpectedLoss} onChange={e => setForm(p => ({ ...p, annualExpectedLoss: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
+                  <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2 flex items-center gap-1">
+                    <ShieldCheck size={13} /> Controls
+                  </p>
+                  {selected.controls.length === 0 ? (
+                    <p className="text-xs italic text-[hsl(var(--text-4))]">No controls recorded against this scenario yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {selected.controls.map((c, i) => (
+                        <div key={`${c.name}-${i}`} className="p-2 border border-[hsl(var(--border))]">
+                          <p className="text-xs font-medium text-[hsl(var(--text-1))]">{c.name}</p>
+                          <div className="grid grid-cols-2 gap-2 mt-1 text-[10px]">
+                            <div>
+                              <p className="text-[hsl(var(--text-4))]">Annual Cost</p>
+                              <p className="font-semibold text-[hsl(var(--text-2))]">{c.annual_cost != null ? formatMoney(c.annual_cost, selected.currency) : '—'}</p>
+                            </div>
+                            <div>
+                              <p className="text-[hsl(var(--text-4))]">Risk Reduction</p>
+                              <p className="font-semibold text-[hsl(var(--s-ok-tx))]">{c.risk_reduction_pct != null ? `${c.risk_reduction_pct}%` : '—'}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Worst Case AEL ($)</label>
-                  <input type="number" value={form.annualExpectedLossWorstCase} onChange={e => setForm(p => ({ ...p, annualExpectedLossWorstCase: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Probability (0–1)</label>
-                  <input type="number" min="0" max="1" step="0.01" value={form.probability} onChange={e => setForm(p => ({ ...p, probability: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Control Effectiveness (0–1)</label>
-                  <input type="number" min="0" max="1" step="0.01" value={form.controlEffectiveness} onChange={e => setForm(p => ({ ...p, controlEffectiveness: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Residual Risk ($)</label>
-                  <input type="number" value={form.residualRisk} onChange={e => setForm(p => ({ ...p, residualRisk: Number(e.target.value) }))} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Owner</label>
-                  <Select value={form.owner} onValueChange={v => setForm(p => ({ ...p, owner: v }))}>
-                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {OWNERS.map(o => <SelectItem key={o} value={o}>{o}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="col-span-2">
-                  <label className="text-xs font-medium text-[hsl(var(--text-2))] block mb-1">Notes</label>
-                  <textarea value={form.notes} onChange={e => setForm(p => ({ ...p, notes: e.target.value }))} rows={3} className="w-full px-3 py-2 text-sm border border-[hsl(var(--border))] bg-transparent text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))] resize-none" placeholder="FAIR model assumptions, data sources…" />
+
+                {/* Insurance — shown only when the record carries insurance data */}
+                {(selected.insurance?.policy || selected.insurance?.carrier || selected.insurance?.coverage != null || selected.insurance?.deductible != null) && (
+                  <div>
+                    <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Insurance</p>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[
+                        { label: 'Policy', value: selected.insurance.policy ?? '—' },
+                        { label: 'Carrier', value: selected.insurance.carrier ?? '—' },
+                        { label: 'Coverage', value: selected.insurance.coverage != null ? formatMoney(selected.insurance.coverage, selected.currency) : '—' },
+                        { label: 'Deductible', value: selected.insurance.deductible != null ? formatMoney(selected.insurance.deductible, selected.currency) : '—' },
+                      ].map(({ label, value }) => (
+                        <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
+                          <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
+                          <p className="text-sm font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <div className="pt-2 border-t border-[hsl(var(--border))] flex gap-2">
+                  <Button variant="outline" style={{ borderRadius: 0 }} className="flex-1" onClick={() => openEdit(selected)}>
+                    <PencilSimple size={13} /> Edit
+                  </Button>
+                  <Button variant="outline" style={{ borderRadius: 0, borderColor: 'hsl(var(--destructive))', color: 'hsl(var(--destructive))' }} onClick={() => setDeleteTarget(selected)}>
+                    <Trash size={13} />
+                  </Button>
                 </div>
               </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* Create / Edit Dialog — ALE computed live, never typed in */}
+      <Dialog open={showForm} onOpenChange={o => { setShowForm(o); if (!o) setEditTarget(null) }}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 560 }} className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>{editTarget ? 'Edit Quantification' : 'Quantify New Risk'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Scenario Title *</Label>
+              <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Biased lending decisions — regulatory fine exposure" style={{ borderRadius: 0 }} />
             </div>
-            <div className="flex justify-end gap-2 p-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setShowForm(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
-              <button onClick={saveForm} className="px-4 py-2 text-sm bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">{editTarget ? 'Save Changes' : 'Add Risk'}</button>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Reference</Label>
+                <Input value={form.finRef} onChange={e => setForm(f => ({ ...f, finRef: e.target.value }))} placeholder="e.g. FIN-001" style={{ borderRadius: 0 }} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Category</Label>
+                <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Model</Label>
+              <Select value={form.modelId} onValueChange={v => setForm(f => ({ ...f, modelId: v }))}>
+                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  <SelectItem value={NONE}>No model</SelectItem>
+                  {models.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Linked Risk (Risk Register)</Label>
+              <Select value={form.linkedRiskId} onValueChange={v => setForm(f => ({ ...f, linkedRiskId: v }))}>
+                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  <SelectItem value={NONE}>No linked risk</SelectItem>
+                  {risks.map(r => <SelectItem key={r.id} value={r.id}>{r.risk_id ? `${r.risk_id} — ${r.title}` : r.title}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Loss Event Frequency (events/yr)</Label>
+                <Input type="number" min={0} step="0.01" value={form.lef} onChange={e => setForm(f => ({ ...f, lef: e.target.value }))} placeholder="e.g. 0.25" style={{ borderRadius: 0 }} />
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Loss Magnitude ({form.currency})</Label>
+                <Input type="number" min={0} step="1" value={form.lm} onChange={e => setForm(f => ({ ...f, lm: e.target.value }))} placeholder="e.g. 5000000" style={{ borderRadius: 0 }} />
+              </div>
+            </div>
+            {/* Computed ALE — read-only, from computeFair */}
+            <div className="flex items-center gap-3 p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
+              <div className="text-xs text-[hsl(var(--text-3))]">Annualized Loss Expectancy</div>
+              <div className="text-xl font-black text-[hsl(var(--text-1))]">
+                {liveFair.ale != null ? formatMoney(liveFair.ale, form.currency) : '—'}
+              </div>
+              <div className="text-[11px] text-[hsl(var(--text-4))]">
+                {liveFair.ale != null ? 'Computed as LEF × loss magnitude' : 'Enter LEF and loss magnitude to compute'}
+              </div>
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Currency</Label>
+                <Select value={form.currency} onValueChange={v => setForm(f => ({ ...f, currency: v }))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {['NPR', 'USD', 'EUR', 'GBP', 'INR'].map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Status</Label>
+                <Select value={form.status} onValueChange={v => setForm(f => ({ ...f, status: v }))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {STATUSES.map(s => <SelectItem key={s} value={s} className="capitalize">{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Owner</Label>
+                <Input value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} placeholder="e.g. Risk lead" style={{ borderRadius: 0 }} />
+              </div>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Scenario Description</Label>
+              <Textarea value={form.scenario} onChange={e => setForm(f => ({ ...f, scenario: e.target.value }))} rows={3} placeholder="FAIR model assumptions, data sources, and the loss scenario…" style={{ borderRadius: 0 }} />
             </div>
           </div>
-        </div>
-      )}
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowForm(false)} disabled={isSaving} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSaving} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+              <Plus size={14} />{isSaving ? 'Saving…' : editTarget ? 'Save Changes' : 'Add Quantification'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title="Delete Risk Quantification"
-        description={`Delete ${deleteTarget?.id} — "${deleteTarget?.riskName}"? This will remove the FAIR model data permanently.`}
+        title="Delete Quantification"
+        message={`Delete ${deleteTarget?.finRef ? `${deleteTarget.finRef} — ` : ''}"${deleteTarget?.title}"? This removes the FAIR quantification permanently.`}
         confirmLabel="Delete"
         type="danger"
         onConfirm={confirmDelete}

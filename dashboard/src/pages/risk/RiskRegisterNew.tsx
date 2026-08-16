@@ -24,26 +24,34 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useRisksData, type RiskRecord } from '../../hooks/useRisksData';
+import { useModelsData } from '../../hooks/useModelsData';
+import { useIncidents } from '../../hooks/useRiskIncidents';
 import { fetchAllControls } from '../../services/controlService';
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface RiskItem {
   id: string;
+  riskId: string | null;       // business code (e.g. RSK-001); id stays the uuid key
   title: string;
   description: string;
   category: string;
   likelihood: number;
   impact: number;
   score: number;
+  residualLikelihood: number | null;
+  residualImpact: number | null;
   owner: string;
   treatmentStatus: string;
   overdue: boolean;
   frameworkMapping: string[];
   treatmentPlan: string;
   controlIds: string[];
+  modelIds: string[];
+  incidentIds: string[];
   createdDate: string;
   lastUpdated: string;
   deadline: string | null;
@@ -59,18 +67,23 @@ function toItem(r: RiskRecord): RiskItem {
   const overdue = !!r.deadline && !settled && new Date(r.deadline).getTime() < Date.now();
   return {
     id: r.id,
+    riskId: r.risk_id ?? null,
     title: r.title,
     description: r.description ?? '',
     category: r.category || 'Uncategorized',
     likelihood: r.likelihood,
     impact: r.impact,
     score: r.risk_score,
+    residualLikelihood: r.residual_likelihood ?? null,
+    residualImpact: r.residual_impact ?? null,
     owner: r.owner || '',
     treatmentStatus: status.replace(/^[a-z]/, c => c.toUpperCase()),
     overdue,
     frameworkMapping: r.frameworks ?? [],
     treatmentPlan: r.mitigation ?? '',
     controlIds: r.linked_control_ids ?? [],
+    modelIds: r.linked_model_ids ?? [],
+    incidentIds: r.linked_incident_ids ?? [],
     createdDate: (r.created_at ?? '').slice(0, 10),
     lastUpdated: (r.updated_at ?? '').slice(0, 10),
     deadline: r.deadline ? r.deadline.slice(0, 10) : null,
@@ -131,7 +144,9 @@ function MetricTile({ label, value, variant }: {
 // ── 5x5 Heat Map ─────────────────────────────────────────────────────────────
 
 function riskShortLabel(r: RiskItem): string {
-  // Legacy ids read like 'risk-001'; uuid ids are truncated for the cell chip.
+  // Prefer the business code (RSK-001). Legacy ids read like 'risk-001';
+  // uuid ids are truncated for the cell chip — never shown in full.
+  if (r.riskId) return r.riskId;
   return r.id.length > 10 ? r.id.slice(0, 6) : r.id;
 }
 
@@ -329,6 +344,23 @@ export default function RiskRegisterNew() {
     return m;
   }, [controls]);
 
+  // Model + incident lookups — resolve ids to names at render (never raw uuids)
+  const { models } = useModelsData();
+  const modelName = (id: string) => models.find(m => m.id === id)?.name ?? 'Unavailable';
+  const { items: incidents } = useIncidents();
+  const incidentLabel = (id: string) => {
+    const inc = incidents.find(i => i.id === id);
+    if (!inc) return 'Unavailable';
+    return inc.incidentId ? `${inc.incidentId} — ${inc.title}` : inc.title;
+  };
+
+  // Deep link: /risks?model=<uuid> filters to risks linked to that model
+  const modelParam = searchParams.get('model');
+  const clearModelFilter = () => {
+    searchParams.delete('model');
+    setSearchParams(searchParams, { replace: true });
+  };
+
   const risks: RiskItem[] = useMemo(() => (records as RiskRecord[]).map(toItem), [records]);
   const selectedRisk = useMemo(
     () => risks.find(r => r.id === selectedId) ?? null,
@@ -376,11 +408,12 @@ export default function RiskRegisterNew() {
 
   const filtered = useMemo(() => {
     return risks.filter(r => {
-      if (search && !r.title.toLowerCase().includes(search.toLowerCase()) && !r.id.toLowerCase().includes(search.toLowerCase())) return false;
+      if (modelParam && !r.modelIds.includes(modelParam)) return false;
+      if (search && !r.title.toLowerCase().includes(search.toLowerCase()) && !r.id.toLowerCase().includes(search.toLowerCase()) && !(r.riskId ?? '').toLowerCase().includes(search.toLowerCase())) return false;
       if (filterCategory !== 'all' && r.category !== filterCategory) return false;
       return true;
     });
-  }, [risks, search, filterCategory]);
+  }, [risks, search, filterCategory, modelParam]);
 
   // ── Metrics ────────────────────────────────────────────────────────────────
   const totalRisks = risks.length;
@@ -506,6 +539,18 @@ export default function RiskRegisterNew() {
       {/* Heat Map */}
       <HeatMap risks={risks} onCellClick={openDetail} />
 
+      {/* Model-scoped filter chip (deep-link from a model) */}
+      {modelParam && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+            <span>Filtered to <strong>{modelName(modelParam)}</strong></span>
+            <button aria-label="Clear model filter" onClick={clearModelFilter} className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer">
+              <X size={14} />
+            </button>
+          </span>
+        </div>
+      )}
+
       {/* Search & Filters */}
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
@@ -541,7 +586,7 @@ export default function RiskRegisterNew() {
           <table className="w-full text-sm">
             <thead>
               <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                {['Risk ID', 'Title', 'Category', 'Likelihood', 'Impact', 'Risk Score', 'Owner', 'Treatment Status', 'Framework Mapping', ''].map(h => (
+                {['Risk ID', 'Title', 'Category', 'Models', 'Likelihood', 'Impact', 'Risk Score', 'Owner', 'Treatment Status', 'Framework Mapping', ''].map(h => (
                   <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                 ))}
               </tr>
@@ -549,7 +594,7 @@ export default function RiskRegisterNew() {
             <tbody>
               {risks.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center">
+                  <td colSpan={11} className="px-4 py-12 text-center">
                     <ShieldCheck size={32} className="mx-auto mb-2 opacity-40" />
                     <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>No risks recorded yet</p>
                     <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
@@ -559,7 +604,7 @@ export default function RiskRegisterNew() {
                 </tr>
               ) : filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-4 py-12 text-center">
+                  <td colSpan={11} className="px-4 py-12 text-center">
                     <Warning size={32} className="mx-auto mb-2 opacity-40" />
                     <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>No risks match your filters</p>
                   </td>
@@ -586,6 +631,27 @@ export default function RiskRegisterNew() {
                         <Badge style={{ background: cc.bg, color: cc.text, borderRadius: 0, fontSize: 10 }}>
                           {r.category}
                         </Badge>
+                      </td>
+                      <td className="px-4 py-3 max-w-[180px]">
+                        {r.modelIds.length === 0 ? (
+                          <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>—</span>
+                        ) : (
+                          <div className="flex flex-wrap items-center gap-1">
+                            {r.modelIds.slice(0, 1).map(id => (
+                              <InterlinkChip
+                                key={id}
+                                label={modelName(id)}
+                                to={`/models/inventory/${id}`}
+                                onClick={e => e.stopPropagation()}
+                              />
+                            ))}
+                            {r.modelIds.length > 1 && (
+                              <span className="text-[10px] px-1" style={{ color: 'hsl(var(--text-4))' }}>
+                                +{r.modelIds.length - 1}
+                              </span>
+                            )}
+                          </div>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <span className="text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{r.likelihood}</span>
@@ -722,6 +788,30 @@ export default function RiskRegisterNew() {
                     </div>
                   </div>
                   <div>
+                    <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Linked Models</p>
+                    {selectedRisk.modelIds.length === 0 ? (
+                      <p className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>No models linked to this risk yet.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedRisk.modelIds.map(id => (
+                          <InterlinkChip key={id} label={modelName(id)} to={`/models/inventory/${id}`} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Linked Incidents</p>
+                    {selectedRisk.incidentIds.length === 0 ? (
+                      <p className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>No incidents linked to this risk.</p>
+                    ) : (
+                      <div className="flex flex-wrap gap-1.5">
+                        {selectedRisk.incidentIds.map(id => (
+                          <InterlinkChip key={id} label={incidentLabel(id)} to={`/risk/incidents?open=${id}`} />
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div>
                     <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Framework Mapping</p>
                     {selectedRisk.frameworkMapping.length === 0 ? (
                       <p className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>No framework references mapped yet.</p>
@@ -775,6 +865,24 @@ export default function RiskRegisterNew() {
                       {selectedRisk.likelihood} (Likelihood) x {selectedRisk.impact} (Impact)
                     </p>
                   </div>
+                  {selectedRisk.residualLikelihood != null && selectedRisk.residualImpact != null && (
+                    <div className="p-4 text-center" style={{
+                      background: scoreColor(selectedRisk.residualLikelihood * selectedRisk.residualImpact).bg,
+                      border: '1px solid hsl(var(--border))',
+                      borderRadius: 0,
+                    }}>
+                      <p className="text-[10px] font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>Residual Risk Score</p>
+                      <p className="text-3xl font-bold" style={{ color: scoreColor(selectedRisk.residualLikelihood * selectedRisk.residualImpact).text }}>
+                        {selectedRisk.residualLikelihood * selectedRisk.residualImpact}
+                      </p>
+                      <p className="text-sm font-semibold mt-1" style={{ color: scoreColor(selectedRisk.residualLikelihood * selectedRisk.residualImpact).text }}>
+                        {scoreColor(selectedRisk.residualLikelihood * selectedRisk.residualImpact).label} Residual Risk
+                      </p>
+                      <p className="text-[10px] mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                        {selectedRisk.residualLikelihood} (Residual Likelihood) x {selectedRisk.residualImpact} (Residual Impact)
+                      </p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-xs font-semibold mb-3" style={{ color: 'hsl(var(--text-4))' }}>Position on Risk Matrix</p>
                     <MiniMatrix likelihood={selectedRisk.likelihood} impact={selectedRisk.impact} />

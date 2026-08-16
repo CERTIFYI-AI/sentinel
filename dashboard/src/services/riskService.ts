@@ -10,6 +10,8 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 export type RiskRecord = {
   id: string
   org_id?: string
+  /** Business code (e.g. RSK-001) — display identity; the uuid `id` stays the key. */
+  risk_id?: string | null
   title: string
   description?: string
   category: string
@@ -20,8 +22,11 @@ export type RiskRecord = {
   owner?: string
   mitigation?: string
   frameworks?: string[]
+  linked_model_ids?: string[]
   linked_control_ids?: string[]
   linked_incident_ids?: string[]
+  residual_likelihood?: number | null
+  residual_impact?: number | null
   deadline?: string | null
   tags?: string[]
   metadata?: Record<string, any>
@@ -44,6 +49,7 @@ function mapRow(row: any): RiskRecord {
   return {
     id: row.id,
     org_id: row.tenant_id,
+    risk_id: row.risk_id ?? null,
     title: row.name ?? row.title ?? '',
     description: row.description ?? '',
     category: Array.isArray(row.categories) ? row.categories[0] ?? '' : (row.category ?? ''),
@@ -54,8 +60,11 @@ function mapRow(row: any): RiskRecord {
     owner: row.action_owner ?? row.owner ?? '',
     mitigation: row.mitigation_plan ?? row.mitigation ?? '',
     frameworks: Array.isArray(row.applicable_frameworks) ? row.applicable_frameworks : [],
+    linked_model_ids: Array.isArray(row.linked_model_ids) ? row.linked_model_ids : [],
     linked_control_ids: Array.isArray(row.linked_control_ids) ? row.linked_control_ids : [],
     linked_incident_ids: Array.isArray(row.linked_incident_ids) ? row.linked_incident_ids : [],
+    residual_likelihood: row.residual_likelihood ?? null,
+    residual_impact: row.residual_impact ?? null,
     deadline: row.deadline ?? null,
     tags: Array.isArray(row.categories) ? row.categories : [],
     metadata: row.metadata ?? {},
@@ -82,8 +91,12 @@ function mapToRow(record: Partial<RiskRecord>): Record<string, any> {
   if (record.status != null) row.mitigation_status = record.status
   if (record.owner != null) row.action_owner = record.owner
   if (record.mitigation != null) row.mitigation_plan = record.mitigation
+  if (record.risk_id != null) row.risk_id = record.risk_id
   if (record.frameworks != null) row.applicable_frameworks = record.frameworks
+  if (record.linked_model_ids != null) row.linked_model_ids = record.linked_model_ids
   if (record.linked_control_ids != null) row.linked_control_ids = record.linked_control_ids
+  if (record.residual_likelihood !== undefined) row.residual_likelihood = record.residual_likelihood
+  if (record.residual_impact !== undefined) row.residual_impact = record.residual_impact
   if (record.deadline !== undefined) row.deadline = record.deadline
   row.updated_at = new Date().toISOString()
   return row
