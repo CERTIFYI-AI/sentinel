@@ -2,7 +2,7 @@
  * Agent Registry - registers all governance agents with the event bus.
  * Import this file once at app startup.
  */
-import { registerAgent } from '../lib/governance/eventBus'
+import { registerAgent, listRegisteredAgents } from '../lib/governance/eventBus'
 
 // ---- MODEL_REGISTERED cascade ----
 import { riskAssessmentAgent }       from './riskAssessmentAgent'
@@ -85,7 +85,10 @@ registerAgent('CARBON_BUDGET_EXCEEDED', hitlAgent, 'HITLAgent')
 registerAgent('VENDOR_LINKED', knowledgeGraphAgent, 'KnowledgeGraphAgent')
 
 if (typeof window !== 'undefined') {
-  console.info('[Sentinel AgentRegistry] 27 autonomous governance agents registered')
+  // 26 distinct agents; several are registered against more than one event
+  // (EvidenceCollection, KnowledgeGraph, HITL, Narrative are cross-cutting),
+  // so the registration count is higher than the agent count.
+  console.info(`[Sentinel AgentRegistry] ${listRegisteredAgents().length} agent registrations across 26 governance agents`)
 }
 
 // re-export for callers
