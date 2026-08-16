@@ -1,4 +1,4 @@
--- 20260816_fix_cross_tenant_rls.sql
+-- 20260816000007_fix_cross_tenant_rls.sql
 -- Applied live to Supabase project vhparvughsygyknblkzt on 2026-08-16.
 --
 -- SECURITY FIX — cross-tenant RLS holes on four real tenant-scoped tables,

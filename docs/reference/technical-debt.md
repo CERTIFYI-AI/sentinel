@@ -27,7 +27,7 @@ statement, and neither is "an isolation policy exists". The only sound check is
 that **no permissive policy lacks a tenant predicate**.
 
 All four tables were empty when found, so this closed a latent hole rather than
-an active exposure. Fixed in `supabase/migrations/20260816_fix_cross_tenant_rls.sql`,
+an active exposure. Fixed in `supabase/migrations/20260816000007_fix_cross_tenant_rls.sql`,
 which carries a regression query to re-run after any RLS change. That query is
 now part of Gate 4.
 

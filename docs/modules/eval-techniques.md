@@ -107,4 +107,4 @@ demo table seeded from a hardcoded array, with add/edit/delete writing to local
 state only and toasting success regardless of outcome. A real `eval_techniques`
 table existed but held zero rows and was never read. The table was extended with
 the fields the module needs and the page repointed at it — see
-`supabase/migrations/20260816_eval_techniques_canonical.sql`.
+`supabase/migrations/20260816000006_eval_techniques_canonical.sql`.
