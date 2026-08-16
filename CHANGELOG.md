@@ -23,6 +23,11 @@
 * **Docs** — 13 module guides, EU AI Act and ISO/IEC 42001 mappings extended,
   new `docs/architecture/interlink-map.md` and `docs/reference/technical-debt.md`.
 
+## 1.62.0 (2026-08-16)
+
+* Merge main ([51ce891](https://github.com/CERTIFYI-AI/sentinel/commit/51ce891))
+* feat(interlinks): platform-wide interlink audit, rollout and map ([ec10ad8](https://github.com/CERTIFYI-AI/sentinel/commit/ec10ad8))
+
 ## <small>1.61.3 (2026-08-16)</small>
 
 * Merge main ([8e936c2](https://github.com/CERTIFYI-AI/sentinel/commit/8e936c2))
