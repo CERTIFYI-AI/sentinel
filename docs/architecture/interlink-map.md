@@ -181,6 +181,17 @@ from. Interlinking them is part of migrating them, not a separate task.
 Isolation is therefore a *leading indicator* of the demo-table debt rather than
 an independent defect, which is why the two are tracked together.
 
+## Reproducibility
+
+Every interlink and seed in this map is captured in `supabase/migrations/`, not
+only applied to the live database. Seed data applied ad hoc is a reproducibility
+defect: a fresh environment renders empty registers, and the "populated" column
+above silently becomes zero everywhere.
+
+The 2026-08-16 audit found TIA seeds, DPIA seeds and the entire interlink
+rollout existing only in the live database; they are now in
+`20260816_privacy_seeds_and_interlinks.sql`. Gate 3 checks this.
+
 ## Adding an interlink
 
 1. Store the **canonical uuid** (`ai_models.id`, `ropa_records.id`, …) — never a
