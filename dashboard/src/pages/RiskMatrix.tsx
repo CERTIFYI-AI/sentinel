@@ -1,7 +1,7 @@
 // Risk Matrix — 5×5 likelihood × impact view over the real, org-scoped risk
 // register (risks table via useRisksData). Cells bin real risks; clicking a
 // cell lists its risks with deep links into the register (/risks?open=<id>).
-import { useMemo, useState } from "react";
+import { useMemo, useState, type CSSProperties } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertTriangle, Filter, Plus, X } from "lucide-react";
@@ -10,6 +10,7 @@ import { PageHeader } from "@/components/ui/PageHeader";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { Button } from "@/components/ui/button";
 import { useRisksData, type RiskRecord } from "@/hooks/useRisksData";
+import { scoreBand } from "@/services/riskService";
 
 const likelihoodLabels = ["", "Rare", "Unlikely", "Possible", "Likely", "Almost Certain"];
 const impactLabels = ["", "Negligible", "Minor", "Moderate", "Major", "Severe"];
@@ -27,18 +28,20 @@ function statusClass(status: string): string {
   return statusColors[status.toLowerCase().replace(/\s+/g, "_")] ?? "bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]";
 }
 
-function getHeatmapColor(likelihood: number, impact: number): string {
-  const score = likelihood * impact;
-  if (score >= 16) return "bg-[hsl(var(--s-er-tx))] text-[hsl(var(--bg-surface))]";
-  if (score >= 10) return "bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--bg-surface))]";
-  if (score >= 6) return "bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--bg-surface))]";
-  if (score >= 3) return "bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--text-1))]";
-  return "bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--text-1))]";
+/** Unified band styling — delegates to the platform's single source of truth. */
+function bandStyle(score: number): CSSProperties {
+  const b = scoreBand(score);
+  return { background: b.bg, color: b.text };
 }
 
 /** Clamp a stored value into the 1–5 matrix band so every risk lands in a cell. */
 function band(n: number): number {
   return Math.min(5, Math.max(1, Math.round(n)));
+}
+
+/** True when a stored likelihood/impact had to be clamped into the 1–5 grid. */
+function wasClamped(r: RiskRecord): boolean {
+  return band(r.likelihood) !== r.likelihood || band(r.impact) !== r.impact;
 }
 
 function riskLabel(r: RiskRecord): string {
@@ -66,8 +69,9 @@ export default function RiskMatrix() {
     filtered.filter(r => band(r.likelihood) === likelihood && band(r.impact) === impact);
 
   const stats = useMemo(() => ({
-    critical: filtered.filter(r => band(r.likelihood) * band(r.impact) >= 16).length,
-    high: filtered.filter(r => { const s = band(r.likelihood) * band(r.impact); return s >= 10 && s < 16; }).length,
+    // Band on the STORED risk_score — same figure the register shows.
+    critical: filtered.filter(r => scoreBand(r.risk_score).label === "Critical").length,
+    high: filtered.filter(r => scoreBand(r.risk_score).label === "High").length,
     mitigating: filtered.filter(r => /mitigating|in.?progress/i.test(r.status)).length,
     open: filtered.filter(r => /open/i.test(r.status)).length,
   }), [filtered]);
@@ -177,7 +181,8 @@ export default function RiskMatrix() {
                           key={impact}
                           onClick={() => setSelectedCell(risksInCell.length > 0 ? { likelihood, impact } : null)}
                           aria-label={`Likelihood ${likelihood}, impact ${impact} — ${risksInCell.length} risk${risksInCell.length === 1 ? "" : "s"}`}
-                          className={`flex-1 m-0.5 min-h-[60px] rounded-lg flex flex-col items-center justify-center p-1 ${getHeatmapColor(likelihood, impact)} ${risksInCell.length > 0 ? "ring-2 ring-[hsl(var(--bg-surface))] cursor-pointer" : "opacity-60 cursor-default"} ${isSelected ? "outline outline-2 outline-[hsl(var(--brand))]" : ""}`}
+                          className={`flex-1 m-0.5 min-h-[60px] rounded-lg flex flex-col items-center justify-center p-1 border border-[hsl(var(--border))] ${risksInCell.length > 0 ? "ring-2 ring-[hsl(var(--bg-surface))] cursor-pointer" : "opacity-60 cursor-default"} ${isSelected ? "outline outline-2 outline-[hsl(var(--brand))]" : ""}`}
+                          style={bandStyle(likelihood * impact)}
                         >
                           {risksInCell.length > 0 ? (
                             <div className="text-center">
@@ -227,7 +232,10 @@ export default function RiskMatrix() {
               </thead>
               <tbody className="divide-y divide-[hsl(var(--border))]">
                 {selectedRisks.map(r => {
-                  const score = band(r.likelihood) * band(r.impact);
+                  // Show the STORED score — the same figure the register shows —
+                  // never a recomputation from the clamped grid position.
+                  const score = r.risk_score;
+                  const clamped = wasClamped(r);
                   return (
                     <tr key={r.id} className="hover:bg-[hsl(var(--bg-raised))] transition-colors">
                       <td className="px-4 py-3 font-mono text-xs">
@@ -238,8 +246,17 @@ export default function RiskMatrix() {
                         {r.description && <p className="text-[11px] text-[hsl(var(--text-4))] mt-0.5 line-clamp-1">{r.description}</p>}
                       </td>
                       <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{r.category || "—"}</td>
-                      <td className="px-4 py-3 text-xs font-mono text-[hsl(var(--text-3))]">{band(r.likelihood)} x {band(r.impact)}</td>
-                      <td className="px-4 py-3"><span className={`text-xs font-bold px-2 py-0.5 rounded ${getHeatmapColor(band(r.likelihood), band(r.impact))}`}>{score}</span></td>
+                      <td className="px-4 py-3 text-xs font-mono text-[hsl(var(--text-3))]">
+                        {band(r.likelihood)} x {band(r.impact)}
+                        {clamped && (
+                          <span
+                            title={`Stored values (L ${r.likelihood}, I ${r.impact}) were clamped into the 1–5 grid`}
+                            aria-label="Stored value clamped into the 1–5 grid"
+                            className="inline-block w-1.5 h-1.5 rounded-full bg-[hsl(var(--s-wn-tx))] ml-1.5 align-middle"
+                          />
+                        )}
+                      </td>
+                      <td className="px-4 py-3"><span className="text-xs font-bold px-2 py-0.5 rounded" style={bandStyle(score)}>{score}</span></td>
                       <td className="px-4 py-3"><span className={`text-[10px] font-medium px-2 py-0.5 rounded capitalize ${statusClass(r.status)}`}>{r.status}</span></td>
                       <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{r.owner || "Unassigned"}</td>
                     </tr>
