@@ -120,3 +120,48 @@ because the processing they document is performed *by* the governed AI systems.
 - **Rights requests resolve to real systems.** `ai_systems_affected` and
   `linked_model_ids` mean an erasure request names the models that hold the
   data, rather than a free-text note.
+
+---
+
+## Module Coverage — Vendors/TPRM, AI Supply Chain & Sustainability
+
+Added 2026-08-16 with the TPRM / supply-chain / ESG rollout. Before that date
+none of these twelve modules appeared in this mapping, and none was capable of
+supporting the obligations below: they rendered from in-file mocks keyed by
+business codes, so no supply-chain or third-party claim could be attached to the
+model it described.
+
+| Article | Obligation | Module & backing | Status |
+|---|---|---|---|
+| Art. 12 | Record-keeping — state changes carry a real actor | All twelve modules call `logAction` on create/update/delete; the previous code called it **zero** times and attributed attestation signatures to a hardcoded name | Implemented |
+| Art. 13 | Transparency — provider information about the system | [AIBOM](../modules/aibom.md) — `aibom_records` with `model_id`, components (PURL/SPDX), and the model-card / Annex IV document reference | Implemented |
+| Art. 15 | Accuracy & robustness — known weaknesses in components | [AIBOM](../modules/aibom.md) — `aibom_vulnerabilities` rows (CVE id, CVSS, fixed version, source feed, `scanned_at`); `last_scanned_at IS NULL` renders "never scanned", not zero CVEs | Implemented |
+| Art. 10 | Data governance — provenance of training and operational data | [Provenance](../modules/provenance.md) — typed `provenance_edges` (`trained_on`, `derived_from`) with `valid_from`/`valid_to`, so "what fed this model on the date of the incident" is answerable | Implemented |
+| Art. 25 | Responsibilities along the AI value chain | [Vendor Registry](../modules/vendor-registry.md) — `vendors` with inherent/residual risk, sub-processor count, fourth-party exposure and exit plan; [Attestations](../modules/supply-chain-attestations.md) resolve to a `subject_id` | Implemented |
+| Art. 27 | Fundamental rights impact — third-party dependencies | [TPRM Workspace](../modules/tprm-workspace.md) — criticality tiering and reassessment cadence over real vendor records | Implemented |
+| Art. 72 | Post-market monitoring — supplier performance over time | [Vendor SLA](../modules/vendor-sla.md) — numeric thresholds with status **derived** by `vendor_sla_status`; an unmeasured SLA reports `unmeasured`, never `healthy` | Implemented |
+| Art. 73 | Serious incident reporting — supplier-caused incidents | `vendor_slas.linked_incident_ids` → `incidents.id` | Implemented |
+| — | Sustainability disclosure (not an AI Act obligation) | [Carbon](../modules/carbon-ledger.md) / [Energy](../modules/energy-efficiency.md) / [ESG Reports](../modules/esg-reports.md) — recorded here as **out of scope for the AI Act**; these serve CSRD/ESRS E1, GHG Protocol and ISO 14064-1, which are not mapped in this document | Out of scope (reason recorded) |
+
+### Notes for assessors
+
+- **Verification state is never asserted.** `declared_digest` holds whatever a
+  producer supplied and is evidence of nothing; `verification_status`,
+  `verified_at`, `verified_by` and `verification_method` are written only by a
+  verifier. No verification is performed yet, so every record reads
+  `unverified` — see TD-011. The prior implementation rendered "Signature Valid"
+  whenever a free-text field was not the literal string `PENDING`, and generated
+  its "SHA-256" with `Math.random()`.
+- **Validity and breach are computed, not stored.** Attestation validity comes
+  from `valid_until` via `supply_chain_attestation_status`; SLA breach comes from
+  numeric thresholds via `vendor_sla_status`. Previously both were authored
+  literals, so an attestation could report "Within Validity Period: PASS" after
+  it had expired.
+- **Absence is visible.** A never-scanned AIBOM, an unmeasured SLA and an
+  unassessed vendor render as `—`, not as `0` or a green default. A carbon
+  figure with no measurement renders as `—` rather than `0.0 tCO₂e`, which would
+  read as carbon-neutral.
+- **Estimates are labelled and cited.** Every derived carbon figure carries
+  `measurement_method` (`measured` / `calculated` / `estimated`) and an
+  `emission_factor_id` resolving to a factor with source, publication year,
+  version and region.
