@@ -5,6 +5,7 @@
 // Displays vendor KPIs, concentration risk, DPA warnings, and a full vendor table.
 
 import { useVendorsData } from "@/hooks/useVendorsData";
+import { useAiApps } from "@/hooks/useGovernAddons";
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -102,6 +103,12 @@ export default function VendorRegistry() {
   const { orgName } = useSettingsStore();
   const navigate = useNavigate();
   const { vendors: supabaseVendors, isLoading: vendorsLoading } = useVendorsData();
+  // How many governed AI apps are actually attributed to a vendor — null while
+  // loading, so the count is never rendered as a premature zero.
+  const { data: aiApps, isLoading: aiAppsLoading } = useAiApps();
+  const vendorLinkedApps = aiAppsLoading
+    ? null
+    : (aiApps ?? []).filter((a: any) => !!a.vendorId).length;
   const [vendors, setVendors] = useState<Vendor[]>([]);
   useEffect(() => { setVendors(supabaseVendors as any); }, [supabaseVendors]);
 
@@ -226,9 +233,11 @@ export default function VendorRegistry() {
         ]}
         actions={
           <div className="flex gap-2">
-            {/* The AI tools these vendors supply, governed in the AI Apps inventory. */}
+            {/* The AI tools these vendors supply, governed in the AI Apps
+                inventory — carrying the real count so the relationship is
+                visible here, not just a link out. */}
             <Button variant="ghost" onClick={() => navigate('/ai-apps')} style={{ borderRadius: 0 }}>
-              AI Apps
+              AI Apps{vendorLinkedApps != null ? ` (${vendorLinkedApps})` : ''}
             </Button>
             <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
               <Export className="h-4 w-4" />Export CSV

@@ -18,6 +18,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { StateBadge, RiskBadge } from '@/components/evals/primitives'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
 import { ValidationRunForm } from './ValidationRunForm'
+import { useEvalTechniques } from '@/hooks/useEvalTechniques'
 import { validationRunHooks } from '@/hooks/queries/useEvalsCrud'
 import { useModelOptions } from '@/hooks/useAiiaData'
 import { useRBAC } from '@/hooks/useRBAC'
@@ -30,6 +31,21 @@ export default function ValidationRunList() {
   const modelParam = searchParams.get('model')
   const openParam = searchParams.get('open')
   const { data, isLoading, isError, error, refetch } = validationRunHooks.useList()
+
+  // Runs that have actually completed are the ones Benchmarks can score.
+  // Null while loading, so the chip never shows a premature zero.
+  const benchmarkableRuns = isLoading || !data
+    ? null
+    : (data as any[]).filter((r) => (r.status ?? '').toLowerCase() === 'completed').length
+
+  // The evaluation catalogue behind this lab, with anything past its due date.
+  const evalTechniques = useEvalTechniques()
+  const techniqueCount = evalTechniques.isLoading ? null : evalTechniques.data.length
+  const overdueTechniques = evalTechniques.isLoading
+    ? null
+    : evalTechniques.data.filter(
+        (t) => t.nextDueAt && new Date(t.nextDueAt).getTime() < Date.now(),
+      ).length
   const del = validationRunHooks.useDelete()
   const { models, loading: modelsLoading } = useModelOptions()
 
@@ -100,9 +116,25 @@ export default function ValidationRunList() {
         icon={Flask}
         actions={
           <div className="flex items-center gap-2">
-            {/* Sibling eval surfaces — otherwise reachable only from the sidebar. */}
-            <Button variant="ghost" size="sm" onClick={() => nav('/evals/benchmark')}>Benchmarks</Button>
-            <Button variant="ghost" size="sm" onClick={() => nav('/evals/techniques')}>Eval Techniques</Button>
+            {/* Benchmarks is a scored view over these same validation runs, so
+                the count comes from data already loaded here — no extra query. */}
+            <Button variant="ghost" size="sm" onClick={() => nav('/evals/benchmark')}>
+              Benchmarks
+              {benchmarkableRuns != null && (
+                <span className="ml-1.5 text-[11px] text-[hsl(var(--text-4))]">{benchmarkableRuns} scored</span>
+              )}
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => nav('/evals/techniques')}>
+              Eval Techniques
+              {techniqueCount != null && (
+                <span
+                  className="ml-1.5 text-[11px]"
+                  style={{ color: overdueTechniques ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-4))' }}
+                >
+                  {overdueTechniques ? `${techniqueCount} · ${overdueTechniques} overdue` : techniqueCount}
+                </span>
+              )}
+            </Button>
             {can('create') && <Button size="sm" icon={<Plus />} onClick={openNew}>New Validation Run</Button>}
           </div>
         }

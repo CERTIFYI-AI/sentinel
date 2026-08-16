@@ -83,6 +83,117 @@ graph TD
 
 ---
 
+## Agentic Mesh Architecture
+
+Sentinel's governance is not a set of scheduled batch jobs. It is an **event-driven
+mesh of 26 autonomous agents** that subscribe to governance events on a shared bus
+and cascade: one act of governance triggers the next, so registering a model or
+declaring an incident fans out into assessment, evidence capture, notification and
+remediation without a human sequencing the steps.
+
+The bus lives in `dashboard/src/lib/governance/eventBus.ts`; every agent is a module
+under `dashboard/src/agents/` registered in `agents/index.ts`. Agents are **always-on**
+in the sense that they are registered at app startup and react to every matching
+event for the lifetime of the session — none of them polls, and none has to be
+invoked from a screen.
+
+```mermaid
+graph TD
+    EV[["Governance Event Bus"]]
+
+    MR[MODEL_REGISTERED] --> EV
+    RD[RISK_DETECTED / RISK_CREATED] --> EV
+    IC[INCIDENT_CREATED] --> EV
+    CB[CARBON_ESTIMATED / BUDGET_EXCEEDED] --> EV
+    VL[VENDOR_LINKED] --> EV
+
+    EV --> A1["11 agents<br/>risk · compliance · fairness · explainability<br/>data · vendor · carbon · HITL · CI-CD<br/>graph · conformity"]
+    EV --> A2["8 agents<br/>impact · auto-pause · remediation<br/>compliance impact · narrative · ESG<br/>graph · evidence · HITL"]
+    EV --> A3["9 agents<br/>classification · containment · regulator<br/>DSR · vendor cascade · evidence<br/>financial · narrative · training"]
+    EV --> NA["NotificationAgent<br/>(wildcard — every event)"]
+
+    A1 & A2 & A3 & NA --> ST[("Org-scoped Postgres<br/>records · tasks · evidence chain")]
+```
+
+### Cascade 1 — `MODEL_REGISTERED`
+
+Registering a model is the single act that produces a governance baseline. Eleven
+agents fire, each writing a real record rather than a status flag.
+
+| Agent | What it does on the event |
+| --- | --- |
+| `RiskAssessmentAgent` | Scores inherent risk and drafts the initial risk record |
+| `ComplianceMapAgent` | Maps the model to the control set of every applicable framework |
+| `FairnessScanAgent` | Opens the fairness baseline and queues the first bias scan |
+| `ExplainabilityAgent` | Picks an interpretability method and creates the explainability report |
+| `DataGovernanceAgent` | Cross-references training datasets for PII/PHI, consent and cross-border transfer |
+| `VendorRiskAgent` | Links the model to its vendor and updates concentration risk |
+| `CarbonAgent` | Estimates training and inference CO₂ footprint |
+| `HITLAgent` | Creates the human-in-the-loop review tasks the tier demands |
+| `CICDGateAgent` | Registers the EU AI Act conformity gate in the deployment workflow |
+| `KnowledgeGraphAgent` | Adds nodes and edges so the model is reachable in the governance graph |
+| `ConformityAssessmentAgent` | Opens the EU AI Act Article 43 conformity assessment record |
+
+### Cascade 2 — `RISK_DETECTED` / `RISK_CREATED`
+
+A detected risk propagates to everything that risk touches — including pausing the
+model itself when severity warrants it.
+
+| Agent | What it does on the event |
+| --- | --- |
+| `ImpactAnalysisAgent` | Traverses the knowledge graph for blast radius and annualised loss expectancy |
+| `AutoPauseAgent` | Pauses the model outright for Critical/High severity |
+| `RemediationPlannerAgent` | Generates the remediation plan and SLA-bearing tasks |
+| `ComplianceImpactAgent` | Recalculates framework scores and the trust engine posture |
+| `NarrativeEngineAgent` | Regenerates board and executive talking points, and regulator-facing language |
+| `ESGAgent` | Recalculates ESG dimension scores from fairness, privacy and carbon signals |
+| `EvidenceCollectionAgent` | Captures evidence into the tamper-evident hash chain |
+| `KnowledgeGraphAgent` | Records the risk and its edges in the graph |
+| `HITLAgent` | Raises the human review the severity requires |
+
+### Cascade 3 — `INCIDENT_CREATED`
+
+An incident is the highest-urgency path: containment first, then regulatory clocks,
+then the long tail of impact and learning.
+
+| Agent | What it does on the event |
+| --- | --- |
+| `IncidentClassificationAgent` | Assigns P0–P4 severity and names an incident commander |
+| `ContainmentAgent` | For P0/P1: pauses models, triggers BCP failover, blocks CI/CD, preserves evidence |
+| `RegulatorNotifyAgent` | Prepares SEC / FCA / ICO (GDPR 72-hour) / EU AI Act notification templates |
+| `DSRImpactAgent` | Identifies affected data subjects and opens data-subject-request entries |
+| `VendorCascadeAgent` | Handles vendor SLA breach and BCP-004 failover |
+| `EvidenceCollectionAgent` | Captures incident evidence into the hash chain |
+| `FinancialImpactAgent` | Calculates regulatory fine exposure and updates ALE |
+| `NarrativeEngineAgent` | Produces the incident narrative for board and regulator audiences |
+| `TrainingUpdateAgent` | Turns lessons learned into refresher training assignments |
+
+### Always-on and secondary triggers
+
+- **`NotificationAgent`** is registered against the `*` wildcard — it observes **every**
+  event on the bus and fans out notifications and tasks. It is the one agent guaranteed
+  to run on any governance activity.
+- **`ESGAgent`** also fires on `CARBON_ESTIMATED`, and **`HITLAgent`** on
+  `CARBON_BUDGET_EXCEEDED`, so sustainability breaches escalate to a human like any
+  other risk.
+- **`KnowledgeGraphAgent`** also fires on `VENDOR_LINKED`, keeping third-party edges
+  current in the graph.
+
+Several agents deliberately appear in more than one cascade — `EvidenceCollectionAgent`,
+`KnowledgeGraphAgent`, `HITLAgent` and `NarrativeEngineAgent` are cross-cutting, which
+is why 26 distinct agents produce more than 26 registrations.
+
+### Adding an agent
+
+1. Write the handler in `dashboard/src/agents/<name>Agent.ts`, exporting a function
+   that takes the event payload and performs **real** writes (service-layer calls that
+   throw on failure — never a local state mutation).
+2. Register it in `dashboard/src/agents/index.ts` against the events it should observe.
+3. Executions are observable through `subscribeToAgentExecutions`, and surface in the
+   Agent Control module.
+
+---
+
 ## Quick Start
 
 ### Prerequisites

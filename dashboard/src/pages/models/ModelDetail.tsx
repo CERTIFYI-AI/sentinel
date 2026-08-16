@@ -25,6 +25,7 @@ import { useModelsData } from '@/hooks/useModelsData';
 import { useModelDetailData } from '@/hooks/useModelDetailData';
 import { useModelAnalytics } from '@/hooks/useModelAnalytics';
 import { useModelGovernance } from '@/hooks/useAiiaData';
+import { useModelRuntimeSummary } from '@/hooks/useModelRuntimeSummary';
 import type { AlertConfig } from '@/services/modelDetailService';
 import { useAuthStore } from '../../store/authStore';
 import { recordToModel } from '@/lib/modelMapping';
@@ -219,6 +220,57 @@ function ModelDetailView({ model }: { model: Model }) {
 
   // Reverse interlink — this model's footprint across the Impact & Risk modules.
   const gov = useModelGovernance(model.id);
+
+  // Reverse interlink — this model's runtime footprint across the Trust Engine
+  // modules (fallbacks, tool calls, cost/tokens) and the prompt registry.
+  const {
+    summary: runtime,
+    isLoading: runtimeLoading,
+    error: runtimeError,
+  } = useModelRuntimeSummary(model.id);
+
+  /** "—" for not-measured; a real number is never invented from a missing row. */
+  const num = (v: number | null | undefined) =>
+    typeof v === 'number' ? v.toLocaleString() : '—';
+
+  const runtimeRows = useMemo(() => [
+    {
+      label: 'Lifecycle Stage',
+      to: `/models/lifecycle?model=${model.id}`,
+      value: model.lifecyclePhase && model.lifecyclePhase !== '—' ? model.lifecyclePhase : '—',
+    },
+    {
+      label: 'Prompts',
+      to: `/prompt-registry?model=${model.id}`,
+      value: num(runtime?.prompts),
+    },
+    {
+      label: 'Cost & Tokens (30d)',
+      to: `/trust-engine/costs?model=${model.id}`,
+      value: runtime?.cost30d != null ? `$${runtime.cost30d.toFixed(2)}` : '—',
+      note: runtime?.tokens30d != null ? `${runtime.tokens30d.toLocaleString()} tokens` : undefined,
+    },
+    {
+      label: 'Fallback Failovers',
+      to: `/trust-engine/fallback?model=${model.id}`,
+      value: num(runtime?.fallbackEvents),
+      note: runtime?.fallbackFailures ? `${runtime.fallbackFailures} failed` : undefined,
+      tone: runtime?.fallbackFailures ? 'hsl(var(--s-er-tx))' : undefined,
+    },
+    {
+      label: 'Tool Calls',
+      to: `/trust-engine/tools?model=${model.id}`,
+      value: num(runtime?.toolCalls),
+      note: runtime?.toolCallErrors ? `${runtime.toolCallErrors} errored` : undefined,
+      tone: runtime?.toolCallErrors ? 'hsl(var(--s-wn-tx))' : undefined,
+    },
+    {
+      label: 'Test in Playground',
+      to: `/ai-gateway/playground?model=${model.id}`,
+      value: 'Open',
+    },
+  ] as { label: string; to: string; value: string; note?: string; tone?: string }[],
+  [model.id, model.lifecyclePhase, runtime]);
 
   const [linkOpen, setLinkOpen] = useState(false);
   const [dForm, setDForm] = useState({ title: '', type: 'PDF', url: '', desc: '' });
@@ -505,8 +557,10 @@ function ModelDetailView({ model }: { model: Model }) {
               </CardContent>
             </Card>
 
-            {/* Runtime & operations — the model-scoped views that were previously
-                reachable only from the sidebar, so this record is not a dead end. */}
+            {/* Runtime & operations — each row carries this model's actual figure
+                from the module behind it, so the record reports real state rather
+                than just pointing at another page. Null renders as "—" (not
+                measured); it is never shown as a zero. */}
             <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
               <CardHeader className="pb-2">
                 <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))', display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -515,21 +569,27 @@ function ModelDetailView({ model }: { model: Model }) {
                 </CardTitle>
               </CardHeader>
               <CardContent style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                {[
-                  { label: 'Lifecycle Stage',    to: `/models/lifecycle?model=${model.id}` },
-                  { label: 'Prompts',            to: `/prompt-registry?model=${model.id}` },
-                  { label: 'Cost & Tokens',      to: `/trust-engine/costs?model=${model.id}` },
-                  { label: 'Fallback Failovers', to: `/trust-engine/fallback?model=${model.id}` },
-                  { label: 'Tool Calls',         to: `/trust-engine/tools?model=${model.id}` },
-                  { label: 'Test in Playground', to: `/ai-gateway/playground?model=${model.id}` },
-                ].map(link => (
+                {runtimeError ? (
+                  <p style={{ fontSize: 11, color: 'hsl(var(--s-er-tx))' }}>
+                    Runtime figures unavailable: {runtimeError.message}
+                  </p>
+                ) : null}
+                {runtimeRows.map(row => (
                   <button
-                    key={link.to}
-                    onClick={() => navigate(link.to)}
+                    key={row.to}
+                    onClick={() => navigate(row.to)}
                     style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
                   >
-                    <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>{link.label}</span>
-                    <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                    <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>{row.label}</span>
+                    <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, color: row.tone ?? 'hsl(var(--text-1))' }}>
+                        {runtimeLoading ? '…' : row.value}
+                      </span>
+                      {row.note && !runtimeLoading && (
+                        <span style={{ fontSize: 10, color: 'hsl(var(--text-4))' }}>{row.note}</span>
+                      )}
+                      <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                    </span>
                   </button>
                 ))}
               </CardContent>

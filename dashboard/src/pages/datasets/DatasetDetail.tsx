@@ -45,22 +45,6 @@ export default function DatasetDetail() {
     </Button>
   )
 
-  /* Sibling data surfaces — governance, lineage, quality and the entity graph
-     were previously reachable only from the sidebar, leaving this record a
-     dead end once you arrived from a model or a bias audit. */
-  const dataSurfaces = (
-    <div className="mb-4 flex flex-wrap items-center gap-2">
-      {[
-        { label: 'Data Governance', to: '/data-governance' },
-        { label: 'Data Lineage', to: '/data-lineage' },
-        { label: 'Data Quality', to: '/data-quality' },
-        { label: 'Knowledge Graph', to: '/knowledge-graph' },
-      ].map((s) => (
-        <Button key={s.to} variant="ghost" size="sm" onClick={() => navigate(s.to)}>{s.label}</Button>
-      ))}
-    </div>
-  )
-
   if (isLoading) return <div className="p-6 text-sm text-[hsl(var(--text-4))]">Loading dataset…</div>
   if (isError) return <div className="p-6">{back}<ErrorState message={error?.message} /></div>
   if (!dataset) {
@@ -74,6 +58,48 @@ export default function DatasetDetail() {
 
   const linkedModels = dataset.usedInModels
     .map((mid) => ({ id: mid, name: models.find((m) => m.id === mid)?.name }))
+
+  /* Sibling data surfaces — each carries THIS dataset's real figure from the
+     module behind it, and deep-links with ?dataset= so the target opens scoped
+     to this record rather than to an unfiltered list. A count is shown only
+     once its data has loaded; it is never rendered as a premature zero. */
+  const assessmentCount = assessments?.length ?? null
+  const failedChecks = assessments
+    ? assessments.filter((a: any) => a.status && a.status !== 'passed').length
+    : null
+
+  const dataSurfaces = (
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      <Button variant="ghost" size="sm" onClick={() => navigate(`/data-governance?dataset=${dataset.id}`)}>
+        Data Governance
+        <span className="ml-1.5 text-[11px] text-[hsl(var(--text-4))]">
+          {dataset.containsPii ? `PII · ${dataset.piiTypes.length || 0} categories` : 'no PII'}
+        </span>
+      </Button>
+      <Button variant="ghost" size="sm" onClick={() => navigate(`/data-lineage?dataset=${dataset.id}`)}>
+        Data Lineage
+        <span className="ml-1.5 text-[11px] text-[hsl(var(--text-4))]">
+          {linkedModels.length} model{linkedModels.length === 1 ? '' : 's'}
+        </span>
+      </Button>
+      <Button variant="ghost" size="sm" onClick={() => navigate(`/data-quality?dataset=${dataset.id}`)}>
+        Data Quality
+        <span
+          className="ml-1.5 text-[11px]"
+          style={{ color: failedChecks ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))' }}
+        >
+          {assessmentCount == null
+            ? '—'
+            : failedChecks
+              ? `${assessmentCount} checks · ${failedChecks} open`
+              : `${assessmentCount} checks`}
+        </span>
+      </Button>
+      <Button variant="ghost" size="sm" onClick={() => navigate(`/knowledge-graph?dataset=${dataset.id}`)}>
+        Knowledge Graph
+      </Button>
+    </div>
+  )
 
   return (
     <div className="space-y-6">
