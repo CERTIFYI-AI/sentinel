@@ -363,6 +363,13 @@ export default function ControlTesting() {
             {recordFor && (
               <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{recordFor.name || recordFor.title}</p>
             )}
+            {/* Recording advances next_test_at by the control's own declared
+                cadence (service-side, checked write) — say so honestly. */}
+            {recordFor?.testFrequency && (
+              <p className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>
+                Recording this test stamps the control and advances its next test date by its {recordFor.testFrequency} cadence.
+              </p>
+            )}
             <div>
               <label className="text-xs font-semibold mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Result *</label>
               <Select value={form.result} onValueChange={(v) => setForm((f) => ({ ...f, result: v }))}>

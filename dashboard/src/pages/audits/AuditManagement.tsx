@@ -28,6 +28,8 @@ import {
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useAudits, useAuditFindings } from '../../hooks/useComplianceGroup';
 import { useRemediations } from '../../hooks/useRiskIncidents';
+import { useControls } from '../../hooks/queries/useControls';
+import { useRisksData } from '../../hooks/useRisksData';
 import type { AuditRecord, AuditFindingRecord } from '../../services/complianceOpsService';
 import type { RemediationRecord } from '../../services/incidentResponseService';
 import { exportCsv } from '../../lib/exportUtils';
@@ -103,12 +105,15 @@ interface FindingForm {
   status: string;
   dueDate: string;
   owner: string;
+  /** → controls.id (picked from the control library, never typed by hand). */
   linkedControlId: string;
+  /** → risks.id (uuid). */
+  linkedRiskId: string;
 }
 
 const EMPTY_FINDING_FORM: FindingForm = {
   findingRef: '', title: '', description: '', severity: 'moderate',
-  status: 'open', dueDate: '', owner: '', linkedControlId: '',
+  status: 'open', dueDate: '', owner: '', linkedControlId: '', linkedRiskId: '',
 };
 
 /* ── Component ─────────────────────────────────────────────────────────── */
@@ -118,6 +123,10 @@ export default function AuditManagement() {
   const audits = useAudits();
   const findings = useAuditFindings();
   const remediations = useRemediations();
+  // Control library + risk register for resolved interlink labels and the
+  // finding form's control picker — ids are stored, names resolve at render.
+  const controlsQuery = useControls();
+  const { risks } = useRisksData();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [search, setSearch] = useState('');
@@ -152,12 +161,33 @@ export default function AuditManagement() {
     return map;
   }, [findings.items]);
 
-  // Remediation plans already raised from a finding. Match on the same key
-  // handleCreateRemediation stores (finding_ref, falling back to the uuid) so
-  // ref-less findings still show their plans instead of inviting duplicates.
-  const plansForFinding = (f: AuditFindingRecord): RemediationRecord[] => {
-    const key = f.findingRef ?? f.id;
-    return key ? remediations.items.filter(p => p.sourceId === key) : [];
+  // Findings count is DERIVED from the loaded findings, never read from the
+  // stored audits.findings_count column (which drifts as findings change).
+  const findingsCountFor = (auditId?: string): number =>
+    auditId ? (findingsByAudit.get(auditId)?.length ?? 0) : 0;
+
+  // Remediation plans already raised from a finding. Plans store
+  // source_type='audit_finding' with source_id as either the finding uuid or
+  // its finding_ref (both exist in the wild — e.g. the seeded REM-2026-001
+  // carries AF-007's uuid), so match on either key.
+  const plansForFinding = (f: AuditFindingRecord): RemediationRecord[] =>
+    remediations.items.filter(p =>
+      p.sourceType === 'audit_finding' &&
+      !!p.sourceId &&
+      (p.sourceId === f.id || (!!f.findingRef && p.sourceId === f.findingRef)));
+
+  const controls = controlsQuery.data ?? [];
+  // Resolved display label for a linked control — never a raw uuid.
+  const controlLabel = (id: string) => {
+    const c = controls.find(x => x.id === id);
+    if (!c) return 'Unavailable';
+    const name = c.name || c.title || 'Untitled control';
+    return c.controlRef ? `${c.controlRef} — ${name}` : name;
+  };
+  // Resolved display label for a linked risk — never a raw uuid.
+  const riskLabel = (id: string) => {
+    const r = risks.find(x => x.id === id);
+    return r ? (r.risk_id ? `${r.risk_id} — ${r.title}` : r.title) : 'Unavailable';
   };
 
   const filtered = useMemo(() => audits.items.filter(a => {
@@ -252,6 +282,7 @@ export default function AuditManagement() {
       dueDate: f.dueDate ?? '',
       owner: f.owner ?? '',
       linkedControlId: f.linkedControlId ?? '',
+      linkedRiskId: f.linkedRiskId ?? '',
     });
     setFindingDialogOpen(true);
   };
@@ -266,7 +297,8 @@ export default function AuditManagement() {
       description: findingForm.description.trim() || undefined,
       severity: findingForm.severity,
       status: findingForm.status,
-      linkedControlId: findingForm.linkedControlId.trim() || null,
+      linkedControlId: findingForm.linkedControlId || null,
+      linkedRiskId: findingForm.linkedRiskId || null,
       dueDate: findingForm.dueDate || null,
       owner: findingForm.owner.trim() || null,
     };
@@ -319,7 +351,8 @@ export default function AuditManagement() {
         status: a.status,
         start_date: a.startDate ?? '',
         end_date: a.endDate ?? '',
-        findings_count: a.findingsCount,
+        // Derived from loaded findings — the stored column is not displayed.
+        findings_count: findingsCountFor(a.id),
       })),
       'audits.csv',
     );
@@ -424,7 +457,9 @@ export default function AuditManagement() {
                         </td>
                         <td className="px-3 py-2.5 text-xs whitespace-nowrap" style={{ color: 'hsl(var(--text-3))' }}>{a.startDate ? formatDate(a.startDate) : '—'}</td>
                         <td className="px-3 py-2.5 text-xs whitespace-nowrap" style={{ color: 'hsl(var(--text-3))' }}>{a.endDate ? formatDate(a.endDate) : '—'}</td>
-                        <td className="px-3 py-2.5 text-xs font-medium" style={{ color: a.findingsCount > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-3))' }}>{a.findingsCount}</td>
+                        <td className="px-3 py-2.5 text-xs font-medium" style={{ color: findingsCountFor(a.id) > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-3))' }}>
+                          {findings.isLoading ? '—' : findingsCountFor(a.id)}
+                        </td>
                         <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
                           <div className="flex items-center gap-1">
                             <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={() => setSelected(a)} aria-label="View audit">
@@ -482,7 +517,7 @@ export default function AuditManagement() {
                   { label: 'Lead Auditor', value: selected.leadAuditor ?? '—' },
                   { label: 'Owner', value: selected.owner ?? '—' },
                   { label: 'Period', value: `${selected.startDate ? formatDate(selected.startDate) : '—'} → ${selected.endDate ? formatDate(selected.endDate) : '—'}` },
-                  { label: 'Findings on record', value: String(selected.findingsCount) },
+                  { label: 'Findings on record', value: findings.isLoading ? '—' : String(findingsCountFor(selected.id)) },
                 ].map(r => (
                   <div key={r.label} className="flex justify-between py-2 gap-4" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
                     <span className="text-sm flex-shrink-0" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
@@ -538,7 +573,10 @@ export default function AuditManagement() {
                             </div>
                             <div className="flex items-center gap-1.5 mt-2 flex-wrap">
                               {f.linkedControlId && (
-                                <InterlinkChip label={`Control ${f.linkedControlId}`} to={`/compliance/controls?open=${f.linkedControlId}`} />
+                                <InterlinkChip label={controlLabel(f.linkedControlId)} to={`/compliance/controls?open=${f.linkedControlId}`} />
+                              )}
+                              {f.linkedRiskId && (
+                                <InterlinkChip label={riskLabel(f.linkedRiskId)} to={`/risks?open=${f.linkedRiskId}`} />
                               )}
                               {plans.map(p => (
                                 <InterlinkChip
@@ -709,8 +747,40 @@ export default function AuditManagement() {
                 <Input style={{ borderRadius: 0 }} placeholder="Responsible team or role" value={findingForm.owner} onChange={e => setFindingForm(p => ({ ...p, owner: e.target.value }))} />
               </div>
               <div>
-                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Linked Control ID</Label>
-                <Input style={{ borderRadius: 0 }} placeholder="controls.id" value={findingForm.linkedControlId} onChange={e => setFindingForm(p => ({ ...p, linkedControlId: e.target.value }))} />
+                {/* Id-keyed picker over the control library — controls.id is
+                    stored; the ref + name are display only. */}
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Linked Control</Label>
+                <Select
+                  value={findingForm.linkedControlId || 'none'}
+                  onValueChange={v => setFindingForm(p => ({ ...p, linkedControlId: v === 'none' ? '' : v }))}
+                >
+                  <SelectTrigger style={{ borderRadius: 0, width: '100%' }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value="none">Not linked</SelectItem>
+                    {controls.filter(c => c.id).map(c => (
+                      <SelectItem key={c.id} value={c.id!}>
+                        {c.controlRef ? `${c.controlRef} — ${c.name || c.title || 'Untitled control'}` : (c.name || c.title || 'Untitled control')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Linked Risk</Label>
+                <Select
+                  value={findingForm.linkedRiskId || 'none'}
+                  onValueChange={v => setFindingForm(p => ({ ...p, linkedRiskId: v === 'none' ? '' : v }))}
+                >
+                  <SelectTrigger style={{ borderRadius: 0, width: '100%' }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value="none">Not linked</SelectItem>
+                    {risks.filter(r => r.id).map(r => (
+                      <SelectItem key={r.id} value={r.id!}>
+                        {r.risk_id ? `${r.risk_id} — ${r.title}` : r.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>

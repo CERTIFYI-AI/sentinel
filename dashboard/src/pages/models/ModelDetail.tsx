@@ -12,7 +12,7 @@ import {
   Scales, TestTube, Robot, Gauge, XCircle,
   Sparkle, FileText, ListBullets, CalendarCheck, Copy, Plus,
   ShieldCheck, CaretRight, Bank, Siren, UsersThree, CurrencyDollar, Crosshair,
-  SealCheck, Vault, Pulse,
+  SealCheck, Vault, Pulse, CheckSquare, Megaphone, GraduationCap,
 } from '@phosphor-icons/react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -925,6 +925,28 @@ function ModelDetailView({ model }: { model: Model }) {
               source={backlinks?.postMarketPlans}
               loading={backlinksLoading}
               viewAllTo={`/post-market?model=${model.id}`}
+            />
+            <BacklinkCard
+              title="Compliance Controls"
+              icon={<CheckSquare size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.controls}
+              loading={backlinksLoading}
+              viewAllTo={`/compliance/controls?model=${model.id}`}
+              itemTo={item => `/compliance/controls?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="Transparency Reports"
+              icon={<Megaphone size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.transparencyReports}
+              loading={backlinksLoading}
+              viewAllTo="/transparency-reports"
+            />
+            <BacklinkCard
+              title="AI Literacy Trainings"
+              icon={<GraduationCap size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.aiTrainings}
+              loading={backlinksLoading}
+              viewAllTo="/ai-literacy"
             />
           </div>
         </div>

@@ -11,6 +11,7 @@
 // regulator_filings and ai_trainings — derived events are never persisted
 // and carry a deep-link route back to their source module.
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { logAction } from '../lib/auditLogger'
 
 function client() {
   if (!isSupabaseConfigured() || !supabase) {
@@ -86,8 +87,8 @@ const mapAudit = (r: any): AuditRecord => ({
 })
 
 export const fetchAudits = () => selectAll('audits', mapAudit)
-export const saveAudit = (a: AuditRecord) =>
-  upsertRow('audits', {
+export const saveAudit = async (a: AuditRecord): Promise<AuditRecord> => {
+  const saved = await upsertRow('audits', {
     id: a.id,
     audit_ref: a.auditRef,
     title: a.title,
@@ -103,11 +104,19 @@ export const saveAudit = (a: AuditRecord) =>
     findings_count: a.findingsCount,
     description: a.description,
   }, mapAudit)
-export const deleteAudit = (id: string) => deleteRow('audits', id)
+  // EU AI Act Art. 12 traceability — fire-and-forget, after the write resolved.
+  void logAction({ module: 'compliance', entityType: 'audits', entityId: saved.id, entityName: saved.auditRef ?? saved.title, action: a.id ? 'update' : 'create' })
+  return saved
+}
+export const deleteAudit = async (id: string): Promise<void> => {
+  await deleteRow('audits', id)
+  void logAction({ module: 'compliance', entityType: 'audits', entityId: id, action: 'delete' })
+}
 
 // ---------------------------------------------------------------------------
 // Audit findings (audit_findings.audit_id → audits.id;
-// linked_control_id → controls.id, text in this era)
+// linked_control_id → controls.id, text in this era;
+// linked_risk_id → risks.id, uuid)
 // ---------------------------------------------------------------------------
 export interface AuditFindingRecord {
   id?: string
@@ -118,6 +127,7 @@ export interface AuditFindingRecord {
   severity?: string            // minor | moderate | major | critical
   status: string               // open | in_remediation | closed
   linkedControlId?: string | null // → controls.id
+  linkedRiskId?: string | null    // → risks.id
   dueDate?: string | null
   owner?: string | null
   createdAt?: string
@@ -132,6 +142,7 @@ const mapFinding = (r: any): AuditFindingRecord => ({
   severity: r.severity ?? undefined,
   status: (r.status ?? 'open').toLowerCase(),
   linkedControlId: r.linked_control_id ?? null,
+  linkedRiskId: r.linked_risk_id ?? null,
   dueDate: r.due_date ?? null,
   owner: r.owner ?? null,
   createdAt: r.created_at,
@@ -149,9 +160,9 @@ export async function fetchFindings(auditId?: string): Promise<AuditFindingRecor
 }
 
 // Saving a finding does NOT recalculate audits.findings_count client-side —
-// counts are display data owned by the backend/seeds, never invented here.
-export const saveFinding = (f: AuditFindingRecord) =>
-  upsertRow('audit_findings', {
+// the UI derives counts from loaded findings, never from a stored column.
+export const saveFinding = async (f: AuditFindingRecord): Promise<AuditFindingRecord> => {
+  const saved = await upsertRow('audit_findings', {
     id: f.id,
     audit_id: f.auditId,
     finding_ref: f.findingRef,
@@ -160,10 +171,17 @@ export const saveFinding = (f: AuditFindingRecord) =>
     severity: f.severity,
     status: f.status?.toLowerCase(),
     linked_control_id: f.linkedControlId || null,
+    linked_risk_id: f.linkedRiskId || null,
     due_date: f.dueDate,
     owner: f.owner,
   }, mapFinding)
-export const deleteFinding = (id: string) => deleteRow('audit_findings', id)
+  void logAction({ module: 'compliance', entityType: 'audit_findings', entityId: saved.id, entityName: saved.findingRef ?? saved.title, action: f.id ? 'update' : 'create' })
+  return saved
+}
+export const deleteFinding = async (id: string): Promise<void> => {
+  await deleteRow('audit_findings', id)
+  void logAction({ module: 'compliance', entityType: 'audit_findings', entityId: id, action: 'delete' })
+}
 
 // ---------------------------------------------------------------------------
 // Compliance calendar — manual rows + live-derived deadline events.
@@ -178,7 +196,7 @@ export interface CalendarEventRecord {
   owner?: string | null
   dueAt: string | null
   frameworkRef?: string | null
-  sourceType: string           // manual | conformity | exception | tabletop | filing | training
+  sourceType: string           // manual | conformity | exception | tabletop | filing | training | audit | control_test
   sourceId?: string | null     // id of the source record for derived events
   route?: string | null        // deep link into the source module
   isDerived: boolean           // derived events are never persisted
@@ -220,13 +238,15 @@ export async function fetchCalendarEvents(): Promise<CalendarEventRecord[]> {
   const nowIso = new Date().toISOString()
   const today = nowIso.slice(0, 10)
 
-  const [manual, conformity, exceptions, tabletops, filings, trainings] = await Promise.all([
+  const [manual, conformity, exceptions, tabletops, filings, trainings, audits, controls] = await Promise.all([
     derivedRows('compliance_calendar', '*'),
     derivedRows('conformity_assessments', 'id, title, status, owner, valid_until, framework_id'),
     derivedRows('exceptions', 'id, title, status, severity, owner, expiry_date'),
     derivedRows('tabletop_exercises', 'id, name, status, facilitator, scheduled_at'),
     derivedRows('regulator_filings', 'id, title, status, regulation, deadline'),
     derivedRows('ai_trainings', 'id, name, status, owner_name, ends_on, is_deleted'),
+    derivedRows('audits', 'id, title, audit_ref, status, owner, start_date, framework'),
+    derivedRows('controls', 'id, name, title, control_ref, framework, owner, next_test_at, implementation_status, status, is_deleted'),
   ])
 
   const events: CalendarEventRecord[] = manual.map(mapManualEvent)
@@ -315,6 +335,48 @@ export async function fetchCalendarEvents(): Promise<CalendarEventRecord[]> {
       isDerived: true,
     })
   }
+  // Planned/in-progress audits with a start date ahead of us — completed and
+  // cancelled audits have no upcoming calendar obligation.
+  for (const r of audits) {
+    if (!r.start_date || String(r.start_date) < today) continue
+    const st = String(r.status ?? '').toLowerCase()
+    if (st === 'completed' || st === 'cancelled') continue
+    events.push({
+      id: `audit:${r.id}`,
+      title: r.title ? `Audit begins: ${r.title}` : 'Audit begins',
+      status: r.status ?? undefined,
+      type: 'audit',
+      owner: r.owner ?? null,
+      dueAt: r.start_date,
+      frameworkRef: r.framework ?? null,
+      sourceType: 'audit',
+      sourceId: String(r.id),
+      route: `/audits?open=${r.id}`,
+      isDerived: true,
+    })
+  }
+  // Control tests coming due (controls.next_test_at). Overdue tests are kept —
+  // an overdue test is still an open obligation, mirroring how conformity
+  // expiries surface. Not-applicable controls carry no test cadence.
+  for (const r of controls) {
+    if (r.is_deleted || !r.next_test_at) continue
+    const impl = String(r.implementation_status ?? r.status ?? '').toLowerCase()
+    if (impl === 'not_applicable') continue
+    const name = r.name ?? r.title ?? r.control_ref ?? 'control'
+    events.push({
+      id: `control_test:${r.id}`,
+      title: `Control test due: ${name}`,
+      status: r.implementation_status ?? r.status ?? undefined,
+      type: 'deadline',
+      owner: r.owner ?? null,
+      dueAt: r.next_test_at,
+      frameworkRef: r.framework ?? null,
+      sourceType: 'control_test',
+      sourceId: String(r.id),
+      route: `/compliance/controls?open=${r.id}`,
+      isDerived: true,
+    })
+  }
 
   // Soonest deadline first; undated manual entries sink to the bottom.
   return events.sort((a, b) => {
@@ -325,11 +387,11 @@ export async function fetchCalendarEvents(): Promise<CalendarEventRecord[]> {
 }
 
 // Manual rows only — derived events live in their source modules.
-export function saveCalendarEvent(e: CalendarEventRecord): Promise<CalendarEventRecord> {
+export async function saveCalendarEvent(e: CalendarEventRecord): Promise<CalendarEventRecord> {
   if (e.isDerived) {
-    return Promise.reject(new Error('Derived calendar events are managed in their source module'))
+    throw new Error('Derived calendar events are managed in their source module')
   }
-  return upsertRow('compliance_calendar', {
+  const saved = await upsertRow('compliance_calendar', {
     id: e.id,
     name: e.title,
     title: e.title,
@@ -344,12 +406,15 @@ export function saveCalendarEvent(e: CalendarEventRecord): Promise<CalendarEvent
     source_id: e.sourceId,
     updated_at: new Date().toISOString(),
   }, mapManualEvent)
+  void logAction({ module: 'compliance', entityType: 'compliance_calendar', entityId: saved.id, entityName: saved.title, action: e.id ? 'update' : 'create' })
+  return saved
 }
-export function deleteCalendarEvent(id: string): Promise<void> {
+export async function deleteCalendarEvent(id: string): Promise<void> {
   if (id.includes(':')) {
-    return Promise.reject(new Error('Derived calendar events cannot be deleted — resolve them in their source module'))
+    throw new Error('Derived calendar events cannot be deleted — resolve them in their source module')
   }
-  return deleteRow('compliance_calendar', id)
+  await deleteRow('compliance_calendar', id)
+  void logAction({ module: 'compliance', entityType: 'compliance_calendar', entityId: id, action: 'delete' })
 }
 
 // ---------------------------------------------------------------------------
@@ -384,8 +449,25 @@ export async function fetchControlTests(controlId?: string): Promise<ControlTest
   return (data ?? []).map(mapControlTest)
 }
 
+// controls.test_frequency vocabulary as seeded (monthly | quarterly |
+// semiannual | annual) → months to the next test. Unknown/absent frequencies
+// return null so we never invent a cadence the control does not declare.
+const TEST_FREQUENCY_MONTHS: Record<string, number> = {
+  monthly: 1, quarterly: 3, semiannual: 6, annual: 12,
+}
+
+function nextTestFrom(testedAt: string, frequency?: string | null): string | null {
+  const months = TEST_FREQUENCY_MONTHS[(frequency ?? '').trim().toLowerCase()]
+  if (!months) return null
+  const d = new Date(testedAt)
+  if (isNaN(d.getTime())) return null
+  d.setMonth(d.getMonth() + months)
+  return d.toISOString()
+}
+
 // Records the test AND reflects it on the control row (last_tested_at /
-// test_result) — both writes are checked; a half-applied result throws.
+// test_result, plus next_test_at advanced by the control's own
+// test_frequency) — all writes are checked; a half-applied result throws.
 export async function saveControlTest(t: ControlTestRecord): Promise<ControlTestRecord> {
   const testedAt = t.testedAt ?? new Date().toISOString()
   const saved = await upsertRow('control_tests', {
@@ -396,14 +478,33 @@ export async function saveControlTest(t: ControlTestRecord): Promise<ControlTest
     notes: t.notes,
     tested_at: testedAt,
   }, mapControlTest)
+  // Read the control's declared cadence so the next due date advances with
+  // the recorded test — checked read, same failure contract as the update.
+  const { data: controlRow, error: readError } = await client()
+    .from('controls')
+    .select('test_frequency')
+    .eq('id', t.controlId)
+    .maybeSingle()
+  if (readError) {
+    console.warn('[complianceOpsService] control frequency read failed: %s', readError.message)
+    throw new Error(`The test was recorded but the control row was not updated: ${readError.message}`)
+  }
+  const nextTestAt = nextTestFrom(testedAt, controlRow?.test_frequency)
+  const patch: Record<string, unknown> = {
+    last_tested_at: testedAt,
+    test_result: t.result,
+    updated_at: new Date().toISOString(),
+  }
+  if (nextTestAt) patch.next_test_at = nextTestAt // no declared cadence → leave the schedule untouched
   const { error } = await client()
     .from('controls')
-    .update({ last_tested_at: testedAt, test_result: t.result, updated_at: new Date().toISOString() })
+    .update(patch)
     .eq('id', t.controlId)
   if (error) {
     console.warn('[complianceOpsService] control test backfill failed: %s', error.message)
     throw new Error(`The test was recorded but the control row was not updated: ${error.message}`)
   }
+  void logAction({ module: 'compliance', entityType: 'control_tests', entityId: saved.id, entityName: `Control test (${t.result})`, action: 'create' })
   return saved
 }
 
@@ -424,9 +525,24 @@ export interface GapRecord {
   remediationDeadline?: string | null
 }
 
+/** Per-framework implementation rollup, derived live from `controls` —
+ *  never stored. `total` counts in-scope controls only (not_applicable
+ *  controls are out of scope and are not gaps). */
+export interface FrameworkRollup {
+  frameworkName: string
+  implemented: number          // implemented or effective
+  total: number                // in-scope controls mapped to the framework
+  coveragePct: number | null   // null when the framework has no in-scope controls
+}
+
+export interface GapAnalysisResult {
+  gaps: GapRecord[]
+  rollups: FrameworkRollup[]
+}
+
 const HEALTHY_CONTROL_STATUSES = new Set(['implemented', 'effective'])
 
-export async function fetchGaps(): Promise<GapRecord[]> {
+export async function fetchGaps(): Promise<GapAnalysisResult> {
   const [controls, frameworks, scores] = await Promise.all([
     derivedRows('controls', 'id, control_id, control_ref, name, title, framework, framework_id, status, implementation_status, severity, risk_level, priority, owner, remediation_deadline, is_deleted'),
     derivedRows('frameworks', 'id, name, short_name, code'),
@@ -441,11 +557,21 @@ export async function fetchGaps(): Promise<GapRecord[]> {
   }
 
   const gaps: GapRecord[] = []
+  const rollupByFw = new Map<string, { implemented: number; total: number }>()
   for (const c of controls) {
     if (c.is_deleted) continue
     const status = String(c.status ?? '').toLowerCase()
     const impl = String(c.implementation_status ?? '').toLowerCase()
-    if (HEALTHY_CONTROL_STATUSES.has(status) || HEALTHY_CONTROL_STATUSES.has(impl)) continue
+    // A control marked not applicable is out of scope — it is not a gap and
+    // does not count toward framework coverage.
+    if (status === 'not_applicable' || impl === 'not_applicable') continue
+    const healthy = HEALTHY_CONTROL_STATUSES.has(status) || HEALTHY_CONTROL_STATUSES.has(impl)
+    const fw = frameworkName(c)
+    const roll = rollupByFw.get(fw) ?? { implemented: 0, total: 0 }
+    roll.total += 1
+    if (healthy) roll.implemented += 1
+    rollupByFw.set(fw, roll)
+    if (healthy) continue
     gaps.push({
       frameworkName: frameworkName(c),
       controlId: c.id != null ? String(c.id) : null,
@@ -480,5 +606,15 @@ export async function fetchGaps(): Promise<GapRecord[]> {
       })
     }
   }
-  return gaps
+
+  const rollups: FrameworkRollup[] = Array.from(rollupByFw.entries())
+    .map(([fw, r]) => ({
+      frameworkName: fw,
+      implemented: r.implemented,
+      total: r.total,
+      coveragePct: r.total > 0 ? Math.round((r.implemented / r.total) * 100) : null,
+    }))
+    .sort((a, b) => a.frameworkName.localeCompare(b.frameworkName))
+
+  return { gaps, rollups }
 }

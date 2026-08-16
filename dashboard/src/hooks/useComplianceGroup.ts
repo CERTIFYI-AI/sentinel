@@ -46,8 +46,9 @@ function crud<T extends { id?: string }>(
   }
 }
 
-// Audit management
-export const useAudits = crud('cg-audits', co.fetchAudits, co.saveAudit, co.deleteAudit, 'Audit')
+// Audit management — audits also feed the derived calendar (start_date), so
+// the calendar namespace cross-invalidates.
+export const useAudits = crud('cg-audits', co.fetchAudits, co.saveAudit, co.deleteAudit, 'Audit', ['cg-calendar'])
 
 export function useAuditFindings(auditId?: string) {
   const qc = useQueryClient()
@@ -105,7 +106,8 @@ export function useCalendar() {
 }
 
 // Control tests — a save also updates the control row (last_tested_at /
-// test_result), so the legacy ['controls'] namespace is cross-invalidated.
+// test_result / next_test_at), so the legacy ['controls'] namespace and the
+// derived calendar (which surfaces next_test_at) are cross-invalidated.
 export function useControlTests(controlId?: string) {
   const qc = useQueryClient()
   const { data: items = [], isLoading, error } = useQuery({
@@ -119,6 +121,7 @@ export function useControlTests(controlId?: string) {
       qc.invalidateQueries({ queryKey: ['cg-control-tests'] })
       qc.invalidateQueries({ queryKey: ['controls'] })
       qc.invalidateQueries({ queryKey: ['cg-gaps'] })
+      qc.invalidateQueries({ queryKey: ['cg-calendar'] })
       toast.success('Test recorded')
     },
     onError: (e: any) => toast.error(e?.message ? `Save failed: ${e.message}` : 'Failed to record test'),
@@ -126,14 +129,15 @@ export function useControlTests(controlId?: string) {
   return { items, isLoading, error, save: save.mutateAsync, isSaving: save.isPending }
 }
 
-// Gap analysis — derived, read-only.
+// Gap analysis — derived, read-only. Exposes both the gap rows and the live
+// per-framework rollups (implemented+effective vs in-scope total).
 export function useGaps() {
-  const { data: items = [], isLoading, error } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['cg-gaps'],
     queryFn: co.fetchGaps,
     staleTime: 30_000,
   })
-  return { items, isLoading, error }
+  return { items: data?.gaps ?? [], rollups: data?.rollups ?? [], isLoading, error }
 }
 
 // Regulatory operations

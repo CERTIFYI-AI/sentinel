@@ -5,7 +5,8 @@ import { supabase } from '@/lib/supabase';
  * useModelBacklinks — reverse-interlink footprint of one model across the
  * risk & security modules (risks, incidents, HITL, financial quantification,
  * threat feed, red-team findings, model arena) and the compliance cluster
- * (conformity assessments, evidence vault, post-market monitoring plans).
+ * (conformity assessments, evidence vault, post-market monitoring plans,
+ * compliance controls, transparency reports, AI literacy trainings).
  *
  * Every source is queried independently and tolerates failure: a source whose
  * query errors reports `count: null` ("unavailable") instead of throwing the
@@ -44,6 +45,9 @@ export interface ModelBacklinks {
   conformityAssessments: BacklinkSource;
   evidence: BacklinkSource;
   postMarketPlans: BacklinkSource;
+  controls: BacklinkSource;
+  transparencyReports: BacklinkSource;
+  aiTrainings: BacklinkSource;
 }
 
 const UNAVAILABLE: BacklinkSource = { count: null, items: [] };
@@ -124,6 +128,7 @@ async function fetchModelBacklinks(modelId: string): Promise<ModelBacklinks> {
     risks, incidents, hitlReviews, financialRisks,
     securityThreats, redTeamFindings, arenaRuns,
     conformityAssessments, evidence, postMarketPlans,
+    controls, transparencyReports, aiTrainings,
   ] = await Promise.all([
     // linked_model_ids is text[] — the uuid is matched as a string.
     safeSource(
@@ -220,11 +225,62 @@ async function fetchModelBacklinks(modelId: string): Promise<ModelBacklinks> {
         note: str(r.frequency),
       }),
     ),
+    // controls.linked_model_ids is text[] — the uuid is matched as a string.
+    safeSource(
+      () => supabase.from('controls')
+        .select('id,control_ref,name,title,implementation_status,status,framework', { count: 'exact' })
+        .contains('linked_model_ids', [modelId])
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(3),
+      r => ({
+        id: String(r.id),
+        ref: str(r.control_ref),
+        title: str(r.name) ?? str(r.title) ?? 'Untitled control',
+        severity: null,
+        status: str(r.implementation_status) ?? str(r.status),
+        note: str(r.framework),
+      }),
+    ),
+    // transparency_reports.model_id is uuid.
+    safeSource(
+      () => supabase.from('transparency_reports')
+        .select('id,title,status,report_type,audience', { count: 'exact' })
+        .eq('model_id', modelId)
+        .order('created_at', { ascending: false })
+        .limit(3),
+      r => ({
+        id: String(r.id),
+        ref: null,
+        title: str(r.title) ?? 'Untitled report',
+        severity: null,
+        status: str(r.status),
+        note: str(r.report_type) ?? str(r.audience),
+      }),
+    ),
+    // ai_trainings.linked_model_ids is uuid[].
+    safeSource(
+      () => supabase.from('ai_trainings')
+        .select('id,training_ref,name,status,audience', { count: 'exact' })
+        .contains('linked_model_ids', [modelId])
+        .eq('is_deleted', false)
+        .order('created_at', { ascending: false })
+        .limit(3),
+      r => ({
+        id: String(r.id),
+        ref: str(r.training_ref),
+        title: str(r.name) ?? 'Untitled training',
+        severity: null,
+        status: str(r.status),
+        note: str(r.audience),
+      }),
+    ),
   ]);
 
   return {
     risks, incidents, hitlReviews, financialRisks, securityThreats, redTeamFindings, arenaRuns,
     conformityAssessments, evidence, postMarketPlans,
+    controls, transparencyReports, aiTrainings,
   };
 }
 

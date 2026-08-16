@@ -21,6 +21,8 @@ import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { useControls } from '../../hooks/queries/useControls';
 import { useControlTests } from '../../hooks/useComplianceGroup';
 import { useModelsData } from '../../hooks/useModelsData';
+import { useRisksData } from '../../hooks/useRisksData';
+import { usePolicies } from '../../hooks/queries/usePolicies';
 import { useSettingsStore } from '../../stores/settingsStore';
 import type { ControlRecord } from '../../services/controlService';
 
@@ -56,8 +58,18 @@ export default function ControlDetail() {
   const controlsQuery = useControls();
   const testsQuery = useControlTests(id);
   const { models } = useModelsData();
+  const { risks } = useRisksData();
+  const policiesQuery = usePolicies();
 
+  // Interlink labels resolve to display names at render time — never a raw
+  // uuid; an unresolvable id shows "Unavailable".
   const modelName = (mid: string) => models.find((m) => m.id === mid)?.name ?? 'Unavailable';
+  const riskName = (rid: string) => {
+    const r = risks.find((x) => x.id === rid);
+    return r ? (r.risk_id ? `${r.risk_id} — ${r.title}` : r.title) : 'Unavailable';
+  };
+  const policyName = (pid: string) =>
+    (policiesQuery.data ?? []).find((p) => p.id === pid)?.title ?? 'Unavailable';
 
   if (controlsQuery.isLoading) return <PageSkeleton title="Control" showStats={false} rows={5} />;
 
@@ -265,7 +277,7 @@ export default function ControlDetail() {
                 {linkedRisks.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
                     {linkedRisks.map((rid) => (
-                      <InterlinkChip key={rid} label={`Risk ${rid.slice(0, 8)}…`} to={`/risks?open=${rid}`} />
+                      <InterlinkChip key={rid} label={riskName(rid)} to={`/risks?open=${rid}`} />
                     ))}
                   </div>
                 ) : (
@@ -281,7 +293,7 @@ export default function ControlDetail() {
                 {linkedPolicies.length > 0 ? (
                   <div className="flex flex-wrap gap-1.5">
                     {linkedPolicies.map((pid) => (
-                      <InterlinkChip key={pid} label={`Policy ${pid.slice(0, 8)}…`} to={`/policies?open=${pid}`} />
+                      <InterlinkChip key={pid} label={policyName(pid)} to={`/policies?open=${pid}`} />
                     ))}
                   </div>
                 ) : (

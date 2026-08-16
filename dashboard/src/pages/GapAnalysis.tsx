@@ -36,7 +36,7 @@ function formatDate(d?: string | null): string {
 }
 
 export default function GapAnalysis() {
-  const { items: gaps, isLoading, error } = useGaps();
+  const { items: gaps, rollups, isLoading, error } = useGaps();
   const [expandedFw, setExpandedFw] = useState<string | null>(null);
 
   const grouped = useMemo(() => {
@@ -109,6 +109,40 @@ export default function GapAnalysis() {
           </Card>
         ))}
       </div>
+
+      {/* Per-framework rollup — derived live from the control library
+          (implemented+effective over in-scope controls; not_applicable
+          controls are out of scope), never stored. */}
+      {!isLoading && rollups.length > 0 && (
+        <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
+          <CardContent className="p-4">
+            <p className="text-[10px] uppercase tracking-wider text-[hsl(var(--text-3))] font-medium mb-3">
+              Framework Coverage (implemented or effective / in-scope controls)
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-3">
+              {rollups.map((r) => (
+                <div key={r.frameworkName}>
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="text-xs font-medium text-[hsl(var(--text-1))] truncate">{r.frameworkName}</span>
+                    <span className="text-xs font-mono text-[hsl(var(--text-2))] flex-shrink-0">
+                      {r.implemented}/{r.total}{r.coveragePct != null ? ` · ${r.coveragePct}%` : ""}
+                    </span>
+                  </div>
+                  <div className="mt-1 h-1.5 w-full bg-[hsl(var(--bg-sunken))]" role="presentation">
+                    <div
+                      className="h-full"
+                      style={{
+                        width: `${r.coveragePct ?? 0}%`,
+                        background: (r.coveragePct ?? 0) >= 85 ? "hsl(var(--s-ok-tx))" : (r.coveragePct ?? 0) >= 50 ? "hsl(var(--s-wn-tx))" : "hsl(var(--s-er-tx))",
+                      }}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* States */}
       {isLoading && (

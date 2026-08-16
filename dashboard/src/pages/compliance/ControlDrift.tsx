@@ -136,6 +136,15 @@ function Sparkline({ trend, color }: { trend: number[]; color: string }) {
 const formatDateTime = (d: string) =>
   new Date(d).toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
 
+// CONVENTION — control_evaluation_history.metric_value stores a 0–1 FRACTION
+// (numeric(6,4), e.g. 0.9321 = 93.21%). The writers (Python drift detector,
+// mesh evaluators) emit fractions; render as value*100 with a % sign.
+// Defensive: a value > 1 is assumed to already be a percentage written by a
+// non-conforming producer and is rendered raw (still with %) rather than
+// multiplied into nonsense like 4,500%.
+const formatMetricPct = (v: number): string =>
+  v <= 1 ? `${(v * 100).toFixed(0)}%` : `${v.toFixed(0)}%`;
+
 export default function ControlDrift() {
   const nav = useNavigate();
   const qc = useQueryClient();
@@ -143,13 +152,18 @@ export default function ControlDrift() {
   const [search, setSearch] = useState('');
   const [sev, setSev] = useState('all');
   const [expanded, setExpanded] = useState<string | null>(null);
-  useControlDriftAlerts(); // live drift/regulatory alerts via Supabase Realtime
 
   const historyQuery = useQuery({
     queryKey: ['control-eval-history'],
     queryFn: fetchEvaluationHistory,
     staleTime: 30_000,
   });
+
+  // Live drift/regulatory alerts via Supabase Realtime over the org-scoped
+  // realtime_alerts table, PLUS the recent alert rows so pushes that happened
+  // while the page was closed are still visible. A critical drift alert
+  // refetches the evaluation history.
+  const { alerts, error: alertsError } = useControlDriftAlerts(() => historyQuery.refetch());
 
   const actor = user?.fullName || user?.email || 'Unknown user';
 
@@ -234,6 +248,37 @@ export default function ControlDrift() {
         ))}
       </div>
 
+      {/* Recent backend alerts (realtime_alerts) — real rows, honest empty/error */}
+      {alertsError != null && (
+        <div className="p-3 text-xs" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', color: 'hsl(var(--s-er-tx))' }}>
+          Failed to load drift alerts: {(alertsError as Error).message}
+        </div>
+      )}
+      {alerts.length > 0 && (
+        <div style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <p className="px-3 pt-2.5 pb-1 text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'hsl(var(--text-4))' }}>
+            Recent Alerts ({alerts.length})
+          </p>
+          <div className="px-3 pb-2.5 space-y-1">
+            {alerts.slice(0, 5).map((a) => {
+              const tone = a.alert_type === 'control_drift_critical'
+                ? { bg: 'hsl(var(--r-cr-bg))', tx: 'hsl(var(--r-cr-tx))', label: 'Critical' }
+                : a.alert_type === 'control_drift_warning'
+                  ? { bg: 'hsl(var(--s-wn-bg))', tx: 'hsl(var(--s-wn-tx))', label: 'Warning' }
+                  : { bg: 'hsl(var(--s-in-bg))', tx: 'hsl(var(--s-in-tx))', label: 'Reg change' };
+              return (
+                <div key={a.id} className="flex items-center gap-2 text-xs">
+                  <span className="text-[9px] font-semibold uppercase px-1.5 py-0.5 flex-shrink-0" style={{ background: tone.bg, color: tone.tx }}>{tone.label}</span>
+                  <span className="font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>{a.title}</span>
+                  {a.message && <span className="truncate" style={{ color: 'hsl(var(--text-3))' }}>{a.message}</span>}
+                  <span className="ml-auto text-[10px] flex-shrink-0" style={{ color: 'hsl(var(--text-4))' }}>{formatDateTime(a.created_at)}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-2">
         <div className="relative flex-1 max-w-xs">
@@ -315,7 +360,7 @@ export default function ControlDrift() {
                             <Sparkline trend={r.trend} color={d.tx} />
                             {r.trend.length > 0 && (
                               <span className="text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>
-                                {(r.trend[r.trend.length - 1] * 100).toFixed(0)}%
+                                {formatMetricPct(r.trend[r.trend.length - 1])}
                               </span>
                             )}
                           </div>

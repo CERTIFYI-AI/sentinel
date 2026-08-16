@@ -27,6 +27,8 @@ import { InterlinkChip } from '@/components/ui/InterlinkChip'
 import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow'
 import { useControls, useUpsertControl, useDeleteControl } from '@/hooks/queries/useControls'
 import { useModelsData } from '@/hooks/useModelsData'
+import { useRisksData } from '@/hooks/useRisksData'
+import { usePolicies } from '@/hooks/queries/usePolicies'
 import { useRBAC } from '@/hooks/useRBAC'
 import type { ControlRecord } from '@/services/controlService'
 
@@ -98,6 +100,16 @@ export default function ComplianceControls() {
 
   const rows = useMemo(() => controlsQuery.data ?? [], [controlsQuery.data])
   const modelName = (id: string) => models.find((m) => m.id === id)?.name ?? 'Unavailable'
+  // Linked risks/policies resolve to display names at render time — never a
+  // raw uuid; an unresolvable id shows "Unavailable".
+  const { risks } = useRisksData()
+  const policiesQuery = usePolicies()
+  const riskName = (id: string) => {
+    const r = risks.find((x) => x.id === id)
+    return r ? (r.risk_id ? `${r.risk_id} — ${r.title}` : r.title) : 'Unavailable'
+  }
+  const policyName = (id: string) =>
+    (policiesQuery.data ?? []).find((p) => p.id === id)?.title ?? 'Unavailable'
 
   // ?open=<uuid> opens the record's detail sheet.
   useEffect(() => { if (openParam) setSheetId(openParam) }, [openParam])
@@ -347,7 +359,7 @@ export default function ComplianceControls() {
                   <div className="flex flex-wrap gap-1.5">
                     {(selected.linkedRiskIds ?? []).length > 0
                       ? (selected.linkedRiskIds ?? []).map((id) => (
-                          <InterlinkChip key={id} label={`Risk ${id.slice(0, 8)}…`} to={`/risks?open=${id}`} />
+                          <InterlinkChip key={id} label={riskName(id)} to={`/risks?open=${id}`} />
                         ))
                       : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No risks linked yet.</span>}
                   </div>
@@ -357,7 +369,7 @@ export default function ComplianceControls() {
                   <div className="flex flex-wrap gap-1.5">
                     {(selected.linkedPolicyIds ?? []).length > 0
                       ? (selected.linkedPolicyIds ?? []).map((id) => (
-                          <InterlinkChip key={id} label={`Policy ${id.slice(0, 8)}…`} to={`/policies?open=${id}`} />
+                          <InterlinkChip key={id} label={policyName(id)} to={`/policies?open=${id}`} />
                         ))
                       : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No policies linked yet.</span>}
                   </div>

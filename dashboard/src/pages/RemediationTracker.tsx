@@ -22,6 +22,7 @@ import {
 import { severityColor, statusColor, formatDate } from '../data/seed';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useRemediations, useIncidents } from '../hooks/useRiskIncidents';
+import { useAuditFindings } from '../hooks/useComplianceGroup';
 import type { RemediationRecord } from '../services/incidentResponseService';
 import { useModelsData } from '@/hooks/useModelsData';
 import { useRisksData } from '@/hooks/useRisksData';
@@ -130,8 +131,23 @@ export default function RemediationTracker() {
 
   // Where the plan came from — audit findings and failed control tests raise
   // plans through this pipeline; incident-sourced plans link via incidentId.
+  // Finding-sourced plans resolve their finding (source_id is either the
+  // finding uuid or its finding_ref) and deep-link to the PARENT AUDIT
+  // (?open= targets audits.id), with a resolved label — never a raw id.
+  const { items: auditFindings } = useAuditFindings();
   const sourceChip = (item: RemediationRecord) => {
     if (item.sourceType === 'audit_finding') {
+      const finding = item.sourceId
+        ? auditFindings.find(f => f.id === item.sourceId || f.findingRef === item.sourceId)
+        : undefined;
+      if (finding) {
+        return (
+          <InterlinkChip
+            label={finding.findingRef ? `${finding.findingRef} — ${finding.title}` : finding.title}
+            to={finding.auditId ? `/audits?open=${finding.auditId}` : '/audits'}
+          />
+        );
+      }
       return <InterlinkChip label={item.sourceId ? `Finding ${item.sourceId}` : 'Audit finding'} to="/audits" />;
     }
     if (item.sourceType === 'control_test') {
