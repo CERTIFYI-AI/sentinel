@@ -450,7 +450,7 @@ export default function TabletopExercises() {
           )}
           <div className="flex gap-2 pt-2">
             <Button onClick={() => openEdit(viewItem)} variant="outline" size="sm"><PencilSimple size={14} />Edit</Button>
-            <Button onClick={() => setDeleteTarget(viewItem)} variant="destructive" size="sm"><Trash size={14} />Delete</Button>
+            <Button onClick={() => setDeleteTarget(viewItem)} variant="danger" size="sm"><Trash size={14} />Delete</Button>
           </div>
         </>}
       </CrudSlideOver>
