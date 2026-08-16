@@ -228,6 +228,15 @@ def main() -> int:
         raw = strip_noise(f.read_text())
         sql = drop_do_blocks(raw)
 
+        # Dynamic macro creates: `create table if not exists public.%I` driven
+        # by a `text[] := array['a','b',...]` / `unnest(array[...])` list. The
+        # per-statement parser can't see the format() target, so register every
+        # table named in an array literal in a file that contains such a macro.
+        if re.search(r"create\s+table\s+if\s+not\s+exists\s+public\.%I", raw, re.I):
+            for arr in re.finditer(r"array\s*\[([^\]]*)\]", raw, re.I):
+                for lit in re.findall(r"'([a-z_][a-z0-9_]*)'", arr.group(1), re.I):
+                    rp.tables.setdefault(norm(lit), {})
+
         # definitions inside DO $$ bodies still execute when their guard
         # passes; harvest ADD COLUMN types from the raw text as well.
         for m in re.finditer(
