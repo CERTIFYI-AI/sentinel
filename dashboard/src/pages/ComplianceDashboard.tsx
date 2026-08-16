@@ -18,6 +18,7 @@ import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { Button } from '@/components/ui/button';
 import { useFrameworksData } from '@/hooks/useFrameworksData';
 import { useControls } from '@/hooks/queries/useControls';
+import { useRisksData } from '@/hooks/useRisksData';
 import type { FrameworkRecord } from '@/services/frameworkService';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { exportJson } from '@/lib/exportUtils';
@@ -74,8 +75,24 @@ export default function ComplianceDashboard() {
     staleTime: 30_000,
   });
 
+  const { risks, error: risksError } = useRisksData();
+
   const controls = controlsQuery.data ?? [];
   const recalcs = meshQuery.data ?? [];
+
+  // Risk posture — derived client-side from the live risk register.
+  const riskPosture = useMemo(() => {
+    const openSet = new Set(['open', 'assessed', 'in_progress', 'investigating']);
+    const isOpen = (s: unknown) => openSet.has(String(s ?? '').toLowerCase().replace(/\s+/g, '_'));
+    const open = risks.filter(r => isOpen(r.status));
+    const now = Date.now();
+    return {
+      open: open.length,
+      critical: risks.filter(r => isOpen(r.status) && Number(r.risk_score ?? r.score ?? 0) >= 20).length,
+      escalated: risks.filter(r => isOpen(r.status) && r.is_escalated).length,
+      overdueReview: open.filter(r => r.next_review_date && new Date(r.next_review_date).getTime() < now).length,
+    };
+  }, [risks]);
 
   // Controls coverage derived from the real control library rows.
   const coverage = useMemo(() => {
@@ -154,6 +171,35 @@ export default function ComplianceDashboard() {
       {controlsQuery.isError && <SectionError label="Failed to load controls" error={controlsQuery.error} />}
 
       <StatCardRow cards={statCards} />
+
+      {/* Risk posture — compact strip derived live from the risk register */}
+      <div className="border" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
+        <div className="px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+          <h3 className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))' }}>RISK POSTURE</h3>
+          <Link to="/risks" className="text-xs font-medium hover:underline" style={{ color: 'hsl(var(--brand))' }}>
+            Open risk register →
+          </Link>
+        </div>
+        {risksError ? (
+          <p className="px-4 pb-3 text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>
+            Risk register unavailable: {(risksError as Error).message}
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x" style={{ borderTop: '1px solid hsl(var(--border))', borderColor: 'hsl(var(--border))' }}>
+            {[
+              { label: 'Open risks', value: riskPosture.open, tone: riskPosture.open > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' },
+              { label: 'Critical (score ≥ 20)', value: riskPosture.critical, tone: riskPosture.critical > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-1))' },
+              { label: 'Escalated', value: riskPosture.escalated, tone: riskPosture.escalated > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-1))' },
+              { label: 'Review overdue', value: riskPosture.overdueReview, tone: riskPosture.overdueReview > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' },
+            ].map(cell => (
+              <Link key={cell.label} to="/risks" className="px-4 py-3 hover:bg-[hsl(var(--bg-raised))] transition-colors block">
+                <p className="text-xl font-mono font-bold" style={{ color: cell.tone }}>{cell.value}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{cell.label}</p>
+              </Link>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* Controls coverage — derived from real control rows */}
       <div className="border p-4" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>

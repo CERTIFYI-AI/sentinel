@@ -3,6 +3,7 @@
 // entity-linked approval requests (approvals). Decisions persist via
 // decide() and are audited server-side; all KPIs are derived from records.
 import { useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuthStore } from './../stores/authStore'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import {
@@ -17,6 +18,7 @@ import { StatCardRow, type StatCardRowItem } from '../components/ui/StatCardRow'
 import { InterlinkChip } from '@/components/ui/InterlinkChip'
 import { useApprovalWorkflows, useApprovals } from '../hooks/useRiskIncidents'
 import { useModelsData } from '@/hooks/useModelsData'
+import { usePolicies } from '../hooks/queries/usePolicies'
 import type { ApprovalWorkflowRecord, ApprovalRecord } from '../services/oversightService'
 import { formatDate } from '../data/seed'
 
@@ -46,6 +48,8 @@ export default function ApprovalWorkflows() {
   const workflows = useApprovalWorkflows()
   const approvals = useApprovals()
   const { models } = useModelsData()
+  const { data: policies = [] } = usePolicies()
+  const [searchParams, setSearchParams] = useSearchParams()
 
   const [search, setSearch] = useState('')
   const [workflowFilter, setWorkflowFilter] = useState('all')
@@ -96,7 +100,66 @@ export default function ApprovalWorkflows() {
     if (a.entityType === 'incident') {
       return <InterlinkChip label={a.entityName || 'Incident'} to={`/risk/incidents?open=${a.entityId}`} />
     }
+    if (a.entityType === 'policy') {
+      const resolved = policies.find(p => p.id === a.entityId)
+      return <InterlinkChip label={resolved?.title || resolved?.name || a.entityName || 'Unavailable'} to={`/policies?open=${a.entityId}`} />
+    }
     return <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{a.entityName || '—'}</span>
+  }
+
+  const workflowSteps = (id?: string | null) =>
+    (id && workflows.items.find(w => w.id === id)?.steps) || []
+
+  /** Due-date badge — red once dueAt has passed; nothing when no due date. */
+  const dueBadge = (a: ApprovalRecord) => {
+    if (!a.dueAt) return null
+    const overdue = new Date(a.dueAt).getTime() < Date.now()
+    return (
+      <span
+        className="text-[10px] px-1.5 py-0.5 font-medium"
+        style={overdue
+          ? { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }
+          : { background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-3))' }}
+      >
+        {overdue ? `Overdue — due ${formatDate(a.dueAt)}` : `Due ${formatDate(a.dueAt)}`}
+      </span>
+    )
+  }
+
+  /** Multi-step progress: current step + the per-step decisions ledger. */
+  const stepProgress = (a: ApprovalRecord) => {
+    const steps = workflowSteps(a.workflowId)
+    const decisions = a.decisions ?? []
+    if (steps.length === 0 && decisions.length === 0) return null
+    return (
+      <div className="mt-1.5 space-y-0.5">
+        {steps.length > 0 && a.status === 'pending' && (
+          <p className="text-[11px] font-medium" style={{ color: 'hsl(var(--brand))' }}>
+            Step {a.stepIndex + 1} of {steps.length}: {steps[a.stepIndex]?.name ?? '—'}
+            <span className="font-normal" style={{ color: 'hsl(var(--text-4))' }}>
+              {steps[a.stepIndex]?.approver_role ? ` · ${steps[a.stepIndex].approver_role}` : ''}
+            </span>
+          </p>
+        )}
+        {decisions.map((d, i) => (
+          <p key={i} className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
+            <span style={{ color: d.decision === 'rejected' ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))' }}>
+              {d.decision === 'rejected' ? '✕' : '✓'}
+            </span>
+            {' '}Step {d.step + 1}{d.name ? ` (${d.name})` : ''} {d.decision} by {d.approver}{d.at ? ` · ${formatDate(d.at)}` : ''}
+          </p>
+        ))}
+      </div>
+    )
+  }
+
+  // Deep link (?open=<id>) — e.g. from the Audit Trail: surface that request
+  // (pending or decided) in a dismissible panel above the queue.
+  const openParam = searchParams.get('open')
+  const openedApproval = openParam ? approvals.items.find(a => a.id === openParam) ?? null : null
+  const dismissOpen = () => {
+    searchParams.delete('open')
+    setSearchParams(searchParams, { replace: true })
   }
 
   const toggleActive = async (w: ApprovalWorkflowRecord) => {
@@ -150,6 +213,42 @@ export default function ApprovalWorkflows() {
 
       <StatCardRow cards={kpis} />
 
+      {/* ── Deep-linked request (?open=<id>) ─────────────────────────────── */}
+      {openParam && (
+        <div className="rounded border bg-surface" style={{ borderColor: 'hsl(var(--brand) / 0.4)' }}>
+          <div className="flex items-center justify-between px-4 py-2 border-b border-[hsl(var(--border))]">
+            <p className="text-xs font-semibold" style={{ color: 'hsl(var(--brand))' }}>Linked approval request</p>
+            <button onClick={dismissOpen} aria-label="Dismiss linked request" className="p-1 hover:bg-raised text-[hsl(var(--text-4))]">
+              <X size={12} />
+            </button>
+          </div>
+          {openedApproval ? (
+            <div className="px-4 py-3">
+              <div className="flex items-center gap-2 flex-wrap mb-1">
+                {entityChip(openedApproval)}
+                <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{openedApproval.entityType}</span>
+                <span className="text-[11px] px-2 py-0.5 font-medium" style={
+                  openedApproval.status === 'approved' ? { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }
+                  : openedApproval.status === 'rejected' ? { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }
+                  : { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }
+                }>{openedApproval.status}</span>
+                {dueBadge(openedApproval)}
+              </div>
+              <p className="text-sm font-medium text-[hsl(var(--text-1))]">
+                {(openedApproval.requestedAction ?? 'approval').replace(/_/g, ' ')}
+                <span className="text-xs font-normal text-[hsl(var(--text-4))]"> · requested by {openedApproval.requestedBy || 'Unknown'}{openedApproval.createdAt ? ` · ${formatDate(openedApproval.createdAt)}` : ''}</span>
+              </p>
+              {openedApproval.reason && <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{openedApproval.reason}</p>}
+              {stepProgress(openedApproval)}
+            </div>
+          ) : (
+            <p className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+              No approval request with this id is visible to your organisation.
+            </p>
+          )}
+        </div>
+      )}
+
       {/* ── Pending approvals — live, entity-linked requests ─────────────── */}
       <div className="rounded border border-[hsl(var(--border))] bg-surface">
         <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
@@ -184,12 +283,14 @@ export default function ApprovalWorkflows() {
                     {workflowName(a.workflowId) && (
                       <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{workflowName(a.workflowId)}</span>
                     )}
+                    {dueBadge(a)}
                   </div>
                   <p className="text-sm font-medium text-[hsl(var(--text-1))]">
                     {(a.requestedAction ?? 'approval').replace(/_/g, ' ')}
                     <span className="text-xs font-normal text-[hsl(var(--text-4))]"> · requested by {a.requestedBy || 'Unknown'}{a.createdAt ? ` · ${formatDate(a.createdAt)}` : ''}</span>
                   </p>
                   {a.reason && <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{a.reason}</p>}
+                  {stepProgress(a)}
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
                   <button
@@ -245,8 +346,12 @@ export default function ApprovalWorkflows() {
                         {w.isActive ? 'Active' : 'Paused'}
                       </span>
                       {w.requiresMfa && (
-                        <span className="text-[10px] px-1.5 py-0.5 flex items-center gap-1 font-medium" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>
-                          <ShieldCheck size={10} /> MFA
+                        <span
+                          className="text-[10px] px-1.5 py-0.5 flex items-center gap-1 font-medium"
+                          style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}
+                          title="MFA is stored on the workflow definition, but decisions are not yet re-challenged for a second factor — enforcement lands with the IGA integration."
+                        >
+                          <ShieldCheck size={10} /> MFA (configured — enforcement pending IGA)
                         </span>
                       )}
                       {w.escalationHours != null && (
@@ -332,7 +437,20 @@ export default function ApprovalWorkflows() {
         open={!!decideTarget}
         type={decideTarget?.decision === 'rejected' ? 'danger' : 'info'}
         title={decideTarget?.decision === 'approved' ? 'Approve Request' : 'Reject Request'}
-        description={`${decideTarget?.decision === 'approved' ? 'Approve' : 'Reject'} "${decideTarget?.approval.entityName ?? 'this request'}" (${(decideTarget?.approval.requestedAction ?? '').replace(/_/g, ' ')}) as ${currentUser}? The decision is persisted and written to the audit log.`}
+        description={(() => {
+          if (!decideTarget) return ''
+          const a = decideTarget.approval
+          const steps = workflowSteps(a.workflowId)
+          const base = `${decideTarget.decision === 'approved' ? 'Approve' : 'Reject'} "${a.entityName ?? 'this request'}" (${(a.requestedAction ?? '').replace(/_/g, ' ')}) as ${currentUser}?`
+          const stepNote = decideTarget.decision === 'approved' && steps.length > 1
+            ? a.stepIndex + 1 < steps.length
+              ? ` This approves step ${a.stepIndex + 1} of ${steps.length} (${steps[a.stepIndex]?.name ?? '—'}) — the request advances to the next step.`
+              : ` This is the final step (${a.stepIndex + 1} of ${steps.length}) — the request becomes fully approved.`
+            : decideTarget.decision === 'rejected' && steps.length > 1
+              ? ' A rejection at any step is terminal.'
+              : ''
+          return `${base}${stepNote} The decision is persisted and written to the audit log.`
+        })()}
         confirmLabel={approvals.isDeciding ? 'Saving…' : (decideTarget?.decision === 'approved' ? 'Approve' : 'Reject')}
         onConfirm={confirmDecision}
         onClose={() => setDecideTarget(null)}
@@ -506,6 +624,11 @@ function NewRequestDialog({ models, workflows, currentUser, onClose, onSave }: {
   const submit = async () => {
     if (!canSubmit || saving) return
     const model = models.find(m => m.id === modelId)
+    // First-step SLA → real due date: when the chosen workflow's first step
+    // declares sla_hours, the request starts with a due_at so it can become
+    // honestly overdue.
+    const wf = workflowId === 'none' ? undefined : workflows.find(w => w.id === workflowId)
+    const firstSla = wf?.steps?.[0]?.sla_hours
     setSaving(true)
     try {
       await onSave({
@@ -518,6 +641,7 @@ function NewRequestDialog({ models, workflows, currentUser, onClose, onSave }: {
         status: 'pending',
         reason: reason.trim() || null,
         stepIndex: 0,
+        dueAt: firstSla ? new Date(Date.now() + firstSla * 3600 * 1000).toISOString() : null,
       })
     } finally {
       setSaving(false)

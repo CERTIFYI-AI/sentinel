@@ -17,6 +17,10 @@ export async function notificationAgent(ctx: AgentContext): Promise<AgentResult>
   await safeInsert('notifications', {
     org_id: ctx.orgId,
     tenant_id: ctx.orgId,
+    // Explicit broadcast marker: the org-broadcast read policy
+    // (notifications_org_broadcast_read) makes user_id='system' rows readable
+    // org-wide — never rely on the column default here.
+    user_id: 'system',
     notification_type: ctx.event.event_type,
     title: `${ctx.event.event_type.replace(/_/g,' ')} — ${p.modelName ?? p.title ?? p.summary ?? 'auto'}`,
     message: JSON.stringify(p).slice(0, 500),

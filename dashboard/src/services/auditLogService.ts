@@ -48,7 +48,11 @@ function mapRow(row: any): AuditLogRecord {
     module: row.module ?? (action.includes('.') ? action.split('.')[0] : ''),
     entityType: row.entity_type ?? row.resource_type ?? '',
     entityId: row.entity_id ?? row.resource_id ?? null,
-    entityName: row.entity_name ?? null,
+    // audit_client_event rows carry the human-readable name in
+    // metadata.entity_name (withAudit's 6th param) — fall back to it so the
+    // trail shows a real label instead of "Unavailable".
+    entityName: row.entity_name
+      ?? (typeof row.metadata?.entity_name === 'string' ? row.metadata.entity_name : null),
     action,
     oldValues: row.old_values ?? null,
     newValues: row.new_values ?? null,

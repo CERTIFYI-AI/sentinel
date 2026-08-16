@@ -5,7 +5,16 @@ import type { RealtimeChannel } from '@supabase/supabase-js';
 
 // Extended Realtime table list covering every functional module.
 // See docs/architecture/FUNCTIONAL_ACTIVATION.md
-const REALTIME_TABLES = [
+// `extraKeys` invalidates additional query namespaces that read the same
+// table under a different key (one channel per table — never duplicate a
+// table entry, the channel name would collide).
+type RealtimeEntry = {
+  table: string;
+  queryKey: readonly string[];
+  extraKeys?: readonly (readonly string[])[];
+};
+
+const REALTIME_TABLES: readonly RealtimeEntry[] = [
   // Core (pre-existing)
   { table: 'notifications', queryKey: ['notifications'] },
   { table: 'guardrails', queryKey: ['guardrails'] },
@@ -19,7 +28,7 @@ const REALTIME_TABLES = [
   { table: 'bias_audits', queryKey: ['bias-audits'] },
   { table: 'audit_log', queryKey: ['audit-log'] },
   // Extended (this activation)
-  { table: 'approvals', queryKey: ['approvals'] },
+  { table: 'approvals', queryKey: ['approvals'], extraKeys: [['ri-approvals']] },
   { table: 'evidence', queryKey: ['evidence'] },
   { table: 'policies', queryKey: ['policies'] },
   { table: 'policy_firewall_rules', queryKey: ['policy-firewall-rules'] },
@@ -27,7 +36,7 @@ const REALTIME_TABLES = [
   { table: 'red_team_campaigns', queryKey: ['red-team-campaigns'] },
   { table: 'red_team_findings', queryKey: ['red-team-findings'] },
   { table: 'vendors', queryKey: ['vendors'] },
-  { table: 'remediation_plans', queryKey: ['remediation-plans'] },
+  { table: 'remediation_plans', queryKey: ['remediation-plans'], extraKeys: [['ri-remediations']] },
   { table: 'regulations', queryKey: ['regulations'] },
   { table: 'dsar_requests', queryKey: ['dsar-requests'] },
   { table: 'consent_records', queryKey: ['consent-records'] },
@@ -72,19 +81,32 @@ const REALTIME_TABLES = [
   // Deduplication-safe aliases for already-listed tables
   // vendors, incidents, maturity_assessments already present above
   { table: 'transparency_reports', queryKey: ['transparency-reports'] },
-] as const;
+  // Oversight cluster — HITL / approvals / automation (added 2026-08-16):
+  // the shared hitl_reviews queue and the approvals ledger refresh live so a
+  // mesh-written review or a colleague's decision appears without a reload.
+  { table: 'hitl_reviews', queryKey: ['ri-hitl'] },
+  { table: 'approval_workflows', queryKey: ['ri-approval-workflows'] },
+  { table: 'automation_rules', queryKey: ['ri-automation-rules'] },
+  { table: 'automation_runs', queryKey: ['ri-automation-runs'] },
+  // Regulatory operations (keys match hooks/useComplianceGroup.ts)
+  { table: 'regulator_filings', queryKey: ['cg-filings'] },
+  { table: 'post_market_events', queryKey: ['cg-pmm-events'] },
+];
 
 export function useRealtimeInvalidation(): void {
   const queryClient = useQueryClient();
 
   useEffect(() => {
     const channels: RealtimeChannel[] = [];
-    for (const { table, queryKey } of REALTIME_TABLES) {
+    for (const { table, queryKey, extraKeys } of REALTIME_TABLES) {
       try {
         const channel = supabase
           .channel(`realtime-${table}`)
           .on('postgres_changes', { event: '*', schema: 'public', table }, () => {
-            queryClient.invalidateQueries({ queryKey });
+            queryClient.invalidateQueries({ queryKey: queryKey as string[] });
+            for (const k of extraKeys ?? []) {
+              queryClient.invalidateQueries({ queryKey: k as string[] });
+            }
           })
           .subscribe();
         channels.push(channel);

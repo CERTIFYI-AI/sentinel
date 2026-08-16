@@ -16,6 +16,7 @@ import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { InterlinkChip } from '@/components/ui/InterlinkChip';
 import { useHitlReview, useHitlReviews } from '../../hooks/useRiskIncidents';
 import { useModelsData } from '@/hooks/useModelsData';
+import { useRisksData } from '@/hooks/useRisksData';
 import { useAuthStore } from '../../stores/authStore';
 
 export default function HITLDetail() {
@@ -23,6 +24,7 @@ export default function HITLDetail() {
   const { data: review, isLoading, error } = useHitlReview(id);
   const { decide, isDeciding } = useHitlReviews();
   const { models } = useModelsData();
+  const { risks } = useRisksData();
   const user = useAuthStore(s => s.user);
   const currentUser = user?.fullName || user?.email || 'Reviewer';
 
@@ -111,6 +113,11 @@ export default function HITLDetail() {
     }
     if (review.entityType === 'incident' && review.entityId) {
       return <InterlinkChip label={review.entityName || 'Incident'} to={`/risk/incidents?open=${review.entityId}`} />;
+    }
+    if (review.entityType === 'risk' && review.entityId) {
+      const risk = risks.find(rk => rk.id === review.entityId);
+      const label = risk ? (risk.risk_id || risk.title) : (review.entityName || 'Unavailable');
+      return <InterlinkChip label={label} to={`/risks?open=${review.entityId}`} />;
     }
     return <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{review.entityName || '—'}</span>;
   })();

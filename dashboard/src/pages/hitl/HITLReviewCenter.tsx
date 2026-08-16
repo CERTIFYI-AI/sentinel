@@ -26,11 +26,12 @@ import { useSettingsStore } from '../../stores/settingsStore';
 import { useAuthStore } from '../../stores/authStore';
 import { useHitlReviews } from '../../hooks/useRiskIncidents';
 import { useModelsData } from '@/hooks/useModelsData';
+import { useRisksData } from '@/hooks/useRisksData';
 import type { HitlRecord } from '../../services/oversightService';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-const ENTITY_TYPES = ['model', 'incident', 'deployment', 'agent', 'dataset', 'vendor'];
+const ENTITY_TYPES = ['model', 'incident', 'deployment', 'agent', 'dataset', 'vendor', 'risk'];
 
 function entityTypeBadge(t?: string) {
   const map: Record<string, { bg: string; color: string }> = {
@@ -40,6 +41,7 @@ function entityTypeBadge(t?: string) {
     vendor: { bg: 'hsl(180 60% 45% / 0.15)', color: 'hsl(180 60% 45%)' },
     incident: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
     deployment: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    risk: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
   };
   const key = (t ?? 'model').toLowerCase();
   const s = map[key] ?? map.model;
@@ -100,6 +102,7 @@ export default function HITLReviewCenter() {
   const currentUser = user?.fullName || user?.email || 'Reviewer';
   const { items, isLoading, error, save, decide, isDeciding, isSaving } = useHitlReviews();
   const { models } = useModelsData();
+  const { risks } = useRisksData();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [search, setSearch] = useState('');
@@ -196,6 +199,11 @@ export default function HITLReviewCenter() {
     }
     if (r.entityType === 'incident' && r.entityId) {
       return <InterlinkChip label={r.entityName || 'Incident'} to={`/risk/incidents?open=${r.entityId}`} />;
+    }
+    if (r.entityType === 'risk' && r.entityId) {
+      const risk = risks.find(rk => rk.id === r.entityId);
+      const label = risk ? (risk.risk_id || risk.title) : (r.entityName || 'Unavailable');
+      return <InterlinkChip label={label} to={`/risks?open=${r.entityId}`} />;
     }
     return <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.entityName || '—'}</span>;
   };

@@ -15,7 +15,11 @@ export async function withAudit<T>(
   action: string,
   resourceType: string,
   resourceId: string,
-  fn: () => Promise<T>
+  fn: () => Promise<T>,
+  /** Human-readable name of the audited entity (e.g. the review/approval
+   *  title). Forwarded in p_metadata as entity_name so the Audit Trail can
+   *  render a real label instead of a raw uuid. */
+  entityName?: string
 ): Promise<T> {
   const result = await fn()
   // orgId is accepted for signature compatibility but the server derives the
@@ -26,7 +30,7 @@ export async function withAudit<T>(
       p_resource_type: resourceType,
       p_resource_id: resourceId,
       p_outcome: 'success',
-      p_metadata: { client_org_hint: orgId },
+      p_metadata: { client_org_hint: orgId, ...(entityName ? { entity_name: entityName } : {}) },
     })
     .then(
       ({ data, error }: { data: unknown; error: { message: string } | null }) => {

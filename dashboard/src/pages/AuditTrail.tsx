@@ -67,6 +67,7 @@ const ENTITY_ROUTES: Record<string, (id: string) => string> = {
   evidence: id => `/evidence-vault?open=${id}`,
   filing: id => `/regulator-filings?open=${id}`,
   hitl_review: id => `/hitl/${id}`,
+  approval: id => `/workflows?open=${id}`,
 };
 
 function entityRoute(e: AuditLogRecord): string | null {

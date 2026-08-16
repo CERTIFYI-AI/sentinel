@@ -134,6 +134,11 @@ export async function decideHitlReview(
   remarks?: string,
 ): Promise<HitlRecord> {
   const orgId = await currentOrgId()
+  // Read the title first so the audit event carries a human-readable
+  // entity_name instead of only the uuid.
+  const { data: pre } = await client()
+    .from('hitl_reviews').select('title, entity_name').eq('id', id).maybeSingle()
+  const auditName = pre?.title ?? pre?.entity_name ?? undefined
   return withAudit(orgId, `hitl.${decision}`, 'hitl_review', id, async () => {
     const { data, error } = await client()
       .from('hitl_reviews')
@@ -150,7 +155,7 @@ export async function decideHitlReview(
       .single()
     if (error) throw new Error(`The decision did not persist: ${error.message}`)
     return mapHitl(data)
-  })
+  }, auditName)
 }
 
 export const deleteHitlReview = (id: string) => deleteRow('hitl_reviews', id)
@@ -263,6 +268,7 @@ export const saveApproval = (a: ApprovalRecord) =>
     status: a.status,
     reason: a.reason,
     step_index: a.stepIndex,
+    due_at: a.dueAt,
     updated_at: new Date().toISOString(),
   }, mapApproval)
 
@@ -282,11 +288,13 @@ export async function decideApproval(
   approver: string,
 ): Promise<ApprovalRecord> {
   const orgId = await currentOrgId()
+  const { data: row, error: readErr } = await client()
+    .from('approvals').select('*').eq('id', id).single()
+  if (readErr) throw new Error(`Could not load the approval: ${readErr.message}`)
+  const auditName: string | undefined =
+    row.entity_name ?? (row.requested_action ? String(row.requested_action).replace(/_/g, ' ') : undefined)
   return withAudit(orgId, `approval.${decision}`, 'approval', id, async () => {
     const now = new Date().toISOString()
-    const { data: row, error: readErr } = await client()
-      .from('approvals').select('*').eq('id', id).single()
-    if (readErr) throw new Error(`Could not load the approval: ${readErr.message}`)
 
     let steps: { name?: string; sla_hours?: number }[] = []
     if (row.workflow_id) {
@@ -335,7 +343,7 @@ export async function decideApproval(
       }
     }
     return mapApproval(data)
-  })
+  }, auditName)
 }
 
 export const deleteApproval = (id: string) => deleteRow('approvals', id)

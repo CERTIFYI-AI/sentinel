@@ -873,12 +873,16 @@ export default function VendorDetail() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Honesty note: vendor links are not yet modelled on risks /
+                    controls / policies / incidents, so no per-vendor counts
+                    can be computed — plain navigation links only, no
+                    fabricated numbers. */}
                 <div className="grid grid-cols-4 gap-4">
                   {[
-                    { label: 'Linked Risks',     count: 2, icon: Warning,      color: 'hsl(var(--r-hi-tx))', route: '/risks' },
-                    { label: 'Linked Controls',  count: 4, icon: SealCheck,    color: 'hsl(var(--brand))', route: '/compliance/controls' },
-                    { label: 'Linked Policies',  count: 3, icon: ClipboardText,color: '#3b82f6', route: '/policies' },
-                    { label: 'Linked Incidents', count: 1, icon: XCircle,      color: 'hsl(var(--s-er-tx))', route: '/risk/incidents' },
+                    { label: 'Risk Register',    icon: Warning,       color: 'hsl(var(--r-hi-tx))', route: '/risks' },
+                    { label: 'Controls Library', icon: SealCheck,     color: 'hsl(var(--brand))', route: '/compliance/controls' },
+                    { label: 'Policies',         icon: ClipboardText, color: '#3b82f6', route: '/policies' },
+                    { label: 'Incidents',        icon: XCircle,       color: 'hsl(var(--s-er-tx))', route: '/risk/incidents' },
                   ].map(obj => (
                     <button
                       key={obj.label}
@@ -887,12 +891,14 @@ export default function VendorDetail() {
                       style={{ border: '1px solid hsl(var(--border))' }}
                     >
                       <obj.icon size={22} style={{ color: obj.color }} />
-                      <span className="text-2xl font-bold" style={{ color: obj.color }}>{obj.count}</span>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{obj.label}</span>
-                      <ArrowsClockwise size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                      <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>{obj.label}</span>
+                      <ArrowSquareOut size={12} style={{ color: 'hsl(var(--text-4))' }} />
                     </button>
                   ))}
                 </div>
+                <p className="text-[10px] mt-3" style={{ color: 'hsl(var(--text-4))' }}>
+                  Per-vendor linkage counts are not tracked yet — these open the full modules.
+                </p>
               </CardContent>
             </Card>
 

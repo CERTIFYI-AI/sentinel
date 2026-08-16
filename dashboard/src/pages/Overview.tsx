@@ -12,7 +12,7 @@ import {
   Users, Database, StackSimple, ArrowRight, ChartLine, CheckCircle,
   TrendUp, TrendDown, Minus, ShieldCheck, Siren, Plus,
   Robot, Scales, UserCircleCheck, Eye, Lightning, PresentationChart, Exam,
-  ArrowSquareOut, Sparkle, X, ArrowUp, ArrowDown, Timer, Megaphone,
+  ArrowSquareOut, Sparkle, X, Timer, Megaphone,
 } from '@phosphor-icons/react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
@@ -25,17 +25,18 @@ import { useModelsData } from '../hooks/useModelsData';
 import { useVendorsData } from '../hooks/useVendorsData';
 import { useFrameworksData } from '../hooks/useFrameworksData';
 import { useTaskData } from '../hooks/useTaskData';
+import { useHitlReviews } from '../hooks/useRiskIncidents';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
 
-const RISK_TREND = [
-  { month: 'Oct', open: 14, critical: 4 },
-  { month: 'Nov', open: 13, critical: 3 },
-  { month: 'Dec', open: 15, critical: 5 },
-  { month: 'Jan', open: 14, critical: 4 },
-  { month: 'Feb', open: 13, critical: 4 },
-  { month: 'Mar', open: 12, critical: 3 },
-];
+// Open-risk matcher shared by every risk KPI on this page: statuses are
+// normalized to lowercase and anything still being worked counts as open.
+const OPEN_RISK_STATUSES = new Set(['open', 'assessed', 'in_progress', 'investigating']);
+const isOpenRiskStatus = (status: unknown) =>
+  OPEN_RISK_STATUSES.has(String(status ?? '').toLowerCase().replace(/\s+/g, '_'));
+// Incidents count as active until they are resolved or closed.
+const isActiveIncidentStatus = (status: unknown) =>
+  !['resolved', 'closed'].includes(String(status ?? '').toLowerCase());
 
 // CISO View — frameworks with traffic-light thresholds and 30-day sparkline data
 const CISO_FRAMEWORKS: {
@@ -148,13 +149,6 @@ function useCountdown(target: Date) {
   return timeLeft;
 }
 
-const DIGEST_TEMPLATES = [
-  'Since last login: 2 new risks added, compliance improved 3%, 1 bias audit failed. 2 models need immediate review.',
-  'Since last login: Shadow AI agent detected in Marketing, EU AI Act readiness at 65%. 3 controls need evidence refresh.',
-  'Since last login: HITL queue has 3 pending reviews, AML false positive rate increased. 1 critical incident escalated.',
-  'Since last login: 4 vendor DPAs approaching expiry, ISO 42001 audit due in 10 days. 5 open gaps are past deadline.',
-];
-
 export default function Overview() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
@@ -162,7 +156,6 @@ export default function Overview() {
   const [cisoView, setCisoView] = useState(false);
   const [dateRange, setDateRange] = useState<DateRange>('30D');
   const [alertPanelOpen, setAlertPanelOpen] = useState(false);
-  const [digestIdx, setDigestIdx] = useState(0);
   const countdown = useCountdown(AUDIT_DATE);
   const [riskThreshold, setRiskThreshold] = useState(15);
 
@@ -173,14 +166,26 @@ export default function Overview() {
   const { vendors } = useVendorsData();
   const { frameworks } = useFrameworksData();
   const { tasks } = useTaskData();
+  const { items: hitlReviews } = useHitlReviews();
   const chartTheme = useChartTheme();
 
-  const openRisks = risks.filter((r: any) => r.status === 'open').length;
+  const openRisks = risks.filter((r: any) => isOpenRiskStatus(r.status)).length;
   const criticalRisks = risks.filter((r: any) => (r.risk_score || r.score || 0) >= riskThreshold).length;
   const activeModels = models.filter((m: any) => m.is_active || m.lifecycle_stage === 'production' || m.status === 'production').length;
-  const criticalIncidents = incidents.filter((i: any) => i.severity === 'critical').length;
-  const openIncidents = incidents.filter((i: any) => i.status !== 'resolved').length;
+  // Incident KPIs gate on ACTIVE statuses — a resolved critical incident is
+  // history, not a live executive signal.
+  const criticalIncidents = incidents.filter((i: any) => i.severity === 'critical' && isActiveIncidentStatus(i.status)).length;
+  const openIncidents = incidents.filter((i: any) => isActiveIncidentStatus(i.status)).length;
   const overdueGaps = tasks.filter((t: any) => t.status !== 'completed' && t.due_date && new Date(t.due_date) < new Date()).length;
+  const pendingHitl = hitlReviews.filter(r => r.status === 'pending' || r.status === 'info_requested').length;
+
+  // Executive digest — derived from REAL counts at render time (the previous
+  // rotating hardcoded templates fabricated events that never happened).
+  const digestLine = [
+    `${openRisks} open risk${openRisks !== 1 ? 's' : ''}`,
+    `${pendingHitl} pending HITL review${pendingHitl !== 1 ? 's' : ''}`,
+    `${criticalIncidents} active critical incident${criticalIncidents !== 1 ? 's' : ''}`,
+  ].join(' · ');
 
   // Compliance posture
   const avgCompliance = frameworks.length > 0
@@ -231,16 +236,15 @@ export default function Overview() {
       });
       months.push({
         month: label,
-        open: monthRisks.filter((r: any) => r.status === 'open' || r.status === 'Open').length,
+        open: monthRisks.filter((r: any) => isOpenRiskStatus(r.status)).length,
         critical: monthRisks.filter((r: any) => (r.risk_score || r.score || 0) >= 15).length,
       });
     }
-    // Fall back to static data if no real risk data available
-    if (months.every(m => m.open === 0 && m.critical === 0)) {
-      return RISK_TREND;
-    }
     return months;
   })();
+  // Honest empty state: no fabricated fallback series — when the register has
+  // no risks created in the window, the chart says so instead of inventing one.
+  const riskTrendHasData = riskTrendData.some(m => m.open > 0 || m.critical > 0);
 
   // CISO frameworks scorecard: prefer real data over static
   const cisoFrameworksData = frameworks.length > 0
@@ -286,17 +290,9 @@ export default function Overview() {
     { id: 'A3', title: 'Shadow AI agent AGT-010 active in Marketing', severity: 'high', link: '/agents/AGT-010' },
   ];
 
-  const KPI_TRENDS: Record<string, { delta: number; dir: 'up' | 'down' | 'stable' }> = {
-    'Open Risks': { delta: 2.1, dir: 'up' },
-    'Active Models': { delta: 0, dir: 'stable' },
-    'Critical Incidents': { delta: 1.0, dir: 'up' },
-    'Active Policies': { delta: 5.3, dir: 'up' },
-    'Vendors': { delta: 0, dir: 'stable' },
-    'Datasets': { delta: 1, dir: 'up' },
-    'Frameworks': { delta: 0, dir: 'stable' },
-    'Open Tasks': { delta: 3.2, dir: 'down' },
-    'Use Cases': { delta: 0, dir: 'stable' },
-  };
+  // NOTE: the former KPI_TRENDS map rendered hardcoded percentage deltas that
+  // were never measured. No historical snapshots are stored, so KPIs render
+  // without a delta rather than with a fictional one.
 
   return (
     <div className="space-y-6">
@@ -566,19 +562,17 @@ export default function Overview() {
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(var(--text-3))', marginBottom: 4 }}>
-                AI Executive Digest
+                Executive Digest — live counts
               </p>
               <p style={{ fontSize: 13, color: 'hsl(var(--text-2))', lineHeight: 1.6 }}>
-                {DIGEST_TEMPLATES[digestIdx]}
+                Right now: {digestLine}.{' '}
+                <Link to="/risks" style={{ color: 'hsl(var(--brand))' }}>Risks</Link>
+                {' · '}
+                <Link to="/hitl" style={{ color: 'hsl(var(--brand))' }}>HITL queue</Link>
+                {' · '}
+                <Link to="/risk/incidents" style={{ color: 'hsl(var(--brand))' }}>Incidents</Link>
               </p>
             </div>
-            <button
-              onClick={() => setDigestIdx(i => (i + 1) % DIGEST_TEMPLATES.length)}
-              aria-label="Refresh AI digest"
-              style={{ flexShrink: 0, background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', padding: '5px 8px', color: 'hsl(var(--text-3))' }}
-            >
-              <ArrowRight size={13} />
-            </button>
           </div>
         </CardContent>
       </Card>
@@ -656,8 +650,6 @@ export default function Overview() {
             label: 'Open Risks',
             value: openRisks,
             icon: <Warning size={16} />,
-            delta: KPI_TRENDS['Open Risks']?.dir !== 'stable' ? `${KPI_TRENDS['Open Risks']?.delta}%` : undefined,
-            deltaDir: KPI_TRENDS['Open Risks']?.dir === 'stable' ? undefined : KPI_TRENDS['Open Risks']?.dir as 'up' | 'down',
             isPositiveUp: false,
             href: '/risk',
           },
@@ -679,8 +671,6 @@ export default function Overview() {
             label: 'Open Incidents',
             value: incidentsError ? '—' : openIncidents,
             icon: <WarningCircle size={16} />,
-            delta: KPI_TRENDS['Critical Incidents']?.dir !== 'stable' ? `${KPI_TRENDS['Critical Incidents']?.delta}%` : undefined,
-            deltaDir: KPI_TRENDS['Critical Incidents']?.dir === 'stable' ? undefined : KPI_TRENDS['Critical Incidents']?.dir as 'up' | 'down',
             isPositiveUp: false,
             href: '/risk/incidents',
           },
@@ -690,11 +680,6 @@ export default function Overview() {
       {/* KPI Tiles — responsive grid: 3 cols → 3 cols → 3 cols */}
       <div id="main-content" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {kpis.map(k => {
-          const trend = KPI_TRENDS[k.label];
-          const isNegative = k.label === 'Open Risks' || k.label === 'Critical Incidents' || k.label === 'Open Tasks';
-              const metricColor = k.label === 'Critical Incidents' ? 'text-[hsl(var(--s-er-tx))]' : k.label === 'Open Risks' ? 'text-[hsl(var(--s-wn-tx))]' : k.label === 'Compliance Score' || k.label === 'Security Score' ? 'text-[hsl(var(--s-ok-tx))]' : '';
-          const trendColor = !trend || trend.dir === 'stable' ? 'hsl(var(--text-4))'
-            : (trend.dir === 'up' && isNegative) || (trend.dir === 'down' && !isNegative) ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))';
           return (
             <Link key={k.label} to={k.link} style={{ textDecoration: 'none' }}>
               <Card
@@ -715,12 +700,6 @@ export default function Overview() {
                   </div>
                   <p className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{k.value}</p>
                   <p className="text-xs mt-0.5 mb-1" style={{ color: 'hsl(var(--text-3))' }}>{k.label}</p>
-                  {trend && trend.dir !== 'stable' && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-                      {trend.dir === 'up' ? <ArrowUp size={10} style={{ color: trendColor }} /> : <ArrowDown size={10} style={{ color: trendColor }} />}
-                      <span style={{ fontSize: 10, color: trendColor, fontWeight: 600 }}>{trend.delta}% vs last {dateRange}</span>
-                    </div>
-                  )}
                 </CardContent>
               </Card>
             </Link>
@@ -849,20 +828,28 @@ export default function Overview() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <ResponsiveContainer width="100%" height={220}>
-              <LineChart data={riskTrendData}>
-                <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                <XAxis dataKey="month" tick={{ fontSize: 11, fill: ct.axis }} />
-                <YAxis
-                  tick={{ fill: ct.axis, fontSize: 11 }}
-                  label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }}
-                />
-                <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-                <Legend wrapperStyle={{ fontSize: 11, color: ct.axis }} />
-                <Line type="monotone" dataKey="open" stroke="hsl(var(--r-hi-tx))" strokeWidth={2} dot={false} name="Open Risks" />
-                <Line type="monotone" dataKey="critical" stroke="hsl(var(--s-er-tx))" strokeWidth={2} dot={false} name="Critical" />
-              </LineChart>
-            </ResponsiveContainer>
+            {riskTrendHasData ? (
+              <ResponsiveContainer width="100%" height={220}>
+                <LineChart data={riskTrendData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
+                  <XAxis dataKey="month" tick={{ fontSize: 11, fill: ct.axis }} />
+                  <YAxis
+                    tick={{ fill: ct.axis, fontSize: 11 }}
+                    label={{ value: 'Count', angle: -90, position: 'insideLeft', style: { fill: ct.axis } }}
+                  />
+                  <Tooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
+                  <Legend wrapperStyle={{ fontSize: 11, color: ct.axis }} />
+                  <Line type="monotone" dataKey="open" stroke="hsl(var(--r-hi-tx))" strokeWidth={2} dot={false} name="Open Risks" />
+                  <Line type="monotone" dataKey="critical" stroke="hsl(var(--s-er-tx))" strokeWidth={2} dot={false} name="Critical" />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="flex flex-col items-center justify-center" style={{ height: 220, color: 'hsl(var(--text-4))' }}>
+                <ChartLine size={28} className="mb-2 opacity-40" />
+                <p className="text-sm">No risks recorded in the last 6 months</p>
+                <p className="text-xs mt-1">The trend appears as risks are added to the register — nothing is simulated.</p>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>
@@ -1165,7 +1152,7 @@ export default function Overview() {
               </tr>
             </thead>
             <tbody>
-              {risks.filter((r: any) => r.status === 'open').slice(0, 5).map(r => {
+              {risks.filter((r: any) => isOpenRiskStatus(r.status)).slice(0, 5).map(r => {
                 const sc = severityColor((r.severity ?? 'medium') as Parameters<typeof severityColor>[0]);
                 return (
                   <tr key={r.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>

@@ -36,6 +36,7 @@ import { useRisksData } from '../../hooks/useRisksData';
 import { useIncidentData } from '../../hooks/useIncidentData';
 import { useFrameworksData } from '../../hooks/useFrameworksData';
 import { useVendorsData } from '../../hooks/useVendorsData';
+import { useHitlReviews, useApprovals } from '../../hooks/useRiskIncidents';
 import { agentRecordHooks } from '../../hooks/queries/useAgentGovCrud';
 import type { RiskRecord } from '../../services/riskService';
 import type { IncidentRecord } from '../../services/incidentService';
@@ -130,6 +131,9 @@ function OverviewTab() {
   const { frameworks, isLoading: frameworksLoading } = useFrameworksData();
   const { vendors, isLoading: vendorsLoading } = useVendorsData();
   const { data: agents = [], isLoading: agentsLoading } = agentRecordHooks.useList();
+  // Oversight surfaces — pending human decisions are an executive risk signal.
+  const hitl = useHitlReviews();
+  const approvalsQ = useApprovals();
 
   const loading = modelsLoading || risksLoading || incidentsLoading || frameworksLoading || agentsLoading || vendorsLoading;
   if (loading) {
@@ -201,6 +205,13 @@ function OverviewTab() {
       .map(i => ({ key: `inc-${i.id}`, kind: 'Incident', label: i.title || i.description || 'Untitled incident', severity: String(i.severity).toLowerCase(), path: `/risk/incidents?open=${i.id}` })),
   ];
 
+  // Oversight tiles — pending HITL reviews (with blocking count) and pending
+  // approvals (with overdue-by-due_at count), both from real oversight tables.
+  const pendingHitl = hitl.items.filter(r => r.status === 'pending' || r.status === 'info_requested');
+  const blockingHitl = pendingHitl.filter(r => r.blocksDeployment && r.status === 'pending').length;
+  const pendingApprovals = approvalsQ.items.filter(a => a.status === 'pending');
+  const overdueApprovals = pendingApprovals.filter(a => a.dueAt && new Date(a.dueAt).getTime() < Date.now()).length;
+
   return (
     <div className="space-y-6">
       {/* KPI Stats — live counts */}
@@ -214,6 +225,69 @@ function OverviewTab() {
             </CardContent>
           </Card>
         ))}
+      </div>
+
+      {/* Oversight attention tiles — pending human decisions (Art. 14 posture) */}
+      <div className="grid grid-cols-2 gap-3">
+        <button
+          onClick={() => navigate('/hitl')}
+          className="text-left hover:bg-muted/30 transition-colors"
+          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: 16 }}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>Pending HITL Reviews</p>
+              {hitl.isLoading ? (
+                <p className="text-2xl font-bold mt-1" style={{ color: 'hsl(var(--text-4))' }}>…</p>
+              ) : hitl.error ? (
+                <p className="text-xs mt-2" style={{ color: 'hsl(var(--destructive))' }}>Unavailable: {(hitl.error as Error).message}</p>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold mt-1" style={{ color: pendingHitl.length > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>
+                    {pendingHitl.length}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: blockingHitl > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--text-3))' }}>
+                    {blockingHitl > 0 ? `${blockingHitl} blocking deployment` : 'None blocking deployment'}
+                  </p>
+                </>
+              )}
+            </div>
+            <ClipboardText size={20} style={{ color: 'hsl(var(--s-wn-tx))', flexShrink: 0 }} />
+          </div>
+          <p className="text-[11px] mt-2 flex items-center gap-1" style={{ color: 'hsl(var(--brand))' }}>
+            Open HITL Review Center <ArrowRight size={10} />
+          </p>
+        </button>
+
+        <button
+          onClick={() => navigate('/workflows')}
+          className="text-left hover:bg-muted/30 transition-colors"
+          style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', padding: 16 }}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>Pending Approvals</p>
+              {approvalsQ.isLoading ? (
+                <p className="text-2xl font-bold mt-1" style={{ color: 'hsl(var(--text-4))' }}>…</p>
+              ) : approvalsQ.error ? (
+                <p className="text-xs mt-2" style={{ color: 'hsl(var(--destructive))' }}>Unavailable: {(approvalsQ.error as Error).message}</p>
+              ) : (
+                <>
+                  <p className="text-2xl font-bold mt-1" style={{ color: pendingApprovals.length > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>
+                    {pendingApprovals.length}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: overdueApprovals > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--text-3))' }}>
+                    {overdueApprovals > 0 ? `${overdueApprovals} past their due date` : 'None past their due date'}
+                  </p>
+                </>
+              )}
+            </div>
+            <CheckCircle size={20} style={{ color: 'hsl(var(--brand))', flexShrink: 0 }} />
+          </div>
+          <p className="text-[11px] mt-2 flex items-center gap-1" style={{ color: 'hsl(var(--brand))' }}>
+            Open Approval Workflows <ArrowRight size={10} />
+          </p>
+        </button>
       </div>
 
       {/* Charts Row — computed from live records (no historical snapshots are stored, so no trend series is shown) */}
