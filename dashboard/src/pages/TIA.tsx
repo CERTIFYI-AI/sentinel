@@ -23,7 +23,9 @@ import { DataTable, type Column } from '@/components/ui/DataTable'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { FormDialog, Field } from '@/components/evals/FormDialog'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
-import { useTiaRecords } from '@/hooks/useComplianceRecords'
+import { LinkChip, LinkChips, ChipMultiSelect } from '@/components/ui/LinkChips'
+import { useTiaRecords, useRopaRecords } from '@/hooks/useComplianceRecords'
+import { useModelOptions } from '@/hooks/useAiiaData'
 import { useVendorOptions } from '@/hooks/useGovernAddons'
 import { useRBAC } from '@/hooks/useRBAC'
 import type { TiaRecord } from '@/services/privacyRecordsService'
@@ -55,6 +57,7 @@ const EMPTY: Partial<TiaRecord> = {
   transferName: '', sourceCountry: '', destinationCountry: '',
   transferMechanism: 'standard_contractual_clauses', dataTypes: '', dataVolume: '',
   riskLevel: 'medium', supplementaryMeasures: '', status: 'draft', validUntil: null,
+  linkedRopaId: null, linkedModelIds: [],
 }
 
 /** Days until expiry; negative means expired. Null when no validity date set. */
@@ -67,6 +70,11 @@ export default function TIA() {
   const nav = useNavigate()
   const { can } = useRBAC()
   const tia = useTiaRecords()
+  const ropa = useRopaRecords()
+  const { models } = useModelOptions()
+
+  const modelName = (id: string) => models.find((m) => m.id === id)?.name
+  const ropaName = (id: string) => ropa.data.find((r) => r.id === id)?.processingActivity
   // The supplier on the receiving end of the transfer — a TIA without a
   // named recipient cannot be assessed.
   const { vendors } = useVendorOptions()
@@ -111,6 +119,9 @@ export default function TIA() {
   }, [tia.data])
 
   const columns: Column<TiaRecord>[] = [
+    { key: 'reference', header: 'Ref', sortable: true, render: (t) => (
+      <span className="font-mono text-xs font-medium text-[hsl(var(--brand))]">{t.reference ?? '—'}</span>
+    ) },
     { key: 'transferName', header: 'Transfer', sortable: true, render: (t) => (
       <div>
         <div className="text-sm font-medium text-[hsl(var(--text-1))]">{t.transferName}</div>
@@ -147,6 +158,14 @@ export default function TIA() {
       )
       return <span className="text-xs text-[hsl(var(--text-4))]">{t.vendorId ? 'Unavailable' : '—'}</span>
     } },
+    { key: 'linkedRopaId', header: 'Processing activity', render: (t) => (
+      <LinkChip id={t.linkedRopaId} resolve={ropaName}
+        href={(id) => `/ropa?open=${id}`} onNavigate={nav} />
+    ) },
+    { key: 'linkedModelIds', header: 'AI systems', render: (t) => (
+      <LinkChips ids={t.linkedModelIds} resolve={modelName}
+        hrefFor={(id) => `/models/inventory/${id}`} onNavigate={nav} />
+    ) },
     { key: 'status', header: 'Status', sortable: true, render: (t) => (
       <span className="text-xs capitalize text-[hsl(var(--text-2))]">{t.status || 'draft'}</span>
     ) },
@@ -259,6 +278,23 @@ export default function TIA() {
             </Select>
           </Field>
         </div>
+        <Field label="Processing activity" hint="The Art. 30 record whose data crosses the border">
+          <Select value={form.linkedRopaId ?? '__none__'} onValueChange={(v) => set('linkedRopaId', v === '__none__' ? null : v)}>
+            <SelectTrigger><SelectValue placeholder="Not linked" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">Not linked</SelectItem>
+              {ropa.data.map((r) => (
+                <SelectItem key={r.id} value={r.id}>{r.reference ? `${r.reference} — ` : ''}{r.processingActivity}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+
+        <Field label="AI systems performing the transfer">
+          <ChipMultiSelect options={models} value={form.linkedModelIds ?? []}
+            onChange={(v) => set('linkedModelIds', v)} emptyMessage="No models registered yet." />
+        </Field>
+
         <Field label="Supplementary measures" hint="Required where the destination lacks an adequacy decision">
           <Textarea rows={3} value={form.supplementaryMeasures ?? ''} onChange={(e) => set('supplementaryMeasures', e.target.value)} />
         </Field>

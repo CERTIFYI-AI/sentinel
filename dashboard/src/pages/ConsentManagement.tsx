@@ -16,7 +16,7 @@
 // first time — without them a consent record cannot say what it actually
 // permits, and the interlink could never be created from the UI at all.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import { CheckSquare, Plus, Warning, Export } from '@phosphor-icons/react'
@@ -30,6 +30,7 @@ import { DataTable, type Column } from '@/components/ui/DataTable'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { FormDialog, Field } from '@/components/evals/FormDialog'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
+import { LinkChip, LinkChips, ChipMultiSelect } from '@/components/ui/LinkChips'
 import { useConsentRecordsData } from '@/hooks/useConsentRecordsData'
 import { useRopaRecords } from '@/hooks/useComplianceRecords'
 import { useModelOptions } from '@/hooks/useAiiaData'
@@ -64,6 +65,7 @@ export default function ConsentManagement() {
   const { can } = useRBAC()
   const [params, setParams] = useSearchParams()
   const modelFilter = params.get('model')
+  const openId = params.get('open')
 
   const {
     items, isLoading, error, saveConsentRecords, withdrawConsentRecord,
@@ -103,6 +105,13 @@ export default function ConsentManagement() {
 
   function openCreate() { setEditing(null); setForm(EMPTY); setFormOpen(true) }
   function openEdit(c: ConsentRecord) { setEditing(c); setForm({ ...c }); setFormOpen(true) }
+
+  // ?open=<id> lands here from a rights request that contests this consent.
+  useEffect(() => {
+    if (!openId || formOpen) return
+    const target = items.find((c) => c.id === openId)
+    if (target) openEdit(target)
+  }, [openId, items]) // eslint-disable-line react-hooks/exhaustive-deps
 
   async function submit() {
     try {
@@ -179,33 +188,14 @@ export default function ConsentManagement() {
         )}
       </div>
     ) : <span className="text-xs text-[hsl(var(--text-4))]">none recorded</span> },
-    { key: 'linkedModelIds', header: 'AI systems covered', render: (c) => c.linkedModelIds.length ? (
-      <div className="flex flex-wrap gap-1">
-        {c.linkedModelIds.slice(0, 2).map((id) => {
-          const name = modelName(id)
-          return name ? (
-            <button key={id}
-              className="border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-1.5 py-0.5 text-[10px] text-[hsl(var(--brand))] hover:underline"
-              onClick={(e) => { e.stopPropagation(); nav(`/models/inventory/${id}`) }}>{name}</button>
-          ) : (
-            <span key={id} className="border border-[hsl(var(--border))] px-1.5 py-0.5 text-[10px] text-[hsl(var(--text-4))]">
-              Unavailable
-            </span>
-          )
-        })}
-        {c.linkedModelIds.length > 2 && (
-          <span className="text-[10px] text-[hsl(var(--text-4))]">+{c.linkedModelIds.length - 2}</span>
-        )}
-      </div>
-    ) : <span className="text-xs text-[hsl(var(--text-4))]">—</span> },
-    { key: 'linkedRopaId', header: 'Processing activity', render: (c) => {
-      const name = ropaName(c.linkedRopaId)
-      if (name) return (
-        <button className="text-xs text-[hsl(var(--brand))] hover:underline"
-          onClick={(e) => { e.stopPropagation(); nav(`/ropa?open=${c.linkedRopaId}`) }}>{name}</button>
-      )
-      return <span className="text-xs text-[hsl(var(--text-4))]">{c.linkedRopaId ? 'Unavailable' : '—'}</span>
-    } },
+    { key: 'linkedModelIds', header: 'AI systems covered', render: (c) => (
+      <LinkChips ids={c.linkedModelIds} resolve={modelName}
+        hrefFor={(id) => `/models/inventory/${id}`} onNavigate={nav} />
+    ) },
+    { key: 'linkedRopaId', header: 'Processing activity', render: (c) => (
+      <LinkChip id={c.linkedRopaId} resolve={(id) => ropaName(id)}
+        href={(id) => `/ropa?open=${id}`} onNavigate={nav} />
+    ) },
     { key: 'expiryDate', header: 'Consent window', sortable: true, render: (c) => (
       <div className="font-mono text-[11px] text-[hsl(var(--text-3))]">
         <div>{c.consentDate ? c.consentDate.slice(0, 10) : '—'}</div>
@@ -308,7 +298,11 @@ export default function ConsentManagement() {
       </Card>
 
       <FormDialog
-        open={formOpen} onOpenChange={setFormOpen}
+        open={formOpen}
+        onOpenChange={(o) => {
+          setFormOpen(o)
+          if (!o && openId) { params.delete('open'); setParams(params) }
+        }}
         title={editing ? `Edit ${editing.consentRef ?? 'consent record'}` : 'Record a consent'}
         description="What the subject agreed to, on what basis, and which AI systems that agreement covers."
         submitLabel={editing ? 'Save changes' : 'Record consent'}
@@ -393,23 +387,8 @@ export default function ConsentManagement() {
 
         <Field label="AI systems this consent covers"
                hint="On withdrawal these are the systems that must stop processing">
-          <div className="flex flex-wrap gap-1.5">
-            {models.map((m) => {
-              const on = (form.linkedModelIds ?? []).includes(m.id)
-              return (
-                <button key={m.id} type="button"
-                  onClick={() => set('linkedModelIds', on
-                    ? (form.linkedModelIds ?? []).filter((x) => x !== m.id)
-                    : [...(form.linkedModelIds ?? []), m.id])}
-                  className={`border px-2 py-1 text-[12px] ${on
-                    ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))]'
-                    : 'border-[hsl(var(--border))] text-[hsl(var(--text-3))]'}`}>
-                  {m.name}
-                </button>
-              )
-            })}
-            {models.length === 0 && <span className="text-xs text-[hsl(var(--text-4))]">No models registered yet.</span>}
-          </div>
+          <ChipMultiSelect options={models} value={form.linkedModelIds ?? []}
+            onChange={(v) => set('linkedModelIds', v)} emptyMessage="No models registered yet." />
         </Field>
       </FormDialog>
 

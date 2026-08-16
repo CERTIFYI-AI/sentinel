@@ -23,9 +23,11 @@ import { DataTable, type Column } from '@/components/ui/DataTable'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { FormDialog, Field } from '@/components/evals/FormDialog'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
+import { LinkChip, LinkChips, ChipMultiSelect } from '@/components/ui/LinkChips'
 import { useDpiaRecords } from '@/hooks/useDpiaRecords'
 import { useRopaRecords } from '@/hooks/useComplianceRecords'
-import { useModelOptions } from '@/hooks/useAiiaData'
+import { useModelOptions, useUseCases } from '@/hooks/useAiiaData'
+import { useRisksData } from '@/hooks/useRisksData'
 import { useRBAC } from '@/hooks/useRBAC'
 import {
   DPIA_STATUSES, RISK_LEVELS,
@@ -58,6 +60,7 @@ const EMPTY: Partial<DpiaRecord> = {
   riskLevel: 'medium', identifiedRisks: '', mitigationMeasures: '',
   residualRiskLevel: null, consultationRequired: false, status: 'draft',
   dpoOpinion: '', ownerName: '', linkedModelIds: [], linkedRopaId: null,
+  linkedRiskId: null, linkedUseCaseId: null,
 }
 
 function daysUntil(due?: string | null): number | null {
@@ -71,6 +74,11 @@ export default function DPIA() {
   const dpia = useDpiaRecords()
   const ropa = useRopaRecords()
   const { models } = useModelOptions()
+  const useCases = useUseCases()
+  const { risks } = useRisksData()
+
+  const useCaseName = (id: string) => useCases.data.find((u) => u.id === id)?.title
+  const riskName = (id: string) => risks.find((r) => r.id === id)?.title
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<DpiaRecord | null>(null)
@@ -165,13 +173,25 @@ export default function DPIA() {
         {d.linkedModelIds.length > 2 && <span className="text-[10px] text-[hsl(var(--text-4))]">+{d.linkedModelIds.length - 2}</span>}
       </div>
     ) : <span className="text-xs text-[hsl(var(--text-4))]">—</span> },
-    { key: 'linkedRopaId', header: 'Processing activity', render: (d) => {
-      const name = ropaName(d.linkedRopaId)
-      if (name) return (
-        <button className="text-xs text-[hsl(var(--brand))] hover:underline"
-          onClick={(e) => { e.stopPropagation(); nav('/ropa') }}>{name}</button>
+    { key: 'linkedRopaId', header: 'Processing activity', render: (d) => (
+      <LinkChip id={d.linkedRopaId} resolve={ropaName}
+        href={(id) => `/ropa?open=${id}`} onNavigate={nav} />
+    ) },
+    { key: 'linkedUseCaseId', header: 'Use case', render: (d) => (
+      <LinkChip id={d.linkedUseCaseId} resolve={useCaseName}
+        href={(id) => `/use-cases/${id}`} onNavigate={nav} />
+    ) },
+    { key: 'linkedRiskId', header: 'Residual risk', render: (d) => {
+      // A DPIA whose residual risk stays high must leave something behind in
+      // the risk register; an unlinked one is a dead end, not a closed issue.
+      const high = d.residualRiskLevel === 'high' || d.residualRiskLevel === 'critical'
+      if (!d.linkedRiskId && high) return (
+        <span className="inline-flex items-center gap-1 text-[11px] text-[hsl(var(--s-er-tx))]">
+          <Warning size={10} /> not in register
+        </span>
       )
-      return <span className="text-xs text-[hsl(var(--text-4))]">{d.linkedRopaId ? 'Unavailable' : '—'}</span>
+      return <LinkChip id={d.linkedRiskId} resolve={riskName}
+        href={(id) => `/risk?open=${id}`} onNavigate={nav} />
     } },
     { key: 'nextReviewAt', header: 'Next review', sortable: true, render: (d) => {
       const n = daysUntil(d.nextReviewAt)
@@ -293,6 +313,28 @@ export default function DPIA() {
           </label>
         </div>
         <Field label="DPO opinion"><Textarea rows={2} value={form.dpoOpinion ?? ''} onChange={(e) => set('dpoOpinion', e.target.value)} /></Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Use case" hint="The registered use case this assessment covers">
+            <Select value={form.linkedUseCaseId ?? '__none__'} onValueChange={(v) => set('linkedUseCaseId', v === '__none__' ? null : v)}>
+              <SelectTrigger><SelectValue placeholder="Not linked" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Not linked</SelectItem>
+                {useCases.data.map((u) => <SelectItem key={u.id} value={u.id}>{u.title}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Residual risk in the register"
+                 hint="Required where residual risk stays high — otherwise the finding dies here">
+            <Select value={form.linkedRiskId ?? '__none__'} onValueChange={(v) => set('linkedRiskId', v === '__none__' ? null : v)}>
+              <SelectTrigger><SelectValue placeholder="Not linked" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Not linked</SelectItem>
+                {risks.map((r) => <SelectItem key={r.id} value={r.id}>{r.title}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+        </div>
+
         <Field label="Linked processing activity" hint="The RoPA entry this assessment covers">
           <Select value={form.linkedRopaId ?? '__none__'} onValueChange={(v) => set('linkedRopaId', v === '__none__' ? null : v)}>
             <SelectTrigger><SelectValue placeholder="Not linked" /></SelectTrigger>

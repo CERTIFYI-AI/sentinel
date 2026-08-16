@@ -27,6 +27,7 @@ import { DataTable, type Column } from '@/components/ui/DataTable'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { FormDialog, Field } from '@/components/evals/FormDialog'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
+import { LinkChip, LinkChips, ChipMultiSelect } from '@/components/ui/LinkChips'
 import { useDsrRequestsData } from '@/hooks/useDsrRequestsData'
 import { useRopaRecords } from '@/hooks/useComplianceRecords'
 import { useConsentRecordsData } from '@/hooks/useConsentRecordsData'
@@ -200,33 +201,18 @@ export default function DsrManagement() {
         {d.priority}
       </span>
     ) },
-    { key: 'linkedRopaId', header: 'Processing activity', render: (d) => {
-      const name = ropaName(d.linkedRopaId)
-      if (name) return (
-        <button className="text-xs text-[hsl(var(--brand))] hover:underline"
-          onClick={(e) => { e.stopPropagation(); nav(`/ropa?open=${d.linkedRopaId}`) }}>{name}</button>
-      )
-      return <span className="text-xs text-[hsl(var(--text-4))]">{d.linkedRopaId ? 'Unavailable' : '—'}</span>
-    } },
-    { key: 'linkedModelIds', header: 'AI systems', render: (d) => d.linkedModelIds.length ? (
-      <div className="flex flex-wrap gap-1">
-        {d.linkedModelIds.slice(0, 2).map((id) => {
-          const name = modelName(id)
-          return name ? (
-            <button key={id}
-              className="border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-1.5 py-0.5 text-[10px] text-[hsl(var(--brand))] hover:underline"
-              onClick={(e) => { e.stopPropagation(); nav(`/models/inventory/${id}`) }}>{name}</button>
-          ) : (
-            <span key={id} className="border border-[hsl(var(--border))] px-1.5 py-0.5 text-[10px] text-[hsl(var(--text-4))]">
-              Unavailable
-            </span>
-          )
-        })}
-        {d.linkedModelIds.length > 2 && (
-          <span className="text-[10px] text-[hsl(var(--text-4))]">+{d.linkedModelIds.length - 2}</span>
-        )}
-      </div>
-    ) : <span className="text-xs text-[hsl(var(--text-4))]">—</span> },
+    { key: 'linkedRopaId', header: 'Processing activity', render: (d) => (
+      <LinkChip id={d.linkedRopaId} resolve={(id) => ropaName(id)}
+        href={(id) => `/ropa?open=${id}`} onNavigate={nav} />
+    ) },
+    { key: 'linkedConsentId', header: 'Consent', render: (d) => (
+      <LinkChip id={d.linkedConsentId} resolve={(id) => consentRef(id)}
+        href={(id) => `/consent-management?open=${id}`} onNavigate={nav} />
+    ) },
+    { key: 'linkedModelIds', header: 'AI systems', render: (d) => (
+      <LinkChips ids={d.linkedModelIds} resolve={modelName}
+        hrefFor={(id) => `/models/inventory/${id}`} onNavigate={nav} />
+    ) },
     { key: 'dueDate', header: 'Art. 12(3) clock', sortable: true, render: (d) => {
       if (!d.dueDate) return <span className="text-xs text-[hsl(var(--text-4))]">no deadline set</span>
       if (d.daysRemaining == null) return (
@@ -418,23 +404,8 @@ export default function DsrManagement() {
 
         <Field label="AI systems holding this subject's data"
                hint="What makes the request actionable — an erasure that names no system cannot be carried out">
-          <div className="flex flex-wrap gap-1.5">
-            {models.map((m) => {
-              const on = (form.linkedModelIds ?? []).includes(m.id)
-              return (
-                <button key={m.id} type="button"
-                  onClick={() => set('linkedModelIds', on
-                    ? (form.linkedModelIds ?? []).filter((x) => x !== m.id)
-                    : [...(form.linkedModelIds ?? []), m.id])}
-                  className={`border px-2 py-1 text-[12px] ${on
-                    ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))]'
-                    : 'border-[hsl(var(--border))] text-[hsl(var(--text-3))]'}`}>
-                  {m.name}
-                </button>
-              )
-            })}
-            {models.length === 0 && <span className="text-xs text-[hsl(var(--text-4))]">No models registered yet.</span>}
-          </div>
+          <ChipMultiSelect options={models} value={form.linkedModelIds ?? []}
+            onChange={(v) => set('linkedModelIds', v)} emptyMessage="No models registered yet." />
         </Field>
 
         <Field label="Case notes">
