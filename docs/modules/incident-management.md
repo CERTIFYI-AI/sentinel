@@ -25,3 +25,9 @@ Detect (alert, HITL, user complaint, eval regression, red-team) → Triage & cla
 
 ## Metrics
 MTTD, MTTR, repeat-incident rate, notification-SLA adherence, and root-cause distribution, published to Executive Center.
+
+## Data backing (wired 2026-08)
+- `public.incidents` (uuid PK, tenant-scoped RLS `incidents_org_scoped`); services `incidentResponseService.ts` (canonical) and `incidentService.ts` (legacy snake_case consumers); hooks `useIncidents`, `useIncidentTransitions`, `useWorkflowSteps`.
+- Declaring an incident emits `INCIDENT_CREATED` on the governance bus — the mesh's incident cascade (triage, containment, regulator-notify, evidence collection, …) fires from this emitter.
+- Workflow transitions persist to `public.incident_workflow_steps` (from/to status, actor, notes, timestamp) — EU AI Act Art. 73 traceability.
+- Playbooks: `public.incident_playbooks` + activations in `public.playbook_runs` (linked to real incidents; the "active incident" banner is driven by open runs only).

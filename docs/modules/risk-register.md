@@ -23,3 +23,8 @@ Identify → Analyse → Evaluate → Treat (Accept / Mitigate / Transfer / Avoi
 
 ## Evidence
 Versioned snapshots of the register (risk, score, owner, treatment, approver) are hashed into `evidence_chain` at every review cycle.
+
+## Data backing (wired 2026-08)
+- Register: `public.risks` (uuid PK, tenant-scoped RLS `risks_org_scoped`); service `riskService.ts`, hook `useRisksData`. The live-only columns (`categories`, `deadline`, `risk_score`) are now versioned in `20260819000001_risk_incidents_canonical.sql`.
+- Risk Matrix reads the SAME rows (no parallel register); Financial Risk quantifications live in `public.financial_risks` (see financial-risk.md).
+- Interlinks: `linked_model_ids` → model chips (`/models/inventory/:id`), `linked_incident_ids` → `/risk/incidents?open=`, `linked_control_ids` → `/controls/:id`; `?model=<uuid>` deep-link filter.

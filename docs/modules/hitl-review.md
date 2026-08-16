@@ -34,3 +34,8 @@ Overdue cases escalate via `sla-enforcer`.
 
 ## Feedback Loop
 Reviewer corrections flow to the Evals module (golden-set candidates) and Policy Management (rule refinement).
+
+## Data backing (wired 2026-08)
+- `public.hitl_reviews` (uuid PK, org + tenant scoped) is ONE queue shared by the UI and the agent mesh: `hitlAgent.ts` and the governance-dispatcher edge function write the same table the Review Center reads (`oversightService.ts`, `useHitlReviews`).
+- Decisions (`approve` / `reject` / `request info`) persist with decider + timestamp and write an audit event (`withAudit` → `audit_events`), satisfying EU AI Act Art. 14 human-oversight evidence.
+- `blocks_deployment` marks reviews that gate a release; SLA fields (`sla_hours`, `sla_deadline`) drive real overdue computation.

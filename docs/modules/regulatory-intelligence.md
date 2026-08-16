@@ -17,3 +17,7 @@ Official journals, supervisory authority advisories, notified-body bulletins, st
 
 ## Velocity Metric
 Median days from regulation publication to closed implementation task, published to Executive Center.
+
+## Data backing (wired 2026-08)
+- Risk Intelligence reads `public.regulation_entries` (tenant-scoped): obligations jsonb, typed `effective_on` (countdowns computed at render — never frozen literals), `gap_percent`, `models_in_scope`, `linked_model_ids` → model chips.
+- Service `riskGroupService.ts`, hook `useRegulationEntries`. RegRadar remains a separate feed view; consolidation tracked for the governance group.

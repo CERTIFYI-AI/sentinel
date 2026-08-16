@@ -15,3 +15,7 @@ Configurable multi-stage approvals for high-impact actions: model deployment, pr
 
 ## Features
 Branching conditions, SoD enforcement via IGA, SLA timers, delegation windows, and immutable decision record.
+
+## Data backing (wired 2026-08)
+- Definitions: `public.approval_workflows` (steps jsonb, MFA + escalation config). Requests: `public.approvals` — entity-linked (`entity_type` + `entity_id`: model uuid, exception id, incident uuid), org-scoped, with audited decisions via `oversightService.decideApproval`.
+- Service `oversightService.ts`, hooks `useApprovalWorkflows` / `useApprovals`.
