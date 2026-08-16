@@ -19,7 +19,7 @@ import {
   RegMappingTable, AuditTimeline,
 } from '@/components/evals/primitives'
 import { EmptyState, ErrorState } from '@/components/evals/states'
-import { biasAuditHooks } from '@/hooks/queries/useEvalsCrud'
+import { biasAuditHooks, datasetCatalogHooks } from '@/hooks/queries/useEvalsCrud'
 import { useModelOptions } from '@/hooks/useAiiaData'
 import { useRBAC } from '@/hooks/useRBAC'
 
@@ -29,6 +29,7 @@ export default function BiasAuditDetail() {
   const { id } = useParams()
   const nav = useNavigate()
   const { data: audit, isLoading, isError, error, refetch } = biasAuditHooks.useGet(id)
+  const { data: catalog } = datasetCatalogHooks.useList()
   const { models, loading: modelsLoading } = useModelOptions()
   const { can } = useRBAC()
   const [tab, setTab] = useState('metrics')
@@ -50,6 +51,7 @@ export default function BiasAuditDetail() {
   }
 
   const resolvedModelName = models.find((m) => m.id === audit.modelId)?.name
+  const catalogEntry = audit.datasetId ? catalog?.find((d) => d.id === audit.datasetId) : undefined
   const snapshots = audit.snapshots ?? []
   const pre = snapshots.filter((s) => s.phase === 'pre_deploy')
   const post = snapshots.filter((s) => s.phase === 'post_deploy')
@@ -61,13 +63,13 @@ export default function BiasAuditDetail() {
     <div>
       <PageHeader
         title={audit.auditId}
-        subtitle={`${resolvedModelName ?? (modelsLoading ? audit.modelName : 'Unavailable')} · ${audit.datasetId || '—'} · ${audit.framework || '—'}`}
+        subtitle={`${resolvedModelName ?? (modelsLoading ? audit.modelName : 'Unavailable')} · ${catalogEntry?.name ?? audit.datasetId ?? '—'} · ${audit.framework || '—'}`}
         badge={<StateBadge s={audit.state} />}
         onBack={() => nav('/bias-audits')}
         actions={
           <div className="flex items-center gap-2">
-            {audit.datasetId && (
-              <Button variant="ghost" size="sm" title="Open dataset catalog entry" onClick={() => nav(`/evals/dataset/${audit.datasetId}`)}>Dataset</Button>
+            {catalogEntry && (
+              <Button variant="ghost" size="sm" title="Open dataset catalog entry" onClick={() => nav(`/evals/dataset/${catalogEntry.id}`)}>Dataset</Button>
             )}
             <Button variant="ghost" size="sm" title="Validation runs for this model" onClick={() => nav(`/model-validation?model=${audit.modelId}`)}>Validation</Button>
             <Button variant="ghost" size="sm" title="Metric Studio for this model" onClick={() => nav(`/evals/metric-studio?model=${audit.modelId}`)}>Metrics</Button>

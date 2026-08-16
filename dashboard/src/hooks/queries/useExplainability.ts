@@ -1,11 +1,9 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchExplainabilityReports, upsertExplainabilityReport } from '../../services/explainabilityService'
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// RETIRED — wrapped the retired explainabilityService (unused
+// `explainability_reports` table) and had no consumers. The Explainability
+// module uses explainProfileHooks in useEvalsCrud.ts. Delete this file once
+// nothing references it.
 
-export function useExplainabilityReports() {
-  return useQuery({ queryKey: ['explainability_reports'], queryFn: fetchExplainabilityReports, staleTime: 30000, placeholderData: [] })
-}
-
-export function useUpsertExplainabilityReport() {
-  const qc = useQueryClient()
-  return useMutation({ mutationFn: (r: any) => upsertExplainabilityReport(r), onSuccess: () => qc.invalidateQueries({ queryKey: ['explainability_reports'] }) })
-}
+export {}

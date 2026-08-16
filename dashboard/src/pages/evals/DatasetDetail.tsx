@@ -17,6 +17,7 @@ import {
   Stat, Section, RiskBadge, VerdictBadge, MetricBar, RegMappingTable, AuditTimeline,
 } from '@/components/evals/primitives'
 import { datasetCatalogHooks } from '@/hooks/queries/useEvalsCrud'
+import { useDatasets } from '@/hooks/useDatasetData'
 import { useModelOptions } from '@/hooks/useAiiaData'
 import type { DatasetCatalogEntry } from '@/types/evals'
 
@@ -35,6 +36,7 @@ export default function DatasetDetail() {
   const { id } = useParams()
   const nav = useNavigate()
   const { data, isLoading, isError } = datasetCatalogHooks.useGet(id)
+  const { data: governedDatasets } = useDatasets()
   const { models } = useModelOptions()
   const [tab, setTab] = useState('lineage')
 
@@ -49,6 +51,7 @@ export default function DatasetDetail() {
   }
 
   const ds = data as CatalogRow
+  const governed = ds.linkedDatasetId ? governedDatasets.find((g) => g.id === ds.linkedDatasetId) : undefined
   const linkedIds = ds.linkedModelIds ?? []
   const biasList: unknown[] = Array.isArray(ds.biasIndicators) ? ds.biasIndicators : []
   const slicesList: unknown[] = Array.isArray(ds.slices) ? ds.slices : []
@@ -78,10 +81,24 @@ export default function DatasetDetail() {
         </CardContent>
       </Card>
 
-      {linkedIds.length > 0 && (
+      {(linkedIds.length > 0 || ds.linkedDatasetId) && (
         <Card className="mb-4">
           <CardContent className="flex flex-wrap items-center gap-2 p-4">
-            <span className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Linked models</span>
+            {ds.linkedDatasetId && (
+              <>
+                <span className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Governed dataset</span>
+                {governed ? (
+                  <Link to={`/datasets/${governed.id}`} className={`${pillCls} text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-subtle))] hover:underline`}>
+                    {governed.name}
+                  </Link>
+                ) : (
+                  <span className={`${pillCls} text-[hsl(var(--text-4))]`}>Unavailable</span>
+                )}
+              </>
+            )}
+            {linkedIds.length > 0 && (
+              <span className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Linked models</span>
+            )}
             {linkedIds.map((mid) => {
               const name = models.find((m) => m.id === mid)?.name
               return name ? (

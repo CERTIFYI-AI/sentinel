@@ -1,29 +1,9 @@
-import { supabase } from '../lib/supabase'
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// RETIRED — pointed at the unused `explainability_reports` table and had no
+// page consumers. The Explainability module runs on `explainability_profiles`
+// via explainProfilesCrud (evalsCrud.ts) + explainProfileHooks
+// (useEvalsCrud.ts). Delete this file once nothing references it.
 
-export async function fetchExplainabilityReports() {
-  const { data, error } = await supabase.from('explainability_reports').select('*').order('created_at', { ascending: false }).limit(100)
-  if (error) throw error
-  return data ?? []
-}
-
-export async function fetchExplainabilityReportById(id: string) {
-  const { data, error } = await supabase.from('explainability_reports').select('*').eq('id', id).single()
-  if (error) throw error
-  return data
-}
-
-export async function upsertExplainabilityReport(record: any) {
-  const { data, error } = await supabase.from('explainability_reports').upsert(record).select().single()
-  if (error) throw error
-  return data
-}
-
-export async function deleteExplainability(id: string) {
-  const { error } = await supabase.from('explainability_reports').delete().eq('id', id)
-  if (error) throw error
-}
-
-export const fetchAllExplainability = fetchExplainabilityReports
-export const fetchExplainabilityById = fetchExplainabilityReportById
-
-export const upsertExplainability = upsertExplainabilityReport
+export {}

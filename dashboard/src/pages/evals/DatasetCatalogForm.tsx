@@ -11,7 +11,10 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { datasetCatalogHooks } from '@/hooks/queries/useEvalsCrud'
+import { useDatasets } from '@/hooks/useDatasetData'
 import type { DatasetCatalogEntry, RiskTier } from '@/types/evals'
+
+const NO_LINK = '__none__'
 
 const CATEGORIES: DatasetCatalogEntry['category'][] = ['Text', 'Tabular', 'Image', 'Audio', 'Behavioral', 'Document']
 
@@ -49,6 +52,7 @@ export function DatasetCatalogForm({ open, onOpenChange, initial }: {
   open: boolean; onOpenChange: (o: boolean) => void; initial?: DatasetCatalogEntry | null
 }) {
   const upsert = datasetCatalogHooks.useUpsert()
+  const { data: governedDatasets, isLoading: governedLoading } = useDatasets()
   const [form, setForm] = useState<DatasetCatalogEntry>(seed(initial))
   const isEdit = !!initial
 
@@ -95,6 +99,15 @@ export function DatasetCatalogForm({ open, onOpenChange, initial }: {
           </Select>
         </Field>
         <Field label="Retention"><Input value={form.retention} onChange={(e) => set('retention', e.target.value)} placeholder="7 years post-decision" /></Field>
+        <Field label="Governed dataset" hint="Data Governance registry entry this extract derives from">
+          <Select value={form.linkedDatasetId || NO_LINK} onValueChange={(v) => set('linkedDatasetId', v === NO_LINK ? undefined : v)}>
+            <SelectTrigger><SelectValue placeholder={governedLoading ? 'Loading…' : 'Not linked'} /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value={NO_LINK}>Not linked</SelectItem>
+              {governedDatasets.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
+            </SelectContent>
+          </Select>
+        </Field>
       </div>
       <Field label="Lawful basis" required hint="e.g. GDPR Art.6(1)(b) contract; Art.9(2)(g) for special categories">
         <Textarea value={form.lawfulBasis} onChange={(e) => set('lawfulBasis', e.target.value)} rows={2} />

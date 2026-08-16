@@ -301,6 +301,8 @@ export interface DatasetGovernanceTag {
 
 export interface DatasetCatalogEntry extends GrcBase {
   datasetId: string
+  /** Governed dataset this eval slice/extract derives from — datasets.id, resolved to a name at render time. */
+  linkedDatasetId?: string
   name: string
   datasetVersion: string
   category: 'Text' | 'Tabular' | 'Image' | 'Audio' | 'Behavioral' | 'Document'

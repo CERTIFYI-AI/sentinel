@@ -2,13 +2,14 @@
 // Copyright (c) 2026 CERTIFYI-AI.
 //
 // BiasAuditList — fairness audits with score, result and risk tier.
-// CRUD-backed; the guided wizard remains available at /bias-audits/wizard.
+// CRUD-backed on the canonical `bias_audits` table (the legacy mock wizard at
+// /bias-audits/wizard is retired and now redirects here).
 // Honors ?model=<uuid> (dismissible filter chip) and ?open=<id> deep links.
 
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { ArrowSquareOut, Scales, Plus, MagicWand, X } from '@phosphor-icons/react'
+import { ArrowSquareOut, Scales, Plus, X } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -17,7 +18,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { StateBadge, RiskBadge, VerdictBadge } from '@/components/evals/primitives'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
 import { BiasAuditForm } from './BiasAuditForm'
-import { biasAuditHooks } from '@/hooks/queries/useEvalsCrud'
+import { biasAuditHooks, datasetCatalogHooks } from '@/hooks/queries/useEvalsCrud'
 import { useModelOptions } from '@/hooks/useAiiaData'
 import { useRBAC } from '@/hooks/useRBAC'
 import type { BiasAudit } from '@/types/evals'
@@ -30,6 +31,7 @@ export default function BiasAuditList() {
   const openParam = searchParams.get('open')
   const { data, isLoading, isError, error, refetch } = biasAuditHooks.useList()
   const del = biasAuditHooks.useDelete()
+  const { data: catalog } = datasetCatalogHooks.useList()
   const { models, loading: modelsLoading } = useModelOptions()
 
   const [formOpen, setFormOpen] = useState(false)
@@ -66,10 +68,15 @@ export default function BiasAuditList() {
         </button>
       )
     } },
-    { key: 'datasetId', header: 'Dataset', render: (a) => a.datasetId ? (
-      <button className="font-mono text-xs text-[hsl(var(--brand))] hover:underline"
-        onClick={(e) => { e.stopPropagation(); nav(`/evals/dataset/${a.datasetId}`) }}>{a.datasetId}</button>
-    ) : <span className="text-xs text-[hsl(var(--text-4))]">—</span> },
+    { key: 'datasetId', header: 'Dataset', render: (a) => {
+      if (!a.datasetId) return <span className="text-xs text-[hsl(var(--text-4))]">—</span>
+      const entry = catalog?.find((d) => d.id === a.datasetId)
+      // Only link ids that resolve in the catalog; legacy free-text ids render as plain text.
+      return entry ? (
+        <button className="text-xs text-[hsl(var(--brand))] hover:underline"
+          onClick={(e) => { e.stopPropagation(); nav(`/evals/dataset/${entry.id}`) }}>{entry.name}</button>
+      ) : <span className="font-mono text-xs text-[hsl(var(--text-4))]" title="Not in the Data Explorer catalog">{a.datasetId}</span>
+    } },
     { key: 'framework', header: 'Framework', sortable: true },
     { key: 'fairnessScore', header: 'Fairness', sortable: true, render: (a) => <span className="font-mono">{typeof a.fairnessScore === 'number' ? a.fairnessScore.toFixed(2) : '—'}</span> },
     { key: 'result', header: 'Result', render: (a) => <VerdictBadge v={a.result} /> },
@@ -92,7 +99,6 @@ export default function BiasAuditList() {
         icon={Scales}
         actions={
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" icon={<MagicWand />} onClick={() => nav('/bias-audits/wizard')}>Guided wizard</Button>
             {can('create') && <Button size="sm" icon={<Plus />} onClick={() => { setEditing(null); setFormOpen(true) }}>New Audit</Button>}
           </div>
         }
