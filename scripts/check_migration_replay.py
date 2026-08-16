@@ -224,6 +224,27 @@ def main() -> int:
         p for p in MIG.iterdir()
         if p.suffix == ".sql" and "rollback" not in p.name and "_drift_check" not in p.name
     )
+
+    # schema_migrations version uniqueness: the supabase CLI takes the leading
+    # digits before the first underscore as the version PK. Two files sharing
+    # it (e.g. a bare-date `20260816_a.sql` next to `20260816_b.sql`) replay
+    # fine locally but violate schema_migrations_pkey in the CI drift job.
+    versions: dict[str, str] = {}
+    dup_fail = False
+    for f in files:
+        m = re.match(r"(\d+)", f.name)
+        if not m:
+            continue
+        v = m.group(1)
+        if v in versions:
+            print(f"DUPLICATE VERSION {v}: {versions[v]} and {f.name} — "
+                  f"rename one to the 14-digit form (see supabase/migrations/README.md)")
+            dup_fail = True
+        else:
+            versions[v] = f.name
+    if dup_fail:
+        return 1
+
     for f in files:
         raw = strip_noise(f.read_text())
         sql = drop_do_blocks(raw)
