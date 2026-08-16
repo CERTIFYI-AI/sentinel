@@ -63,6 +63,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -e '.[dev]'
+          # spacy is not part of the package deps (the sanitizer treats it as
+          # an optional enhancement) — install it explicitly for the eval run.
+          pip install spacy
           python -m spacy download en_core_web_lg
 
       - name: Run truth evaluation

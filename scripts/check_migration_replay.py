@@ -90,6 +90,8 @@ def literal_kind(v: str) -> str | None:
     lv = v.lower()
     if not v or lv in ("null", "default"):
         return None
+    if lv.startswith("array[") or re.search(r"::\s*[a-z]+\[\]\s*$", lv):
+        return "array"  # ARRAY[...] literal or an explicit ::type[] cast
     if lv in ("now()", "current_timestamp") or "::timestamp" in lv:
         return "ts"
     if lv in ("true", "false"):
@@ -100,8 +102,6 @@ def literal_kind(v: str) -> str | None:
         return "jsonb"
     if "::uuid" in lv:
         return "uuid"
-    if lv.startswith("array["):
-        return "array"
     if v.startswith("'"):
         if UUID_RE.match(v):
             return "quoted-uuid"
