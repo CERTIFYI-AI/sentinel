@@ -895,6 +895,24 @@ CREATE TABLE IF NOT EXISTS user_roles (
   updated_at timestamptz DEFAULT now()
 );
 
+-- eval_techniques (live-only from the evals pass; shape documented in
+-- 20260816_eval_techniques_canonical.sql, which extends it)
+CREATE TABLE IF NOT EXISTS eval_techniques (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  org_id uuid,
+  name text,
+  category text,
+  description text,
+  methodology text,
+  example_prompt text,
+  scoring_method text,
+  status text,
+  owner text,
+  metadata jsonb DEFAULT '{}',
+  created_at timestamptz DEFAULT now(),
+  updated_at timestamptz DEFAULT now()
+);
+
 -- model_efficiency (live-only; shape from modelEfficiencyService.ts, extended
 -- by 20260814000006_perf_efficiency_foundation.sql)
 CREATE TABLE IF NOT EXISTS model_efficiency (
