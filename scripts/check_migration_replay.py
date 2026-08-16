@@ -258,6 +258,24 @@ def main() -> int:
                 for lit in re.findall(r"'([a-z_][a-z0-9_]*)'", arr.group(1), re.I):
                     rp.tables.setdefault(norm(lit), {})
 
+        # Literal CREATE TABLE inside a DO $$ body executes at runtime just as
+        # an ADD COLUMN there does, but drop_do_blocks() has already removed it
+        # from `sql`, so the per-statement pass below never registers the table
+        # and every later ALTER on it reads as "table not created yet"
+        # (e.g. esg_reports / energy_metrics, both born inside DO $seed$ blocks
+        # in 20260421000004). Register those tables from the raw text. They are
+        # deliberately NOT marked fully_known: the guard around the block means
+        # we cannot be certain the create ran, so they get existence tracking
+        # without column-existence checks — the same treatment dynamic macro
+        # tables already receive above.
+        for m in re.finditer(
+            r"create\s+table\s+if\s+not\s+exists\s+([a-zA-Z_\".]+)\s*\(",
+            raw, re.I,
+        ):
+            tname = norm(m.group(1))
+            if tname and not tname.startswith(BUILTIN_PREFIXES) and "%i" not in tname:
+                rp.tables.setdefault(tname, {})
+
         # definitions inside DO $$ bodies still execute when their guard
         # passes; harvest ADD COLUMN types from the raw text as well.
         for m in re.finditer(
