@@ -1,0 +1,24 @@
+-- 20260816_privacy_retire_denormalised_system_names.sql
+-- Applied live to Supabase project vhparvughsygyknblkzt on 2026-08-16.
+--
+-- Retire dsar_requests.ai_systems_affected and consent_records.ai_systems.
+--
+-- Both were denormalised copies of what linked_model_ids already held.
+-- Checked before dropping:
+--   * the name arrays were 1:1 with the id arrays in every row;
+--   * every id resolved against ai_models;
+--   * 9 of the 20 stored names had already drifted from the registry — rows
+--     said 'Krishi Karja Credit Scorer' where the model inventory says
+--     'Credit Risk Scorer', and 'Remittance Fraud Engine' where it says
+--     'Fraud Detection Engine'.
+--
+-- Both pages paired the two arrays *by index* to build their deep links, so a
+-- name inserted or removed on one side silently mislabelled a different
+-- system's link. No information is lost: names now resolve from
+-- linked_model_ids at render time, which is the platform rule
+-- ("store the id, resolve the display name at render time") that these
+-- columns violated.
+--
+-- Verified before apply: no code under dashboard/src reads either column.
+alter table public.dsar_requests   drop column if exists ai_systems_affected;
+alter table public.consent_records drop column if exists ai_systems;

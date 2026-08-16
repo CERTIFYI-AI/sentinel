@@ -44,6 +44,10 @@ export interface DpiaRecord {
   ownerName?: string
   linkedModelIds: string[]
   linkedRopaId?: string | null
+  /** The risk the register carries when residual risk survives mitigation. */
+  linkedRiskId?: string | null
+  /** The registered use case this assessment covers. */
+  linkedUseCaseId?: string | null
   createdAt?: string
   updatedAt?: string
 }
@@ -73,6 +77,8 @@ function fromRow(r: Record<string, any>): DpiaRecord {
     ownerName: r.owner_name ?? undefined,
     linkedModelIds: Array.isArray(r.linked_model_ids) ? r.linked_model_ids : [],
     linkedRopaId: r.linked_ropa_id ?? null,
+    linkedRiskId: r.linked_risk_id ?? null,
+    linkedUseCaseId: r.linked_use_case_id ?? null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }
@@ -103,6 +109,8 @@ function toRow(d: Partial<DpiaRecord>): Record<string, any> {
   if (d.ownerName !== undefined) row.owner_name = d.ownerName ?? null
   if (d.linkedModelIds !== undefined) row.linked_model_ids = d.linkedModelIds
   if (d.linkedRopaId !== undefined) row.linked_ropa_id = d.linkedRopaId || null
+  if (d.linkedRiskId !== undefined) row.linked_risk_id = d.linkedRiskId || null
+  if (d.linkedUseCaseId !== undefined) row.linked_use_case_id = d.linkedUseCaseId || null
   return row
 }
 

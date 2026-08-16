@@ -1,5 +1,18 @@
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// React Query hook for the GDPR Arts. 15–22 rights register.
+//
+// Error toasts carry the database's own message rather than a generic
+// "Failed to save": the vocabularies are CHECK-constrained, so a rejected
+// write usually names the constraint it violated, and hiding that behind a
+// generic string is how the earlier silent-failure defects went unnoticed.
+
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchAllDsrRequests, fetchDsrRequest, upsertDsrRequests, deleteDsrRequests } from '@/services/dsrRequestsService'
+import {
+  fetchAllDsrRequests, fetchDsrRequest, upsertDsrRequests, deleteDsrRequests,
+  type DsrRequest,
+} from '@/services/dsrRequestsService'
 import { toast } from 'sonner'
 
 export function useDsrRequestsData(filters: Record<string, any> = {}) {
@@ -10,16 +23,18 @@ export function useDsrRequestsData(filters: Record<string, any> = {}) {
     staleTime: 30_000,
   })
 
+  const inv = () => qc.invalidateQueries({ queryKey: ['dsrRequests'] })
+
   const saveMutation = useMutation({
-    mutationFn: (record: any) => upsertDsrRequests(record),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['dsrRequests'] }); toast.success('Request saved') },
-    onError: () => toast.error('Failed to save request'),
+    mutationFn: (record: Partial<DsrRequest>) => upsertDsrRequests(record),
+    onSuccess: () => { inv(); toast.success('Request saved') },
+    onError: (e: any) => toast.error(e?.message ?? 'Failed to save request'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteDsrRequests(id),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ['dsrRequests'] }); toast.success('Request deleted') },
-    onError: () => toast.error('Failed to delete request'),
+    onSuccess: () => { inv(); toast.success('Request deleted') },
+    onError: (e: any) => toast.error(e?.message ?? 'Failed to delete request'),
   })
 
   return {
