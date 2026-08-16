@@ -1,30 +1,46 @@
 // SPDX-License-Identifier: Apache-2.0
-// Policy Detail — the real `policies` row by :id (uuid or policyRef) via
-// hooks/queries/usePolicies. Renders the real content sections, real version
-// history from policy_versions, real approvals from the oversight queue
-// (approvals table), and interlink chips to the linked controls. No mocked
-// versions/approvals/audit entries.
+// Policy Detail — the CANONICAL surface for one `policies` row (route
+// /policies/:id, uuid or policyRef). Renders the real content sections
+// (sanitized rich text), real version history from policy_versions with an
+// LCS compare-to-previous diff and restore, real approvals from the
+// oversight queue, real acknowledgment evidence from policy_acknowledgments,
+// and the inbound interlink footprint (trainings, AI apps, documents,
+// controls). No mocked versions/approvals/acks.
 import { useParams, useNavigate } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft, Warning, FileText, CheckCircle, Clock, User, CalendarBlank,
   Shield, Tag, ClockCounterClockwise, Scales, PencilSimple, FloppyDisk, X,
-  ClipboardText, MagnifyingGlass,
+  ClipboardText, MagnifyingGlass, Plus, TrashSimple, GitDiff,
+  ArrowCounterClockwise, PaperPlaneTilt,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
+import { Input } from '../../components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { InterlinkChip } from '@/components/ui/InterlinkChip';
+import { FormDialog, Field } from '@/components/evals/FormDialog';
 import { useSettingsStore } from '../../stores/settingsStore';
-import { usePolicies, useUpsertPolicy } from '@/hooks/queries/usePolicies';
+import { useAuthStore } from '../../stores/authStore';
+import {
+  usePolicies, useUpsertPolicy, useSubmitPolicyForApproval,
+  usePolicyAcks, useRequestPolicyAcks, useAcknowledgePolicy, usePolicyBacklinks,
+} from '@/hooks/queries/usePolicies';
 import { usePolicyVersions } from '@/hooks/useComplianceGroup';
 import { useApprovals } from '@/hooks/useRiskIncidents';
 import { useControls } from '@/hooks/queries/useControls';
-import type { PolicyRecord } from '../../services/policyService';
+import { toast } from 'sonner';
+import {
+  savePolicyVersion, upsertPolicy, nextVersion,
+  type PolicyRecord, type PolicyVersionRecord,
+} from '../../services/policyService';
+import { sectionsOf as richSectionsOf, sectionRenderHtml, contentToPlainText } from '@/lib/richtext';
+import { diffLines, diffStats } from '@/lib/lineDiff';
 
 // ── Status helpers ────────────────────────────────────────────────────────────
 
@@ -50,12 +66,17 @@ function fmt(d?: string | null) {
   return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function sectionsOf(content: any): { heading: string; text: string }[] {
-  if (!content || !Array.isArray(content.sections)) return [];
-  return content.sections.map((s: any) => ({
-    heading: s?.heading ?? '',
-    text: s?.text ?? s?.body ?? '',
-  }));
+/** Parse a policy_versions.content text payload (JSON when the source was
+ *  structured, bare prose otherwise) into a content object. */
+function parseVersionContent(raw?: string | null): any {
+  if (!raw) return { summary: '', sections: [] };
+  try {
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+    return { summary: String(parsed ?? ''), sections: [] };
+  } catch {
+    return { summary: raw, sections: [] };
+  }
 }
 
 // ── Main Component ────────────────────────────────────────────────────────────
@@ -64,18 +85,51 @@ export default function PolicyDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { orgName } = useSettingsStore();
+  const { user } = useAuthStore();
+  const qc = useQueryClient();
 
   const { data: policies = [], isLoading, error } = usePolicies();
   const upsertMutation = useUpsertPolicy();
+  const submitMutation = useSubmitPolicyForApproval();
   const { data: controls = [] } = useControls();
   const { items: allApprovals, isLoading: approvalsLoading } = useApprovals();
 
   // :id may be the uuid (canonical) or the business ref (display code).
   const policy = policies.find(p => p.id === id || p.policyRef === id);
   const { data: versions = [], isLoading: versionsLoading } = usePolicyVersions(policy?.id);
+  const { data: acks = [], isLoading: acksLoading } = usePolicyAcks(policy?.id);
+  const { data: backlinks, isLoading: backlinksLoading } = usePolicyBacklinks(policy?.id);
+  const requestAcks = useRequestPolicyAcks();
+  const acknowledge = useAcknowledgePolicy();
+
+  const actorName = user?.fullName ?? user?.email ?? undefined;
 
   const [editOpen, setEditOpen] = useState(false);
   const [editData, setEditData] = useState<Partial<PolicyRecord>>({});
+  // Versions tab state: which version id is expanded into a compare view.
+  const [compareId, setCompareId] = useState<string | null>(null);
+  // Acknowledgment request dialog: a small list of people to add.
+  const [ackDialogOpen, setAckDialogOpen] = useState(false);
+  const [ackPeople, setAckPeople] = useState<{ name: string; email: string }[]>([{ name: '', email: '' }]);
+
+  // Restore an old version: rewrites the policy content AND records a new
+  // policy_versions row — both real writes, both surfaced on failure.
+  const restoreMutation = useMutation({
+    mutationFn: async (v: PolicyVersionRecord) => {
+      if (!policy?.id) throw new Error('Policy not loaded');
+      const content = parseVersionContent(v.content);
+      const version = nextVersion(versions[0]?.version ?? policy.version);
+      await upsertPolicy({ ...policy, name: policy.title, content, version });
+      await savePolicyVersion(policy.id, version, content, actorName, `Restored from ${v.version ?? 'earlier version'}`);
+      return version;
+    },
+    onSuccess: (version) => {
+      qc.invalidateQueries({ queryKey: ['policies'] });
+      qc.invalidateQueries({ queryKey: ['cg-policy-versions'] });
+      toast.success(`Version restored — recorded as ${version}`);
+    },
+    onError: (e: any) => toast.error(e?.message ?? 'Restore failed'),
+  });
 
   if (isLoading) {
     return (
@@ -111,10 +165,14 @@ export default function PolicyDetail() {
   }
 
   const sc = policyStatusColor(policy.status);
-  const sections = sectionsOf(policy.content);
+  const sections = richSectionsOf(policy.content);
   const policyApprovals = allApprovals.filter(a => a.entityType === 'policy' && a.entityId === policy.id);
   const linkedControlIds = policy.linkedControlIds ?? [];
   const controlFor = (cid: string) => controls.find((c: any) => c.id === cid);
+
+  const ackTotal = acks.length;
+  const ackDone = acks.filter(a => a.status === 'acknowledged').length;
+  const ackPct = ackTotal ? Math.round((ackDone / ackTotal) * 100) : null;
 
   return (
     <div style={{ paddingBottom: 40 }}>
@@ -130,6 +188,12 @@ export default function PolicyDetail() {
             <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>{policy.status.replace('_', ' ').toUpperCase()}</Badge>
             {policy.category && <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10 }}>{policy.category}</Badge>}
             {policy.version && <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10 }}>{policy.version}</Badge>}
+            {policy.status === 'draft' && (
+              <Button variant="outline" style={{ borderRadius: 0 }} disabled={submitMutation.isPending}
+                onClick={() => submitMutation.mutate({ policy, requestedBy: actorName ?? null })}>
+                <PaperPlaneTilt size={14} style={{ marginRight: 6 }} /> Submit for approval
+              </Button>
+            )}
             <Button style={{ borderRadius: 0 }} onClick={() => { setEditData({ ...policy }); setEditOpen(true); }}>
               <PencilSimple size={14} style={{ marginRight: 6 }} /> Edit Policy
             </Button>
@@ -163,9 +227,13 @@ export default function PolicyDetail() {
       {/* Tabs */}
       <Tabs defaultValue="details">
         <TabsList style={{ background: 'hsl(var(--bg-muted))', borderRadius: 0, gap: 2 }}>
-          {['details', 'content', 'versions', 'approvals', 'controls'].map(t => (
-            <TabsTrigger key={t} value={t} style={{ borderRadius: 0, textTransform: 'capitalize', fontSize: 13 }}>
-              {t}
+          {([
+            ['details', 'Details'], ['content', 'Content'], ['versions', 'Versions'],
+            ['approvals', 'Approvals'], ['controls', 'Controls'],
+            ['acknowledgments', 'Acknowledgments'], ['linked', 'Linked records'],
+          ] as const).map(([t, label]) => (
+            <TabsTrigger key={t} value={t} style={{ borderRadius: 0, fontSize: 13 }}>
+              {label}
             </TabsTrigger>
           ))}
         </TabsList>
@@ -253,7 +321,13 @@ export default function PolicyDetail() {
                   {sections.map((s, i) => (
                     <div key={i}>
                       <p style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--text-1))', marginBottom: 4 }}>{i + 1}. {s.heading}</p>
-                      <p style={{ fontSize: 13, color: 'hsl(var(--text-2))', lineHeight: 1.6, whiteSpace: 'pre-wrap' }}>{s.text}</p>
+                      {/* sectionRenderHtml sanitizes stored html (and escapes
+                          legacy plain text) before it reaches innerHTML. */}
+                      <div
+                        style={{ fontSize: 13, color: 'hsl(var(--text-2))', lineHeight: 1.6 }}
+                        className="[&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:underline [&_a]:text-[hsl(var(--brand))] [&_p]:my-1 [&_h3]:font-semibold [&_h3]:my-1"
+                        dangerouslySetInnerHTML={{ __html: sectionRenderHtml(s) }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -278,33 +352,79 @@ export default function PolicyDetail() {
                   No versions recorded yet. Saving from the Policy Editor records a version.
                 </p>
               ) : (
-                versions.map((v, i) => (
-                  <div key={v.id} style={{ display: 'flex', gap: 12, paddingBottom: 16 }}>
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                      <div style={{
-                        width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
-                        background: i === 0 ? 'hsl(var(--brand))' : 'hsl(var(--bg-muted))',
-                        border: `2px solid ${i === 0 ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}>
-                        <span style={{ fontSize: 10, fontWeight: 700, color: i === 0 ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-3))' }}>{v.version ?? '—'}</span>
+                versions.map((v, i) => {
+                  const prev = versions[i + 1]; // list is newest-first
+                  const comparing = compareId === v.id;
+                  const diff = comparing && prev
+                    ? diffLines(contentToPlainText(parseVersionContent(prev.content)), contentToPlainText(parseVersionContent(v.content)))
+                    : null;
+                  const stats = diff ? diffStats(diff) : null;
+                  return (
+                    <div key={v.id} style={{ display: 'flex', gap: 12, paddingBottom: 16 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{
+                          width: 36, height: 36, borderRadius: '50%', flexShrink: 0,
+                          background: i === 0 ? 'hsl(var(--brand))' : 'hsl(var(--bg-muted))',
+                          border: `2px solid ${i === 0 ? 'hsl(var(--brand))' : 'hsl(var(--border))'}`,
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        }}>
+                          <span style={{ fontSize: 10, fontWeight: 700, color: i === 0 ? 'hsl(var(--bg-surface))' : 'hsl(var(--text-3))' }}>{v.version ?? '—'}</span>
+                        </div>
+                        {i < versions.length - 1 && <div style={{ width: 1, flex: 1, marginTop: 4, background: 'hsl(var(--border))' }} />}
                       </div>
-                      {i < versions.length - 1 && <div style={{ width: 1, flex: 1, marginTop: 4, background: 'hsl(var(--border))' }} />}
-                    </div>
-                    <div style={{ paddingBottom: 8, flex: 1 }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--text-1))' }}>{v.version ?? '—'}</span>
-                        {i === 0 && (
-                          <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))', borderRadius: 0, fontSize: 10 }}>LATEST</Badge>
+                      <div style={{ paddingBottom: 8, flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 4, flexWrap: 'wrap' }}>
+                          <span style={{ fontSize: 13, fontWeight: 600, color: 'hsl(var(--text-1))' }}>{v.version ?? '—'}</span>
+                          {i === 0 && (
+                            <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))', borderRadius: 0, fontSize: 10 }}>LATEST</Badge>
+                          )}
+                          <span style={{ marginLeft: 'auto', display: 'flex', gap: 6 }}>
+                            {prev && (
+                              <Button size="sm" variant="ghost" style={{ borderRadius: 0, padding: '2px 8px', fontSize: 11 }}
+                                onClick={() => setCompareId(comparing ? null : (v.id ?? null))}>
+                                <GitDiff size={12} /> {comparing ? 'Hide diff' : 'Compare to previous'}
+                              </Button>
+                            )}
+                            {i !== 0 && (
+                              <Button size="sm" variant="ghost" style={{ borderRadius: 0, padding: '2px 8px', fontSize: 11 }}
+                                disabled={restoreMutation.isPending}
+                                onClick={() => restoreMutation.mutate(v)}>
+                                <ArrowCounterClockwise size={12} /> {restoreMutation.isPending ? 'Restoring…' : 'Restore this version'}
+                              </Button>
+                            )}
+                          </span>
+                        </div>
+                        {v.changelog && <p style={{ fontSize: 12, color: 'hsl(var(--text-2))', margin: 0, lineHeight: 1.5 }}>{v.changelog}</p>}
+                        <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginTop: 4 }}>
+                          {fmt(v.createdAt)}{v.changedBy ? ` · ${v.changedBy}` : ''}
+                        </p>
+                        {diff && stats && (
+                          <div style={{ marginTop: 8, border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
+                            <div style={{ padding: '6px 10px', borderBottom: '1px solid hsl(var(--border))', display: 'flex', gap: 8, alignItems: 'center' }}>
+                              <span style={{ fontSize: 11, color: 'hsl(var(--text-3))' }}>{prev!.version ?? '—'} → {v.version ?? '—'}</span>
+                              <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'hsl(var(--s-ok-tx))' }}>+{stats.added}</span>
+                              <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'hsl(var(--s-er-tx))' }}>−{stats.removed}</span>
+                            </div>
+                            <div style={{ maxHeight: 280, overflowY: 'auto', padding: '6px 0' }}>
+                              {stats.added === 0 && stats.removed === 0 ? (
+                                <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', padding: '4px 10px', margin: 0 }}>
+                                  No text changes between these versions.
+                                </p>
+                              ) : diff.map((l, li) => (
+                                <pre key={li} style={{
+                                  margin: 0, padding: '1px 10px', fontSize: 11, lineHeight: 1.6,
+                                  whiteSpace: 'pre-wrap', wordBreak: 'break-word', fontFamily: 'monospace',
+                                  background: l.type === 'added' ? 'hsl(var(--s-ok-bg))' : l.type === 'removed' ? 'hsl(var(--s-er-bg))' : 'transparent',
+                                  color: l.type === 'added' ? 'hsl(var(--s-ok-tx))' : l.type === 'removed' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-3))',
+                                }}>{l.type === 'added' ? '+ ' : l.type === 'removed' ? '− ' : '  '}{l.text}</pre>
+                              ))}
+                            </div>
+                          </div>
                         )}
                       </div>
-                      {v.changelog && <p style={{ fontSize: 12, color: 'hsl(var(--text-2))', margin: 0, lineHeight: 1.5 }}>{v.changelog}</p>}
-                      <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', marginTop: 4 }}>
-                        {fmt(v.createdAt)}{v.changedBy ? ` · ${v.changedBy}` : ''}
-                      </p>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </CardContent>
           </Card>
@@ -399,7 +519,172 @@ export default function PolicyDetail() {
             </div>
           )}
         </TabsContent>
+
+        {/* ── Acknowledgments — real policy_acknowledgments rows ── */}
+        <TabsContent value="acknowledgments" className="mt-4">
+          <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+            <CardHeader style={{ padding: '14px 16px 10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                <CardTitle style={{ fontSize: 14, fontWeight: 600 }}>Acknowledgments</CardTitle>
+                <Button size="sm" style={{ borderRadius: 0 }}
+                  onClick={() => { setAckPeople([{ name: '', email: '' }]); setAckDialogOpen(true); }}>
+                  <Plus size={13} /> Request acknowledgment
+                </Button>
+              </div>
+              {ackPct != null && (
+                <div style={{ marginTop: 10 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, color: 'hsl(var(--text-3))' }}>{ackDone} of {ackTotal} acknowledged</span>
+                    <span style={{ fontSize: 11, fontFamily: 'monospace', color: 'hsl(var(--text-2))' }}>{ackPct}%</span>
+                  </div>
+                  <div style={{ height: 6, background: 'hsl(var(--bg-muted))' }}>
+                    <div style={{ height: 6, width: `${ackPct}%`, background: 'hsl(var(--s-ok-tx))' }} />
+                  </div>
+                </div>
+              )}
+            </CardHeader>
+            <CardContent style={{ padding: '0 16px 16px' }}>
+              {acksLoading ? (
+                <p style={{ fontSize: 12, color: 'hsl(var(--text-4))', textAlign: 'center', padding: '24px 0' }}>Loading acknowledgments…</p>
+              ) : acks.length === 0 ? (
+                <p style={{ fontSize: 12, color: 'hsl(var(--text-4))', textAlign: 'center', padding: '24px 0' }}>
+                  No acknowledgments requested yet. Request them here, or link a training to this policy — attendee completions sync in automatically.
+                </p>
+              ) : (
+                <div style={{ border: '1px solid hsl(var(--border))' }}>
+                  {acks.map((a, i) => (
+                    <div key={a.id ?? i} style={{
+                      display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px',
+                      borderTop: i === 0 ? 'none' : '1px solid hsl(var(--border))',
+                    }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 500, color: 'hsl(var(--text-1))', margin: 0 }}>{a.personName}</p>
+                        <p style={{ fontSize: 11, color: 'hsl(var(--text-4))', margin: '2px 0 0 0' }}>
+                          {a.personEmail ?? '—'} · v{(a.policyVersion ?? '—').replace(/^v/i, '')} · {a.source === 'training' ? 'via training' : 'manual'}
+                          {a.acknowledgedAt ? ` · acknowledged ${fmt(a.acknowledgedAt)}` : ''}
+                        </p>
+                      </div>
+                      {a.source === 'training' && a.trainingId && (
+                        <InterlinkChip label="Training" to="/ai-literacy" />
+                      )}
+                      <Badge style={{
+                        borderRadius: 0, fontSize: 10,
+                        background: a.status === 'acknowledged' ? 'hsl(var(--s-ok-bg))' : a.status === 'declined' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--s-wn-bg))',
+                        color: a.status === 'acknowledged' ? 'hsl(var(--s-ok-tx))' : a.status === 'declined' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-wn-tx))',
+                        border: `1px solid ${a.status === 'acknowledged' ? 'hsl(var(--s-ok-br))' : a.status === 'declined' ? 'hsl(var(--s-er-br))' : 'hsl(var(--s-wn-br))'}`,
+                      }}>{a.status}</Badge>
+                      {a.status === 'pending' && a.id && (
+                        <Button size="sm" variant="outline" style={{ borderRadius: 0, fontSize: 11, padding: '2px 8px' }}
+                          disabled={acknowledge.isPending}
+                          onClick={() => acknowledge.mutate({ ackId: a.id!, byName: actorName, policyId: policy.id! })}>
+                          <CheckCircle size={12} /> Acknowledge
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* ── Linked records — inbound interlinks resolved by id ── */}
+        <TabsContent value="linked" className="mt-4">
+          {backlinksLoading ? (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+              <CardContent style={{ padding: 24, textAlign: 'center' }}>
+                <p style={{ fontSize: 12, color: 'hsl(var(--text-4))' }}>Loading linked records…</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              {([
+                { key: 'trainings', title: 'Trainings governed by this policy', source: backlinks?.trainings, to: () => '/ai-literacy', empty: 'No trainings link to this policy yet.' },
+                { key: 'aiApps', title: 'AI apps governed by this policy', source: backlinks?.aiApps, to: () => '/ai-apps', empty: 'No AI apps link to this policy yet.' },
+                { key: 'documents', title: 'Documents referencing this policy', source: backlinks?.documents, to: (bid: string) => `/documents?open=${bid}`, empty: 'No documents reference this policy yet.' },
+                { key: 'controls', title: 'Controls citing this policy', source: backlinks?.controls, to: (bid: string) => `/compliance/controls?open=${bid}`, empty: 'No controls cite this policy yet.' },
+              ] as const).map(({ key, title, source, to, empty }) => (
+                <Card key={key} style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+                  <CardHeader style={{ padding: '14px 16px 8px' }}>
+                    <CardTitle style={{ fontSize: 13, fontWeight: 600 }}>
+                      {title}{source?.count != null ? ` (${source.count})` : ''}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent style={{ padding: '0 16px 14px' }}>
+                    {source?.count == null ? (
+                      <p style={{ fontSize: 12, color: 'hsl(var(--text-4))', margin: 0 }}>Unavailable</p>
+                    ) : source.items.length === 0 ? (
+                      <p style={{ fontSize: 12, color: 'hsl(var(--text-4))', margin: 0 }}>{empty}</p>
+                    ) : (
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                        {source.items.map(item => (
+                          <div key={item.id} style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
+                            <InterlinkChip label={item.ref ?? item.title ?? 'Unavailable'} to={to(item.id)} />
+                            <span style={{ fontSize: 12, color: 'hsl(var(--text-2))', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{item.title}</span>
+                            {item.status && (
+                              <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10, marginLeft: 'auto', flexShrink: 0 }}>
+                                {item.status.replace(/_/g, ' ')}
+                              </Badge>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
+
+      {/* Request-acknowledgment dialog — bulk-adds pending rows */}
+      <FormDialog
+        open={ackDialogOpen}
+        onOpenChange={setAckDialogOpen}
+        title="Request acknowledgment"
+        description={`People added here get a pending acknowledgment for ${policy.title}${policy.version ? ` (version ${policy.version})` : ''}.`}
+        submitLabel="Request"
+        busy={requestAcks.isPending}
+        disabled={!ackPeople.some(p => p.name.trim())}
+        onSubmit={() => {
+          requestAcks.mutate(
+            {
+              policyId: policy.id!,
+              version: policy.version ?? null,
+              people: ackPeople.filter(p => p.name.trim()).map(p => ({ name: p.name, email: p.email || undefined })),
+            },
+            { onSuccess: () => setAckDialogOpen(false) }, // closes only on success
+          );
+        }}
+      >
+        {ackPeople.map((p, i) => (
+          <div key={i} className="flex items-end gap-2">
+            <div className="flex-1">
+              <Field label={i === 0 ? 'Name' : ''} required={i === 0}>
+                <Input value={p.name} placeholder="Full name"
+                  onChange={e => setAckPeople(list => list.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
+              </Field>
+            </div>
+            <div className="flex-1">
+              <Field label={i === 0 ? 'Email (optional)' : ''}>
+                <Input type="email" value={p.email} placeholder="name@example.com"
+                  onChange={e => setAckPeople(list => list.map((x, j) => j === i ? { ...x, email: e.target.value } : x))} />
+              </Field>
+            </div>
+            <Button type="button" size="sm" variant="ghost" style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))' }}
+              disabled={ackPeople.length === 1}
+              aria-label={`Remove person ${i + 1}`}
+              onClick={() => setAckPeople(list => list.filter((_, j) => j !== i))}>
+              <TrashSimple size={13} />
+            </Button>
+          </div>
+        ))}
+        <Button type="button" size="sm" variant="outline" style={{ borderRadius: 0 }}
+          onClick={() => setAckPeople(list => [...list, { name: '', email: '' }])}>
+          <Plus size={12} /> Add person
+        </Button>
+      </FormDialog>
 
       {/* Edit Dialog — real upsert; closes only on success */}
       <Dialog open={editOpen} onOpenChange={setEditOpen}>
@@ -426,10 +711,14 @@ export default function PolicyDetail() {
             ))}
             <div>
               <label style={{ fontSize: 12, fontWeight: 500, color: 'hsl(var(--text-2))', display: 'block', marginBottom: 4 }}>Status</label>
+              {/* Publication happens only through the approval queue — the
+                  status field can't jump straight to 'published' (it stays
+                  selectable only if the policy already is published). */}
               <Select value={(editData.status ?? policy.status)} onValueChange={v => setEditData(prev => ({ ...prev, status: v }))}>
                 <SelectTrigger style={{ width: '100%', borderRadius: 0 }}><SelectValue /></SelectTrigger>
                 <SelectContent style={{ borderRadius: 0 }}>
-                  {['published', 'in_review', 'draft', 'archived'].map(s => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
+                  {(policy.status === 'published' ? ['published', 'in_review', 'draft', 'archived'] : ['in_review', 'draft', 'archived'])
+                    .map(s => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>

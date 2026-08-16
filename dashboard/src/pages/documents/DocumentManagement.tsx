@@ -176,7 +176,8 @@ export default function DocumentManagement() {
       case 'model':
         return <InterlinkChip label={modelName(d.linkedEntityId)} to={`/models/inventory/${d.linkedEntityId}`} />;
       case 'policy':
-        return <InterlinkChip label={policyLabel(d.linkedEntityId)} to={`/policies?open=${d.linkedEntityId}`} />;
+        // /policies/:id is the canonical policy record surface.
+        return <InterlinkChip label={policyLabel(d.linkedEntityId)} to={`/policies/${d.linkedEntityId}`} />;
       case 'use_case':
         return <InterlinkChip label="Use case" to={`/use-cases/${d.linkedEntityId}`} />;
       default:

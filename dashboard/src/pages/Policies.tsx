@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 // Policy Management — real org-scoped `policies` backend via
 // hooks/queries/usePolicies (service throws; the hook owns success toasts).
-// Renders the real policy content (content.summary + content.sections),
-// version history from policy_versions, and interlinks to controls.
+// The list is the entry point; /policies/:id (PolicyDetail) is the canonical
+// record surface — row clicks navigate there and ?open=<id> redirects there.
+// The quick-view sheet (Eye) shows only the summary + "Open record".
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { usePolicies, useUpsertPolicy, useDeletePolicy } from '@/hooks/queries/usePolicies';
-import { usePolicyVersions } from '@/hooks/useComplianceGroup';
-import { useApprovals } from '@/hooks/useRiskIncidents';
+import { usePolicies, useUpsertPolicy, useDeletePolicy, useSubmitPolicyForApproval } from '@/hooks/queries/usePolicies';
 import { useControls } from '@/hooks/queries/useControls';
 import { useAuthStore } from '../stores/authStore';
 import type { PolicyRecord } from '../services/policyService';
@@ -20,18 +19,16 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '../components/ui/alert-dialog';
-import { InterlinkChip } from '@/components/ui/InterlinkChip';
 import { exportCsv } from '@/lib/exportUtils';
 import {
   FileText, Plus, Eye, PencilSimple, Trash, MagnifyingGlass,
-  CheckCircle, Clock, NotePencil, Download, PaperPlaneTilt, X,
-  ClockCounterClockwise,
+  CheckCircle, Clock, NotePencil, Download, PaperPlaneTilt,
+  ArrowSquareOut,
 } from '@phosphor-icons/react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
 import { useSettingsStore } from '../stores/settingsStore';
@@ -64,15 +61,6 @@ const EMPTY_FORM: FormState = {
   version: '1.0', owner: '', framework: '', approver: '', nextReviewAt: '',
 };
 
-// content jsonb: {summary, sections:[{heading, text|body}]}
-function sectionsOf(content: any): { heading: string; text: string }[] {
-  if (!content || !Array.isArray(content.sections)) return [];
-  return content.sections.map((s: any) => ({
-    heading: s?.heading ?? '',
-    text: s?.text ?? s?.body ?? '',
-  }));
-}
-
 export default function Policies() {
   const navigate = useNavigate()
   const { orgName } = useSettingsStore();
@@ -81,9 +69,9 @@ export default function Policies() {
   const { data: policies = [], isLoading, error } = usePolicies();
   const upsertMutation = useUpsertPolicy();
   const deleteMutation = useDeletePolicy();
+  const submitMutation = useSubmitPolicyForApproval();
   const { data: controls = [] } = useControls();
-  const approvals = useApprovals();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const [searchParams] = useSearchParams();
   const openParam = searchParams.get('open');
 
   const [search, setSearch] = useState('');
@@ -95,24 +83,16 @@ export default function Policies() {
   const [createOpen, setCreateOpen] = useState(false);
   const [formData, setFormData] = useState<FormState>(EMPTY_FORM);
 
-  const { data: viewVersions = [], isLoading: versionsLoading } = usePolicyVersions(viewItem?.id);
-
-  // Deep link: ?open=<uuid or policyRef> opens the detail sheet.
+  // Deep link: ?open=<uuid or policyRef> — /policies/:id is the canonical
+  // detail surface, so redirect there instead of opening a local sheet.
   useEffect(() => {
     if (!openParam || isLoading) return;
     const match = policies.find(p => p.id === openParam || p.policyRef === openParam);
-    if (match) setViewItem(match);
-  }, [openParam, policies, isLoading]);
+    navigate(match?.id ? `/policies/${match.id}` : `/policies/${openParam}`, { replace: true });
+  }, [openParam, policies, isLoading, navigate]);
 
   const closeSheet = (open: boolean) => {
-    if (!open) {
-      setViewItem(null);
-      if (openParam) {
-        const next = new URLSearchParams(searchParams);
-        next.delete('open');
-        setSearchParams(next, { replace: true });
-      }
-    }
+    if (!open) setViewItem(null);
   };
 
   const controlLabel = (id: string) => {
@@ -211,24 +191,15 @@ export default function Policies() {
     } catch { /* hook surfaces the error toast */ }
   }
 
-  // Submit for approval: real ApprovalRecord in the oversight queue + status
-  // transition to in_review. Both writes throw; nothing reports fake success.
+  // Submit for approval: the service binds the request to the active
+  // policy_change workflow, refuses duplicate pending requests, moves the
+  // policy to in_review, and audits the submission. The hook owns the toasts.
   async function handleSubmitForApproval(p: PolicyRecord) {
     if (!p.id) return;
     try {
-      await approvals.save({
-        entityType: 'policy',
-        entityId: p.id,
-        entityName: p.title,
-        requestedBy: user?.fullName ?? user?.email ?? null,
-        requestedAction: 'approve_policy',
-        reason: `Publish request for policy ${p.policyRef ?? p.title}`,
-        status: 'pending',
-        stepIndex: 0,
-      });
-      await upsertMutation.mutateAsync({ ...p, name: p.title, status: 'in_review' });
+      await submitMutation.mutateAsync({ policy: p, requestedBy: user?.fullName ?? user?.email ?? null });
       setViewItem(prev => (prev && prev.id === p.id ? { ...prev, status: 'in_review' } : prev));
-    } catch { /* hooks surface the error toasts */ }
+    } catch { /* hook surfaces the error toast */ }
   }
 
   function handleExport() {
@@ -248,8 +219,6 @@ export default function Policies() {
       `policies-${new Date().toISOString().split('T')[0]}.csv`,
     );
   }
-
-  const viewSections = viewItem ? sectionsOf(viewItem.content) : [];
 
   return (
     <div className="space-y-6">
@@ -278,17 +247,6 @@ export default function Policies() {
           <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load policies</p>
           <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>{(error as Error).message}</p>
         </div>
-      )}
-
-      {/* Deep-link filter chip */}
-      {openParam && (
-        <button
-          onClick={() => closeSheet(false)}
-          className="inline-flex items-center gap-1 text-xs px-2 py-1"
-          style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))' }}
-        >
-          Opened from link: {openParam} <X size={12} />
-        </button>
       )}
 
       {/* Stats */}
@@ -415,7 +373,7 @@ export default function Policies() {
                       style={{ borderTop: '1px solid hsl(var(--border))' }}
                       onMouseEnter={e => (e.currentTarget.style.background = 'hsl(var(--bg-muted))')}
                       onMouseLeave={e => (e.currentTarget.style.background = '')}
-                      onClick={() => setViewItem(p)}
+                      onClick={() => p.id && navigate(`/policies/${p.id}`)}
                     >
                       <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{p.policyRef ?? '—'}</td>
                       <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))', maxWidth: 220 }}>
@@ -453,9 +411,9 @@ export default function Policies() {
         </CardContent>
       </Card>
 
-      {/* View Sheet */}
+      {/* Quick-view sheet — summary only; /policies/:id is the record surface */}
       <Sheet open={!!viewItem} onOpenChange={closeSheet}>
-        <SheetContent className="overflow-y-auto" style={{ width: 560, maxWidth: '90vw', background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
+        <SheetContent className="overflow-y-auto" style={{ width: 480, maxWidth: '90vw', background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
           {viewItem && (
             <>
               <SheetHeader className="pb-4">
@@ -472,115 +430,36 @@ export default function Policies() {
                 </div>
               </SheetHeader>
 
-              <Tabs defaultValue="details">
-                <TabsList className="w-full" style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
-                  <TabsTrigger value="details" style={{ borderRadius: 0 }}>Details</TabsTrigger>
-                  <TabsTrigger value="content" style={{ borderRadius: 0 }}>Content</TabsTrigger>
-                  <TabsTrigger value="versions" style={{ borderRadius: 0 }}>Versions</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="details" className="mt-3">
-                  <div className="space-y-3">
-                    {[
-                      { label: 'Policy Ref', value: viewItem.policyRef ?? '—' },
-                      { label: 'Owner', value: viewItem.owner ?? '—' },
-                      { label: 'Approver', value: viewItem.approver ?? 'Pending' },
-                      { label: 'Effective', value: fmt(viewItem.effectiveAt ?? viewItem.effectiveDate) },
-                      { label: 'Next Review', value: fmt(viewItem.nextReviewAt ?? viewItem.nextReviewDate) },
-                      { label: 'Acknowledgment', value: viewItem.acknowledgmentRequired ? 'Required' : 'Not required' },
-                    ].map(r => (
-                      <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                        <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
-                        <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
-                      </div>
-                    ))}
-                    {viewItem.description && (
-                      <div className="pt-2">
-                        <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Description</p>
-                        <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
-                      </div>
-                    )}
-                    {(viewItem.linkedFrameworks ?? []).length > 0 && (
-                      <div className="pt-2">
-                        <p className="text-xs font-semibold mb-1.5" style={{ color: 'hsl(var(--text-2))' }}>Linked Frameworks</p>
-                        <div className="flex flex-wrap gap-1.5">
-                          {(viewItem.linkedFrameworks ?? []).map(fw => (
-                            <Badge key={fw} variant="outline" style={{ borderRadius: 0, fontSize: 11 }}>{fw}</Badge>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                    <div className="pt-2">
-                      <p className="text-xs font-semibold mb-1.5" style={{ color: 'hsl(var(--text-2))' }}>Linked Controls</p>
-                      {(viewItem.linkedControlIds ?? []).length === 0 ? (
-                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No controls linked to this policy yet.</p>
-                      ) : (
-                        <div className="flex flex-wrap gap-1.5">
-                          {(viewItem.linkedControlIds ?? []).map(cid => (
-                            <InterlinkChip key={cid} label={controlLabel(cid)} to={`/compliance/controls?open=${cid}`} />
-                          ))}
-                        </div>
-                      )}
-                    </div>
+              <div className="space-y-3">
+                {[
+                  { label: 'Policy Ref', value: viewItem.policyRef ?? '—' },
+                  { label: 'Owner', value: viewItem.owner ?? '—' },
+                  { label: 'Next Review', value: fmt(viewItem.nextReviewAt ?? viewItem.nextReviewDate) },
+                ].map(r => (
+                  <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
+                    <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
                   </div>
-                </TabsContent>
-
-                <TabsContent value="content" className="mt-3">
-                  {(!viewItem.content || (!viewItem.content.summary && viewSections.length === 0)) ? (
-                    <p className="text-xs text-center py-8" style={{ color: 'hsl(var(--text-4))' }}>
-                      No policy text recorded yet. Draft the content in the Policy Editor.
-                    </p>
-                  ) : (
-                    <div className="space-y-4">
-                      {viewItem.content.summary && (
-                        <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.content.summary}</p>
-                      )}
-                      {viewSections.map((s, i) => (
-                        <div key={i}>
-                          <p className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>{i + 1}. {s.heading}</p>
-                          <p className="text-sm leading-relaxed whitespace-pre-wrap" style={{ color: 'hsl(var(--text-2))' }}>{s.text}</p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-
-                <TabsContent value="versions" className="mt-3">
-                  {versionsLoading ? (
-                    <p className="text-xs text-center py-8" style={{ color: 'hsl(var(--text-4))' }}>Loading version history…</p>
-                  ) : viewVersions.length === 0 ? (
-                    <p className="text-xs text-center py-8" style={{ color: 'hsl(var(--text-4))' }}>
-                      No versions recorded yet. Saving from the Policy Editor records a version.
-                    </p>
-                  ) : (
-                    <div className="space-y-3">
-                      {viewVersions.map((v, i) => (
-                        <div key={v.id} className="p-3" style={{ borderLeft: i === 0 ? '3px solid hsl(var(--brand))' : '3px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
-                          <div className="flex items-center justify-between">
-                            <span className="text-xs font-bold font-mono flex items-center gap-1" style={{ color: i === 0 ? 'hsl(var(--brand))' : 'hsl(var(--text-1))' }}>
-                              <ClockCounterClockwise size={12} /> {v.version ?? '—'}
-                            </span>
-                            <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{fmt(v.createdAt)}</span>
-                          </div>
-                          {v.changelog && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>{v.changelog}</p>}
-                          {v.changedBy && <p className="text-[10px] mt-1" style={{ color: 'hsl(var(--text-4))' }}>by {v.changedBy}</p>}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
+                ))}
+                {viewItem.description && (
+                  <p className="text-sm pt-1" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
+                )}
+                {typeof viewItem.content?.summary === 'string' && viewItem.content.summary && (
+                  <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.content.summary}</p>
+                )}
+              </div>
 
               <div className="flex gap-2 mt-6 flex-wrap">
+                <Button size="sm" style={{ borderRadius: 0 }}
+                  onClick={() => viewItem.id && navigate(`/policies/${viewItem.id}`)}>
+                  <ArrowSquareOut size={14} /> Open record
+                </Button>
                 {(viewItem.status === 'draft') && viewItem.id && (
-                  <Button size="sm" style={{ borderRadius: 0 }} disabled={approvals.isLoading}
+                  <Button size="sm" variant="outline" style={{ borderRadius: 0 }} disabled={submitMutation.isPending}
                     onClick={() => handleSubmitForApproval(viewItem)}>
                     <PaperPlaneTilt size={14} /> Submit for approval
                   </Button>
                 )}
-                <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => { setEditItem({ ...viewItem }); }}>
-                  <PencilSimple size={14} /> Edit
-                </Button>
                 <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => closeSheet(false)}>Close</Button>
               </div>
             </>
@@ -615,10 +494,13 @@ export default function Policies() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
+                  {/* Publication happens only through the approval queue —
+                      'published' is not a free pick unless already published. */}
                   <Select value={editItem.status} onValueChange={v => setEditItem(prev => prev ? { ...prev, status: v } : null)}>
                     <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                     <SelectContent style={{ borderRadius: 0 }}>
-                      {['published', 'in_review', 'draft', 'archived'].map(s => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
+                      {(editItem.status === 'published' ? ['published', 'in_review', 'draft', 'archived'] : ['in_review', 'draft', 'archived'])
+                        .map(s => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -635,6 +517,36 @@ export default function Policies() {
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Next Review</label>
                 <Input type="date" value={(editItem.nextReviewAt ?? editItem.nextReviewDate ?? '').split('T')[0]} onChange={e => setEditItem(prev => prev ? { ...prev, nextReviewAt: e.target.value || null } : null)} style={{ borderRadius: 0 }} />
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>
+                  Linked Controls <span style={{ color: 'hsl(var(--text-4))', fontWeight: 400 }}>— controls this policy operationalises</span>
+                </label>
+                {controls.length === 0 ? (
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No controls available yet.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2" style={{ border: '1px solid hsl(var(--border))' }}>
+                    {controls.map((c: any) => {
+                      const selected = (editItem.linkedControlIds ?? []).includes(c.id);
+                      return (
+                        <button key={c.id} type="button"
+                          title={c.name ?? c.title ?? ''}
+                          onClick={() => setEditItem(prev => prev ? {
+                            ...prev,
+                            linkedControlIds: selected
+                              ? (prev.linkedControlIds ?? []).filter(x => x !== c.id)
+                              : [...(prev.linkedControlIds ?? []), c.id],
+                          } : null)}
+                          className="px-2 py-1 text-[11px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--brand))]"
+                          style={selected
+                            ? { border: '1px solid hsl(var(--brand))', background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }
+                            : { border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+                          {controlLabel(c.id)}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -671,10 +583,12 @@ export default function Policies() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</label>
+                {/* New policies are born draft/in_review — publication only
+                    happens through the approval workflow. */}
                 <Select value={formData.status} onValueChange={v => setFormData(prev => ({ ...prev, status: v }))}>
                   <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
-                    {['draft', 'in_review', 'published'].map(s => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
+                    {['draft', 'in_review'].map(s => <SelectItem key={s} value={s}>{s.replace('_', ' ')}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>

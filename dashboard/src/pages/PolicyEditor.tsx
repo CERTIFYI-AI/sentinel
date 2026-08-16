@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 // Policy Editor — the structured editor for REAL policies (policies table via
-// hooks/queries/usePolicies). Editing writes the policy row AND records a
-// policy_versions row with a properly incremented semver minor, changedBy
-// from the signed-in user, and an operator-entered changelog. Submitting for
-// approval creates a real ApprovalRecord in the oversight queue.
+// hooks/queries/usePolicies). Sections are authored in RichTextArea (a
+// whitelist-sanitized contenteditable — html is sanitized on save AND again
+// on render). Editing writes the policy row AND records a policy_versions
+// row with a properly incremented version, changedBy from the signed-in
+// user, and an operator-entered changelog. Submitting for approval routes
+// through policyService.submitPolicyForApproval (workflow-bound + audited).
 import { useMemo, useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileText, Plus, PencilSimple, FloppyDisk, X, Clock, PaperPlaneTilt, TrashSimple } from '@phosphor-icons/react';
@@ -15,13 +17,17 @@ import { Input } from '../components/ui/input';
 import { Textarea } from '../components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog';
 import { toast } from 'sonner';
-import { usePolicies, useUpsertPolicy } from '@/hooks/queries/usePolicies';
+import { usePolicies, useUpsertPolicy, useSubmitPolicyForApproval } from '@/hooks/queries/usePolicies';
 import { usePolicyVersions } from '@/hooks/useComplianceGroup';
-import { useApprovals } from '@/hooks/useRiskIncidents';
 import { useAuthStore } from '../stores/authStore';
-import { savePolicyVersion, type PolicyRecord } from '../services/policyService';
+import { savePolicyVersion, nextVersion, type PolicyRecord } from '../services/policyService';
+import { RichTextArea } from '@/components/policies/RichTextArea';
+import {
+  sanitizeHtml, htmlToPlainText, sectionsOf as richSectionsOf,
+  sectionRenderHtml, type PolicySection,
+} from '@/lib/richtext';
 
-interface SectionDraft { heading: string; text: string }
+interface SectionDraft { heading: string; html: string }
 interface EditorDraft {
   title: string;
   description: string;
@@ -30,20 +36,12 @@ interface EditorDraft {
   changelog: string;
 }
 
-// Increment the semver minor from the LAST version row ('v'?maj.min);
-// default 1.0 when no version has been recorded yet.
-function nextVersion(last?: string | null): string {
-  const m = /^v?(\d+)\.(\d+)/.exec(last ?? '');
-  if (!m) return '1.0';
-  const prefix = /^v/i.test(last ?? '') ? 'v' : '';
-  return `${prefix}${m[1]}.${Number(m[2]) + 1}`;
-}
-
-function sectionsOf(content: any): SectionDraft[] {
-  if (!content || !Array.isArray(content.sections)) return [];
-  return content.sections.map((s: any) => ({
-    heading: s?.heading ?? '',
-    text: s?.text ?? s?.body ?? '',
+// Existing sections (rich html OR legacy text/body) become editable html —
+// sectionRenderHtml escapes legacy plain text into paragraphs.
+function toDraftSections(content: any): SectionDraft[] {
+  return richSectionsOf(content).map((s: PolicySection) => ({
+    heading: s.heading,
+    html: sectionRenderHtml(s),
   }));
 }
 
@@ -60,7 +58,7 @@ export default function PolicyEditor() {
   const { user } = useAuthStore();
   const { data: policies = [], isLoading, error } = usePolicies();
   const upsertMutation = useUpsertPolicy();
-  const approvals = useApprovals();
+  const submitMutation = useSubmitPolicyForApproval();
   const qc = useQueryClient();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -92,7 +90,7 @@ export default function PolicyEditor() {
       title: selected.title,
       description: selected.description ?? '',
       summary: selected.content?.summary ?? '',
-      sections: sectionsOf(selected.content),
+      sections: toDraftSections(selected.content),
       changelog: '',
     });
   };
@@ -100,10 +98,16 @@ export default function PolicyEditor() {
   const saveDraft = async () => {
     if (!draft || !selected?.id) return;
     if (!draft.title.trim()) { toast.error('Title is required'); return; }
+    // Sections persist as {heading, html, text}: html is the sanitized rich
+    // form, text the plain projection (kept for search/diff and any renderer
+    // that only understands plain text).
     const content = {
       ...(selected.content && typeof selected.content === 'object' ? selected.content : {}),
       summary: draft.summary,
-      sections: draft.sections.map(s => ({ heading: s.heading, text: s.text })),
+      sections: draft.sections.map(s => {
+        const html = sanitizeHtml(s.html);
+        return { heading: s.heading, html, text: htmlToPlainText(html) };
+      }),
     };
     const version = nextVersion(versions[0]?.version ?? selected.version);
     try {
@@ -128,18 +132,10 @@ export default function PolicyEditor() {
   const submitForApproval = async () => {
     if (!selected?.id) return;
     try {
-      await approvals.save({
-        entityType: 'policy',
-        entityId: selected.id,
-        entityName: selected.title,
-        requestedBy: changedBy ?? null,
-        requestedAction: 'approve_policy',
-        reason: `Publish request for policy ${selected.policyRef ?? selected.title}`,
-        status: 'pending',
-        stepIndex: 0,
-      });
-      await upsertMutation.mutateAsync({ ...selected, name: selected.title, status: 'in_review' });
-    } catch { /* hooks surface the error toasts */ }
+      // The service binds the request to the active policy_change workflow,
+      // refuses duplicate pending requests and audits the submission.
+      await submitMutation.mutateAsync({ policy: selected, requestedBy: changedBy ?? null });
+    } catch { /* hook surfaces the error toast */ }
   };
 
   const createPolicy = async () => {
@@ -175,12 +171,12 @@ export default function PolicyEditor() {
   const setSection = (i: number, patch: Partial<SectionDraft>) =>
     setDraft(d => d ? { ...d, sections: d.sections.map((s, j) => (j === i ? { ...s, ...patch } : s)) } : d);
   const addSection = () =>
-    setDraft(d => d ? { ...d, sections: [...d.sections, { heading: '', text: '' }] } : d);
+    setDraft(d => d ? { ...d, sections: [...d.sections, { heading: '', html: '' }] } : d);
   const removeSection = (i: number) =>
     setDraft(d => d ? { ...d, sections: d.sections.filter((_, j) => j !== i) } : d);
 
   const isSaving = upsertMutation.isPending || versionMutation.isPending;
-  const viewSections = selected ? sectionsOf(selected.content) : [];
+  const viewSections = selected ? richSectionsOf(selected.content) : [];
 
   return (
     <div className="space-y-5">
@@ -283,8 +279,8 @@ export default function PolicyEditor() {
                       ) : (
                         <>
                           {selected.status === 'draft' && (
-                            <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={submitForApproval} disabled={upsertMutation.isPending}>
-                              <PaperPlaneTilt size={12} /> Submit for approval
+                            <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={submitForApproval} disabled={submitMutation.isPending}>
+                              <PaperPlaneTilt size={12} /> {submitMutation.isPending ? 'Submitting…' : 'Submit for approval'}
                             </Button>
                           )}
                           <Button size="sm" style={{ borderRadius: 0 }} onClick={startEditing}>
@@ -329,7 +325,12 @@ export default function PolicyEditor() {
                                 <TrashSimple size={13} />
                               </Button>
                             </div>
-                            <Textarea rows={4} value={s.text} placeholder="Section text…" onChange={e => setSection(i, { text: e.target.value })} style={{ borderRadius: 0 }} />
+                            <RichTextArea
+                              value={s.html}
+                              onChange={html => setSection(i, { html })}
+                              placeholder="Section text…"
+                              aria-label={`Section ${i + 1} text`}
+                            />
                           </div>
                         ))}
                       </div>
@@ -358,7 +359,11 @@ export default function PolicyEditor() {
                           {viewSections.map((s, i) => (
                             <div key={i}>
                               <p className="text-sm font-semibold text-[hsl(var(--text-1))]">{i + 1}. {s.heading}</p>
-                              <p className="text-sm leading-relaxed whitespace-pre-wrap mt-1 text-[hsl(var(--text-2))]">{s.text}</p>
+                              {/* sectionRenderHtml sanitizes before innerHTML */}
+                              <div
+                                className="text-sm leading-relaxed mt-1 text-[hsl(var(--text-2))] [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_a]:underline [&_a]:text-[hsl(var(--brand))] [&_p]:my-1 [&_h3]:font-semibold [&_h3]:my-1"
+                                dangerouslySetInnerHTML={{ __html: sectionRenderHtml(s) }}
+                              />
                             </div>
                           ))}
                         </div>

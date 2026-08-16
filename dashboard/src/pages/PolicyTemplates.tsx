@@ -66,7 +66,12 @@ export default function PolicyTemplates() {
         byName: user?.fullName ?? user?.email ?? undefined,
       }) // hook toasts success; throws on failure
       setUseTarget(null)
-      setCreatedPolicyId(policy.id ?? null)
+      if (policy.id) {
+        // Land the operator on the canonical record surface for the draft.
+        navigate(`/policies/${policy.id}`)
+      } else {
+        setCreatedPolicyId(policy.id ?? null)
+      }
     } catch { /* hook surfaces the error toast; dialog stays open */ }
   }
 
@@ -101,8 +106,8 @@ export default function PolicyTemplates() {
             Draft policy created in your Policy Library.
           </p>
           <div className="flex gap-2">
-            <Button size="sm" style={{ borderRadius: 0 }} onClick={() => navigate(`/policies?open=${createdPolicyId}`)}>
-              <ArrowSquareOut size={13} /> Open in Policy Library
+            <Button size="sm" style={{ borderRadius: 0 }} onClick={() => navigate(`/policies/${createdPolicyId}`)}>
+              <ArrowSquareOut size={13} /> Open the new policy
             </Button>
             <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => setCreatedPolicyId(null)}>Dismiss</Button>
           </div>

@@ -281,7 +281,10 @@ export const saveApproval = (a: ApprovalRecord) =>
  * terminal. Single-step / workflow-less requests decide immediately.
  * Also keeps exceptions in sync: deciding an approval whose entity is an
  * exception updates the exception row's status + approval_chain so the two
- * surfaces can never disagree. */
+ * surfaces can never disagree. Policies sync the same way: a final approval
+ * publishes the policy row (approver + approved_at), a rejection returns it
+ * to draft — and if that sync write fails the whole call THROWS, because a
+ * decision the policy row does not reflect is a governance inconsistency. */
 export async function decideApproval(
   id: string,
   decision: 'approved' | 'rejected',
@@ -340,6 +343,23 @@ export async function decideApproval(
           .update({ status: excStatus, approver, approval_chain: chain, updated_at: now })
           .eq('id', row.entity_id)
         if (excErr) console.warn('[oversightService] exception sync failed: %s', excErr.message)
+      }
+    }
+
+    // Policy sync — the Policies module derives its published/draft state
+    // from this decision. Unlike the best-effort exception chain note above,
+    // this write is load-bearing: fail loudly rather than leave the approval
+    // decided while the policy row still says in_review.
+    if (isFinal && row.entity_type === 'policy' && row.entity_id) {
+      const patch: Record<string, unknown> = decision === 'approved'
+        ? { status: 'published', approver, approved_at: now, approval_date: now, updated_at: now }
+        : { status: 'draft', updated_at: now }
+      const { error: polErr } = await client()
+        .from('policies')
+        .update(patch)
+        .eq('id', row.entity_id)
+      if (polErr) {
+        throw new Error(`The decision was recorded but the policy row was not updated: ${polErr.message}`)
       }
     }
     return mapApproval(data)
