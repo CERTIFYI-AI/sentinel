@@ -97,6 +97,30 @@ in the sense that they are registered at app startup and react to every matching
 event for the lifetime of the session — none of them polls, and none has to be
 invoked from a screen.
 
+### What actually fires the cascade
+
+An agent mesh is only autonomous if something emits. Events are raised from the
+service layer at the moment the governed fact changes — not from a screen, so
+the cascade runs however the record was created:
+
+| Emission point | Event | Cascade |
+| --- | --- | --- |
+| `modelService.upsertModel` (create) | `MODEL_REGISTERED` | 11 agents — opens the initial risk, maps controls, queues the fairness scan and conformity assessment, raises HITL where the tier demands it |
+| `RiskAssessmentAgent` | `RISK_CREATED` | impact analysis, remediation plan, knowledge-graph edge |
+| `HITLAgent` | `HITL_REVIEW_REQUIRED` | notification fan-out |
+
+Emission is deliberately **fire-and-forget**: a failing agent must never roll
+back or fail the user's save. Cascade outcomes are observable in Agent Control
+and the `governance_events` / `agent_executions` tables, not in the return value
+of the write that triggered them.
+
+**Auto-created records are labelled as such.** Anything an agent writes carries
+`source = 'auto-agent'`, `auto_generated = true`, a `related_entity_type/_id`
+pointing back at what triggered it, and `source_event_id` naming the event —
+so a reviewer can always tell machine-created governance from human-created,
+and replay the chain. This is what makes Art. 14 oversight meaningful: you
+cannot override a decision you cannot identify.
+
 ```mermaid
 graph TD
     EV[["Governance Event Bus"]]

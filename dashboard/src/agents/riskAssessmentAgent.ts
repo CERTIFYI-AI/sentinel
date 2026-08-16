@@ -19,20 +19,33 @@ export async function riskAssessmentAgent(ctx: AgentContext): Promise<AgentResul
     euAiActClass:    p.euAiActClass,
   })
 
+  // Column names must match the real `risks` table. tenant_id is omitted so the
+  // DB default (current_user_org_id()) fills it — an agent must not choose a
+  // tenant any more than a client may. `severity` is int4 on this table, so the
+  // qualitative band is mapped to its numeric equivalent and kept in metadata.
+  const SEVERITY_SCORE: Record<string, number> = { CRITICAL: 5, HIGH: 4, MEDIUM: 3, LOW: 2 }
+
   const risk = await safeInsert<{ id: string }>('risks', {
-    org_id:      ctx.orgId,
-    title:       `Auto: ${p.modelName ?? p.modelId} — Initial AI Model Risk`,
-    category:    'AI Model Risk',
+    name:        `Auto: ${p.modelName ?? p.modelId} — Initial AI Model Risk`,
     description: `Auto-generated from MODEL_REGISTERED. Vendor=${p.vendor ?? 'internal'}, Tier=${p.riskTier}, Purpose=${p.purpose}.`,
+    categories:  ['AI Model Risk'],
     likelihood:  score.likelihood,
-    impact:      score.impact,
-    severity:    score.severity,
-    status:      'OPEN',
-    owner_id:    p.ownerId,
+    severity:    SEVERITY_SCORE[score.severity] ?? 3,
+    potential_impact: `Impact score ${score.impact} from model type, data sensitivity and deployment scope.`,
+    risk_level:  score.severity.toLowerCase(),
+    mitigation_status: 'open',
+    action_owner: p.ownerId ?? null,
+    ai_lifecycle_phase: 'deployment',
+    assessment_date: new Date().toISOString(),
     source:      'auto-agent',
+    auto_generated: true,
     related_entity_type: 'model',
     related_entity_id:   p.modelId,
-    metadata:    { modelId: p.modelId, modelName: p.modelName, createdBy: 'RiskAssessmentAgent' },
+    source_event_id: ctx.event.id,
+    metadata:    {
+      modelId: p.modelId, modelName: p.modelName, createdBy: 'RiskAssessmentAgent',
+      severityBand: score.severity, impactScore: score.impact,
+    },
   })
 
   await ctx.emit('RISK_CREATED', 'risk-register', {

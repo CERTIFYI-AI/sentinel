@@ -1,3 +1,4 @@
+import { emitEvent } from '../lib/governance/eventBus'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
 export type ModelRecord = {
@@ -45,9 +46,42 @@ export async function fetchAllModels(filters: Record<string,any> = {}): Promise<
 // error toast instead of a false success. Never swallow to null.
 export async function upsertModel(record: Partial<ModelRecord>): Promise<ModelRecord> {
   if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot save model.')
+  const isNew = !record.id
   const { data, error } = await supabase.from('ai_models').upsert(record).select().single()
   if (error) { console.warn('[modelService] upsert:', error.message); throw new Error(error.message) }
-  return data as ModelRecord
+
+  const model = data as ModelRecord
+
+  // Registering a model is the event that starts the governance cascade: the
+  // mesh opens the initial risk, maps controls, queues the fairness scan and
+  // raises HITL review where the tier demands it. Without this emit the 26
+  // registered agents never run — they were dormant because nothing in the
+  // product ever called emitEvent.
+  //
+  // Deliberately fire-and-forget and never rethrow: an agent failure must not
+  // roll back or fail the user's save. Cascade outcomes are observable in
+  // Agent Control and governance_events, not in this call's result.
+  if (isNew && model?.id) {
+    void emitEvent(
+      'MODEL_REGISTERED',
+      'model-registry',
+      {
+        modelId:         model.id,
+        modelName:       (model as any).name,
+        modelType:       (model as any).model_type,
+        vendor:          (model as any).vendor,
+        riskTier:        (model as any).risk_tier,
+        euAiActClass:    (model as any).risk_tier,
+        purpose:         (model as any).description,
+        ownerId:         (model as any).business_owner,
+        deploymentScope: (model as any).lifecycle_stage,
+        dataSensitivity: (model as any).data_sensitivity,
+      },
+      (model as any).org_id ?? '',
+    ).catch((e) => console.warn('[modelService] cascade emit failed:', e))
+  }
+
+  return model
 }
 
 export async function deleteModel(id: string): Promise<void> {
