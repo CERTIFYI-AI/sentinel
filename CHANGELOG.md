@@ -1,3 +1,8 @@
+## <small>1.61.1 (2026-08-16)</small>
+
+* Merge main ([3b3a94c](https://github.com/CERTIFYI-AI/sentinel/commit/3b3a94c))
+* fix(evals): real backend for Eval Techniques; docs: agentic mesh architecture ([b2341e8](https://github.com/CERTIFYI-AI/sentinel/commit/b2341e8))
+
 ## 1.61.0 (2026-08-16)
 
 * Merge main ([ce5c959](https://github.com/CERTIFYI-AI/sentinel/commit/ce5c959))
