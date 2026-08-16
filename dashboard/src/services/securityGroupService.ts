@@ -16,19 +16,19 @@ function arr<T>(v: T[] | null | undefined): T[] { return Array.isArray(v) ? v : 
 async function selectAll(table: string, orderCol = 'created_at') {
   if (!isSupabaseConfigured() || !supabase) return []
   const { data, error } = await supabase.from(table).select('*').order(orderCol, { ascending: false }).limit(200)
-  if (error) { console.warn(`[securityGroup:${table}]`, error.message); throw new Error(error.message) }
+  if (error) { console.warn('[securityGroup:%s]', table, error.message); throw new Error(error.message) }
   return data ?? []
 }
 async function upsertRow(table: string, row: Record<string, unknown>) {
   if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
   const { data, error } = await supabase.from(table).upsert(row).select().single()
-  if (error) { console.warn(`[securityGroup:${table}] upsert`, error.message); throw new Error(error.message) }
+  if (error) { console.warn('[securityGroup:%s] upsert', table, error.message); throw new Error(error.message) }
   return data
 }
 async function deleteRow(table: string, id: string) {
   if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase not configured')
   const { error } = await supabase.from(table).delete().eq('id', id)
-  if (error) { console.warn(`[securityGroup:${table}] delete`, error.message); throw new Error(error.message) }
+  if (error) { console.warn('[securityGroup:%s] delete', table, error.message); throw new Error(error.message) }
 }
 
 // ── Threat Feed ────────────────────────────────────────────────────────────
