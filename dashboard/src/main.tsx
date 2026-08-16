@@ -13,7 +13,7 @@ import "./styles/a11y.css";
 import "./store/accentStore";
 import { LiveRegionProvider } from "./lib/a11y/LiveRegion";
 import { getLocale } from "./i18n";
-// Auto-register all 27 governance agents on app bootstrap.
+// Auto-register the 26 governance agents on app bootstrap.
 // Side-effect import — each agent file calls governanceBus.registerAgent.
 import "./agents";
 import { setLoggerErrorSink } from "./lib/logger";

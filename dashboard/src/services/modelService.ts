@@ -50,9 +50,13 @@ export async function upsertModel(record: Partial<ModelRecord>): Promise<ModelRe
   if (error) { console.warn('[modelService] upsert:', error.message); throw new Error(error.message) }
   const saved = data as ModelRecord
   if (isNew && saved?.id) {
-    // Head of the largest governance cascade (11 registered agents) — this
-    // emitter did not exist, so MODEL_REGISTERED never fired platform-wide.
-    // Payload follows the declared ModelRegisteredPayload contract.
+    // Registering a model is the head of the largest governance cascade
+    // (11 registered agents): the mesh opens the initial risk, maps controls
+    // and raises HITL review where the tier demands it. Payload follows the
+    // declared ModelRegisteredPayload contract. Deliberately fire-and-forget
+    // and never rethrown: an agent failure must not roll back or fail the
+    // user's save — cascade outcomes are observable in Agent Control and
+    // governance_events, not in this call's result.
     const tierNum = Number(String((saved as any).risk_tier ?? '').replace(/\D/g, '')) || 3
     const { governanceBus } = await import('../lib/governance/eventBus')
     void governanceBus.emit('MODEL_REGISTERED', 'ai-inventory', {

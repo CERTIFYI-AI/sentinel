@@ -1,3 +1,9 @@
+## 1.63.0 (2026-08-16)
+
+* feat(autonomous-grc): make the governance mesh actually fire and write ([918a08e](https://github.com/CERTIFYI-AI/sentinel/commit/918a08e))
+* Merge main ([ca2966c](https://github.com/CERTIFYI-AI/sentinel/commit/ca2966c))
+* docs(completion): version live-only seeds, close compliance mapping gaps ([eb3c7fb](https://github.com/CERTIFYI-AI/sentinel/commit/eb3c7fb))
+
 ## Unreleased
 
 ### Platform interlink rollout and privacy repair

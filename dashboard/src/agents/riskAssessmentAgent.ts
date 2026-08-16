@@ -20,8 +20,15 @@ export async function riskAssessmentAgent(ctx: AgentContext): Promise<AgentResul
   })
 
   // risks.severity is INTEGER 1–5 and rows are read through the tenant-scoped
-  // RLS policy, so tenant_id must follow the org explicitly in agent context.
+  // RLS policy, so tenant_id must follow the org explicitly in agent context
+  // (agents can run outside a user session, where the DB default resolves
+  // null). Canonical and legacy column pairs are both written, matching
+  // riskService's dual-write contract.
   const SEV_INT: Record<string, number> = { CRITICAL: 5, HIGH: 4, MEDIUM: 3, LOW: 2 }
+  // source_event_id is uuid; a locally-dispatched event carries a synthetic
+  // `local-<ts>` id that must not poison the insert.
+  const eventUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(ctx.event.id ?? '')
+    ? ctx.event.id : null
   const risk = await safeInsert<{ id: string }>('risks', {
     org_id:      ctx.orgId,
     tenant_id:   ctx.orgId,
@@ -29,14 +36,30 @@ export async function riskAssessmentAgent(ctx: AgentContext): Promise<AgentResul
     name:        `Auto: ${p.modelName ?? p.modelId} — Initial AI Model Risk`,
     category:    'AI Model Risk',
     description: `Auto-generated from MODEL_REGISTERED. Vendor=${p.vendor ?? 'internal'}, Tier=${p.riskTier}, Purpose=${p.purpose}.`,
+    categories:  ['AI Model Risk'],
     likelihood:  score.likelihood,
     impact:      score.impact,
     severity:    SEV_INT[score.severity] ?? 3,
+    risk_level:  score.severity.toLowerCase(),
+    potential_impact: `Impact score ${score.impact} from model type, data sensitivity and deployment scope.`,
     status:      'open',
-    owner_id:    p.ownerId,
+    mitigation_status: 'open',
+    owner:       p.owner ?? null,
+    action_owner: p.owner ?? null,
+    ai_lifecycle_phase: 'deployment',
     source:      'auto-agent',
+    // Provenance (20260816_autonomous_grc_provenance.sql): a machine-created
+    // governance record must say so and point back at what triggered it, or a
+    // human cannot identify — let alone override — the decision (Art. 14).
+    auto_generated: true,
+    related_entity_type: 'model',
+    related_entity_id:   p.modelId,
+    source_event_id: eventUuid,
     linked_model_ids: [p.modelId],
-    metadata:    { modelId: p.modelId, modelName: p.modelName, createdBy: 'RiskAssessmentAgent' },
+    metadata:    {
+      modelId: p.modelId, modelName: p.modelName, createdBy: 'RiskAssessmentAgent',
+      severityBand: score.severity, impactScore: score.impact,
+    },
   })
 
   await ctx.emit('RISK_CREATED', 'risk-register', {

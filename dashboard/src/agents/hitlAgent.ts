@@ -17,6 +17,7 @@ export async function hitlAgent(ctx: AgentContext): Promise<AgentResult> {
   // org RLS policy, so it must follow org_id explicitly here — the DB default
   // resolves per-session and agents can run outside a user session).
   const reason = (p.reason as string) ?? `Auto-escalation from ${ctx.event.event_type}`
+  const slaDeadline = new Date(Date.now() + 24 * 3600 * 1000).toISOString()
   const review = await safeInsert<{ id: string }>('hitl_reviews', {
     org_id:      ctx.orgId,
     tenant_id:   ctx.orgId,
@@ -31,26 +32,39 @@ export async function hitlAgent(ctx: AgentContext): Promise<AgentResult> {
     priority:    p.severity === 'CRITICAL' ? 'critical' : 'high',
     risk_level:  p.severity === 'CRITICAL' ? 'critical' : 'high',
     status:      'pending',
+    sla_hours:   24,
+    sla_deadline: slaDeadline,
     blocks_deployment: true,
     metadata:    { created_by: 'HITLAgent', event_type: ctx.event.event_type },
   })
 
-  // tasks has due_date (not due_at) and linked_entity_* (not metadata).
+  if (!review?.id) {
+    // This record IS the Art. 14 human-oversight path — do not emit
+    // HITL_REVIEW_REQUIRED for a review that was never recorded; that would
+    // report oversight the platform cannot evidence.
+    ctx.log('HITL review insert failed; escalation not recorded')
+    return { status: 'failed', error: 'hitl-review-insert-failed' }
+  }
+
+  // tasks has due_date (not due_at) and linked_entity_* (not metadata);
+  // status/priority use the canonical taskService vocabulary.
   await safeInsert('tasks', {
     org_id: ctx.orgId,
+    tenant_id: ctx.orgId,
     title:  `HITL Review: ${p.modelName ?? p.riskId ?? 'unknown'}`,
+    description: `Human review required — raised by HITLAgent from ${ctx.event.event_type}.`,
     type:   'HITL_REVIEW',
-    priority: p.severity === 'CRITICAL' ? 'P0' : 'P1',
-    status: 'OPEN',
-    due_date: new Date(Date.now() + 24 * 3600 * 1000).toISOString(),
+    priority: p.severity === 'CRITICAL' ? 'critical' : 'high',
+    status: 'todo',
+    due_date: slaDeadline,
     linked_entity_type: 'hitl_review',
-    linked_entity_id: review?.id ?? null,
+    linked_entity_id: review.id,
   })
 
   await ctx.emit('HITL_REVIEW_REQUIRED', 'hitl', {
-    modelId: p.modelId, reviewId: review?.id, blocksDeployment: true,
+    modelId: p.modelId, reviewId: review.id, blocksDeployment: true,
   })
 
-  ctx.log(`HITL review ${review?.id} created`)
-  return { status: 'succeeded', output: { reviewId: review?.id } }
+  ctx.log(`HITL review ${review.id} created`)
+  return { status: 'succeeded', output: { reviewId: review.id } }
 }

@@ -58,6 +58,34 @@ every new RLS policy must use `current_user_org_id()`.
 
 ---
 
+## TD-004 — Remaining agents still write unmapped columns
+
+**Status:** Open · **Severity:** P1 · **Owner:** Governance mesh
+
+`riskAssessmentAgent` and `hitlAgent` were corrected on 2026-08-16 to write the
+real column names on `risks`, `hitl_reviews` and `tasks` (both verified with a
+rolled-back insert against the from-zero replayed schema, not only the live
+DB — the live DB carries era-drift columns like `risks.assessment_date` and
+`tasks.sla_due_at` that a fresh deployment does not have). The telemetry
+repair wave additionally corrected `notificationAgent`, `regulatorNotifyAgent`,
+`complianceMappingAgent`, `incidentResponseAgent` and the sweep sentinels
+against their target tables. The remaining registered agents have **not**
+been verified against their target schemas.
+
+`safeInsert` catches an insert error, logs a console warning and returns null,
+so a mismatched agent fails silently — the cascade appears to run, the agent
+reports a status, and no record is written. This is the same fake-success class
+as TD-001, but in the autonomous layer where nobody is watching a toast.
+
+Verify each remaining agent's insert against `information_schema.columns` and
+correct the mapping. The two fixed agents are the reference. Consider making
+`safeInsert` return a discriminated result so an agent can fail loudly rather
+than logging and continuing — `hitlAgent` now checks its result explicitly and
+returns `failed` rather than emitting an event for a review that was never
+recorded.
+
+---
+
 ## TD-001 — Modules still reading generic demo tables (P0, 19 modules)
 
 **Status:** Open · **Severity:** P0 · **Owner:** Platform team
@@ -189,6 +217,8 @@ derived view so it is not mistaken for an independent evidence source.
 | — | `webhook_endpoints` orphaned: no UI, no RLS, no tenant default | 2026-08-16 |
 | — | `tasks.tenant_id` defaulted to literal `'default'` (outside org isolation) | 2026-08-16 |
 | — | Agent registry banner claimed 27 agents; 26 exist | 2026-08-16 |
+| — | Governance mesh never fired — `emitEvent` uncalled in product code | 2026-08-16 |
+| — | `riskAssessmentAgent` / `hitlAgent` wrote nonexistent columns | 2026-08-16 |
 | — | 11 modules isolated (sidebar-only, zero inbound links) | 2026-08-16 |
 | — | RoPA on `ropa_table` demo table (GDPR Art. 30 register) | 2026-08-16 |
 | — | TIA on `tia_table` demo table (GDPR Chapter V) | 2026-08-16 |
