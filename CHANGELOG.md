@@ -1,3 +1,9 @@
+## <small>1.61.2 (2026-08-16)</small>
+
+* fix(compliance): migrate RoPA, TIA and Compliance Controls off demo tables ([ab8db91](https://github.com/CERTIFYI-AI/sentinel/commit/ab8db91))
+* Merge main ([228114f](https://github.com/CERTIFYI-AI/sentinel/commit/228114f))
+* security(rls): fix cross-tenant holes; docs: mandatory 4-role review process ([e14a2b3](https://github.com/CERTIFYI-AI/sentinel/commit/e14a2b3))
+
 ## <small>1.61.1 (2026-08-16)</small>
 
 * Merge main ([3b3a94c](https://github.com/CERTIFYI-AI/sentinel/commit/3b3a94c))
