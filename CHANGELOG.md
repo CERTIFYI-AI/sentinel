@@ -1,3 +1,8 @@
+## 1.59.0 (2026-08-16)
+
+* Merge release v1.58.0 from main ([6b1aadd](https://github.com/CERTIFYI-AI/sentinel/commit/6b1aadd))
+* feat(govern): AI Literacy, AI Apps inventory, and Trust Center modules ([8f2f2d9](https://github.com/CERTIFYI-AI/sentinel/commit/8f2f2d9))
+
 ## 1.58.0 (2026-08-16)
 
 * chore(bias-audits): delete retired legacy pages and orphan services ([6ceb5a1](https://github.com/CERTIFYI-AI/sentinel/commit/6ceb5a1))
