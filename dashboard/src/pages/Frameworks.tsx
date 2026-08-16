@@ -28,7 +28,8 @@ import {
   ArrowsLeftRight, Books, MagnifyingGlass, ShieldCheck,
 } from '@phosphor-icons/react';
 import { useFrameworksData } from '@/hooks/useFrameworksData';
-import { fetchControlsForFramework, type FrameworkRecord } from '@/services/frameworkService';
+import type { FrameworkRecord } from '@/services/frameworkService';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { listFrameworks, FRAMEWORK_COUNT, TOTAL_CONTROL_COUNT, type FrameworkSummary } from '@/lib/frameworks';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
 
@@ -39,11 +40,65 @@ function formatDate(d?: string | null): string {
   return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
 }
 
-function scoreColor(score: number): string {
+// Null = unscored → neutral, never the red "<65%" treatment.
+function scoreColor(score: number | null): string {
+  if (score == null) return 'hsl(var(--text-4))';
   if (score >= 85) return 'hsl(var(--s-ok-tx))';
   if (score >= 65) return 'hsl(var(--r-hi-tx))';
   return 'hsl(var(--s-er-tx))';
 }
+
+/** The framework's recorded score, or null when nothing has been recorded. */
+function frameworkScore(fw: FrameworkRecord): number | null {
+  const raw = fw.score ?? fw.compliance_score ?? null;
+  return raw == null ? null : Number(raw);
+}
+
+// ── Live org controls, matched to frameworks ─────────────────────────────────
+// The `controls` table carries a free-text `framework` (e.g. "EU AI Act",
+// "ISO/IEC 42001") and an optional framework_id. We derive implemented/total
+// per framework from these REAL rows only — never from the catalog's
+// control_count, which is reference material, not org implementation state.
+
+interface OrgControlRow {
+  id: string;
+  control_id: string | null;
+  control_ref: string | null;
+  name: string;
+  framework: string | null;
+  framework_id: string | null;
+  clause_ref: string | null;
+  status: string | null;
+}
+
+async function fetchOrgControls(): Promise<OrgControlRow[]> {
+  if (!isSupabaseConfigured() || !supabase) return [];
+  const { data, error } = await supabase
+    .from('controls')
+    .select('id, control_id, control_ref, name, framework, framework_id, clause_ref, status')
+    .order('control_id', { ascending: true });
+  if (error) throw new Error(error.message);
+  return (data ?? []) as OrgControlRow[];
+}
+
+const norm = (s: string | null | undefined) => (s ?? '').toLowerCase().trim();
+
+/**
+ * A control belongs to a framework when its framework_id matches, or its
+ * free-text framework label equals the framework's name/code — allowing a
+ * versioned name suffix ("ISO/IEC 42001" ↔ "ISO/IEC 42001:2023"). Anything
+ * that doesn't match cleanly simply doesn't count — no guessing.
+ */
+function controlMatchesFramework(c: OrgControlRow, fw: FrameworkRecord): boolean {
+  if (c.framework_id && c.framework_id === fw.id) return true;
+  const cf = norm(c.framework);
+  if (!cf) return false;
+  const fn = norm(fw.name);
+  const fc = norm(fw.code);
+  return cf === fn || (!!fc && cf === fc) || fn.startsWith(`${cf}:`) || fn.startsWith(`${cf} `);
+}
+
+const IMPLEMENTED_STATUSES = new Set(['implemented', 'effective']);
 
 function AuditDateDisplay({ dateStr }: { dateStr?: string | null }) {
   if (!dateStr) {
@@ -109,8 +164,10 @@ const EMPTY_FORM: FrameworkForm = { name: '', version: '', category: '', jurisdi
 function controlStatusStyle(status?: string | null) {
   const s = (status || '').toLowerCase();
   if (s === 'implemented') return { color: 'hsl(var(--s-ok-tx))', label: 'Implemented' };
-  if (s === 'partial' || s === 'in_progress') return { color: 'hsl(var(--r-hi-tx))', label: 'Partial' };
+  if (s === 'effective') return { color: 'hsl(var(--s-ok-tx))', label: 'Effective' };
+  if (s === 'partial' || s === 'in_progress') return { color: 'hsl(var(--r-hi-tx))', label: s === 'in_progress' ? 'In progress' : 'Partial' };
   if (s === 'not_implemented' || s === 'planned') return { color: 'hsl(var(--text-3))', label: s === 'planned' ? 'Planned' : 'Not implemented' };
+  if (s === 'not_applicable') return { color: 'hsl(var(--text-4))', label: 'Not applicable' };
   return { color: 'hsl(var(--text-3))', label: status || 'Unknown' };
 }
 
@@ -131,15 +188,18 @@ export default function Frameworks() {
   const [form, setForm] = useState<FrameworkForm>(EMPTY_FORM);
   const [catalogQuery, setCatalogQuery] = useState('');
 
-  // Real controls for the framework opened in the detail sheet.
+  // Live org controls, matched client-side to each framework (the seeded
+  // rows carry framework names, not framework_id — see matcher above).
   const controlsQuery = useQuery({
-    queryKey: ['framework-controls', viewItem?.id],
-    queryFn: () => fetchControlsForFramework(viewItem!.id),
-    enabled: !!viewItem?.id,
+    queryKey: ['controls', 'frameworks-page'],
+    queryFn: fetchOrgControls,
     staleTime: 60_000,
   });
-  const controls = controlsQuery.data ?? [];
-  const implementedControls = controls.filter(c => (c.status || '').toLowerCase() === 'implemented').length;
+  const orgControls = controlsQuery.data ?? [];
+  const controlsForFramework = (fw: FrameworkRecord) =>
+    orgControls.filter(c => controlMatchesFramework(c, fw));
+  const controls = viewItem ? controlsForFramework(viewItem) : [];
+  const implementedControls = controls.filter(c => IMPLEMENTED_STATUSES.has(norm(c.status))).length;
 
   const catalog = useMemo(() => listFrameworks(), []);
   const catalogGrouped = useMemo(() => {
@@ -246,9 +306,12 @@ export default function Frameworks() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {frameworks.map((fw: FrameworkRecord) => {
-                const score = Number(fw.score ?? 0);
-                const total = fw.controls_total ?? fw.control_count ?? 0;
-                const implemented = fw.controls_implemented ?? 0;
+                const score = frameworkScore(fw);
+                // Live derivation from the org's controls table — never the
+                // catalog's control_count presented as measured coverage.
+                const fwControls = controlsForFramework(fw);
+                const total = fwControls.length;
+                const implemented = fwControls.filter(c => IMPLEMENTED_STATUSES.has(norm(c.status))).length;
                 return (
                   <Card
                     key={fw.id}
@@ -297,16 +360,33 @@ export default function Frameworks() {
                       <div className="mb-3">
                         <div className="flex justify-between text-xs mb-1.5">
                           <span style={{ color: 'hsl(var(--text-3))' }}>Compliance Score</span>
-                          <span className="font-bold" style={{ color: scoreColor(score) }}>{score}%</span>
+                          <span className="font-bold" style={{ color: scoreColor(score) }} title={score == null ? 'No score recorded yet' : undefined}>
+                            {score == null ? '—' : `${score}%`}
+                          </span>
                         </div>
                         <div style={{ background: 'hsl(var(--bg-muted))', height: 8 }}>
-                          <div style={{ width: `${Math.min(100, Math.max(0, score))}%`, height: '100%', background: scoreColor(score), transition: 'width 0.3s' }} />
+                          {score != null && (
+                            <div style={{ width: `${Math.min(100, Math.max(0, score))}%`, height: '100%', background: scoreColor(score), transition: 'width 0.3s' }} />
+                          )}
                         </div>
+                        {score == null && (
+                          <p className="text-[10px] mt-1" style={{ color: 'hsl(var(--text-4))' }}>No score recorded yet</p>
+                        )}
                       </div>
 
                       <div className="flex justify-between text-xs mb-3">
                         <span style={{ color: 'hsl(var(--text-3))' }}>Controls</span>
-                        <span style={{ color: 'hsl(var(--text-1))' }}>{implemented}/{total} implemented</span>
+                        {controlsQuery.isLoading ? (
+                          <span style={{ color: 'hsl(var(--text-4))' }}>…</span>
+                        ) : total > 0 ? (
+                          <span style={{ color: 'hsl(var(--text-1))' }} title="Live count from your controls register">
+                            {implemented}/{total} implemented
+                          </span>
+                        ) : (
+                          <span style={{ color: 'hsl(var(--text-4))' }} title="No controls in your register reference this framework yet">
+                            — no controls linked yet
+                          </span>
+                        )}
                       </div>
 
                       <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid hsl(var(--border))' }}>
@@ -446,9 +526,10 @@ export default function Frameworks() {
                     <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{viewItem.description}</p>
                   )}
                   {[
-                    { label: 'Compliance Score', value: `${Number(viewItem.score ?? 0)}%` },
+                    { label: 'Compliance Score', value: frameworkScore(viewItem) == null ? 'No score recorded yet' : `${frameworkScore(viewItem)}%` },
                     { label: 'Target Score', value: viewItem.target_score != null ? `${Number(viewItem.target_score)}%` : '—' },
-                    { label: 'Controls Implemented', value: `${viewItem.controls_implemented ?? 0}/${viewItem.controls_total ?? viewItem.control_count ?? 0}` },
+                    // Live derivation from the controls register — see matcher.
+                    { label: 'Controls Implemented', value: controls.length > 0 ? `${implementedControls}/${controls.length}` : '— no controls linked yet' },
                     { label: 'Next Audit', value: formatDate(viewItem.next_audit_at) },
                     { label: 'Status', value: viewItem.is_active === false ? 'Inactive' : 'Active' },
                   ].map(r => (
@@ -457,20 +538,27 @@ export default function Frameworks() {
                       <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
                     </div>
                   ))}
-                  <div className="pt-2">
-                    <div className="flex justify-between text-xs mb-1">
-                      <span style={{ color: 'hsl(var(--text-3))' }}>Compliance Progress</span>
-                      <span style={{ color: scoreColor(Number(viewItem.score ?? 0)) }}>{Number(viewItem.score ?? 0)}%</span>
+                  {frameworkScore(viewItem) != null ? (
+                    <div className="pt-2">
+                      <div className="flex justify-between text-xs mb-1">
+                        <span style={{ color: 'hsl(var(--text-3))' }}>Compliance Progress</span>
+                        <span style={{ color: scoreColor(frameworkScore(viewItem)) }}>{frameworkScore(viewItem)}%</span>
+                      </div>
+                      <div style={{ background: 'hsl(var(--bg-muted))', height: 10 }}>
+                        <div style={{ width: `${Math.min(100, frameworkScore(viewItem)!)}%`, height: '100%', background: scoreColor(frameworkScore(viewItem)) }} />
+                      </div>
+                      <div className="flex justify-between text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                        <span>&lt;65% Non-Compliant</span>
+                        <span>65–84% Partial</span>
+                        <span>≥85% Compliant</span>
+                      </div>
                     </div>
-                    <div style={{ background: 'hsl(var(--bg-muted))', height: 10 }}>
-                      <div style={{ width: `${Math.min(100, Number(viewItem.score ?? 0))}%`, height: '100%', background: scoreColor(Number(viewItem.score ?? 0)) }} />
-                    </div>
-                    <div className="flex justify-between text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>
-                      <span>&lt;65% Non-Compliant</span>
-                      <span>65–84% Partial</span>
-                      <span>≥85% Compliant</span>
-                    </div>
-                  </div>
+                  ) : (
+                    <p className="text-xs pt-2" style={{ color: 'hsl(var(--text-4))' }}>
+                      No compliance score has been recorded for this framework yet — the progress
+                      bar appears once one is measured.
+                    </p>
+                  )}
                 </TabsContent>
 
                 <TabsContent value="controls" className="mt-4">
@@ -483,7 +571,10 @@ export default function Frameworks() {
                     </p>
                   )}
                   {!controlsQuery.isLoading && !controlsQuery.error && controls.length === 0 && (
-                    <p className="text-sm py-4" style={{ color: 'hsl(var(--text-3))' }}>No controls loaded for this framework yet.</p>
+                    <p className="text-sm py-4" style={{ color: 'hsl(var(--text-3))' }}>
+                      No controls in your register reference this framework yet — link controls to
+                      it under Compliance Controls.
+                    </p>
                   )}
                   {controls.length > 0 && (
                     <>
@@ -505,7 +596,7 @@ export default function Frameworks() {
                             >
                               <div className="min-w-0">
                                 <p className="text-xs font-medium truncate" style={{ color: 'hsl(var(--text-1))' }}>
-                                  <span className="font-mono mr-1.5" style={{ color: 'hsl(var(--text-4))' }}>{c.control_ref}</span>
+                                  <span className="font-mono mr-1.5" style={{ color: 'hsl(var(--text-4))' }}>{c.control_ref ?? c.control_id ?? ''}</span>
                                   {c.name}
                                 </p>
                                 {c.clause_ref && <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{c.clause_ref}</p>}

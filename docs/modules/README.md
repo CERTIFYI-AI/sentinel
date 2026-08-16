@@ -20,12 +20,20 @@ Per-module reference for the Sentinel AI GRC platform. Each page covers purpose,
 
 ## Compliance & Policy
 - [Compliance Programs (Frameworks, Autopilot, Maturity, Gap Analysis)](compliance-programs.md)
+- [Framework Portfolio](frameworks.md)
+- [Conformity Assessment](conformity-assessment.md)
 - [Policy Management & Templates](policy-management.md)
 - [Controls & Control Testing](controls-control-testing.md)
+- [Gap Analysis](gap-analysis.md)
+- [Control Drift](control-drift.md)
 - [Approval Workflows](approval-workflows.md)
 - [Regulatory Intelligence (Radar, Velocity)](regulatory-intelligence.md)
 - [Regulator Filing Workspace](regulator-filings.md)
+- [Transparency Reports](transparency-reports.md)
+- [Post-Market Monitoring](post-market.md)
+- [Trust Center](trust-center.md)
 - [Evidence Management (Vault, Chain, Sync, Export)](evidence-management.md)
+- [Audit Management](audit-management.md)
 - [Audit Log & Trail](audit-log-trail.md)
 
 ## Risk & Response

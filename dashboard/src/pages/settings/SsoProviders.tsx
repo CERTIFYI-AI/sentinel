@@ -11,7 +11,8 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { supabase } from '../../lib/supabase'
-import { useRequiredOrgId, useTenant } from '../../hooks/useTenant'
+import { useTenant } from '../../hooks/useTenant'
+import { PageSkeleton } from '../../components/ui/PageSkeleton'
 
 const providerSchema = z.object({
   kind: z.enum(['saml', 'oidc']),
@@ -39,8 +40,10 @@ interface ProviderRow {
 }
 
 export default function SsoProviders() {
-  const orgId = useRequiredOrgId()
-  const { status } = useTenant()
+  // Defensive tenancy guard (matches MfaEnrollment): useRequiredOrgId()
+  // threw while the tenant context was still resolving; read the context
+  // non-throwing instead and gate rendering on its status.
+  const { orgId, status } = useTenant()
   const [rows, setRows] = useState<ProviderRow[]>([])
   const [loading, setLoading] = useState(true)
   const [err, setErr] = useState<string | null>(null)
@@ -60,7 +63,11 @@ export default function SsoProviders() {
   const kind = watch('kind')
 
   useEffect(() => {
-    if (status !== 'ready' || !supabase) return
+    if (status !== 'ready' || !orgId || !supabase) {
+      // Resolved without an org (e.g. demo mode) — honest empty state.
+      if (status !== 'loading') setLoading(false)
+      return
+    }
     abortRef.current?.abort()
     abortRef.current = new AbortController()
     const signal = abortRef.current.signal
@@ -88,8 +95,8 @@ export default function SsoProviders() {
 
   async function onSubmit(values: ProviderForm) {
     setSubmitErr(null)
-    if (!supabase) {
-      setSubmitErr('Supabase not configured')
+    if (!supabase || !orgId) {
+      setSubmitErr(!supabase ? 'Supabase not configured' : 'Organization not resolved — sign in again.')
       return
     }
     const config: Record<string, string> =
@@ -153,10 +160,7 @@ export default function SsoProviders() {
   }
 
   if (status === 'loading') {
-    return <div className="p-6 text-sm">Loading tenant…</div>
-  }
-  if (status === 'unauthenticated') {
-    return <div className="p-6 text-sm">Please sign in.</div>
+    return <PageSkeleton title="Identity Providers" showStats={false} rows={4} />
   }
 
   return (

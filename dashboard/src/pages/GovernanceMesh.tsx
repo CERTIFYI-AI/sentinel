@@ -10,10 +10,11 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
-import { useRequiredOrgId } from '../hooks/useTenant';
+import { useTenant } from '../hooks/useTenant';
 import { useMeshFleet } from '../hooks/useMeshFleet';
 import type { MeshSentinel, MeshExecution, MeshFinding } from '../services/meshFleetService';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { PageSkeleton } from '../components/ui/PageSkeleton';
 
 // ── status helpers ───────────────────────────────────────────────────────────
 
@@ -83,7 +84,10 @@ const SEV_COLOR: Record<string, string> = {
 // ── page ─────────────────────────────────────────────────────────────────────
 
 export default function GovernanceMesh() {
-  const orgId = useRequiredOrgId();
+  // Defensive tenancy guard (matches MfaEnrollment): never throw while the
+  // tenant context is still resolving — useMeshFleet queries stay disabled
+  // until orgId resolves, and the loading branch below renders meanwhile.
+  const { orgId, status: tenantStatus } = useTenant();
   const {
     fleet, fleetLoading, fleetError, executions, events,
     runClientSweep, runServerSweep, toggleSentinel,
@@ -153,8 +157,8 @@ export default function GovernanceMesh() {
     }
   };
 
-  if (fleetLoading) {
-    return <div style={{ padding: 32, color: 'hsl(var(--text-4))', fontSize: 14 }}>Loading agentic mesh…</div>;
+  if (tenantStatus === 'loading' || fleetLoading) {
+    return <PageSkeleton title="Agentic Mesh" showStats rows={5} />;
   }
 
   return (

@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { supabase } from '../../lib/supabase'
-import { useRequiredOrgId } from '../../hooks/useTenant'
+import { useTenant } from '../../hooks/useTenant'
+import { PageSkeleton } from '../../components/ui/PageSkeleton'
 import { CANONICAL_ROLES, ROLE_DISPLAY, type OrgRole } from '../../lib/rbac'
 import { Button } from '../../components/ui/button'
 import { toast } from 'sonner'
@@ -32,7 +33,9 @@ function deriveStatus(r: JitRow): 'pending' | 'active' | 'expired' | 'revoked' {
 const DURATIONS = [15, 30, 60, 120, 240, 480]
 
 export default function JitElevation() {
-  const orgId = useRequiredOrgId()
+  // Defensive tenancy guard (matches MfaEnrollment): never throw while the
+  // tenant context is still resolving — render a skeleton below instead.
+  const { orgId, status: tenantStatus } = useTenant()
   const [requests, setRequests] = useState<JitRow[]>([])
   const [form, setForm] = useState({ role: '', reason: '', ticket: '', duration: 60 })
   const [loading, setLoading] = useState(true)
@@ -41,7 +44,12 @@ export default function JitElevation() {
   const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
-    if (!orgId) return
+    if (!orgId) {
+      // Tenancy resolved without an org (e.g. demo mode) — show the honest
+      // empty state instead of an eternal loading row.
+      if (tenantStatus !== 'loading') { setRequests([]); setLoading(false) }
+      return
+    }
     let cancelled = false
     setLoading(true)
     setError(null)
@@ -58,10 +66,11 @@ export default function JitElevation() {
         setLoading(false)
       })
     return () => { cancelled = true }
-  }, [orgId])
+  }, [orgId, tenantStatus])
 
   async function submitRequest() {
     if (!form.role || !form.reason.trim()) { toast.error('Role and reason are required'); return }
+    if (!orgId) { toast.error('Your organization could not be resolved — sign in again before requesting elevation.'); return }
     setSubmitting(true)
     const { data: user } = await supabase.auth.getUser()
     const requestedAt = new Date()
@@ -90,6 +99,10 @@ export default function JitElevation() {
   } as Record<string, string>)[s] ?? 'bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]'
 
   const roleLabel = (slug: string) => ROLE_DISPLAY[slug as OrgRole]?.label ?? slug
+
+  if (tenantStatus === 'loading') {
+    return <PageSkeleton title="JIT Elevation" showStats={false} rows={5} />
+  }
 
   return (
     <main id="main-content" className="p-6 max-w-4xl mx-auto space-y-6">

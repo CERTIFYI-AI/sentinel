@@ -25,6 +25,7 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from 'react'
@@ -98,38 +99,68 @@ export function TenantProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<TenantContextValue['status']>('loading')
   const [error, setError] = useState<Error | null>(null)
 
-  const hydrate = useCallback(async (signal?: AbortSignal) => {
-    try {
-      setStatus('loading')
-      setError(null)
-      const resolved = await resolveOrgIdFromSession()
-      if (signal?.aborted) return
-      if (!resolved) {
-        setOrgId(null)
-        setOrg(null)
-        setOrgs([])
-        setStatus('unauthenticated')
-        return
+  // Refs mirror state for use inside the auth-event callback (whose closure
+  // would otherwise see stale values) — they let hydrate() decide whether a
+  // re-hydration may run silently instead of regressing to 'loading'.
+  const orgIdRef = useRef<string | null>(null)
+  const lastUserIdRef = useRef<string | null>(null)
+
+  const hydrate = useCallback(
+    async (signal?: AbortSignal, opts: { silent?: boolean } = {}) => {
+      try {
+        // Silent re-hydration (e.g. TOKEN_REFRESHED with the same user and an
+        // already-resolved org) must NOT regress status to 'loading': pages
+        // reading the tenancy would unmount to skeletons — and pages calling
+        // useRequiredOrgId() would throw — on every token refresh.
+        if (!opts.silent) setStatus('loading')
+        setError(null)
+        const resolved = await resolveOrgIdFromSession()
+        if (signal?.aborted) return
+        if (!resolved) {
+          orgIdRef.current = null
+          setOrgId(null)
+          setOrg(null)
+          setOrgs([])
+          setStatus('unauthenticated')
+          return
+        }
+        const { org: current, orgs: list } = await loadOrgsForUser(resolved)
+        if (signal?.aborted) return
+        orgIdRef.current = resolved
+        setOrgId(resolved)
+        setOrg(current)
+        setOrgs(list)
+        setStatus('ready')
+      } catch (err) {
+        if (signal?.aborted) return
+        setError(err instanceof Error ? err : new Error(String(err)))
+        setStatus('error')
       }
-      const { org: current, orgs: list } = await loadOrgsForUser(resolved)
-      if (signal?.aborted) return
-      setOrgId(resolved)
-      setOrg(current)
-      setOrgs(list)
-      setStatus('ready')
-    } catch (err) {
-      if (signal?.aborted) return
-      setError(err instanceof Error ? err : new Error(String(err)))
-      setStatus('error')
-    }
-  }, [])
+    },
+    [],
+  )
 
   useEffect(() => {
     const controller = new AbortController()
     void hydrate(controller.signal)
     if (!isSupabaseConfigured() || !supabase) return () => controller.abort()
-    const { data } = supabase.auth.onAuthStateChange(() => {
-      void hydrate()
+    const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      const nextUserId = session?.user?.id ?? null
+      const userChanged = nextUserId !== lastUserIdRef.current
+      lastUserIdRef.current = nextUserId
+      // Full reset (status → 'loading') only when the authenticated user
+      // actually changes: sign-out, or sign-in/user-update as someone else.
+      if (
+        event === 'SIGNED_OUT' ||
+        ((event === 'SIGNED_IN' || event === 'USER_UPDATED') && userChanged)
+      ) {
+        orgIdRef.current = null
+        void hydrate()
+        return
+      }
+      // Same user (TOKEN_REFRESHED, INITIAL_SESSION, repeat SIGNED_IN, …):
+      // refresh in place, keeping 'ready' when an org is already resolved.
+      void hydrate(undefined, { silent: orgIdRef.current != null })
     })
     return () => {
       controller.abort()

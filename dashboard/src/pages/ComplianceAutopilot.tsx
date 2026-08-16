@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { InterlinkChip } from '@/components/ui/InterlinkChip'
-import { useRequiredOrgId } from '../hooks/useTenant'
+import { useTenant } from '../hooks/useTenant'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { fetchMeshExecutions, type MeshExecution } from '../services/meshFleetService'
 
@@ -45,6 +45,7 @@ async function fetchComplianceAgents(): Promise<RegistryAgent[]> {
   const { data, error } = await supabase
     .from('agent_registry')
     .select('id, agent_name, agent_type, run_mode, status, is_enabled, description, trigger_events, target_modules, owner_team, priority')
+    .is('deleted_at', null)
     .order('priority')
   if (error) throw new Error(error.message)
   return (data ?? [])
@@ -66,8 +67,9 @@ async function fetchComplianceAgents(): Promise<RegistryAgent[]> {
       a.targetModules.some(m => COMPLIANCE_MODULES.has(m)))
 }
 
+// agent_executions.status CHECK allows exactly: started | succeeded | failed
+// | timeout | skipped — no other keys can occur.
 const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
-  completed: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' },
   succeeded: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' },
   started:   { bg: 'hsl(var(--brand-subtle))', text: 'hsl(var(--brand))' },
   failed:    { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' },
@@ -93,7 +95,9 @@ function timeAgo(iso: string | null): string {
 }
 
 export default function ComplianceAutopilot() {
-  const orgId = useRequiredOrgId()
+  // Defensive tenancy guard (matches MfaEnrollment): never throw while the
+  // tenant context is still resolving — render the skeleton instead.
+  const { orgId, status: tenantStatus } = useTenant()
 
   const { data: agents = [], isLoading: agentsLoading, error: agentsError } = useQuery({
     queryKey: ['compliance-autopilot-agents'],
@@ -102,7 +106,7 @@ export default function ComplianceAutopilot() {
   })
   const { data: executions = [], isLoading: execLoading, error: execError } = useQuery({
     queryKey: ['compliance-autopilot-executions', orgId],
-    queryFn: () => fetchMeshExecutions(orgId, 200),
+    queryFn: () => fetchMeshExecutions(orgId as string, 200),
     enabled: !!orgId,
     staleTime: 15_000,
   })
@@ -123,13 +127,13 @@ export default function ComplianceAutopilot() {
   const dayAgo = Date.now() - 86_400_000
   const actions24 = log.filter(x => new Date(x.startedAt).getTime() > dayAgo).length
   const failed = log.filter(x => x.status === 'failed' || x.status === 'timeout').length
-  const succeeded = log.filter(x => x.status === 'succeeded' || x.status === 'completed').length
+  const succeeded = log.filter(x => x.status === 'succeeded').length
   const lastAction = log[0]?.startedAt ?? null
 
   const isLoading = agentsLoading || execLoading
   const error = agentsError ?? execError
 
-  if (isLoading) return <PageSkeleton title="Compliance Autopilot" showStats rows={5} />
+  if (tenantStatus === 'loading' || isLoading) return <PageSkeleton title="Compliance Autopilot" showStats rows={5} />
 
   return (
     <div className="space-y-5">

@@ -16,10 +16,11 @@
 // RPC (audit_log_verify_chain) that do not exist in this project's database,
 // so its "chain verification" could never display real data.
 
-import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useMemo, useState } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { ClockCounterClockwise, Export, Eye, Warning, X } from '@phosphor-icons/react';
 import { auditWriteHealthy } from '@/lib/auditLogger';
+import { formatExport } from '@/services/auditLogService';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -113,12 +114,34 @@ function JsonBlock({ label, value, tone }: {
 export default function AuditTrail() {
   const { logs, isLoading, error } = useAuditLogData();
   const { orgName } = useSettingsStore();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // ?module=<x> deep-links a pre-filtered view (platform pattern: dismissible
+  // chip below); it seeds the module filter and stays in the URL until
+  // dismissed so the link remains shareable.
+  const moduleParam = searchParams.get('module');
   const [search, setSearch] = useState('');
   const [dateRange, setDateRange] = useState('all');
-  const [moduleFilter, setModuleFilter] = useState('all');
+  const [moduleFilter, setModuleFilter] = useState(moduleParam ?? 'all');
   const [actorFilter, setActorFilter] = useState('all');
   const [viewItem, setViewItem] = useState<AuditLogRecord | null>(null);
   const [healthBannerDismissed, setHealthBannerDismissed] = useState(false);
+
+  // ?open=<id> opens that event's detail drawer once data is loaded
+  // (platform pattern — see pages/audits/AuditManagement.tsx), then drops
+  // the param so closing the drawer doesn't re-open it.
+  useEffect(() => {
+    const openId = searchParams.get('open');
+    if (!openId || isLoading) return;
+    const match = logs.find(e => e.id === openId);
+    if (match) setViewItem(match);
+    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('open'); return next; }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoading, logs.length]);
+
+  const clearModuleParam = () => {
+    setModuleFilter('all');
+    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('module'); return next; }, { replace: true });
+  };
 
   const modules = useMemo(
     () => Array.from(new Set(logs.map(e => e.module).filter(Boolean))).sort(),
@@ -146,15 +169,10 @@ export default function AuditTrail() {
 
   const handleExport = () => {
     if (!filtered.length) return;
-    const headers = ['id', 'created_at', 'actor', 'actor_role', 'module', 'action', 'entity_type', 'entity_name', 'entity_id'];
-    const rows = filtered.map(e => [
-      e.id, e.createdAt, e.actorName, e.actorRole ?? '', e.module, e.action,
-      e.entityType, e.entityName ?? '', e.entityId ?? '',
-    ].map(v => JSON.stringify(v ?? '')).join(','));
-    const csv = [headers.join(','), ...rows].join('\n');
+    const { body, mime, ext } = formatExport(filtered, 'csv');
     const a = document.createElement('a');
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    a.download = `audit-trail-${new Date().toISOString().split('T')[0]}.csv`;
+    a.href = URL.createObjectURL(new Blob([body], { type: mime }));
+    a.download = `audit-trail-${new Date().toISOString().split('T')[0]}.${ext}`;
     a.click();
   };
 
@@ -193,6 +211,22 @@ export default function AuditTrail() {
           >
             <X size={14} />
           </button>
+        </div>
+      )}
+
+      {/* Deep-link filter chip — dismissible, platform pattern */}
+      {moduleParam && moduleFilter === moduleParam && (
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center gap-2 px-3 py-1.5 text-sm bg-[hsl(var(--brand-subtle))] border border-[hsl(var(--brand))/30] text-[hsl(var(--brand))] rounded-none">
+            <span>Filtered to module <strong>{moduleParam.replace(/_/g, ' ')}</strong></span>
+            <button
+              aria-label="Clear module filter"
+              onClick={clearModuleParam}
+              className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer"
+            >
+              <X size={14} />
+            </button>
+          </span>
         </div>
       )}
 
@@ -244,7 +278,13 @@ export default function AuditTrail() {
                 key: 'module',
                 label: 'Module',
                 value: moduleFilter === 'all' ? '' : moduleFilter,
-                onChange: v => setModuleFilter(v || 'all'),
+                onChange: v => {
+                  setModuleFilter(v || 'all');
+                  // Manual filter change supersedes the ?module= deep link.
+                  if (moduleParam && v !== moduleParam) {
+                    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('module'); return next; }, { replace: true });
+                  }
+                },
                 options: modules.map(m => ({ label: m.replace(/_/g, ' '), value: m })),
               },
               {
@@ -256,7 +296,7 @@ export default function AuditTrail() {
               },
             ]}
             activeFilterCount={activeFilterCount}
-            onClearAll={() => { setSearch(''); setDateRange('all'); setModuleFilter('all'); setActorFilter('all'); }}
+            onClearAll={() => { setSearch(''); setDateRange('all'); setActorFilter('all'); clearModuleParam(); }}
             trailing={
               <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} event{filtered.length !== 1 ? 's' : ''}</span>
             }
