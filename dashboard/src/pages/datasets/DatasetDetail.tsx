@@ -45,6 +45,22 @@ export default function DatasetDetail() {
     </Button>
   )
 
+  /* Sibling data surfaces — governance, lineage, quality and the entity graph
+     were previously reachable only from the sidebar, leaving this record a
+     dead end once you arrived from a model or a bias audit. */
+  const dataSurfaces = (
+    <div className="mb-4 flex flex-wrap items-center gap-2">
+      {[
+        { label: 'Data Governance', to: '/data-governance' },
+        { label: 'Data Lineage', to: '/data-lineage' },
+        { label: 'Data Quality', to: '/data-quality' },
+        { label: 'Knowledge Graph', to: '/knowledge-graph' },
+      ].map((s) => (
+        <Button key={s.to} variant="ghost" size="sm" onClick={() => navigate(s.to)}>{s.label}</Button>
+      ))}
+    </div>
+  )
+
   if (isLoading) return <div className="p-6 text-sm text-[hsl(var(--text-4))]">Loading dataset…</div>
   if (isError) return <div className="p-6">{back}<ErrorState message={error?.message} /></div>
   if (!dataset) {
@@ -63,6 +79,7 @@ export default function DatasetDetail() {
     <div className="space-y-6">
       <div>
         {back}
+        {dataSurfaces}
         <div className="flex items-start justify-between">
           <div className="flex items-start gap-3">
             <div className="border border-[hsl(var(--border))] bg-surface p-2">

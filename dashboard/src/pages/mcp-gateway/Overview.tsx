@@ -1,179 +1,174 @@
-import React from 'react';
-import { PageHeader } from '../../components/ui/PageHeader';
-import { Card } from '../../components/ui/card';
-import { 
-  Database, 
-  Robot, 
-  ShieldCheck, 
-  ArrowsLeftRight,
-  LockKey,
-  Checks,
-  Pulse
-} from '@phosphor-icons/react';
-import { Badge } from '../../components/ui/badge';
-import { useSettingsStore } from '../../stores/settingsStore';
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// MCP Overview — the gateway's posture at a glance. Every figure is computed
+// from the real `mcp_servers` / `mcp_tools` registries (the page previously
+// showed invented headline percentages); an empty org gets an honest empty
+// state rather than fabricated numbers.
 
-export default function Overview() {
-  const { orgName } = useSettingsStore();
+import { useMemo } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { ArrowRight, Plugs, Scan, ShieldWarning, Warning } from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { EmptyState, ErrorState } from '@/components/evals/states'
+import { useMcpServers, useMcpTools } from '@/hooks/useMcpData'
 
+function Stat({ label, value, tone, hint }: { label: string; value: React.ReactNode; tone?: string; hint?: string }) {
   return (
-    <div className="space-y-6">
-      <PageHeader 
-        title="MCP Gateway Architecture" 
-        description="Understand how the Model Context Protocol (MCP) Gateway routes, authenticates, and audits tool calls between your AI agents and enterprise backends."
-      />
-
-      {/* Stats Row */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
-          <div className="p-3 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))]">
-            <Robot size={24} />
-          </div>
-          <div>
-            <p className="text-xs text-[hsl(var(--text-2))] uppercase tracking-wider">Active Agents</p>
-            <p className="text-2xl font-bold">14</p>
-          </div>
-        </Card>
-        <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
-          <div className="p-3 bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))]">
-            <Database size={24} />
-          </div>
-          <div>
-            <p className="text-xs text-[hsl(var(--text-2))] uppercase tracking-wider">Connected Servers</p>
-            <p className="text-2xl font-bold">8</p>
-          </div>
-        </Card>
-        <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
-          <div className="p-3 bg-[hsl(var(--s-in-tx))] text-[hsl(var(--bg-surface))]">
-            <ArrowsLeftRight size={24} />
-          </div>
-          <div>
-            <p className="text-xs text-[hsl(var(--text-2))] uppercase tracking-wider">Daily Tool Calls</p>
-            <p className="text-2xl font-bold">45.2k</p>
-          </div>
-        </Card>
-        <Card className="p-4 border-[hsl(var(--border))] bg-surface-1 rounded-none flex items-center gap-4">
-          <div className="p-3 bg-[hsl(var(--s-wn-tx))] text-[hsl(var(--bg-surface))]">
-            <ShieldCheck size={24} />
-          </div>
-          <div>
-            <p className="text-xs text-[hsl(var(--text-2))] uppercase tracking-wider">Blocked by Guardrails</p>
-            <p className="text-2xl font-bold">1.2%</p>
-          </div>
-        </Card>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
-        {/* Main Architecture Diagram */}
-        <Card className="col-span-1 lg:col-span-2 p-6 border-[hsl(var(--border))] bg-surface-1 rounded-none">
-          <h3 className="text-lg font-semibold mb-6 flex items-center gap-2">
-            <Pulse size={20} className="text-[hsl(var(--brand))]" /> 
-            Traffic Flow & Governance
-          </h3>
-
-          <div className="relative p-8 bg-surface-2 border border-[hsl(var(--border))]">
-            
-            <div className="flex justify-between items-center relative z-10">
-              
-              {/* Client Side (Agents) */}
-              <div className="w-1/4 space-y-4">
-                <h4 className="text-xs font-mono text-[hsl(var(--text-2))] uppercase text-center mb-4">1. AI Agents</h4>
-                <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
-                  <Robot size={32} className="mx-auto mb-2 text-[hsl(var(--text-4))]" />
-                  <p className="text-sm font-medium">Customer Support Bot</p>
-                  <Badge className="mt-2 bg-[hsl(var(--s-in-tx))] text-[hsl(var(--s-in-tx))] border-0 rounded-none text-[10px]">READ-ONLY</Badge>
-                </div>
-                <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
-                  <Robot size={32} className="mx-auto mb-2 text-[hsl(var(--text-4))]" />
-                  <p className="text-sm font-medium">Data Analyst Agent</p>
-                  <Badge className="mt-2 bg-[hsl(var(--s-er-tx))] text-[hsl(var(--s-er-tx))] border-0 rounded-none text-[10px]">HIGH PRIVILEGE</Badge>
-                </div>
-              </div>
-
-              {/* Middle: Gateway */}
-              <div className="w-1/3 z-20">
-                <div className="p-6 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] shadow-xl relative text-center">
-                  <h2 className="text-xl font-bold mb-1">Sentinel MCP Gateway</h2>
-                  <p className="text-xs opacity-80 mb-6">Centralized Routing & Zero-Trust</p>
-                  
-                  <div className="space-y-2 text-left bg-black/20 p-3">
-                    <div className="flex items-center gap-2 text-sm"><LockKey size={16}/> Identity & ACL Check</div>
-                    <div className="flex items-center gap-2 text-sm"><ShieldCheck size={16}/> Payload Guardrails</div>
-                    <div className="flex items-center gap-2 text-sm"><Checks size={16}/> Human-in-the-loop</div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Backend Side (Servers) */}
-              <div className="w-1/4 space-y-4">
-                <h4 className="text-xs font-mono text-[hsl(var(--text-2))] uppercase text-center mb-4">3. Enterprise Backends</h4>
-                <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
-                  <Database size={32} className="mx-auto mb-2 text-[hsl(var(--text-4))]" />
-                  <p className="text-sm font-medium">CRM Database</p>
-                  <Badge className="mt-2 bg-[hsl(var(--bg-muted))]0/10 text-[hsl(var(--text-4))] border-0 rounded-none text-[10px]">MCP v1.2</Badge>
-                </div>
-                <div className="p-4 bg-surface-1 border border-[hsl(var(--border))] text-center">
-                  <Database size={32} className="mx-auto mb-2 text-[hsl(var(--text-4))]" />
-                  <p className="text-sm font-medium">Internal Wiki API</p>
-                  <Badge className="mt-2 bg-[hsl(var(--bg-muted))]0/10 text-[hsl(var(--text-4))] border-0 rounded-none text-[10px]">MCP v1.2</Badge>
-                </div>
-              </div>
-
-            </div>
-
-            {/* Connecting Lines (Background) */}
-            <div className="absolute top-1/2 left-[10%] right-[10%] h-[2px] bg-gradient-to-r from-[hsl(var(--border))] via-[hsl(var(--brand))] to-[hsl(var(--border))] -translate-y-1/2 z-0 opacity-50 border-dashed"></div>
-            
-            {/* Animated Dots */}
-            <div className="absolute top-1/2 left-[30%] w-2 h-2 rounded-full bg-[hsl(var(--brand))] -translate-y-1/2 z-0 animate-ping"></div>
-            <div className="absolute top-1/2 right-[30%] w-2 h-2 rounded-full bg-[hsl(var(--brand))] -translate-y-1/2 z-0 animate-ping" style={{animationDelay: '0.5s'}}></div>
-
-          </div>
-        </Card>
-
-        {/* Info Sidebar */}
-        <div className="col-span-1 space-y-6">
-          <Card className="p-6 border-[hsl(var(--border))] bg-surface-1 rounded-none">
-            <h3 className="font-semibold mb-4">Why use the MCP Gateway?</h3>
-            <div className="space-y-4 text-sm text-[hsl(var(--text-2))]">
-              <p>
-                By default, LLM agents connect directly to tools and databases. This creates a scattered, un-auditable mesh of credentials and permissions.
-              </p>
-              <p>
-                The Sentinel MCP Gateway acts as a reverse proxy for all tool invocations. Agents authenticate with the Gateway, and the Gateway securely routes requests to your backend MCP servers.
-              </p>
-            </div>
-          </Card>
-
-          <Card className="p-6 border-[hsl(var(--border))] bg-surface-1 rounded-none">
-            <h3 className="font-semibold mb-4 text-[hsl(var(--brand))]">Key Capabilities</h3>
-            <ul className="space-y-3 text-sm">
-              <li className="flex items-start gap-2">
-                <CheckCircle size={18} className="text-[hsl(var(--brand))] shrink-0 mt-0.5" />
-                <span><strong className="text-[hsl(var(--text-1))]">Zero-Trust ACLs:</strong> Restrict which agents can call which tools at a granular level.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle size={18} className="text-[hsl(var(--brand))] shrink-0 mt-0.5" />
-                <span><strong className="text-[hsl(var(--text-1))]">Prompt Injection Defense:</strong> Inspect tool payloads for malicious code before hitting your DB.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle size={18} className="text-[hsl(var(--brand))] shrink-0 mt-0.5" />
-                <span><strong className="text-[hsl(var(--text-1))]">Human-in-the-Loop:</strong> Pause high-risk tool executions until a human approves them.</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckCircle size={18} className="text-[hsl(var(--brand))] shrink-0 mt-0.5" />
-                <span><strong className="text-[hsl(var(--text-1))]">Unified Audit Trail:</strong> 100% visibility into exactly what data your agents are accessing.</span>
-              </li>
-            </ul>
-          </Card>
-        </div>
-      </div>
+    <div>
+      <p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">{label}</p>
+      <p className={`font-mono text-2xl font-bold ${tone ?? 'text-[hsl(var(--text-1))]'}`}>{value}</p>
+      {hint && <p className="mt-0.5 text-[11px] text-[hsl(var(--text-4))]">{hint}</p>}
     </div>
-  );
+  )
 }
 
-// Temporary inline icon since it wasn't imported at top
-function CheckCircle(props: any) {
-  return <svg xmlns="http://www.w3.org/2000/svg" width={props.size} height={props.size} fill="currentColor" viewBox="0 0 256 256" {...props}><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm45.66,85.66-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35a8,8,0,0,1,11.32,11.32Z"></path></svg>;
+export default function McpOverview() {
+  const nav = useNavigate()
+  const servers = useMcpServers()
+  const tools = useMcpTools()
+
+  const m = useMemo(() => {
+    const s = servers.data
+    const t = tools.data
+    const healthy = s.filter((x) => x.status === 'healthy').length
+    const unhealthy = s.filter((x) => x.status === 'degraded' || x.status === 'offline')
+    const restrictedServers = s.filter((x) => x.approvalState !== 'approved')
+    const writeTools = t.filter((x) => x.category !== 'read')
+    const hitlTools = t.filter((x) => x.requiresHitl)
+    const pendingTools = t.filter((x) => x.approvalState !== 'approved')
+    const ungoverned = t.filter((x) => x.allowedAgentIds.length === 0)
+    const calls30d = t.reduce((sum, x) => sum + (x.invocations30d ?? 0), 0)
+    return {
+      servers: s.length, healthy, unhealthy, restrictedServers,
+      tools: t.length, writeTools, hitlTools, pendingTools, ungoverned, calls30d,
+      healthPct: s.length ? Math.round((healthy / s.length) * 100) : null,
+    }
+  }, [servers.data, tools.data])
+
+  if (servers.isError || tools.isError) {
+    return (
+      <div>
+        <PageHeader title="MCP Overview" subtitle="Model Context Protocol gateway posture" icon={Plugs} />
+        <ErrorState
+          message={(servers.error ?? tools.error)?.message}
+          onRetry={() => { servers.refetch(); tools.refetch() }}
+        />
+      </div>
+    )
+  }
+
+  const loading = servers.isLoading || tools.isLoading
+
+  return (
+    <div>
+      <PageHeader
+        title="MCP Overview"
+        subtitle="Model Context Protocol gateway — servers, exposed tools and their governance posture"
+        icon={Plugs}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={() => nav('/mcp-gateway/servers')}>Servers</Button>
+            <Button size="sm" variant="secondary" onClick={() => nav('/mcp-gateway/tools')}>Tool Catalog</Button>
+          </div>
+        }
+      />
+
+      {loading ? (
+        <div className="p-4 text-sm text-[hsl(var(--text-3))]">Loading gateway posture…</div>
+      ) : m.servers === 0 ? (
+        <EmptyState
+          title="No MCP servers registered"
+          message="Register the Model Context Protocol servers your agents connect to — then every tool they expose can be risk-tiered, approved and monitored here."
+          actionLabel="Register a server"
+          onAction={() => nav('/mcp-gateway/servers')}
+        />
+      ) : (
+        <>
+          <Card className="mb-4">
+            <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-4">
+              <Stat label="Servers" value={m.servers} hint={`${m.healthy} healthy`} />
+              <Stat
+                label="Health"
+                value={m.healthPct == null ? '—' : `${m.healthPct}%`}
+                tone={m.healthPct != null && m.healthPct < 80 ? 'text-[hsl(var(--s-wn-tx))]' : 'text-[hsl(var(--s-ok-tx))]'}
+                hint="servers reporting healthy"
+              />
+              <Stat label="Exposed tools" value={m.tools} hint={`${m.writeTools.length} write/execute`} />
+              <Stat
+                label="Calls (30d)"
+                value={m.calls30d ? m.calls30d.toLocaleString() : '—'}
+                hint={m.calls30d ? 'recorded invocations' : 'no invocation data yet'}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Governance attention — each row links to the records behind it */}
+          <Card className="mb-4">
+            <CardContent className="p-4">
+              <p className="mb-3 text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Needs attention</p>
+              {m.unhealthy.length === 0 && m.pendingTools.length === 0 && m.ungoverned.length === 0 && m.restrictedServers.length === 0 ? (
+                <p className="text-sm text-[hsl(var(--s-ok-tx))]">Every server is healthy and approved, and every tool has an agent allow-list.</p>
+              ) : (
+                <div className="space-y-2">
+                  {m.unhealthy.length > 0 && (
+                    <button onClick={() => nav('/mcp-gateway/servers')}
+                      className="flex w-full items-center justify-between border border-[hsl(var(--s-er-br))] bg-[hsl(var(--s-er-bg))] px-3 py-2 text-left">
+                      <span className="flex items-center gap-2 text-sm text-[hsl(var(--s-er-tx))]">
+                        <Warning size={14} /> {m.unhealthy.length} server{m.unhealthy.length > 1 ? 's' : ''} degraded or offline
+                      </span>
+                      <ArrowRight size={14} className="text-[hsl(var(--s-er-tx))]" />
+                    </button>
+                  )}
+                  {m.restrictedServers.length > 0 && (
+                    <button onClick={() => nav('/mcp-gateway/servers')}
+                      className="flex w-full items-center justify-between border border-[hsl(var(--s-wn-br))] bg-[hsl(var(--s-wn-bg))] px-3 py-2 text-left">
+                      <span className="flex items-center gap-2 text-sm text-[hsl(var(--s-wn-tx))]">
+                        <ShieldWarning size={14} /> {m.restrictedServers.length} server{m.restrictedServers.length > 1 ? 's' : ''} not fully approved
+                      </span>
+                      <ArrowRight size={14} className="text-[hsl(var(--s-wn-tx))]" />
+                    </button>
+                  )}
+                  {m.pendingTools.length > 0 && (
+                    <button onClick={() => nav('/mcp-gateway/tools')}
+                      className="flex w-full items-center justify-between border border-[hsl(var(--s-wn-br))] bg-[hsl(var(--s-wn-bg))] px-3 py-2 text-left">
+                      <span className="flex items-center gap-2 text-sm text-[hsl(var(--s-wn-tx))]">
+                        <Scan size={14} /> {m.pendingTools.length} tool{m.pendingTools.length > 1 ? 's' : ''} awaiting approval
+                      </span>
+                      <ArrowRight size={14} className="text-[hsl(var(--s-wn-tx))]" />
+                    </button>
+                  )}
+                  {m.ungoverned.length > 0 && (
+                    <button onClick={() => nav('/mcp-gateway/tools')}
+                      className="flex w-full items-center justify-between border border-[hsl(var(--border))] bg-[hsl(var(--bg-muted))] px-3 py-2 text-left">
+                      <span className="flex items-center gap-2 text-sm text-[hsl(var(--text-2))]">
+                        <Scan size={14} /> {m.ungoverned.length} tool{m.ungoverned.length > 1 ? 's' : ''} with no agent allow-list
+                      </span>
+                      <ArrowRight size={14} className="text-[hsl(var(--text-3))]" />
+                    </button>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Risk posture of what the gateway exposes */}
+          <Card>
+            <CardContent className="p-4">
+              <p className="mb-3 text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Exposure posture</p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Stat label="Write / execute tools" value={m.writeTools.length}
+                  tone={m.writeTools.length ? 'text-[hsl(var(--s-wn-tx))]' : undefined}
+                  hint="can change state in a system of record" />
+                <Stat label="Human-review gated" value={m.hitlTools.length} hint="require approval before the call proceeds" />
+                <Stat label="Read-only tools" value={m.tools - m.writeTools.length} hint="lookup only, no side effects" />
+              </div>
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
+  )
 }

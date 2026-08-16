@@ -98,7 +98,14 @@ export default function ValidationRunList() {
         title="Validation Lab"
         subtitle="Independent model validation records (SR 11-7 / OCC 2011-12)"
         icon={Flask}
-        actions={can('create') && <Button size="sm" icon={<Plus />} onClick={openNew}>New Validation Run</Button>}
+        actions={
+          <div className="flex items-center gap-2">
+            {/* Sibling eval surfaces — otherwise reachable only from the sidebar. */}
+            <Button variant="ghost" size="sm" onClick={() => nav('/evals/benchmark')}>Benchmarks</Button>
+            <Button variant="ghost" size="sm" onClick={() => nav('/evals/techniques')}>Eval Techniques</Button>
+            {can('create') && <Button size="sm" icon={<Plus />} onClick={openNew}>New Validation Run</Button>}
+          </div>
+        }
       />
 
       {modelParam && (

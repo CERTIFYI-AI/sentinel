@@ -41,7 +41,6 @@ const ExportCenter = lazy(() => import('./pages/ExportCenter'));
 const GapAnalysis = lazy(() => import('./pages/GapAnalysis'));
 const IncidentLog = lazy(() => import('./pages/IncidentLog'));
 const ModelRegistryPage = lazy(() => import('./pages/models/ModelRegistryPage'));
-const ModelCatalogPage = lazy(() => import('./pages/ai-gateway/ModelCatalogPage'));
 const ModelDetail = lazy(() => import('./pages/models/ModelDetail'));
 const ModelLifecycle = lazy(() => import('./pages/ModelLifecycle'));
 const Notifications = lazy(() => import('./pages/Notifications'));
@@ -571,10 +570,12 @@ export default function App() {
             <Route path="/regulator-filings" element={<Suspense fallback={<Loading />}><RegulatorFilings /></Suspense>} />
             <Route path="/bia" element={<Suspense fallback={<Loading />}><BIA /></Suspense>} />
 
-            {/* AI Gateway — Playground & Model Catalog are canonical here; the rest
-                were aliases of Trust Engine / Security surfaces and now redirect. */}
+            {/* AI Gateway — only the Playground is canonical here; the rest were
+                aliases of Trust Engine / Security / Registry surfaces and redirect.
+                Model Catalog was a second inventory over the same ai_models table
+                with the same detail tabs, so it retires into the canonical registry. */}
             <Route path="/ai-gateway/playground" element={<Suspense fallback={<Loading />}><AiPlayground /></Suspense>} />
-            <Route path="/ai-gateway/models" element={<Suspense fallback={<Loading />}><ModelCatalogPage /></Suspense>} />
+            <Route path="/ai-gateway/models" element={<RedirectWithQuery to="/models/inventory" />} />
             <Route path="/ai-gateway/analytics" element={<Navigate to="/trust-engine/costs" replace />} />
             <Route path="/ai-gateway/endpoints" element={<Navigate to="/trust-engine/config" replace />} />
             <Route path="/ai-gateway/settings" element={<Navigate to="/trust-engine/config" replace />} />

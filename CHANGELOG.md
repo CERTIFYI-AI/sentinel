@@ -1,3 +1,16 @@
+## <small>1.60.1 (2026-08-16)</small>
+
+* fix(ia): connect isolated modules across AI Assets, Assess and Trust groups ([7501c8a](https://github.com/CERTIFYI-AI/sentinel/commit/7501c8a))
+* Merge main ([29070b8](https://github.com/CERTIFYI-AI/sentinel/commit/29070b8))
+* refactor(ia): retire Model Catalog into the canonical Model Registry ([78dd342](https://github.com/CERTIFYI-AI/sentinel/commit/78dd342))
+
+## 1.60.0 (2026-08-16)
+
+* feat(gateways): real backend for MCP group, Model Catalog and Playground ([d5748e9](https://github.com/CERTIFYI-AI/sentinel/commit/d5748e9))
+* fix(integrations,tasks): move both modules onto real org-scoped backends ([b12bae9](https://github.com/CERTIFYI-AI/sentinel/commit/b12bae9))
+* Merge release v1.59.0 from main ([ce1c47a](https://github.com/CERTIFYI-AI/sentinel/commit/ce1c47a))
+* chore(migrations): consolidate task seeds into the canonical migration path ([b7d5614](https://github.com/CERTIFYI-AI/sentinel/commit/b7d5614))
+
 ## 1.59.0 (2026-08-16)
 
 * Merge release v1.58.0 from main ([6b1aadd](https://github.com/CERTIFYI-AI/sentinel/commit/6b1aadd))
