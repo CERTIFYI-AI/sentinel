@@ -20,6 +20,12 @@ on:
   push:
     branches: [main]
 
+# Supersede in-progress runs on the same branch/PR: a new push cancels the
+# older run instead of letting both consume Actions minutes to completion.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   typecheck:
     runs-on: ubuntu-latest

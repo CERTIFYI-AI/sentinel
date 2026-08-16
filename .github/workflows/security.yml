@@ -18,6 +18,12 @@ on:
   schedule:
     - cron: '0 6 * * 1'
 
+# Supersede in-progress runs on the same branch/PR. Scheduled (cron) runs use
+# github.run_id so weekly scans never cancel each other.
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}-${{ github.event_name == 'schedule' && github.run_id || '' }}
+  cancel-in-progress: true
+
 jobs:
   secrets:
     name: Secret Scanning (Gitleaks)

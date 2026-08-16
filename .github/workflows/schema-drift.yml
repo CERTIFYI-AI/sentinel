@@ -1,5 +1,12 @@
 name: schema-drift
 on: [pull_request]
+
+# Supersede in-progress runs on the same PR (spins up a full Postgres replay —
+# the priciest job to leave running against a stale commit).
+concurrency:
+  group: drift-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   drift:
     runs-on: ubuntu-latest
