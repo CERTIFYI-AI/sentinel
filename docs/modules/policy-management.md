@@ -1,6 +1,6 @@
 # Policy Management & Templates
 
-**Routes:** `/policies`, `/policy-management`, `/policy-templates`, `/policy-editor` · **Services:** `policyService.ts`
+**Routes:** `/policies`, `/policy-editor`, `/compliance/policy-templates`, `/documents`
 
 ## Purpose
 Author, review, approve, publish, acknowledge, and retire organisational policies (security, privacy, AI acceptable use, model governance, incident response) with version control and attestation tracking.
@@ -109,3 +109,9 @@ python3 -m pytest tests/test_policy_engine.py -v
 - [Policy language](../security/policy-language.md)
 - [Policy Firewall & Guardrails](policy-firewall.md)
 - [Policy template changelog](policy-management-changelog.md)
+
+
+## Data backing (wired 2026-08)
+- One policy record: `policies` (uuid PK, org-scoped RLS, structured `content` jsonb rendered in Policies/Editor/Detail). Versions in `policy_versions`; approvals via the platform `approvals` backend (`entity_type='policy'`).
+- Templates: `policy_templates` global catalog (seeded with clause-accurate ISO 42001 / EU AI Act / GDPR / NIST / OWASP / NRB templates); "Add to Library" instantiates a real draft policy + first version. Earlier "70 templates / 11 frameworks" claims described content that never existed and are withdrawn.
+- Documents: real `documents` table with storage-backed uploads and entity/model links.

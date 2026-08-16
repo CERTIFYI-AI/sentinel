@@ -22,3 +22,8 @@ End-to-end evidence management: ingestion, classification, freshness tracking, c
 
 ## Export Center
 Auditor packages (CSV, JSON, PDF), regulator-specific exports (EU AI Act Annex IV, SOC 2 workpapers, ISO Statement of Applicability) with manifest and chain verification report.
+
+
+## Data backing (corrected 2026-08)
+- Route is `/evidence-vault` (aliases redirect). Records: `evidence` (org-scoped RLS — the earlier allow_all policy is closed; `url` and source links `linked_incident_id`/`linked_assessment_id` are real columns). Chain: `evidence_chain`, now genuinely append-only (INSERT+SELECT policies only), with entity deep links to incidents/risks.
+- The previously documented `freshness-checker` edge function and offline manifest verification do not exist; freshness is derived at insert time (recompute tracked as debt).

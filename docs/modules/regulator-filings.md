@@ -1,6 +1,6 @@
 # Regulator Filing Workspace
 
-**Route:** `/regulator-filings` · **Service:** `incidentService.ts` + `regulationService.ts`
+**Route:** `/regulator-filings` · **Service:** `regulatoryOpsService.ts` · **Table:** `regulator_filings` (org-scoped RLS)
 
 ## Purpose
 Manage regulator-facing notifications (incidents, breaches, serious AI incidents, material operational events) with jurisdiction-specific SLA countdowns, drafting, approval, and acknowledgement tracking.
@@ -25,3 +25,9 @@ Detect (from Incident Module) → Classify jurisdiction and obligations → Auto
 
 ## Exports
 Fully assembled submission package (PDF + attachments manifest) with cryptographic hash for regulator receipt matching.
+
+
+## Data backing (wired 2026-08)
+- Real `regulator_filings` table (CHECK-constrained regulation/type/status); filings link incidents via `linked_incident_id` → `/risk/incidents?open=`.
+- The mesh's RegulatorNotify agent drafts filings into the same table (title, regulation mapped to CHECK values, `status='draft'`, deadline from the template).
+- The previously documented four-eyes/WORM workflow is NOT implemented — approvals go through the platform `approvals` backend when required.

@@ -1,6 +1,6 @@
 # AI Literacy
 
-**Route:** `/ai-literacy` · **Service:** `aiTrainingService.ts` · **Hook:** `useGovernAddons.ts` (`useTrainings`)
+**Route:** `/ai-literacy` · **Service:** `aiLiteracyService.ts` · **Hook:** `useGovernAddons.ts` (`useTrainings`)
 **Table:** `ai_trainings`
 
 ## Purpose
