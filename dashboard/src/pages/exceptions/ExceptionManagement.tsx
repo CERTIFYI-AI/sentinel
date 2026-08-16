@@ -30,6 +30,7 @@ import { useExceptions } from '../../hooks/useRiskIncidents';
 import type { ExceptionRecord } from '../../services/incidentResponseService';
 import { useModelsData } from '@/hooks/useModelsData';
 import { useRisksData } from '@/hooks/useRisksData';
+import { usePolicies } from '@/hooks/queries/usePolicies';
 import { InterlinkChip } from '@/components/ui/InterlinkChip';
 import { exportCsv } from '@/lib/exportUtils';
 import PageSkeleton from '../../components/ui/PageSkeleton';
@@ -201,6 +202,7 @@ export default function ExceptionManagement() {
   const { items: exceptions, isLoading, error, save, remove, isSaving } = useExceptions();
   const { models } = useModelsData();
   const { risks } = useRisksData();
+  const { data: policyOptions = [] } = usePolicies();
   const [searchParams, setSearchParams] = useSearchParams();
   const openParam = searchParams.get('open');
 
@@ -651,10 +653,13 @@ export default function ExceptionManagement() {
                   {selected.title}
                 </SheetTitle>
                 <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
-                  {selected.policyRef ?? '—'} · Requested {fmt(selected.requestedDate)}{selected.requestedBy ? ` by ${selected.requestedBy}` : ''}
+                  Requested {fmt(selected.requestedDate)}{selected.requestedBy ? ` by ${selected.requestedBy}` : ''}
                 </p>
-                {(selected.linkedRiskId || (selected.linkedModelIds ?? []).length > 0) && (
+                {(selected.policyRef || selected.linkedRiskId || (selected.linkedModelIds ?? []).length > 0) && (
                   <div className="flex gap-1.5 mt-2 flex-wrap">
+                    {selected.policyRef && (
+                      <InterlinkChip label={selected.policyRef} to={`/policies?open=${selected.policyRef}`} />
+                    )}
                     {selected.linkedRiskId && (
                       <InterlinkChip label={riskTitle(selected.linkedRiskId)} to={`/risks?open=${selected.linkedRiskId}`} />
                     )}
@@ -876,9 +881,27 @@ export default function ExceptionManagement() {
                   onChange={e => setForm(f => ({ ...f, title: e.target.value }))} style={{ borderRadius: 0 }} />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Policy Reference</Label>
-                <Input placeholder="e.g., DRP-4.2" value={form.policyRef}
-                  onChange={e => setForm(f => ({ ...f, policyRef: e.target.value }))} style={{ borderRadius: 0 }} />
+                <Label className="text-xs font-semibold">Linked Policy</Label>
+                {/* Real policy picker fed by the policies table — stores the
+                    picked policy's business ref (policyRef) as the display
+                    reference on this exception (no schema change). */}
+                <Select
+                  value={form.policyRef || 'none'}
+                  onValueChange={v => setForm(f => ({ ...f, policyRef: v === 'none' ? '' : v }))}
+                >
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="No linked policy" /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value="none">No linked policy</SelectItem>
+                    {policyOptions.filter(p => p.policyRef || p.id).map(p => {
+                      const ref = p.policyRef ?? p.id!;
+                      return (
+                        <SelectItem key={p.id} value={ref}>
+                          {p.policyRef ? `${p.policyRef} · ${p.title}` : p.title}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
