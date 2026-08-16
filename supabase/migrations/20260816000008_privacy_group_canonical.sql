@@ -1,4 +1,4 @@
--- 20260816_privacy_group_canonical.sql
+-- 20260816000008_privacy_group_canonical.sql
 -- Applied live to Supabase project vhparvughsygyknblkzt on 2026-08-16.
 --
 -- PRIVACY group backend repair. Audit of DSR / Consent / DPIA / TIA / RoPA

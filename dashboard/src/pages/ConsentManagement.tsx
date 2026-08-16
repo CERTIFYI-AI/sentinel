@@ -4,6 +4,8 @@ import { CheckSquare, MagnifyingGlass, Plus, Eye, X, Export, Users, Warning, Pen
 import { toast } from 'sonner'
 import { useConsentRecordsData } from '@/hooks/useConsentRecordsData'
 import { CONSENT_STATUSES, type ConsentRecord } from '@/services/consentRecordsService'
+import { useNavigate } from 'react-router-dom'
+import { useModelOptions } from '@/hooks/useAiiaData'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 
 function exportCsv(rows: any[], filename: string) {
@@ -38,6 +40,8 @@ const BLANK: Omit<ConsentRecord, 'id'> = {
 }
 
 export default function ConsentManagement() {
+  const nav = useNavigate()
+  const { models } = useModelOptions()
   const { items: records, isLoading, saveConsentRecords, removeConsentRecords } = useConsentRecordsData()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
@@ -261,12 +265,23 @@ export default function ConsentManagement() {
                     <>
                       <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">AI Systems Using This Consent ({selected.aiSystems.length})</p>
                       <div className="space-y-2">
-                        {selected.aiSystems.map(s => (
-                          <div key={s} className="flex items-center gap-2 p-2.5 bg-[hsl(var(--brand)/0.06)] border border-[hsl(var(--brand)/0.2)]">
-                            <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand))]" />
-                            <p className="text-xs font-medium text-[hsl(var(--brand))]">{s}</p>
-                          </div>
-                        ))}
+                        {/* Resolve each covered system to its model record, so
+                            a withdrawal is traceable to what must stop using it. */}
+                        {selected.aiSystems.map((s, i) => {
+                          const mid = selected.linkedModelIds[i]
+                          const known = mid && models.some(m => m.id === mid)
+                          return (
+                            <div key={s} className="flex items-center gap-2 p-2.5 bg-[hsl(var(--brand)/0.06)] border border-[hsl(var(--brand)/0.2)]">
+                              <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand))]" />
+                              {known ? (
+                                <button onClick={() => nav(`/models/inventory/${mid}`)}
+                                  className="text-xs font-medium text-[hsl(var(--brand))] hover:underline">{s}</button>
+                              ) : (
+                                <p className="text-xs font-medium text-[hsl(var(--brand))]">{s}</p>
+                              )}
+                            </div>
+                          )
+                        })}
                         {selected.aiSystems.length === 0 && <p className="text-xs text-[hsl(var(--text-4))]">No AI systems linked</p>}
                       </div>
                       {selected.status === 'withdrawn' && (

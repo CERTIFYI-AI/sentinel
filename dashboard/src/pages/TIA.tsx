@@ -24,6 +24,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { FormDialog, Field } from '@/components/evals/FormDialog'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
 import { useTiaRecords } from '@/hooks/useComplianceRecords'
+import { useVendorOptions } from '@/hooks/useGovernAddons'
 import { useRBAC } from '@/hooks/useRBAC'
 import type { TiaRecord } from '@/services/privacyRecordsService'
 
@@ -66,6 +67,10 @@ export default function TIA() {
   const nav = useNavigate()
   const { can } = useRBAC()
   const tia = useTiaRecords()
+  // The supplier on the receiving end of the transfer — a TIA without a
+  // named recipient cannot be assessed.
+  const { vendors } = useVendorOptions()
+  const vendorName = (id?: string | null) => vendors.find((v: any) => v.id === id)?.name
 
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<TiaRecord | null>(null)
@@ -134,6 +139,14 @@ export default function TIA() {
     { key: 'dataTypes', header: 'Data types', render: (t) => (
       <span className="text-xs text-[hsl(var(--text-3))]">{t.dataTypes || '—'}</span>
     ) },
+    { key: 'vendorId', header: 'Recipient', render: (t) => {
+      const name = vendorName(t.vendorId)
+      if (name) return (
+        <button className="text-xs text-[hsl(var(--brand))] hover:underline"
+          onClick={(e) => { e.stopPropagation(); nav('/vendors') }}>{name}</button>
+      )
+      return <span className="text-xs text-[hsl(var(--text-4))]">{t.vendorId ? 'Unavailable' : '—'}</span>
+    } },
     { key: 'status', header: 'Status', sortable: true, render: (t) => (
       <span className="text-xs capitalize text-[hsl(var(--text-2))]">{t.status || 'draft'}</span>
     ) },
@@ -236,6 +249,15 @@ export default function TIA() {
             </Select>
           </Field>
           <Field label="Valid until"><Input type="date" value={form.validUntil ?? ''} onChange={(e) => set('validUntil', e.target.value)} /></Field>
+          <Field label="Recipient vendor" hint="Who receives the data at the destination">
+            <Select value={form.vendorId ?? '__none__'} onValueChange={(v) => set('vendorId', v === '__none__' ? null : v)}>
+              <SelectTrigger><SelectValue placeholder="Not linked" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__">Not linked</SelectItem>
+                {vendors.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
         </div>
         <Field label="Supplementary measures" hint="Required where the destination lacks an adequacy decision">
           <Textarea rows={3} value={form.supplementaryMeasures ?? ''} onChange={(e) => set('supplementaryMeasures', e.target.value)} />

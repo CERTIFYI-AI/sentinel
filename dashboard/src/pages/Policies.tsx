@@ -4,7 +4,7 @@
 // Renders the real policy content (content.summary + content.sections),
 // version history from policy_versions, and interlinks to controls.
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { usePolicies, useUpsertPolicy, useDeletePolicy } from '@/hooks/queries/usePolicies';
 import { usePolicyVersions } from '@/hooks/useComplianceGroup';
@@ -74,6 +74,7 @@ function sectionsOf(content: any): { heading: string; text: string }[] {
 }
 
 export default function Policies() {
+  const navigate = useNavigate()
   const { orgName } = useSettingsStore();
   const { user } = useAuthStore();
   const ct = useChartTheme();
@@ -258,6 +259,11 @@ export default function Policies() {
         breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Policies' }]}
         actions={
           <>
+            {/* A policy nobody has been trained on is not an operating control —
+                AI Literacy holds the completion evidence (Art. 4). */}
+            <Button variant="ghost" size="sm" onClick={() => navigate('/ai-literacy')}>
+              Training
+            </Button>
             <Button variant="outline" size="sm" onClick={handleExport}><Download size={14} /> Export</Button>
             <Button size="sm" onClick={() => { setFormData(EMPTY_FORM); setCreateOpen(true); }}>
               <Plus size={14} /> New Policy

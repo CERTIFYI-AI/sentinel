@@ -1,3 +1,33 @@
+## Unreleased
+
+### Platform interlink rollout and privacy repair
+
+* **Security** — closed cross-tenant RLS holes on `webhook_endpoints`, `agents`,
+  `shadow_ai_findings` and `executive_digests`. Each had a correct isolation
+  policy *and* a permissive policy with predicate `true`; Postgres OR-combines
+  them, so the second defeated the first. All four tables were empty, so this
+  closed a latent hole rather than an active exposure.
+* **Privacy** — DSR writes had been failing silently for every save (the service
+  wrote a `tenant_id` column that does not exist on `dsar_requests`), Consent
+  had the same catch-and-return pattern, and DPIA ran on a demo table with no
+  real backend. All three repaired; DPIA gained a canonical register that
+  computes the GDPR Art. 36 consultation trigger from residual risk.
+* **Statutory records** — RoPA, TIA and Compliance Controls migrated off demo
+  tables onto their real backends. Compliance Controls had 385 real control
+  records that the UI had never displayed.
+* **Interlinks** — five link columns resolved 100% but were populated on zero
+  rows; the relationship was theoretical and every row rendered "—". Populated
+  and now tracked as coverage, separately from resolution.
+* **Process** — mandatory four-role review process (QA/QC, UI/UX, Documentation,
+  Compliance) in `docs/contributing/review-process.md`, bound in `CLAUDE.md`.
+* **Docs** — 13 module guides, EU AI Act and ISO/IEC 42001 mappings extended,
+  new `docs/architecture/interlink-map.md` and `docs/reference/technical-debt.md`.
+
+## 1.62.0 (2026-08-16)
+
+* Merge main ([51ce891](https://github.com/CERTIFYI-AI/sentinel/commit/51ce891))
+* feat(interlinks): platform-wide interlink audit, rollout and map ([ec10ad8](https://github.com/CERTIFYI-AI/sentinel/commit/ec10ad8))
+
 ## <small>1.61.3 (2026-08-16)</small>
 
 * Merge main ([8e936c2](https://github.com/CERTIFYI-AI/sentinel/commit/8e936c2))

@@ -63,3 +63,32 @@ Added with the connectivity and gateway build-out (August 2026).
   tenant isolation is a property of the schema, not of application code.
 - Records that may constitute evidence are **soft-deleted** (`is_deleted`), never
   hard-deleted, preserving the clause 9.1 monitoring record.
+
+---
+
+## Annex A Coverage — Privacy & Statutory Records
+
+Added 2026-08-16 with the PRIVACY group and TD-001 Tier 1 migrations.
+
+| Control | Requirement | Evidence-producing module | Status |
+|---|---|---|---|
+| A.5.2 | AI system impact assessment | [DPIA](../modules/dpia.md) — inherent vs residual risk with mitigations | Implemented |
+| A.5.4 | Assessing AI system impacts on individuals | [DPIA](../modules/dpia.md); [RoPA](../modules/ropa.md) data-subject records | Implemented |
+| A.7.2 | Data for AI systems — provenance and lawful basis | [RoPA](../modules/ropa.md) — legal basis and categories per activity | Implemented |
+| A.7.3 | Data quality and acquisition | [TIA](../modules/transfer-impact-assessment.md) — what crosses a border and under which mechanism | Implemented |
+| A.8.3 | Data governance for AI | [DSR](../modules/dsr-consent.md) — subject rights actionable against named AI systems | Implemented |
+| A.9.2 | Operational controls | [Compliance Controls](../modules/controls-control-testing.md) — implementation status and test currency | Implemented |
+| A.9.4 | Third-party data recipients | [TIA](../modules/transfer-impact-assessment.md) — `vendor_id` names the recipient | Implemented |
+| A.6.2.8 | Corrective action | Outstanding DPIAs and overdue control tests surface as counts and route to remediation | Implemented |
+
+### Management-system notes
+
+- Every table in this group is org-scoped with RLS and the tenant column filled
+  by the `current_user_org_id()` database default — tenant isolation is a
+  property of the schema, not of application code.
+- Statutory records are **soft-deleted** (`is_deleted`) rather than removed, so
+  a superseded DPIA still evidences what was known and decided at the time
+  (clause 9.1 monitoring record).
+- Control effectiveness (`score`) and evidence counts are **nullable**: never
+  scored renders `—`, distinguishable from scored-and-zero. This matters when a
+  figure is cited as conformity evidence.

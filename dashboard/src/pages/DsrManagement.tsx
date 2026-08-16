@@ -4,6 +4,8 @@ import { UserList, MagnifyingGlass, Plus, Eye, X, Export, Funnel, Pencil, Trash,
 import { toast } from 'sonner'
 import { useDsrRequestsData } from '@/hooks/useDsrRequestsData'
 import type { DsrRequest as DSRRequest } from '@/services/dsrRequestsService'
+import { useNavigate } from 'react-router-dom'
+import { useModelOptions } from '@/hooks/useAiiaData'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow'
@@ -56,6 +58,8 @@ const PRIORITY_STYLE: Record<string, { bg: string; color: string }> = {
 }
 
 export default function DsrManagement() {
+  const nav = useNavigate()
+  const { models } = useModelOptions()
   const { items: records, isLoading, saveDsrRequests, removeDsrRequests } = useDsrRequestsData()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('All')
@@ -296,15 +300,26 @@ export default function DsrManagement() {
                     <>
                       <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide">AI Systems Affected ({selected.aiSystemsAffected.length})</p>
                       <div className="space-y-2">
-                        {selected.aiSystemsAffected.map(s => (
+                        {/* Each affected system resolves to its governed model
+                            record where a uuid was captured, so the request is
+                            actionable rather than a list of names. */}
+                        {selected.aiSystemsAffected.map((s, i) => {
+                          const mid = selected.linkedModelIds[i]
+                          const known = mid && models.some(m => m.id === mid)
+                          return (
                           <div key={s} className="flex items-center gap-2 p-3 bg-[hsl(var(--brand)/0.06)] border border-[hsl(var(--brand)/0.2)]">
                             <div className="w-2 h-2 rounded-full bg-[hsl(var(--brand))]" />
                             <div className="flex-1">
-                              <p className="text-xs font-medium text-[hsl(var(--brand))]">{s}</p>
+                              {known ? (
+                                <button onClick={() => nav(`/models/inventory/${mid}`)}
+                                  className="text-xs font-medium text-[hsl(var(--brand))] hover:underline">{s}</button>
+                              ) : (
+                                <p className="text-xs font-medium text-[hsl(var(--brand))]">{s}</p>
+                              )}
                               <p className="text-[10px] text-[hsl(var(--text-4))] mt-0.5">Must comply with {selected.type} request per {selected.regulation}</p>
                             </div>
                           </div>
-                        ))}
+                          ) })}
                         {selected.aiSystemsAffected.length === 0 && <p className="text-xs text-[hsl(var(--text-4))]">No AI systems identified yet</p>}
                       </div>
                       <div className="p-3 bg-raised border border-[hsl(var(--border))]">
