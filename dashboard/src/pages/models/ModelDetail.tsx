@@ -505,6 +505,36 @@ function ModelDetailView({ model }: { model: Model }) {
               </CardContent>
             </Card>
 
+            {/* Runtime & operations — the model-scoped views that were previously
+                reachable only from the sidebar, so this record is not a dead end. */}
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardHeader className="pb-2">
+                <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))', display: 'flex', alignItems: 'center', gap: 6 }}>
+                  <Gauge size={14} style={{ color: 'hsl(var(--brand))' }} />
+                  Runtime &amp; Operations
+                </CardTitle>
+              </CardHeader>
+              <CardContent style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {[
+                  { label: 'Lifecycle Stage',    to: `/models/lifecycle?model=${model.id}` },
+                  { label: 'Prompts',            to: `/prompt-registry?model=${model.id}` },
+                  { label: 'Cost & Tokens',      to: `/trust-engine/costs?model=${model.id}` },
+                  { label: 'Fallback Failovers', to: `/trust-engine/fallback?model=${model.id}` },
+                  { label: 'Tool Calls',         to: `/trust-engine/tools?model=${model.id}` },
+                  { label: 'Test in Playground', to: `/ai-gateway/playground?model=${model.id}` },
+                ].map(link => (
+                  <button
+                    key={link.to}
+                    onClick={() => navigate(link.to)}
+                    style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 11px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    <span style={{ fontSize: 12, color: 'hsl(var(--text-2))' }}>{link.label}</span>
+                    <CaretRight size={12} style={{ color: 'hsl(var(--text-4))' }} />
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+
             {/* Bias & Fairness Metrics */}
             <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
               <CardHeader className="pb-2">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowSquareOut } from '@phosphor-icons/react';
 import { useModelOptions } from '../../hooks/useAiiaData';
 import { PageHeader } from '../../components/ui/PageHeader';
@@ -68,10 +68,16 @@ export default function Playground() {
 
   // Target the real, governed model inventory rather than invented endpoints.
   const { models, loading: modelsLoading } = useModelOptions();
+  const [searchParams] = useSearchParams();
+  const modelParam = searchParams.get('model');
   const [targetModelId, setTargetModelId] = useState<string>('');
   useEffect(() => {
-    if (!targetModelId && models.length > 0) setTargetModelId(models[0].id);
-  }, [models, targetModelId]);
+    if (targetModelId || models.length === 0) return;
+    // Honour ?model=<uuid> deep links (e.g. "Test in Playground" from a model
+    // record); fall back to the first governed model otherwise.
+    const deepLinked = modelParam && models.some(m => m.id === modelParam) ? modelParam : null;
+    setTargetModelId(deepLinked ?? models[0].id);
+  }, [models, targetModelId, modelParam]);
   const targetModel = models.find(m => m.id === targetModelId);
 
   // Totals

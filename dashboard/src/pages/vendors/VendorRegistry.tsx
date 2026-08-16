@@ -226,6 +226,10 @@ export default function VendorRegistry() {
         ]}
         actions={
           <div className="flex gap-2">
+            {/* The AI tools these vendors supply, governed in the AI Apps inventory. */}
+            <Button variant="ghost" onClick={() => navigate('/ai-apps')} style={{ borderRadius: 0 }}>
+              AI Apps
+            </Button>
             <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
               <Export className="h-4 w-4" />Export CSV
             </Button>
