@@ -6,7 +6,11 @@ interface ConfirmDialogProps {
   onClose?: () => void;
   onCancel?: () => void;        // alias for onClose (V1 pages)
   onOpenChange?: (open: boolean) => void;
-  onConfirm: () => void;
+  // Return false (sync or async) to keep the dialog open (e.g. validation
+  // failed). Return a promise to keep the dialog open until the write
+  // resolves — it closes on success and stays open on rejection (the caller's
+  // hook fires the error toast). Plain void closes immediately (legacy).
+  onConfirm: () => void | boolean | Promise<unknown | boolean>;
   type?: "danger" | "warning" | "info";
   variant?: "destructive" | "default" | string;
   title: string;
@@ -30,6 +34,7 @@ export function ConfirmDialog({
   const handleClose = () => { (onClose ?? onCancel)?.(); onOpenChange?.(false); };
   const [typed, setTyped] = useState("");
   const [checked, setChecked] = useState<Record<number, boolean>>({});
+  const [pending, setPending] = useState(false);
 
   if (!open) return null;
 
@@ -140,17 +145,30 @@ export function ConfirmDialog({
             {cancelLabel}
           </button>
           <button
-            onClick={() => {
-              if (!canConfirm) return;
-              onConfirm();
-              handleClose();
-              setTyped("");
-              setChecked({});
+            onClick={async () => {
+              if (!canConfirm || pending) return;
+              const closeAndReset = () => { handleClose(); setTyped(""); setChecked({}); };
+              const r = onConfirm();
+              if (r === false) return; // sync validation failure — stay open
+              if (r instanceof Promise) {
+                setPending(true);
+                try {
+                  const v = await r;
+                  if (v === false) return; // async validation failure — stay open
+                  closeAndReset();
+                } catch {
+                  /* stay open; the caller's hook fires the error toast */
+                } finally {
+                  setPending(false);
+                }
+              } else {
+                closeAndReset();
+              }
             }}
-            disabled={!canConfirm}
+            disabled={!canConfirm || pending}
             className={`px-4 py-2 text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed ${btnColors[resolvedType]}`}
           >
-            {confirmLabel}
+            {pending ? "Working…" : confirmLabel}
           </button>
         </div>
       </div>

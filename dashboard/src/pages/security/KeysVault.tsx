@@ -96,7 +96,15 @@ export default function KeysVault() {
     return matchSearch && matchStat && matchProv;
   });
 
-  const usageData = keys.filter(k => k.status === 'active').map(k => ({ name: k.provider || '—', usage: k.usageCount ?? 0 }));
+  // Aggregate usage per provider (sum) so duplicate providers don't produce
+  // duplicate x-axis categories.
+  const usageData = Array.from(
+    keys.filter(k => k.status === 'active').reduce((acc, k) => {
+      const key = k.provider || '—';
+      acc.set(key, (acc.get(key) || 0) + (k.usageCount ?? 0));
+      return acc;
+    }, new Map<string, number>())
+  ).map(([name, usage]) => ({ name, usage }));
   const providers = Array.from(new Set(keys.map(k => k.provider).filter(Boolean))) as string[];
 
   const stats = [
@@ -138,7 +146,11 @@ export default function KeysVault() {
   async function handleEdit() {
     if (!editItem) return;
     try {
-      await save(editItem);
+      // The date input holds yyyy-MM-dd — convert back to an ISO timestamptz.
+      const expiresAt = editItem.expiresAt
+        ? new Date(`${editItem.expiresAt.slice(0, 10)}T00:00:00Z`).toISOString()
+        : undefined;
+      await save({ ...editItem, expiresAt });
       setEditItem(null);
     } catch { /* hook toasts error */ }
   }
@@ -431,7 +443,13 @@ export default function KeysVault() {
               {[{ label: 'Name', key: 'name' }, { label: 'Owner', key: 'owner' }, { label: 'Expires At', key: 'expiresAt', type: 'date' }].map(f => (
                 <div key={f.key}>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>{f.label}</label>
-                  <Input type={f.type || 'text'} value={(editItem as any)[f.key] || ''} onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)} style={{ borderRadius: 0 }} />
+                  <Input
+                    type={f.type || 'text'}
+                    // Date inputs need yyyy-MM-dd; expiresAt is stored as an ISO timestamptz.
+                    value={f.type === 'date' ? ((editItem as any)[f.key] || '').slice(0, 10) : (editItem as any)[f.key] || ''}
+                    onChange={e => setEditItem(prev => prev ? { ...prev, [f.key]: e.target.value } : null)}
+                    style={{ borderRadius: 0 }}
+                  />
                 </div>
               ))}
               <div>

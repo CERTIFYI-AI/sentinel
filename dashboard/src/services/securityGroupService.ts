@@ -37,7 +37,7 @@ export type ThreatRecord = {
   threatType?: string; severity?: string; status?: string; source?: string
   mitreTechnique?: string; cveRef?: string; detectedAt?: string
   remediationSteps?: string[]; affectedModelIds?: string[]; owner?: string
-  createdAt?: string
+  mitigation?: string; createdAt?: string
 }
 export function mapThreat(r: any): ThreatRecord {
   return {
@@ -45,7 +45,7 @@ export function mapThreat(r: any): ThreatRecord {
     threatType: r.threat_type, severity: r.severity, status: r.status, source: r.source,
     mitreTechnique: r.mitre_technique, cveRef: r.cve_ref, detectedAt: r.detected_at,
     remediationSteps: arr(r.remediation_steps), affectedModelIds: arr(r.affected_model_ids),
-    owner: r.owner, createdAt: r.created_at,
+    owner: r.owner, mitigation: r.mitigation, createdAt: r.created_at,
   }
 }
 export async function fetchThreats(): Promise<ThreatRecord[]> { return (await selectAll('security_threats')).map(mapThreat) }
@@ -56,7 +56,7 @@ export async function saveThreat(t: ThreatRecord) {
     threat_type: t.threatType, severity: t.severity, status: t.status, source: t.source,
     mitre_technique: t.mitreTechnique, cve_ref: t.cveRef, detected_at: t.detectedAt,
     remediation_steps: t.remediationSteps ?? [], affected_model_ids: t.affectedModelIds ?? [],
-    owner: t.owner,
+    owner: t.owner, mitigation: t.mitigation ?? null,
   }))
 }
 export const deleteThreat = (id: string) => deleteRow('security_threats', id)

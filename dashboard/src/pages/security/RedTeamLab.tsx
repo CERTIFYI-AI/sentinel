@@ -32,8 +32,20 @@ import { useCampaigns } from '../../hooks/useSecurityGroup';
 import { useModelsData } from '../../hooks/useModelsData';
 import type { CampaignRecord } from '../../services/securityGroupService';
 
-const STATUSES = ['Planning', 'Active', 'Completed', 'Archived'];
-const SEVERITIES = ['Critical', 'High', 'Medium', 'Low'];
+// Canonical campaign statuses (matches the red_team_campaigns seeds):
+// planned | in_progress | completed | cancelled. Display labels prettified.
+const STATUSES = ['planned', 'in_progress', 'completed', 'cancelled'];
+const STATUS_LABELS: Record<string, string> = {
+  planned: 'Planned', in_progress: 'In progress', completed: 'Completed', cancelled: 'Cancelled',
+};
+const statusLabel = (s?: string) => {
+  if (!s) return 'Planned';
+  if (STATUS_LABELS[s]) return STATUS_LABELS[s];
+  const pretty = s.replace(/_/g, ' ');
+  return pretty.charAt(0).toUpperCase() + pretty.slice(1);
+};
+const SEVERITIES = ['critical', 'high', 'medium', 'low'];
+const sevLabel = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '—');
 const ATTACK_TYPES = [
   'Prompt Injection', 'Jailbreak', 'Data Exfiltration', 'Model Inversion',
   'Adversarial Input', 'Authentication Bypass', 'Supply Chain Attack',
@@ -41,8 +53,8 @@ const ATTACK_TYPES = [
 ];
 
 const BLANK = {
-  campaignId: '', name: '', objective: '', lead: '', status: 'Planning',
-  severity: 'Medium', targetModelIds: [] as string[], attackTypes: [] as string[],
+  campaignId: '', name: '', objective: '', lead: '', status: 'planned',
+  severity: 'medium', targetModelIds: [] as string[], attackTypes: [] as string[],
   findingsCount: '', successRate: '', startedAt: '', completedAt: '',
 };
 
@@ -51,15 +63,14 @@ const fmtDate = (d?: string) =>
 
 function campaignStatusBadge(status?: string) {
   const map: Record<string, { bg: string; color: string }> = {
-    Planning: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-    Active: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    Completed: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-    Archived: { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
+    planned: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+    in_progress: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+    completed: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+    cancelled: { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--s-nt-tx))' },
   };
-  const raw = status || 'Planning';
-  const normalized = raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
-  const s = map[normalized] || map['Planning'];
-  return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10 }}>{normalized}</Badge>;
+  const raw = (status || 'planned').toLowerCase();
+  const s = map[raw] || map['planned'];
+  return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10 }}>{statusLabel(status)}</Badge>;
 }
 
 function MetricTile({ label, value, variant, icon, sub }: {
@@ -108,7 +119,7 @@ export default function RedTeamLab() {
   );
 
   const totalFindings = campaigns.reduce((a, c) => a + (c.findingsCount ?? 0), 0);
-  const activeCampaigns = campaigns.filter(c => (c.status ?? '').toLowerCase() === 'active').length;
+  const activeCampaigns = campaigns.filter(c => (c.status ?? '').toLowerCase() === 'in_progress').length;
   const critical = campaigns.filter(c => (c.severity ?? '').toLowerCase() === 'critical').length;
   const withRate = campaigns.filter(c => c.successRate != null);
   const avgSuccess = withRate.length
@@ -125,7 +136,7 @@ export default function RedTeamLab() {
     setEditingId(c.id ?? null);
     setForm({
       campaignId: c.campaignId ?? '', name: c.name ?? '', objective: c.objective ?? '',
-      lead: c.lead ?? '', status: c.status ?? 'Planning', severity: c.severity ?? 'Medium',
+      lead: c.lead ?? '', status: c.status ?? 'planned', severity: c.severity ?? 'medium',
       targetModelIds: c.targetModelIds ?? [], attackTypes: c.attackTypes ?? [],
       findingsCount: c.findingsCount != null ? String(c.findingsCount) : '',
       successRate: c.successRate != null ? String(c.successRate) : '',
@@ -264,7 +275,7 @@ export default function RedTeamLab() {
                       </td>
                       <td className="px-4 py-3 text-xs font-bold" style={{ color: 'hsl(var(--text-1))' }}>{c.findingsCount ?? 0}</td>
                       <td className="px-4 py-3">
-                        <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>{c.severity ?? '—'}</Badge>
+                        <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>{sevLabel(c.severity)}</Badge>
                       </td>
                       <td className="px-4 py-3">{campaignStatusBadge(c.status)}</td>
                       <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-1))' }}>{c.lead || '—'}</td>
@@ -315,14 +326,14 @@ export default function RedTeamLab() {
                 <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</Label>
                 <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
                   <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  <SelectContent style={{ borderRadius: 0 }}>{STATUSES.map(s => <SelectItem key={s} value={s}>{statusLabel(s)}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Severity</Label>
                 <Select value={form.severity} onValueChange={v => setForm(p => ({ ...p, severity: v }))}>
                   <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>{SEVERITIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  <SelectContent style={{ borderRadius: 0 }}>{SEVERITIES.map(s => <SelectItem key={s} value={s}>{sevLabel(s)}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
@@ -431,7 +442,7 @@ export default function RedTeamLab() {
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Severity</span>
-                      <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selected.severity || '—'}</p>
+                      <p className="text-sm font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>{sevLabel(selected.severity)}</p>
                     </div>
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Lead</span>

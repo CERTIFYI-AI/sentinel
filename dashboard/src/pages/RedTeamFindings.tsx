@@ -27,8 +27,18 @@ import { useFindings } from '../hooks/useSecurityGroup'
 import { useModelsData } from '../hooks/useModelsData'
 import type { FindingRecord } from '../services/securityGroupService'
 
-const SEVERITIES = ['Critical', 'High', 'Medium', 'Low']
-const STATUSES = ['Open', 'In Remediation', 'Resolved', 'Accepted Risk']
+// Canonical vocabulary (matches the red_team_findings migration/seeds).
+// Comparisons, filters and writes use these values; display is prettified.
+const SEVERITIES = ['critical', 'high', 'medium', 'low']
+const STATUSES = ['open', 'in_remediation', 'resolved', 'accepted']
+const SEVERITY_LABELS: Record<string, string> = {
+  critical: 'Critical', high: 'High', medium: 'Medium', low: 'Low',
+}
+const STATUS_LABELS: Record<string, string> = {
+  open: 'Open', in_remediation: 'In remediation', resolved: 'Resolved', accepted: 'Accepted',
+}
+const sevLabel = (s?: string) => (s ? SEVERITY_LABELS[s] ?? s : '—')
+const stsLabel = (s?: string) => (s ? STATUS_LABELS[s] ?? s : '—')
 const VECTORS = [
   'Prompt Injection', 'Jailbreak', 'Model Extraction', 'Data Poisoning', 'Adversarial Input',
   'Membership Inference', 'Training Data Leakage', 'Supply Chain', 'API Abuse', 'Evasion Attack',
@@ -41,22 +51,22 @@ const OWASP = [
 const NONE = '__none'
 
 const SEV: Record<string, { bg: string; color: string }> = {
-  Critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  High: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  Medium: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  Low: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  critical: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  high: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  medium: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  low: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
 }
 const STS: Record<string, { bg: string; color: string }> = {
-  Open: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  'In Remediation': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  Resolved: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-  'Accepted Risk': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
+  open: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  in_remediation: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  resolved: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  accepted: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
 }
 const sevStyle = (s?: string) => SEV[s ?? ''] ?? { bg: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))' }
 const stsStyle = (s?: string) => STS[s ?? ''] ?? { bg: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))' }
 
 const BLANK = {
-  findingRef: '', title: '', description: '', severity: 'Medium', status: 'Open',
+  findingRef: '', title: '', description: '', severity: 'medium', status: 'open',
   attackVector: 'Prompt Injection', owaspLlmRef: '', cvss: '', modelId: NONE,
   impact: '', recommendation: '', remediationOwner: '', discoveredBy: '', campaignId: '',
 }
@@ -95,9 +105,9 @@ export default function RedTeamFindings() {
 
   const withCvss = scoped.filter(f => f.cvss != null)
   const stats = {
-    open: scoped.filter(f => f.status === 'Open').length,
-    critical: scoped.filter(f => f.severity === 'Critical').length,
-    remediation: scoped.filter(f => f.status === 'In Remediation').length,
+    open: scoped.filter(f => f.status === 'open').length,
+    critical: scoped.filter(f => f.severity === 'critical').length,
+    remediation: scoped.filter(f => f.status === 'in_remediation').length,
     avgCvss: withCvss.length ? (withCvss.reduce((s, f) => s + (f.cvss ?? 0), 0) / withCvss.length).toFixed(1) : null,
   }
 
@@ -110,7 +120,7 @@ export default function RedTeamFindings() {
     setEditingId(f.id ?? null)
     setForm({
       findingRef: f.findingRef ?? '', title: f.title ?? '', description: f.description ?? '',
-      severity: f.severity ?? 'Medium', status: f.status ?? 'Open', attackVector: f.attackVector ?? 'Prompt Injection',
+      severity: f.severity ?? 'medium', status: f.status ?? 'open', attackVector: f.attackVector ?? 'Prompt Injection',
       owaspLlmRef: f.owaspLlmRef ?? '', cvss: f.cvss != null ? String(f.cvss) : '', modelId: f.modelId ?? NONE,
       impact: f.impact ?? '', recommendation: f.recommendation ?? '', remediationOwner: f.remediationOwner ?? '',
       discoveredBy: f.discoveredBy ?? '', campaignId: f.campaignId ?? '',
@@ -146,8 +156,8 @@ export default function RedTeamFindings() {
 
   async function markResolved(f: FindingRecord) {
     try {
-      await save({ ...f, status: 'Resolved', resolvedAt: new Date().toISOString() })
-      setSelected(prev => (prev && prev.id === f.id ? { ...prev, status: 'Resolved' } : prev))
+      await save({ ...f, status: 'resolved', resolvedAt: new Date().toISOString() })
+      setSelected(prev => (prev && prev.id === f.id ? { ...prev, status: 'resolved' } : prev))
     } catch { /* hook fired the error toast */ }
   }
 
@@ -207,11 +217,11 @@ export default function RedTeamFindings() {
         </div>
         <Select value={sevFilter} onValueChange={setSevFilter}>
           <SelectTrigger className="w-40" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>{['All', ...SEVERITIES].map(s => <SelectItem key={s} value={s}>{s === 'All' ? 'All severities' : s}</SelectItem>)}</SelectContent>
+          <SelectContent style={{ borderRadius: 0 }}>{['All', ...SEVERITIES].map(s => <SelectItem key={s} value={s}>{s === 'All' ? 'All severities' : sevLabel(s)}</SelectItem>)}</SelectContent>
         </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-44" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>{['All', ...STATUSES].map(s => <SelectItem key={s} value={s}>{s === 'All' ? 'All statuses' : s}</SelectItem>)}</SelectContent>
+          <SelectContent style={{ borderRadius: 0 }}>{['All', ...STATUSES].map(s => <SelectItem key={s} value={s}>{s === 'All' ? 'All statuses' : stsLabel(s)}</SelectItem>)}</SelectContent>
         </Select>
         <span className="text-xs text-[hsl(var(--text-4))]">{filtered.length} finding{filtered.length !== 1 ? 's' : ''}</span>
       </div>
@@ -252,8 +262,8 @@ export default function RedTeamFindings() {
                       </td>
                       <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))] whitespace-nowrap">{f.attackVector || '—'}</td>
                       <td className="px-3 py-2.5"><span className="text-sm font-bold" style={{ color: cvssColor(f.cvss) }}>{f.cvss ?? '—'}</span></td>
-                      <td className="px-3 py-2.5"><span className="px-2 py-0.5 text-xs font-medium" style={sevStyle(f.severity)}>{f.severity || '—'}</span></td>
-                      <td className="px-3 py-2.5"><span className="px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={stsStyle(f.status)}>{f.status || '—'}</span></td>
+                      <td className="px-3 py-2.5"><span className="px-2 py-0.5 text-xs font-medium" style={sevStyle(f.severity)}>{sevLabel(f.severity)}</span></td>
+                      <td className="px-3 py-2.5"><span className="px-2 py-0.5 text-xs font-medium whitespace-nowrap" style={stsStyle(f.status)}>{stsLabel(f.status)}</span></td>
                       <td className="px-3 py-2.5">
                         {f.modelId ? <InterlinkChip label={modelName(f.modelId) ?? 'Unavailable'} to={`/models/inventory/${f.modelId}`} /> : <span className="text-xs text-[hsl(var(--text-4))]">—</span>}
                       </td>
@@ -285,8 +295,8 @@ export default function RedTeamFindings() {
               </SheetHeader>
               <div className="mt-4 space-y-4">
                 <div className="flex flex-wrap gap-2">
-                  <span className="px-2 py-0.5 text-xs font-medium" style={sevStyle(selected.severity)}>{selected.severity || '—'}</span>
-                  <span className="px-2 py-0.5 text-xs font-medium" style={stsStyle(selected.status)}>{selected.status || '—'}</span>
+                  <span className="px-2 py-0.5 text-xs font-medium" style={sevStyle(selected.severity)}>{sevLabel(selected.severity)}</span>
+                  <span className="px-2 py-0.5 text-xs font-medium" style={stsStyle(selected.status)}>{stsLabel(selected.status)}</span>
                   {selected.cvss != null && <span className="px-2 py-0.5 text-xs font-medium bg-raised text-[hsl(var(--text-3))]">CVSS {selected.cvss}</span>}
                   {selected.attackVector && <span className="px-2 py-0.5 text-xs font-medium bg-raised text-[hsl(var(--text-3))]">{selected.attackVector}</span>}
                   {selected.owaspLlmRef && <span className="px-2 py-0.5 text-xs font-medium" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>{selected.owaspLlmRef}</span>}
@@ -316,7 +326,7 @@ export default function RedTeamFindings() {
                   </div>
                 ))}
                 <div className="flex gap-2 pt-2 border-t border-[hsl(var(--border))]">
-                  {selected.status !== 'Resolved' && (
+                  {selected.status !== 'resolved' && (
                     <Button size="sm" onClick={() => markResolved(selected)} disabled={isSaving}><CheckCircle size={13} /> Mark Resolved</Button>
                   )}
                   <Button size="sm" variant="outline" onClick={() => { const f = selected; setSelected(null); openEdit(f) }}><PencilSimple size={13} /> Edit</Button>
@@ -373,14 +383,14 @@ export default function RedTeamFindings() {
                 <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Severity</Label>
                 <Select value={form.severity} onValueChange={v => setForm(p => ({ ...p, severity: v }))}>
                   <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>{SEVERITIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  <SelectContent style={{ borderRadius: 0 }}>{SEVERITIES.map(s => <SelectItem key={s} value={s}>{sevLabel(s)}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>
                 <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</Label>
                 <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v }))}>
                   <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>{STATUSES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                  <SelectContent style={{ borderRadius: 0 }}>{STATUSES.map(s => <SelectItem key={s} value={s}>{stsLabel(s)}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
               <div>

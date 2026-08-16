@@ -5,7 +5,7 @@ import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import {
   Globe, Eye, PencilSimple, Trash, Plus, Fire,
-  CheckCircle, Target, ShieldWarning,
+  CheckCircle, Target, ShieldWarning, Lightning,
   MagnifyingGlass, Graph, CaretDown, CaretUp, X,
 } from '@phosphor-icons/react';
 import {
@@ -85,13 +85,21 @@ function ChartTooltipContent({ active, payload, label }: any) {
   );
 }
 
+// Canonical asset statuses (matches seeds/migration): active | monitored |
+// decommissioned. Display labels are prettified.
+const ASSET_STATUSES = ['active', 'monitored', 'decommissioned'];
+const assetStatusLabel = (s?: string) => {
+  const raw = s || 'active';
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+};
+
 type AssetForm = {
-  name: string; type: string; exposure: string; severity: string;
+  name: string; type: string; exposure: string; severity: string; status: string;
   protocol: string; owner: string; description: string; openPorts: string;
   linkedModelIds: string[];
 };
 const EMPTY_ASSET: AssetForm = {
-  name: '', type: 'Web Application', exposure: 'internal', severity: 'medium',
+  name: '', type: 'Web Application', exposure: 'internal', severity: 'medium', status: 'active',
   protocol: 'HTTPS', owner: '', description: '', openPorts: '', linkedModelIds: [],
 };
 
@@ -113,6 +121,7 @@ export default function AttackSurface() {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
   const [registerOpen, setRegisterOpen] = useState(false);
   const [formAsset, setFormAsset] = useState<AssetForm>({ ...EMPTY_ASSET });
+  const [editingAsset, setEditingAsset] = useState<AssetRecord | null>(null);
 
   const modelName = (id: string) => models.find(m => m.id === id)?.name ?? 'Unavailable';
 
@@ -127,6 +136,7 @@ export default function AttackSurface() {
 
   const exposedCount = assets.filter(a => a.exposure === 'public').length;
   const criticalCount = assets.filter(a => (a.severity || '').toLowerCase() === 'critical').length;
+  const activeCount = assets.filter(a => a.status === 'active').length;
   const monitoredCount = assets.filter(a => a.status === 'monitored').length;
 
   // Chart data derived from real assets
@@ -148,6 +158,29 @@ export default function AttackSurface() {
 
   const openDetail = (a: AssetRecord) => { setSelected(a); setSheetOpen(true); };
 
+  const openRegister = () => {
+    setEditingAsset(null);
+    setFormAsset({ ...EMPTY_ASSET });
+    setRegisterOpen(true);
+  };
+
+  const openEdit = (a: AssetRecord) => {
+    setEditingAsset(a);
+    setFormAsset({
+      name: a.name ?? '',
+      type: a.type ?? 'Web Application',
+      exposure: a.exposure ?? 'internal',
+      severity: a.severity ?? 'medium',
+      status: a.status ?? 'active',
+      protocol: a.protocol ?? 'HTTPS',
+      owner: a.owner ?? '',
+      description: a.description ?? '',
+      openPorts: (a.openPorts ?? []).join(', '),
+      linkedModelIds: a.linkedModelIds ?? [],
+    });
+    setRegisterOpen(true);
+  };
+
   const handleRegister = async () => {
     if (!formAsset.name.trim()) { toast.error('Asset name is required'); return; }
     const openPorts = formAsset.openPorts
@@ -156,19 +189,23 @@ export default function AttackSurface() {
       .filter(n => !Number.isNaN(n));
     try {
       await save({
+        ...(editingAsset?.id ? { id: editingAsset.id } : {}),
         name: formAsset.name,
         type: formAsset.type,
         description: formAsset.description || undefined,
         exposure: formAsset.exposure,
         protocol: formAsset.protocol,
         openPorts,
-        status: 'monitored',
+        // 'active' matches the seed vocabulary; editable in the form.
+        status: formAsset.status || 'active',
         severity: formAsset.severity,
-        lastScannedAt: new Date().toISOString(),
+        lastScannedAt: editingAsset ? editingAsset.lastScannedAt : new Date().toISOString(),
         owner: formAsset.owner || undefined,
         linkedModelIds: formAsset.linkedModelIds,
+        ...(editingAsset ? { tags: editingAsset.tags, riskScore: editingAsset.riskScore } : {}),
       });
       setFormAsset({ ...EMPTY_ASSET });
+      setEditingAsset(null);
       setRegisterOpen(false);
     } catch { /* hook toasts error */ }
   };
@@ -196,7 +233,7 @@ export default function AttackSurface() {
         subtitle={`${orgName} — External and internal asset exposure monitoring`}
         breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Security', href: '/security' }, { label: 'Attack Surface' }]}
         actions={
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => { setFormAsset({ ...EMPTY_ASSET }); setRegisterOpen(true); }}>
+          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={openRegister}>
             <Plus size={14} />Register Asset
           </Button>
         }
@@ -223,10 +260,11 @@ export default function AttackSurface() {
       )}
 
       {/* Metrics */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-5 gap-4">
         <MetricTile label="Total Assets" value={String(assets.length)} variant="info" icon={<Globe size={16} className="text-[hsl(var(--s-in-tx))]" />} />
         <MetricTile label="Exposed (Public)" value={String(exposedCount)} variant="error" icon={<ShieldWarning size={16} weight="fill" className="text-destructive" />} />
         <MetricTile label="Critical Risk" value={String(criticalCount)} variant="error" icon={<Fire size={16} weight="fill" className="text-destructive" />} sub="Immediate attention" />
+        <MetricTile label="Active" value={String(activeCount)} variant="warn" icon={<Lightning size={16} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} />} sub="In service" />
         <MetricTile label="Monitored" value={String(monitoredCount)} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} />
       </div>
 
@@ -236,7 +274,7 @@ export default function AttackSurface() {
             <Globe size={40} />
             <p className="mt-3 text-sm font-medium">No assets registered yet</p>
             <p className="text-xs mt-1">Register an asset to begin monitoring your attack surface.</p>
-            <Button className="mt-4" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => { setFormAsset({ ...EMPTY_ASSET }); setRegisterOpen(true); }}>
+            <Button className="mt-4" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={openRegister}>
               <Plus size={14} />Register Asset
             </Button>
           </CardContent>
@@ -529,8 +567,8 @@ export default function AttackSurface() {
                             </Badge>
                           </td>
                           <td className="px-4 py-3">
-                            <Badge style={{ background: statusColor(a.status || 'monitored').bg, color: statusColor(a.status || 'monitored').text, borderRadius: 0, fontSize: 10 }}>
-                              {(a.status || 'monitored').charAt(0).toUpperCase() + (a.status || 'monitored').slice(1)}
+                            <Badge style={{ background: statusColor(a.status || 'active').bg, color: statusColor(a.status || 'active').text, borderRadius: 0, fontSize: 10 }}>
+                              {assetStatusLabel(a.status)}
                             </Badge>
                           </td>
                           <td className="px-4 py-3">
@@ -549,7 +587,7 @@ export default function AttackSurface() {
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(a)}>
                                 <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
                               </Button>
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(a)}>
+                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openEdit(a)}>
                                 <PencilSimple size={14} style={{ color: 'hsl(var(--text-4))' }} />
                               </Button>
                               <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteTarget(a)}>
@@ -571,11 +609,11 @@ export default function AttackSurface() {
         </>
       )}
 
-      {/* Register Asset Dialog */}
-      <Dialog open={registerOpen} onOpenChange={setRegisterOpen}>
+      {/* Register / Edit Asset Dialog */}
+      <Dialog open={registerOpen} onOpenChange={o => { setRegisterOpen(o); if (!o) setEditingAsset(null); }}>
         <DialogContent style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0, maxWidth: 580 }}>
           <DialogHeader>
-            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>Register New Asset</DialogTitle>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>{editingAsset ? 'Edit Asset' : 'Register New Asset'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="grid grid-cols-2 gap-3">
@@ -610,6 +648,12 @@ export default function AttackSurface() {
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                   <option value="critical">Critical</option>
+                </select>
+              </div>
+              <div>
+                <Label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Status</Label>
+                <select value={formAsset.status} onChange={e => setFormAsset(p => ({ ...p, status: e.target.value }))} style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '8px 10px', borderRadius: 0, fontSize: 13 }}>
+                  {ASSET_STATUSES.map(s => <option key={s} value={s}>{assetStatusLabel(s)}</option>)}
                 </select>
               </div>
               <div>
@@ -655,9 +699,9 @@ export default function AttackSurface() {
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRegisterOpen(false)} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button variant="outline" onClick={() => { setRegisterOpen(false); setEditingAsset(null); }} style={{ borderRadius: 0 }}>Cancel</Button>
             <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={handleRegister} disabled={!formAsset.name.trim() || isSaving}>
-              <Plus size={14} />Register Asset
+              {editingAsset ? (isSaving ? 'Saving…' : 'Save Changes') : <><Plus size={14} />Register Asset</>}
             </Button>
           </DialogFooter>
         </DialogContent>

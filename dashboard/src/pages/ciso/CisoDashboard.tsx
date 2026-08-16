@@ -126,7 +126,7 @@ function OverviewTab() {
   const navigate = useNavigate();
   const { models, isLoading: modelsLoading } = useModelsData();
   const { risks, isLoading: risksLoading } = useRisksData();
-  const { incidents, isLoading: incidentsLoading } = useIncidentData();
+  const { incidents, isLoading: incidentsLoading, error: incidentsError } = useIncidentData();
   const { frameworks, isLoading: frameworksLoading } = useFrameworksData();
   const { vendors, isLoading: vendorsLoading } = useVendorsData();
   const { data: agents = [], isLoading: agentsLoading } = agentRecordHooks.useList();
@@ -155,7 +155,7 @@ function OverviewTab() {
     { label: 'Models in Production', value: String(productionModels), icon: Robot, color: '#3b82f6' },
     { label: 'Open Risks', value: String(openRisks.length), icon: Warning, color: 'hsl(var(--s-er-tx))' },
     { label: 'Open Severity-5 Risks', value: String(openSevereRisks), icon: Gauge, color: 'hsl(var(--destructive))' },
-    { label: 'Active Incidents', value: String(activeIncidents), icon: Fire, color: 'hsl(var(--r-hi-tx))' },
+    { label: 'Active Incidents', value: incidentsError ? '—' : String(activeIncidents), icon: Fire, color: 'hsl(var(--r-hi-tx))' },
     { label: 'Active Agents', value: String(activeAgents), icon: Robot, color: 'hsl(var(--tag-purple))' },
     { label: 'Avg Framework Score', value: avgFrameworkScore != null ? `${avgFrameworkScore}%` : '—', icon: Shield, color: 'hsl(var(--s-ok-tx))' },
   ];
@@ -186,7 +186,7 @@ function OverviewTab() {
     { label: 'Model Inventory', path: '/models', icon: Brain, count: `${models.length} models`, color: '#3b82f6' },
     { label: 'Risk Register', path: '/risk', icon: Warning, count: `${openRisks.length} open risks`, color: 'hsl(var(--s-er-tx))' },
     { label: 'Compliance', path: '/compliance', icon: Shield, count: avgFrameworkScore != null ? `${avgFrameworkScore}% avg score` : `${frameworks.length} frameworks`, color: 'hsl(var(--s-ok-tx))' },
-    { label: 'Incidents', path: '/risk/incidents', icon: Fire, count: `${activeIncidents} active`, color: 'hsl(var(--r-hi-tx))' },
+    { label: 'Incidents', path: '/risk/incidents', icon: Fire, count: incidentsError ? 'unavailable' : `${activeIncidents} active`, color: 'hsl(var(--r-hi-tx))' },
     { label: 'Agents', path: '/agents', icon: Robot, count: `${agents.length} registered`, color: 'hsl(var(--tag-purple))' },
     { label: 'Vendors', path: '/vendors', icon: Buildings, count: `${vendors.length} vendors`, color: 'hsl(var(--s-in-tx))' },
   ];
@@ -244,7 +244,11 @@ function OverviewTab() {
             <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Incidents by Severity</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col items-center">
-            {incidentSeverity.length === 0 ? (
+            {incidentsError ? (
+              <p className="text-sm py-10 text-center px-3" style={{ color: 'hsl(var(--destructive))' }}>
+                Incidents could not be loaded: {(incidentsError as Error).message}
+              </p>
+            ) : incidentSeverity.length === 0 ? (
               <p className="text-sm py-10 text-center" style={{ color: 'hsl(var(--text-4))' }}>No incidents recorded.</p>
             ) : (
               <>

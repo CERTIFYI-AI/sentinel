@@ -168,7 +168,7 @@ export default function Overview() {
 
   // Live Supabase data
   const { risks } = useRisksData();
-  const { incidents } = useIncidentData();
+  const { incidents, error: incidentsError } = useIncidentData();
   const { models } = useModelsData();
   const { vendors } = useVendorsData();
   const { frameworks } = useFrameworksData();
@@ -186,13 +186,12 @@ export default function Overview() {
   const avgCompliance = frameworks.length > 0
     ? Math.round(frameworks.reduce((s: number, f: any) => s + (f.compliance_score || f.complianceScore || 0), 0) / frameworks.length)
     : 0;
-  const securityScore = 79;
 
-  const kpis = [
-    { label: 'Open Tasks', value: overdueGaps + 5, icon: Clock, color: ragColor(overdueGaps + 5, 'risk'), link: '/tasks' },
+  const kpis: { label: string; value: number | string; icon: any; color: string; link: string; ragType?: 'risk' | 'incident' }[] = [
+    { label: 'Open Tasks', value: overdueGaps, icon: Clock, color: ragColor(overdueGaps, 'risk'), link: '/tasks' },
     { label: 'Open Risks', value: openRisks, icon: Warning, color: ragColor(openRisks, 'risk'), link: '/risk', ragType: 'risk' as const },
     { label: 'Active Models', value: activeModels, icon: Brain, color: 'hsl(var(--tag-purple))', link: '/models/inventory' },
-    { label: 'Critical Incidents', value: criticalIncidents, icon: WarningCircle, color: ragColor(criticalIncidents, 'incident'), link: '/risk/incidents', ragType: 'incident' as const },
+    { label: 'Critical Incidents', value: incidentsError ? '—' : criticalIncidents, icon: WarningCircle, color: ragColor(criticalIncidents, 'incident'), link: '/risk/incidents', ragType: 'incident' as const },
     { label: 'Vendors', value: vendors.length, icon: Briefcase, color: 'hsl(var(--s-in-tx))', link: '/vendors' },
     { label: 'Frameworks', value: frameworks.length, icon: StackSimple, color: 'hsl(var(--brand))', link: '/frameworks' },
   ];
@@ -201,7 +200,7 @@ export default function Overview() {
   function kpiBorderColor(k: typeof kpis[0]): string {
     if (k.label === 'Critical Incidents') return criticalIncidents >= 2 ? 'hsl(var(--s-er-tx))' : criticalIncidents >= 1 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
     if (k.label === 'Open Risks') return openRisks >= 10 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
-    if (k.label === 'Open Tasks') return (overdueGaps + 5) >= 5 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
+    if (k.label === 'Open Tasks') return overdueGaps >= 5 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-ok-tx))';
     return 'hsl(var(--border))';
   }
 
@@ -525,7 +524,6 @@ export default function Overview() {
           <div className="flex items-center justify-between gap-6">
             <div className="flex items-center gap-8">
               <ScoreRing value={avgCompliance} label="Compliance Score" color={ragColor(avgCompliance, 'score')} size={90} />
-              <ScoreRing value={securityScore} label="Security Score" color={ragColor(securityScore, 'score')} size={90} />
               <div className="flex flex-col items-center gap-1">
                 <div className="flex items-center justify-center w-[90px] h-[90px]">
                   <span className="text-3xl font-bold" style={{ color: ragColor(openRisks, 'risk') }}>{openRisks}</span>
@@ -534,7 +532,7 @@ export default function Overview() {
               </div>
               <div className="flex flex-col items-center gap-1">
                 <div className="flex items-center justify-center w-[90px] h-[90px]">
-                  <span className="text-3xl font-bold" style={{ color: ragColor(criticalIncidents, 'incident') }}>{criticalIncidents}</span>
+                  <span className="text-3xl font-bold" style={{ color: ragColor(criticalIncidents, 'incident') }}>{incidentsError ? '—' : criticalIncidents}</span>
                 </div>
                 <span className="text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>Critical Incidents</span>
               </div>
@@ -679,7 +677,7 @@ export default function Overview() {
           },
           {
             label: 'Open Incidents',
-            value: openIncidents,
+            value: incidentsError ? '—' : openIncidents,
             icon: <WarningCircle size={16} />,
             delta: KPI_TRENDS['Critical Incidents']?.dir !== 'stable' ? `${KPI_TRENDS['Critical Incidents']?.delta}%` : undefined,
             deltaDir: KPI_TRENDS['Critical Incidents']?.dir === 'stable' ? undefined : KPI_TRENDS['Critical Incidents']?.dir as 'up' | 'down',
@@ -882,6 +880,13 @@ export default function Overview() {
           </Link>
         </CardHeader>
         <CardContent className="p-0">
+          {incidentsError ? (
+            <div className="px-4 py-6">
+              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--destructive))' }}>
+                Incidents could not be loaded: {(incidentsError as Error).message}
+              </p>
+            </div>
+          ) : (
           <table className="w-full">
             <thead style={{ background: 'hsl(var(--bg-muted))' }}>
               <tr>
@@ -915,6 +920,7 @@ export default function Overview() {
               })}
             </tbody>
           </table>
+          )}
         </CardContent>
       </Card>
 

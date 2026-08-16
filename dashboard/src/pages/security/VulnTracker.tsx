@@ -76,17 +76,19 @@ export default function VulnTracker() {
   });
 
   // KPIs and the severity filter share one basis: the `severity` field.
+  // Canonical statuses (matches seeds/migration): open | in_remediation |
+  // resolved | false_positive — a patched vulnerability is `resolved`.
   const criticalCount = vulns.filter(v => v.severity === 'critical').length;
   const highCount = vulns.filter(v => v.severity === 'high').length;
-  const patchedCount = vulns.filter(v => v.status === 'patched').length;
+  const patchedCount = vulns.filter(v => v.status === 'resolved').length;
 
   const handlePatch = async () => {
     if (!patchTarget) return;
     try {
       await save({
         ...patchTarget,
-        status: 'patched',
-        patchDate: new Date().toISOString(),
+        status: 'resolved',
+        patchDate: new Date().toISOString().slice(0, 10),
         patchEvidence: patchEvidence.trim() || undefined,
       });
       setPatchTarget(null);
@@ -169,8 +171,9 @@ export default function VulnTracker() {
             onChange: v => setFilterStatus(v || 'all'),
             options: [
               { label: 'Open', value: 'open' },
-              { label: 'In Progress', value: 'in_progress' },
-              { label: 'Patched', value: 'patched' },
+              { label: 'In remediation', value: 'in_remediation' },
+              { label: 'Resolved', value: 'resolved' },
+              { label: 'False positive', value: 'false_positive' },
             ],
           },
         ]}
@@ -212,7 +215,7 @@ export default function VulnTracker() {
                       </td>
                       <td className="px-4 py-3">
                         <Badge style={{ background: stc.bg, color: stc.text, border: `1px solid ${stc.border}`, borderRadius: 0, fontSize: 10 }}>
-                          {(v.status || 'open').replace('_', ' ').charAt(0).toUpperCase() + (v.status || 'open').replace('_', ' ').slice(1)}
+                          {(() => { const s = (v.status || 'open').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); })()}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{v.patchDate ? formatDate(v.patchDate) : '—'}</td>
@@ -222,7 +225,7 @@ export default function VulnTracker() {
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(v)}>
                             <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
                           </Button>
-                          {v.status !== 'patched' && (
+                          {v.status !== 'resolved' && v.status !== 'false_positive' && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => { setPatchTarget(v); setPatchEvidence(''); }}>
                               <Wrench size={14} className="text-[hsl(var(--s-ok-tx))]" />
                             </Button>
@@ -323,7 +326,7 @@ export default function VulnTracker() {
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Status</span>
                       <div className="mt-1">
                         <Badge style={{ background: statusColor(selectedVuln.status || 'open').bg, color: statusColor(selectedVuln.status || 'open').text, borderRadius: 0, fontSize: 11 }}>
-                          {(selectedVuln.status || 'open').replace('_', ' ')}
+                          {(() => { const s = (selectedVuln.status || 'open').replace(/_/g, ' '); return s.charAt(0).toUpperCase() + s.slice(1); })()}
                         </Badge>
                       </div>
                     </div>

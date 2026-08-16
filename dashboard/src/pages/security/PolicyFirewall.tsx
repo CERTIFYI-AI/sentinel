@@ -28,29 +28,41 @@ import { useModelsData } from '../../hooks/useModelsData';
 import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
 
-const RULE_TYPES = ['Privacy', 'Safety', 'Security', 'Rate Limiting', 'Accuracy', 'Governance'];
-const ACTIONS = ['block', 'warn', 'flag', 'allow'];
+// Canonical vocabulary (matches the policy_firewall_rules migration/seeds).
+// Comparisons, writes and select values use these; display is prettified.
+const RULE_TYPES = ['prompt_injection', 'pii', 'jailbreak', 'data_exfil', 'toxicity', 'custom'];
+const RULE_TYPE_LABELS: Record<string, string> = {
+  prompt_injection: 'Prompt injection', pii: 'PII', jailbreak: 'Jailbreak',
+  data_exfil: 'Data exfiltration', toxicity: 'Toxicity', custom: 'Custom',
+};
+const ruleTypeLabel = (t?: string) => (t ? RULE_TYPE_LABELS[t] ?? t : '—');
+
+const ACTIONS = ['block', 'redact', 'flag', 'require_approval'];
+const ACTION_LABELS: Record<string, string> = {
+  block: 'Block', redact: 'Redact', flag: 'Flag', require_approval: 'Require approval',
+};
+const actionLabel = (a?: string) => (a ? ACTION_LABELS[a] ?? a : '—');
 
 function actionStyle(action: string) {
   switch (action) {
     case 'block': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
-    case 'warn': return { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))' };
+    case 'redact': return { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))' };
     case 'flag': return { bg: '#eab30820', text: '#eab308', border: '#eab30840' };
-    case 'allow': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
+    case 'require_approval': return { bg: 'hsl(var(--s-in-bg))', text: 'hsl(var(--s-in-tx))', border: 'hsl(var(--s-in-bg))' };
     default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
   }
 }
 
 function typeIcon(type?: string) {
-  if (type === 'Privacy' || type === 'Security') return <Lock size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
-  if (type === 'Safety') return <ShieldCheck size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
-  if (type === 'Rate Limiting') return <Lightning size={14} style={{ color: 'hsl(var(--r-hi-tx))' }} />;
-  if (type === 'Accuracy') return <Warning size={14} style={{ color: '#eab308' }} />;
+  if (type === 'pii' || type === 'data_exfil') return <Lock size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
+  if (type === 'prompt_injection') return <ShieldCheck size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
+  if (type === 'jailbreak') return <Lightning size={14} style={{ color: 'hsl(var(--r-hi-tx))' }} />;
+  if (type === 'toxicity') return <Warning size={14} style={{ color: '#eab308' }} />;
   return <Clock size={14} style={{ color: 'hsl(var(--text-3))' }} />;
 }
 
 const EMPTY_RULE: FirewallRecord = {
-  name: '', description: '', ruleType: 'Security', pattern: '', action: 'block',
+  name: '', description: '', ruleType: 'custom', pattern: '', action: 'block',
   target: 'All Agents', enabled: true, priority: 10, evaluations: 0, blocked: 0,
   severity: 'medium', status: 'active', linkedModelIds: [],
 };
@@ -85,11 +97,11 @@ export default function PolicyFirewall() {
 
   const typeData = Array.from(
     rules.reduce((acc, r) => {
-      const key = r.ruleType || 'Uncategorized';
+      const key = r.ruleType || 'uncategorized';
       acc.set(key, (acc.get(key) || 0) + (r.blocked ?? 0));
       return acc;
     }, new Map<string, number>())
-  ).map(([name, blocked]) => ({ name, blocked }));
+  ).map(([key, blocked]) => ({ name: key === 'uncategorized' ? 'Uncategorized' : ruleTypeLabel(key), blocked }));
 
   const ruleTypes = Array.from(new Set(rules.map(r => r.ruleType).filter(Boolean))) as string[];
 
@@ -241,7 +253,7 @@ export default function PolicyFirewall() {
         <select value={filterType} onChange={e => setFilterType(e.target.value)}
           style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
           <option value="all">All Types</option>
-          {ruleTypes.map(t => <option key={t} value={t}>{t}</option>)}
+          {ruleTypes.map(t => <option key={t} value={t}>{ruleTypeLabel(t)}</option>)}
         </select>
         <select value={filterEnabled} onChange={e => setFilterEnabled(e.target.value)}
           style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
@@ -289,11 +301,11 @@ export default function PolicyFirewall() {
                       </div>
                     </td>
                     <td className="p-3">
-                      <Badge variant="outline" style={{ borderRadius: 0, fontSize: 11 }}>{r.ruleType || '—'}</Badge>
+                      <Badge variant="outline" style={{ borderRadius: 0, fontSize: 11 }}>{ruleTypeLabel(r.ruleType)}</Badge>
                     </td>
                     <td className="p-3">
                       <Badge style={{ background: actionStyle(r.action ?? '').bg, color: actionStyle(r.action ?? '').text, border: `1px solid ${actionStyle(r.action ?? '').border}`, borderRadius: 0, fontSize: 11 }}>
-                        {r.action}
+                        {actionLabel(r.action)}
                       </Badge>
                     </td>
                     <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{r.target}</td>
@@ -343,9 +355,9 @@ export default function PolicyFirewall() {
                 <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.name}</SheetTitle>
                 <div className="flex gap-2 flex-wrap">
                   <Badge style={{ background: actionStyle(viewItem.action ?? '').bg, color: actionStyle(viewItem.action ?? '').text, border: `1px solid ${actionStyle(viewItem.action ?? '').border}`, borderRadius: 0 }}>
-                    {viewItem.action}
+                    {actionLabel(viewItem.action)}
                   </Badge>
-                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.ruleType || '—'}</Badge>
+                  <Badge variant="outline" style={{ borderRadius: 0 }}>{ruleTypeLabel(viewItem.ruleType)}</Badge>
                   <Badge style={{ background: viewItem.enabled ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--bg-muted))', color: viewItem.enabled ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', border: `1px solid ${viewItem.enabled ? 'hsl(var(--s-ok-br))' : 'hsl(var(--border))'}`, borderRadius: 0 }}>
                     {viewItem.enabled ? 'Enabled' : 'Disabled'}
                   </Badge>
@@ -438,14 +450,14 @@ export default function PolicyFirewall() {
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Type</label>
                   <select value={editItem.ruleType} onChange={e => setEditItem(prev => prev ? { ...prev, ruleType: e.target.value } : null)}
                     style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {RULE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                    {RULE_TYPES.map(t => <option key={t} value={t}>{ruleTypeLabel(t)}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Action</label>
                   <select value={editItem.action} onChange={e => setEditItem(prev => prev ? { ...prev, action: e.target.value } : null)}
                     style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {ACTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+                    {ACTIONS.map(a => <option key={a} value={a}>{actionLabel(a)}</option>)}
                   </select>
                 </div>
                 <div>
@@ -479,14 +491,14 @@ export default function PolicyFirewall() {
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Type</label>
                 <select value={formData.ruleType} onChange={e => setFormData(prev => ({ ...prev, ruleType: e.target.value }))}
                   style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {RULE_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
+                  {RULE_TYPES.map(t => <option key={t} value={t}>{ruleTypeLabel(t)}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Action</label>
                 <select value={formData.action} onChange={e => setFormData(prev => ({ ...prev, action: e.target.value }))}
                   style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {ACTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+                  {ACTIONS.map(a => <option key={a} value={a}>{actionLabel(a)}</option>)}
                 </select>
               </div>
               <div>

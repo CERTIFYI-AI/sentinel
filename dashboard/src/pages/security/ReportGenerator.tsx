@@ -26,8 +26,20 @@ import { useReports, useReportRuns, useGenerateReport } from '../../hooks/useSec
 import type { ReportTemplate, ReportRun } from '../../services/securityGroupService';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
 
-const CATEGORIES = ['Security', 'AI Security', 'Vulnerability', 'Red Team', 'Access Control', 'Executive', 'Compliance'];
-const FREQUENCIES = ['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Quarterly', 'Per Exercise', 'Manual'];
+// Canonical vocabulary (matches the security_reports migration/seeds).
+// Values are stored canonically; display labels are prettified.
+const CATEGORIES = ['posture', 'vulnerabilities', 'red_team', 'compliance', 'executive'];
+const CATEGORY_LABELS: Record<string, string> = {
+  posture: 'Posture', vulnerabilities: 'Vulnerabilities', red_team: 'Red team',
+  compliance: 'Compliance', executive: 'Executive',
+};
+const categoryLabel = (c?: string) => (c ? CATEGORY_LABELS[c] ?? c : '—');
+
+const FREQUENCIES = ['on_demand', 'weekly', 'monthly', 'quarterly'];
+const FREQUENCY_LABELS: Record<string, string> = {
+  on_demand: 'On demand', weekly: 'Weekly', monthly: 'Monthly', quarterly: 'Quarterly',
+};
+const frequencyLabel = (f?: string) => (f ? FREQUENCY_LABELS[f] ?? f : '—');
 
 // The section keys the generator service can actually snapshot.
 const SECTION_LABELS: Record<string, string> = {
@@ -59,7 +71,7 @@ function formatBytes(n?: number) {
 }
 
 const EMPTY_TEMPLATE: ReportTemplate = {
-  name: '', category: 'Security', description: '', frequency: 'Monthly',
+  name: '', category: 'posture', description: '', frequency: 'monthly',
   sections: [], recipients: [], format: 'json',
 };
 
@@ -96,11 +108,11 @@ export default function ReportGenerator() {
 
   const categoryData = Array.from(
     templates.reduce((acc, t) => {
-      const key = t.category || 'Uncategorized';
+      const key = t.category || 'uncategorized';
       acc.set(key, (acc.get(key) || 0) + (t.generationCount ?? 0));
       return acc;
     }, new Map<string, number>())
-  ).map(([name, count]) => ({ name, count }));
+  ).map(([key, count]) => ({ name: key === 'uncategorized' ? 'Uncategorized' : categoryLabel(key), count }));
 
   const categories = Array.from(new Set(templates.map(t => t.category).filter(Boolean))) as string[];
 
@@ -252,7 +264,7 @@ export default function ReportGenerator() {
               <select value={filterCategory} onChange={e => setFilterCategory(e.target.value)}
                 style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', fontSize: 13, borderRadius: 0 }}>
                 <option value="all">All Categories</option>
-                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                {categories.map(c => <option key={c} value={c}>{categoryLabel(c)}</option>)}
               </select>
             </div>
           )}
@@ -280,7 +292,7 @@ export default function ReportGenerator() {
                             <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{t.name}</p>
                           </div>
                           <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
-                            {t.category} · {t.frequency} · {t.generationCount ?? 0} generated
+                            {categoryLabel(t.category)} · {frequencyLabel(t.frequency)} · {t.generationCount ?? 0} generated
                           </p>
                           {t.description && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-2))' }}>{t.description}</p>}
                           <div className="flex flex-wrap gap-1 mt-2">
@@ -386,8 +398,8 @@ export default function ReportGenerator() {
               <SheetHeader className="pb-4">
                 <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.name}</SheetTitle>
                 <div className="flex gap-2 flex-wrap">
-                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.category || '—'}</Badge>
-                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.frequency || '—'}</Badge>
+                  <Badge variant="outline" style={{ borderRadius: 0 }}>{categoryLabel(viewItem.category)}</Badge>
+                  <Badge variant="outline" style={{ borderRadius: 0 }}>{frequencyLabel(viewItem.frequency)}</Badge>
                 </div>
               </SheetHeader>
               <Tabs defaultValue="details">
@@ -397,8 +409,8 @@ export default function ReportGenerator() {
                 </TabsList>
                 <TabsContent value="details" className="mt-4 space-y-3">
                   {[
-                    { label: 'Category', value: viewItem.category || '—' },
-                    { label: 'Frequency', value: viewItem.frequency || '—' },
+                    { label: 'Category', value: categoryLabel(viewItem.category) },
+                    { label: 'Frequency', value: frequencyLabel(viewItem.frequency) },
                     { label: 'Last Generated', value: viewItem.lastGeneratedAt ? formatDate(viewItem.lastGeneratedAt) : 'Never' },
                     { label: 'Generated Count', value: String(viewItem.generationCount ?? 0) },
                   ].map(r => (
@@ -468,14 +480,14 @@ export default function ReportGenerator() {
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Category</label>
                   <select value={editItem.category} onChange={e => setEditItem(prev => prev ? { ...prev, category: e.target.value } : null)}
                     style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                    {CATEGORIES.map(c => <option key={c} value={c}>{categoryLabel(c)}</option>)}
                   </select>
                 </div>
                 <div>
                   <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Frequency</label>
                   <select value={editItem.frequency} onChange={e => setEditItem(prev => prev ? { ...prev, frequency: e.target.value } : null)}
                     style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                    {FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
+                    {FREQUENCIES.map(f => <option key={f} value={f}>{frequencyLabel(f)}</option>)}
                   </select>
                 </div>
               </div>
@@ -509,14 +521,14 @@ export default function ReportGenerator() {
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Category</label>
                 <select value={formData.category} onChange={e => setFormData(prev => ({ ...prev, category: e.target.value }))}
                   style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                  {CATEGORIES.map(c => <option key={c} value={c}>{categoryLabel(c)}</option>)}
                 </select>
               </div>
               <div>
                 <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Frequency</label>
                 <select value={formData.frequency} onChange={e => setFormData(prev => ({ ...prev, frequency: e.target.value }))}
                   style={{ width: '100%', background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', padding: '6px 10px', borderRadius: 0 }}>
-                  {FREQUENCIES.map(f => <option key={f} value={f}>{f}</option>)}
+                  {FREQUENCIES.map(f => <option key={f} value={f}>{frequencyLabel(f)}</option>)}
                 </select>
               </div>
             </div>

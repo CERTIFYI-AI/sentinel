@@ -53,6 +53,13 @@ function ChartTooltipContent({ active, payload, label }: any) {
 
 const EMPTY_FORM = { title: '', threatType: 'Prompt Injection', severity: 'high', description: '', source: '', mitreTechnique: '' };
 
+// Canonical status vocabulary (matches the security_threats seeds/migration):
+// open | investigating | mitigated | resolved. Display labels are prettified.
+const prettyStatus = (s?: string) => {
+  const raw = s || 'open';
+  return raw.charAt(0).toUpperCase() + raw.slice(1).replace(/_/g, ' ');
+};
+
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function ThreatFeed() {
@@ -70,6 +77,7 @@ export default function ThreatFeed() {
   const [sheetOpen, setSheetOpen] = useState(false);
   const [resolveTarget, setResolveTarget] = useState<ThreatRecord | null>(null);
   const [resolveNote, setResolveNote] = useState('');
+  const [resolveNoteError, setResolveNoteError] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [addForm, setAddForm] = useState({ ...EMPTY_FORM });
 
@@ -87,7 +95,7 @@ export default function ThreatFeed() {
   });
 
   const criticalCount = threats.filter(t => t.severity === 'critical').length;
-  const openCount = threats.filter(t => t.status === 'active' || t.status === 'investigating').length;
+  const openCount = threats.filter(t => t.status === 'open' || t.status === 'investigating').length;
   const resolvedCount = threats.filter(t => t.status === 'resolved').length;
 
   // Category counts derived from real rows (threatType)
@@ -104,13 +112,13 @@ export default function ThreatFeed() {
     try { await save({ ...threat, status: 'investigating' }); } catch { /* hook toasts error */ }
   };
 
-  const handleResolve = async () => {
-    if (!resolveTarget || !resolveNote.trim()) return;
-    try {
-      await save({ ...resolveTarget, status: 'resolved' });
-      setResolveTarget(null);
-      setResolveNote('');
-    } catch { /* hook toasts error */ }
+  // Returns false to keep the ConfirmDialog open when the required note is
+  // missing; otherwise returns the save promise so the dialog closes only
+  // after the write resolves. The note persists as the record's `mitigation`.
+  const handleResolve = (): false | Promise<unknown> => {
+    if (!resolveTarget) return false;
+    if (!resolveNote.trim()) { setResolveNoteError(true); return false; }
+    return save({ ...resolveTarget, status: 'resolved', mitigation: resolveNote.trim() });
   };
 
   const handleAdd = async () => {
@@ -121,7 +129,7 @@ export default function ThreatFeed() {
         title: addForm.title,
         threatType: addForm.threatType,
         severity: addForm.severity,
-        status: 'active',
+        status: 'open',
         description: addForm.description || `${addForm.threatType} threat identified.`,
         source: addForm.source || 'Manual Entry',
         mitreTechnique: addForm.mitreTechnique || undefined,
@@ -227,7 +235,7 @@ export default function ThreatFeed() {
             value: filterStatus === 'all' ? '' : filterStatus,
             onChange: v => setFilterStatus(v || 'all'),
             options: [
-              { label: 'Active', value: 'active' },
+              { label: 'Open', value: 'open' },
               { label: 'Investigating', value: 'investigating' },
               { label: 'Mitigated', value: 'mitigated' },
               { label: 'Resolved', value: 'resolved' },
@@ -253,7 +261,7 @@ export default function ThreatFeed() {
               <tbody>
                 {filtered.map(threat => {
                   const sc = severityColor(threat.severity);
-                  const stc = statusColor(threat.status || 'active');
+                  const stc = statusColor(threat.status || 'open');
                   return (
                     <tr key={threat.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
                       <td className="px-4 py-3 text-xs font-mono" style={{ color: 'hsl(var(--brand))' }}>{threat.threatId || '—'}</td>
@@ -276,7 +284,7 @@ export default function ThreatFeed() {
                       </td>
                       <td className="px-4 py-3">
                         <Badge style={{ background: stc.bg, color: stc.text, border: `1px solid ${stc.border}`, borderRadius: 0, fontSize: 10 }}>
-                          {(threat.status || 'active').charAt(0).toUpperCase() + (threat.status || 'active').slice(1)}
+                          {prettyStatus(threat.status)}
                         </Badge>
                       </td>
                       <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{threat.detectedAt ? formatDate(threat.detectedAt) : '—'}</td>
@@ -293,7 +301,7 @@ export default function ThreatFeed() {
                           <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => openDetail(threat)}>
                             <Eye size={14} style={{ color: 'hsl(var(--brand))' }} />
                           </Button>
-                          {(threat.status === 'active' || threat.status === 'mitigated') && (
+                          {(threat.status === 'open' || threat.status === 'mitigated') && (
                             <Button variant="ghost" size="sm" className="h-7 w-7 p-0" disabled={isSaving} onClick={() => handleInvestigate(threat)}>
                               <Detective size={14} style={{ color: 'hsl(var(--s-wn-tx))' }} />
                             </Button>
@@ -324,21 +332,24 @@ export default function ThreatFeed() {
       {/* Resolve ConfirmDialog */}
       <ConfirmDialog
         open={!!resolveTarget}
-        onClose={() => { setResolveTarget(null); setResolveNote(''); }}
+        onClose={() => { setResolveTarget(null); setResolveNote(''); setResolveNoteError(false); }}
         onConfirm={handleResolve}
         type="warning"
         title={`Resolve ${resolveTarget?.threatId ?? 'Threat'}`}
         message={
           <div className="space-y-3">
             <p>Mark <strong>{resolveTarget?.title}</strong> as resolved?</p>
-            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Resolution notes are required for audit compliance.</p>
+            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Resolution notes are required for audit compliance and are saved as the threat's mitigation.</p>
             <textarea
               className="w-full px-3 py-2 text-sm border bg-transparent outline-none"
-              style={{ borderColor: 'hsl(var(--border))', borderRadius: 0, minHeight: 80 }}
+              style={{ borderColor: resolveNoteError ? 'hsl(var(--destructive))' : 'hsl(var(--border))', borderRadius: 0, minHeight: 80 }}
               placeholder="Enter resolution notes (required)..."
               value={resolveNote}
-              onChange={e => setResolveNote(e.target.value)}
+              onChange={e => { setResolveNote(e.target.value); if (e.target.value.trim()) setResolveNoteError(false); }}
             />
+            {resolveNoteError && (
+              <p className="text-xs" style={{ color: 'hsl(var(--destructive))' }}>A resolution note is required before resolving.</p>
+            )}
           </div>
         }
         confirmLabel="Resolve Threat"
@@ -376,8 +387,8 @@ export default function ThreatFeed() {
                     <div className="p-3" style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Status</span>
                       <div className="mt-1">
-                        <Badge style={{ background: statusColor(selectedThreat.status || 'active').bg, color: statusColor(selectedThreat.status || 'active').text, borderRadius: 0, fontSize: 11 }}>
-                          {(selectedThreat.status || 'active').charAt(0).toUpperCase() + (selectedThreat.status || 'active').slice(1)}
+                        <Badge style={{ background: statusColor(selectedThreat.status || 'open').bg, color: statusColor(selectedThreat.status || 'open').text, borderRadius: 0, fontSize: 11 }}>
+                          {prettyStatus(selectedThreat.status)}
                         </Badge>
                       </div>
                     </div>
@@ -455,6 +466,9 @@ export default function ThreatFeed() {
                       <div>
                         <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>Threat {selectedThreat.status}</p>
                         <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Owner: {selectedThreat.owner || '—'}</p>
+                        {selectedThreat.mitigation && (
+                          <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>Resolution: {selectedThreat.mitigation}</p>
+                        )}
                       </div>
                     </div>
                   )}

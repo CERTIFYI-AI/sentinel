@@ -52,9 +52,19 @@ type ScanForm = {
   title: string; scanType: string; target: string; status: string; severity: string;
   schedule: string; initiatedBy: string;
 };
+// Canonical scan_type vocabulary (matches the security_scans seeds); display
+// labels are prettified in the selects and derived lists.
+const SCAN_TYPES = ['llm_probe', 'sca', 'dlp', 'asm', 'dast', 'sast', 'config'];
+const SCAN_TYPE_LABELS: Record<string, string> = {
+  llm_probe: 'LLM probe', sca: 'SCA', dlp: 'DLP', asm: 'ASM',
+  dast: 'DAST', sast: 'SAST', config: 'Configuration',
+};
+const scanTypeLabel = (t?: string) => (t ? SCAN_TYPE_LABELS[t] ?? t : '—');
+const SCHEDULES = ['daily', 'weekly', 'monthly', 'manual'];
+const scheduleLabel = (s?: string) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '—');
 const EMPTY_SCAN: ScanForm = {
-  title: '', scanType: 'DAST', target: '', status: 'scheduled',
-  severity: 'medium', schedule: 'Weekly', initiatedBy: '',
+  title: '', scanType: 'dast', target: '', status: 'scheduled',
+  severity: 'medium', schedule: 'weekly', initiatedBy: '',
 };
 
 const SLA_DAYS: Record<string, number> = { critical: 14, high: 30, medium: 60, low: 90 };
@@ -88,11 +98,11 @@ export default function ScanCenter() {
 
   const typeData = Array.from(
     scans.reduce((acc, s) => {
-      const key = s.scanType || 'Other';
+      const key = s.scanType || 'other';
       acc.set(key, (acc.get(key) || 0) + 1);
       return acc;
     }, new Map<string, number>())
-  ).map(([name, count]) => ({ name, count }));
+  ).map(([key, count]) => ({ name: scanTypeLabel(key), count }));
 
   const stats = [
     { label: 'Total Scans', value: scans.length, icon: Scan },
@@ -104,7 +114,8 @@ export default function ScanCenter() {
   const scanTypes = Array.from(new Set(scans.map(s => s.scanType).filter(Boolean) as string[]));
 
   // Aggregated risk trends + SLA queue from real vulnerabilities
-  const activeVulns = vulns.filter(v => v.status !== 'patched' && v.status !== 'false_positive');
+  // (canonical statuses: resolved and false_positive are not active)
+  const activeVulns = vulns.filter(v => v.status !== 'resolved' && v.status !== 'false_positive');
   const sevCount = (sev: string) => activeVulns.filter(v => (v.severity || '').toLowerCase() === sev).length;
   const criticalCount = sevCount('critical');
   const highCount = sevCount('high');
@@ -319,7 +330,7 @@ export default function ScanCenter() {
               <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
               <SelectContent style={{ borderRadius: 0 }}>
                 <SelectItem value="all">All Types</SelectItem>
-                {scanTypes.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                {scanTypes.map(t => <SelectItem key={t} value={t}>{scanTypeLabel(t)}</SelectItem>)}
               </SelectContent>
             </Select>
             <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-3))' }}>{filtered.length} of {scans.length} scans</span>
@@ -358,7 +369,7 @@ export default function ScanCenter() {
                           <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{s.scanId || '—'}</td>
                           <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{s.title}</td>
                           <td className="p-3">
-                            <Badge variant="outline" style={{ borderRadius: 0, fontSize: 11 }}>{s.scanType || '—'}</Badge>
+                            <Badge variant="outline" style={{ borderRadius: 0, fontSize: 11 }}>{scanTypeLabel(s.scanType)}</Badge>
                           </td>
                           <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{s.target || '—'}</td>
                           <td className="p-3">
@@ -379,7 +390,7 @@ export default function ScanCenter() {
                           <td className="p-3 text-sm" style={{ color: (s.findingsCount || 0) > 0 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--text-2))' }}>
                             {s.status === 'completed' ? `${s.findingsCount || 0} (${s.criticalCount || 0} crit)` : '—'}
                           </td>
-                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{s.schedule || '—'}</td>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{s.schedule ? scheduleLabel(s.schedule) : '—'}</td>
                           <td className="p-3">
                             <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                               <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(s)}><Eye size={14} /></Button>
@@ -410,7 +421,7 @@ export default function ScanCenter() {
                 <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{viewItem.title}</SheetTitle>
                 <div className="flex gap-2 flex-wrap">
                   <Badge style={{ background: statusStyle(viewItem.status || 'scheduled').bg, color: statusStyle(viewItem.status || 'scheduled').text, border: `1px solid ${statusStyle(viewItem.status || 'scheduled').border}`, borderRadius: 0 }}>{viewItem.status || 'scheduled'}</Badge>
-                  <Badge variant="outline" style={{ borderRadius: 0 }}>{viewItem.scanType || '—'}</Badge>
+                  <Badge variant="outline" style={{ borderRadius: 0 }}>{scanTypeLabel(viewItem.scanType)}</Badge>
                 </div>
               </SheetHeader>
               <Tabs defaultValue="details">
@@ -423,7 +434,7 @@ export default function ScanCenter() {
                     { label: 'Scan ID', value: viewItem.scanId || '—' },
                     { label: 'Target', value: viewItem.target || '—' },
                     { label: 'Initiated By', value: viewItem.initiatedBy || '—' },
-                    { label: 'Schedule', value: viewItem.schedule || '—' },
+                    { label: 'Schedule', value: viewItem.schedule ? scheduleLabel(viewItem.schedule) : '—' },
                     { label: 'Started', value: viewItem.startedAt ? formatDate(viewItem.startedAt) : '—' },
                     { label: 'Completed', value: viewItem.completedAt ? formatDate(viewItem.completedAt) : '—' },
                     { label: 'Duration', value: viewItem.durationMinutes != null ? `${viewItem.durationMinutes} min` : '—' },
@@ -491,7 +502,7 @@ export default function ScanCenter() {
                   <Select value={editItem.scanType} onValueChange={v => setEditItem(prev => prev ? { ...prev, scanType: v } : null)}>
                     <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                     <SelectContent style={{ borderRadius: 0 }}>
-                      {['DAST', 'SAST', 'SCA', 'Network', 'AI Security', 'Configuration'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                      {SCAN_TYPES.map(t => <SelectItem key={t} value={t}>{scanTypeLabel(t)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -500,7 +511,7 @@ export default function ScanCenter() {
                   <Select value={editItem.schedule} onValueChange={v => setEditItem(prev => prev ? { ...prev, schedule: v } : null)}>
                     <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                     <SelectContent style={{ borderRadius: 0 }}>
-                      {['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Manual'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                      {SCHEDULES.map(s => <SelectItem key={s} value={s}>{scheduleLabel(s)}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
@@ -531,7 +542,7 @@ export default function ScanCenter() {
                 <Select value={formData.scanType} onValueChange={v => setFormData(prev => ({ ...prev, scanType: v }))}>
                   <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
-                    {['DAST', 'SAST', 'SCA', 'Network', 'AI Security', 'Configuration'].map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    {SCAN_TYPES.map(t => <SelectItem key={t} value={t}>{scanTypeLabel(t)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
@@ -540,7 +551,7 @@ export default function ScanCenter() {
                 <Select value={formData.schedule} onValueChange={v => setFormData(prev => ({ ...prev, schedule: v }))}>
                   <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
-                    {['Daily', 'Weekly', 'Bi-weekly', 'Monthly', 'Manual'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {SCHEDULES.map(s => <SelectItem key={s} value={s}>{scheduleLabel(s)}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
