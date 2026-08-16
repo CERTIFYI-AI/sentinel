@@ -1,3 +1,12 @@
+## 1.58.0 (2026-08-16)
+
+* chore(bias-audits): delete retired legacy pages and orphan services ([6ceb5a1](https://github.com/CERTIFYI-AI/sentinel/commit/6ceb5a1))
+* chore(db): drop legacy datasets cluster per consolidation plan (F-8 complete) ([876f447](https://github.com/CERTIFYI-AI/sentinel/commit/876f447))
+* ASSESS & VALIDATE: enhance, interlink, and seed Nepal-context data ([5578889](https://github.com/CERTIFYI-AI/sentinel/commit/5578889))
+* feat(ai-assets): datasets family on real org-scoped backend + group audit ([8d5a8d0](https://github.com/CERTIFYI-AI/sentinel/commit/8d5a8d0))
+* feat(seed): Nepal-grounded seed data for the datasets family ([ac77f52](https://github.com/CERTIFYI-AI/sentinel/commit/ac77f52))
+* fix(ai-assets): close remaining audit findings F-6, F-7, F-8 (code) ([acf4635](https://github.com/CERTIFYI-AI/sentinel/commit/acf4635))
+
 ## 1.57.0 (2026-08-14)
 
 * Merge main ([10a79a0](https://github.com/CERTIFYI-AI/sentinel/commit/10a79a0))
