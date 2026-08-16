@@ -41,6 +41,10 @@ create policy agents_org_isolation on public.agents
 -- tenant_id also defaulted to the literal 'default', so discovered shadow-AI
 -- findings would have landed outside org isolation exactly as tasks.tenant_id
 -- did before its repair.
+-- Replay-safety (heal-before-police): April-era unify loops strip tenant_id
+-- on a fresh replay; the live DB always has it (no-op there).
+alter table public.shadow_ai_findings
+  add column if not exists tenant_id text not null default 'default';
 alter table public.shadow_ai_findings
   alter column tenant_id set default (current_user_org_id())::text;
 drop policy if exists shadow_ai_findings_authenticated_only on public.shadow_ai_findings;
@@ -55,6 +59,7 @@ create policy shadow_ai_findings_org_isolation on public.shadow_ai_findings
 -- Board/exec digests summarise the whole estate; a cross-tenant read here would
 -- disclose another organisation's governance posture in narrative form.
 alter table public.executive_digests
+  add column if not exists tenant_id text not null default 'default', -- replay heal; no-op live
   alter column tenant_id set default (current_user_org_id())::text;
 drop policy if exists exec_digest_authenticated_read on public.executive_digests;
 alter table public.executive_digests enable row level security;
