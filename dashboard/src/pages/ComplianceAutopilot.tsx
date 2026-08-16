@@ -1,273 +1,269 @@
-import { useState } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
-import { Card, CardContent } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { Switch } from '../components/ui/switch';
-import { TooltipProvider } from '../components/ui/tooltip';
-import { toast } from 'sonner';
-import {
-  Robot, Lightning, ShieldCheck, Warning, CheckCircle, Clock,
-  Play, Pause, Gear, ChartBar, ArrowRight, Brain, Bell,
-  FileText, Users, Database,
-} from '@phosphor-icons/react';
-import { useSettingsStore } from '../stores/settingsStore';
-import { useChartTheme } from '../hooks/useChartTheme';
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
-  ResponsiveContainer,
-} from 'recharts';
-import { PageHeader } from '@/components/ui/PageHeader';
-import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow';
+// Compliance Autopilot — an honest, compliance-scoped window onto the REAL
+// agentic mesh. It reads the same agent_registry catalog and agent_executions
+// ledger as Governance Mesh (see meshFleetService), filtered to the agents
+// whose category or target modules are compliance-relevant. Nothing here is
+// invented: status derives from registry state, the action log is the actual
+// execution ledger, and every KPI is computed from those executions only.
+import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { useQuery } from '@tanstack/react-query'
+import { Robot } from '@phosphor-icons/react'
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { InterlinkChip } from '@/components/ui/InterlinkChip'
+import { useRequiredOrgId } from '../hooks/useTenant'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { fetchMeshExecutions, type MeshExecution } from '../services/meshFleetService'
 
-const AUTOPILOT_AGENTS = [
-  {
-    id: 'AP-001', name: 'Control Monitor', description: 'Continuously scans all 847 controls for drift, failure, or expiry. Auto-remediates low-risk deviations.',
-    icon: ShieldCheck, status: 'running', actionsToday: 12, hoursSaved: 4.2,
-    lastAction: '2026-04-12 10:47 — Auto-remediated control C-204 (outdated policy reference)',
-    triggers: ['Control score drops below threshold', 'Control owner unassigned', 'Evidence expiry within 14 days'],
-    config: { threshold: 75, autoRemediate: true, notifyOnAction: true },
-  },
-  {
-    id: 'AP-002', name: 'Bias Drift Detector', description: 'Monitors production model outputs for fairness drift. Triggers bias audit and notifies CISO when demographic parity degrades.',
-    icon: Brain, status: 'running', actionsToday: 3, hoursSaved: 6.0,
-    lastAction: '2026-04-12 09:15 — Fairness drift alert raised for MDL-004 (Δ -0.08 vs baseline)',
-    triggers: ['Fairness score drops >5% vs baseline', 'Demographic parity violation', 'Statistical parity distance >0.1'],
-    config: { threshold: 0.05, autoRemediate: false, notifyOnAction: true },
-  },
-  {
-    id: 'AP-003', name: 'Regulatory Submission Bot', description: 'Auto-drafts and queues regulatory submissions, filing attestations, and evidence packages for upcoming deadlines.',
-    icon: FileText, status: 'running', actionsToday: 2, hoursSaved: 3.5,
-    lastAction: '2026-04-12 08:00 — EU AI Act conformity package prepared (152 documents, ready for CISO sign-off)',
-    triggers: ['Regulation deadline within 30 days', 'New regulation published (impact >Medium)', 'Evidence package complete'],
-    config: { threshold: 30, autoRemediate: false, notifyOnAction: true },
-  },
-  {
-    id: 'AP-004', name: 'Vendor Risk Watchdog', description: 'Monitors third-party AI vendor risk scores, SLA breaches, and security advisories. Auto-escalates to TPRM team.',
-    icon: Users, status: 'paused', actionsToday: 0, hoursSaved: 2.8,
-    lastAction: '2026-04-10 16:30 — Vendor OpenAI SLA breach escalated to procurement',
-    triggers: ['Vendor risk score exceeds High', 'SLA missed by >24h', 'Security advisory published for vendor'],
-    config: { threshold: 70, autoRemediate: false, notifyOnAction: true },
-  },
-  {
-    id: 'AP-005', name: 'Incident Triage AI', description: 'Auto-classifies incoming incidents by severity, assigns to playbooks, and escalates critical events to on-call CISO.',
-    icon: Warning, status: 'running', actionsToday: 7, hoursSaved: 5.1,
-    lastAction: '2026-04-12 11:02 — INC-058 auto-classified Critical, playbook PB-003 activated',
-    triggers: ['New incident created', 'Severity auto-classification confidence >85%', 'P1 unacknowledged >15min'],
-    config: { threshold: 85, autoRemediate: true, notifyOnAction: true },
-  },
-  {
-    id: 'AP-006', name: 'Evidence Expiry Guardian', description: 'Tracks all evidence validity periods, sends renewal reminders, and auto-archives expired evidence with compliance notes.',
-    icon: Database, status: 'running', actionsToday: 5, hoursSaved: 1.9,
-    lastAction: '2026-04-12 07:00 — 3 evidence items renewed automatically; 2 flagged for manual review',
-    triggers: ['Evidence expires within 21 days', 'Evidence owner inactive >7 days', 'Control links to expired evidence'],
-    config: { threshold: 21, autoRemediate: true, notifyOnAction: false },
-  },
-];
+// Categories (agent_registry.agent_type) that belong to the compliance lane,
+// plus target modules that make an agent compliance-relevant regardless of
+// its category label.
+const COMPLIANCE_TYPES = new Set(['compliance', 'reporting', 'narrative', 'policy'])
+const COMPLIANCE_MODULES = new Set([
+  'controls', 'frameworks', 'compliance_scores', 'regulator_filings',
+  'transparency_reports', 'conformity_assessments', 'policies',
+])
 
-const ACTION_LOG = [
-  { ts: '2026-04-12 11:02', agent: 'Incident Triage AI', action: 'Auto-classified INC-058 as Critical; activated playbook PB-003', outcome: 'Escalated', severity: 'critical' },
-  { ts: '2026-04-12 10:47', agent: 'Control Monitor', action: 'Remediated control C-204 — updated policy reference to current version', outcome: 'Resolved', severity: 'low' },
-  { ts: '2026-04-12 10:23', agent: 'Incident Triage AI', action: 'Auto-classified INC-057 as Medium; assigned to remediation queue', outcome: 'Assigned', severity: 'medium' },
-  { ts: '2026-04-12 09:15', agent: 'Bias Drift Detector', action: 'Fairness drift alert: MDL-004 demographic parity Δ -0.08; CISO notified', outcome: 'Alert Sent', severity: 'high' },
-  { ts: '2026-04-12 08:00', agent: 'Reg. Submission Bot', action: 'EU AI Act conformity package prepared (152 docs) — queued for CISO sign-off', outcome: 'Queued', severity: 'info' },
-  { ts: '2026-04-12 07:00', agent: 'Evidence Guardian', action: 'Auto-renewed 3 evidence items; flagged EVD-091 and EVD-104 for manual review', outcome: 'Partial', severity: 'medium' },
-  { ts: '2026-04-11 16:30', agent: 'Vendor Risk Watchdog', action: 'OpenAI vendor SLA breach detected; escalated to procurement (TPRM-018)', outcome: 'Escalated', severity: 'high' },
-  { ts: '2026-04-11 14:00', agent: 'Control Monitor', action: 'Control C-187 score below 75 — owner re-assigned to Dr. Nina Okafor', outcome: 'Resolved', severity: 'medium' },
-];
+interface RegistryAgent {
+  id: string
+  agentName: string
+  agentType: string | null
+  runMode: string | null
+  status: string | null
+  isEnabled: boolean
+  description: string | null
+  triggerEvents: string[]
+  targetModules: string[]
+  ownerTeam: string | null
+  priority: number | null
+}
 
-const EFFICIENCY_TREND = [
-  { date: 'Oct', hours: 12, actions: 28 },
-  { date: 'Nov', hours: 18, actions: 41 },
-  { date: 'Dec', hours: 22, actions: 53 },
-  { date: 'Jan', hours: 26, actions: 67 },
-  { date: 'Feb', hours: 31, actions: 82 },
-  { date: 'Mar', hours: 34, actions: 94 },
-  { date: 'Apr', hours: 23, actions: 29 },
-];
+/** Same read pattern as meshFleetService: catalog rows, mapped at the boundary. */
+async function fetchComplianceAgents(): Promise<RegistryAgent[]> {
+  if (!isSupabaseConfigured() || !supabase) return []
+  const { data, error } = await supabase
+    .from('agent_registry')
+    .select('id, agent_name, agent_type, run_mode, status, is_enabled, description, trigger_events, target_modules, owner_team, priority')
+    .order('priority')
+  if (error) throw new Error(error.message)
+  return (data ?? [])
+    .map((r: Record<string, unknown>) => ({
+      id: r.id as string,
+      agentName: r.agent_name as string,
+      agentType: (r.agent_type as string | null) ?? null,
+      runMode: (r.run_mode as string | null) ?? null,
+      status: (r.status as string | null) ?? null,
+      isEnabled: (r.is_enabled as boolean | null) ?? true,
+      description: (r.description as string | null) ?? null,
+      triggerEvents: (r.trigger_events as string[] | null) ?? [],
+      targetModules: (r.target_modules as string[] | null) ?? [],
+      ownerTeam: (r.owner_team as string | null) ?? null,
+      priority: (r.priority as number | null) ?? null,
+    }))
+    .filter(a =>
+      COMPLIANCE_TYPES.has((a.agentType ?? '').toLowerCase()) ||
+      a.targetModules.some(m => COMPLIANCE_MODULES.has(m)))
+}
 
-const sevColor = (s: string) => {
-  if (s === 'critical') return { bg: 'hsl(var(--s-er-bg))', tx: 'hsl(var(--s-er-tx))' };
-  if (s === 'high') return { bg: 'hsl(var(--r-hi-bg))', tx: 'hsl(var(--r-hi-tx))' };
-  if (s === 'medium') return { bg: 'hsl(var(--s-wn-bg))', tx: 'hsl(var(--s-wn-tx))' };
-  if (s === 'low') return { bg: 'hsl(var(--s-ok-bg))', tx: 'hsl(var(--s-ok-tx))' };
-  return { bg: 'hsl(var(--s-nt-bg))', tx: 'hsl(var(--s-nt-tx))' };
-};
+const STATUS_STYLE: Record<string, { bg: string; text: string }> = {
+  completed: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' },
+  succeeded: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' },
+  started:   { bg: 'hsl(var(--brand-subtle))', text: 'hsl(var(--brand))' },
+  failed:    { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' },
+  timeout:   { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' },
+  skipped:   { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' },
+}
+function StatusBadge({ status }: { status: string }) {
+  const c = STATUS_STYLE[status] ?? { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))' }
+  return (
+    <span style={{ fontSize: 10, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', padding: '2px 7px', background: c.bg, color: c.text }}>
+      {status}
+    </span>
+  )
+}
+
+function timeAgo(iso: string | null): string {
+  if (!iso) return 'never'
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000)
+  if (s < 90) return `${Math.round(s)}s ago`
+  if (s < 5400) return `${Math.round(s / 60)}m ago`
+  if (s < 129600) return `${Math.round(s / 3600)}h ago`
+  return `${Math.round(s / 86400)}d ago`
+}
 
 export default function ComplianceAutopilot() {
-  const { orgName } = useSettingsStore();
-  const ct = useChartTheme();
-  const { data: agents, setData: setAgents } = useSupabaseTable<typeof AUTOPILOT_AGENTS[number]>('complianceautopilot_table', AUTOPILOT_AGENTS);
-  const [tab, setTab] = useState('agents');
+  const orgId = useRequiredOrgId()
 
-  const running = agents.filter(a => a.status === 'running').length;
-  const totalActions = agents.reduce((s, a) => s + a.actionsToday, 0);
-  const totalHours = agents.reduce((s, a) => s + a.hoursSaved, 0);
+  const { data: agents = [], isLoading: agentsLoading, error: agentsError } = useQuery({
+    queryKey: ['compliance-autopilot-agents'],
+    queryFn: fetchComplianceAgents,
+    staleTime: 30_000,
+  })
+  const { data: executions = [], isLoading: execLoading, error: execError } = useQuery({
+    queryKey: ['compliance-autopilot-executions', orgId],
+    queryFn: () => fetchMeshExecutions(orgId, 200),
+    enabled: !!orgId,
+    staleTime: 15_000,
+  })
 
-  const toggleAgent = (id: string) => {
-    setAgents(prev => prev.map(a => {
-      if (a.id !== id) return a;
-      const next = a.status === 'running' ? 'paused' : 'running';
-      toast.success(`${a.name} ${next === 'running' ? 'activated' : 'paused'}`);
-      return { ...a, status: next };
-    }));
-  };
+  const agentNames = useMemo(() => new Set(agents.map(a => a.agentName)), [agents])
+  // Action log: the real execution ledger, restricted to compliance agents.
+  const log = useMemo(
+    () => executions.filter(x => agentNames.has(x.agentName)),
+    [executions, agentNames],
+  )
+  const lastRunByAgent = useMemo(() => {
+    const map = new Map<string, MeshExecution>()
+    for (const x of log) if (!map.has(x.agentName)) map.set(x.agentName, x) // ledger is newest-first
+    return map
+  }, [log])
 
-  const statCards: StatCardRowItem[] = [
-    { label: 'Active Agents', value: `${running}/6`, icon: <Robot size={14} weight="fill" />, variant: running >= 5 ? 'success' : 'warning' },
-    { label: 'Actions Today', value: totalActions, icon: <CheckCircle size={14} weight="fill" /> },
-    { label: 'Hours Saved (Apr)', value: `${totalHours.toFixed(1)}h`, icon: <Clock size={14} weight="fill" />, variant: 'success' },
-    { label: 'Tasks Automated', value: '94%', icon: <ChartBar size={14} weight="fill" /> },
-  ];
+  // KPIs — derived from executions only.
+  const dayAgo = Date.now() - 86_400_000
+  const actions24 = log.filter(x => new Date(x.startedAt).getTime() > dayAgo).length
+  const failed = log.filter(x => x.status === 'failed' || x.status === 'timeout').length
+  const succeeded = log.filter(x => x.status === 'succeeded' || x.status === 'completed').length
+  const lastAction = log[0]?.startedAt ?? null
+
+  const isLoading = agentsLoading || execLoading
+  const error = agentsError ?? execError
+
+  if (isLoading) return <PageSkeleton title="Compliance Autopilot" showStats rows={5} />
 
   return (
-    <TooltipProvider>
-      <div className="space-y-3">
-        <PageHeader
-          title="Compliance Autopilot"
-          subtitle={`${orgName} · Autonomous AI agents monitoring, remediating, and filing 24/7`}
-          icon={Robot}
-          badge={
-            <div className="flex items-center gap-1.5">
-              <span className="px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider border" style={{ background: 'hsl(var(--brand) / 0.1)', color: 'hsl(var(--brand))', borderColor: 'hsl(var(--brand) / 0.25)' }}>Agentic</span>
-              <span className="px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider border" style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderColor: 'hsl(var(--s-ok-br))' }}>{running}/6 Active</span>
-            </div>
-          }
-          actions={
-            <button onClick={() => { toast.success('All agents synchronized'); }}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-xs font-medium hover:bg-[hsl(var(--brand-hover))]">
-              <Lightning size={13} />Sync All
-            </button>
-          }
-        />
+    <div className="space-y-5">
+      <PageHeader
+        title="Compliance Autopilot"
+        subtitle="The compliance-relevant slice of the governance mesh — real registry agents and their actual execution ledger, nothing simulated"
+        icon={Robot}
+        actions={
+          <div className="flex items-center gap-2">
+            <InterlinkChip label="Full fleet → Governance Mesh" to="/governance-mesh" />
+            <InterlinkChip label="Automation rules → Automation Studio" to="/automation-studio" />
+          </div>
+        }
+      />
 
-        <StatCardRow cards={statCards} />
+      {error && (
+        <div role="alert" className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load the mesh registry</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{(error as Error).message}</p>
+        </div>
+      )}
 
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList style={{ borderRadius: 0 }}>
-            <TabsTrigger value="agents" style={{ borderRadius: 0 }}>Agent Dashboard</TabsTrigger>
-            <TabsTrigger value="log" style={{ borderRadius: 0 }}>Action Log</TabsTrigger>
-            <TabsTrigger value="efficiency" style={{ borderRadius: 0 }}>Efficiency Analytics</TabsTrigger>
-          </TabsList>
+      {/* KPIs — derived from the execution ledger only */}
+      <div className="grid grid-cols-4 gap-4">
+        {[
+          { label: 'Compliance Agents', value: String(agents.length), sub: 'Registry rows in the compliance lane', color: 'hsl(var(--brand))' },
+          { label: 'Actions (24h)', value: String(actions24), sub: 'Recorded executions', color: 'hsl(var(--text-1))' },
+          { label: 'Succeeded / Failed', value: log.length > 0 ? `${succeeded} / ${failed}` : '—', sub: log.length > 0 ? `Across ${log.length} recent executions` : 'No executions recorded yet', color: failed > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' },
+          { label: 'Last Action', value: lastAction ? timeAgo(lastAction) : '—', sub: lastAction ? 'From the execution ledger' : 'Nothing recorded yet', color: 'hsl(var(--text-1))' },
+        ].map(s => (
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
+            <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide">{s.label}</p>
+            <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{s.sub}</p>
+          </div>
+        ))}
+      </div>
 
-          <TabsContent value="agents" className="mt-3">
-            <div className="grid grid-cols-2 gap-3">
-              {agents.map(agent => (
-                <div key={agent.id} className="border" style={{ background: 'hsl(var(--bg-surface))', borderColor: agent.status === 'running' ? 'hsl(var(--brand) / 0.2)' : 'hsl(var(--border))' }}>
-                  <div className="p-3">
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex items-start gap-2">
-                        <div className="p-1.5 mt-0.5" style={{ background: 'hsl(var(--brand) / 0.08)' }}>
-                          <agent.icon size={14} style={{ color: 'hsl(var(--brand))' }} />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-1.5">
-                            <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{agent.name}</p>
-                            <span className="text-[8px] font-mono px-1 py-0.5" style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-4))' }}>{agent.id}</span>
-                          </div>
-                          <p className="text-[10px] mt-0.5 leading-snug" style={{ color: 'hsl(var(--text-4))' }}>{agent.description}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1.5 ml-2 shrink-0">
-                        <span className="text-[9px] font-semibold uppercase" style={{ color: agent.status === 'running' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))' }}>
-                          {agent.status === 'running' ? 'Active' : 'Paused'}
-                        </span>
-                        <Switch checked={agent.status === 'running'} onCheckedChange={() => toggleAgent(agent.id)} />
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-1.5 mb-2">
-                      <div className="p-1.5 text-center" style={{ background: 'hsl(var(--bg-raised))' }}>
-                        <p className="text-base font-bold font-mono" style={{ color: 'hsl(var(--brand))' }}>{agent.actionsToday}</p>
-                        <p className="text-[8px] uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>Actions today</p>
-                      </div>
-                      <div className="p-1.5 text-center" style={{ background: 'hsl(var(--bg-raised))' }}>
-                        <p className="text-base font-bold font-mono" style={{ color: 'hsl(var(--s-ok-tx))' }}>{agent.hoursSaved}h</p>
-                        <p className="text-[8px] uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>Hrs saved/day</p>
-                      </div>
-                    </div>
-                    <div className="mb-1.5">
-                      <p className="text-[8px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: 'hsl(var(--text-4))' }}>Last Action</p>
-                      <p className="text-[10px] font-mono leading-snug" style={{ color: 'hsl(var(--text-3))' }}>{agent.lastAction}</p>
-                    </div>
-                    <div>
-                      <p className="text-[8px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: 'hsl(var(--text-4))' }}>Triggers</p>
-                      <div className="space-y-0.5">
-                        {agent.triggers.map((t, i) => (
-                          <div key={i} className="flex items-start gap-1">
-                            <ArrowRight size={8} style={{ color: 'hsl(var(--brand))', marginTop: 2, flexShrink: 0 }} />
-                            <span className="text-[10px]" style={{ color: 'hsl(var(--text-3))' }}>{t}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+      {/* Agent roster */}
+      {agents.length === 0 && !error ? (
+        <div className="rounded border border-[hsl(var(--border))] bg-surface py-14 text-center">
+          <Robot size={28} className="mx-auto mb-3 opacity-40 text-[hsl(var(--text-4))]" />
+          <p className="text-sm text-[hsl(var(--text-2))]">No compliance-relevant agents found in the registry.</p>
+          <p className="text-xs text-[hsl(var(--text-4))] mt-1">
+            The mesh catalog seeds them via migration — see the full fleet in{' '}
+            <Link to="/governance-mesh" className="underline text-[hsl(var(--brand))]">Governance Mesh</Link>.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {agents.map(a => {
+            const last = lastRunByAgent.get(a.agentName)
+            return (
+              <Card key={a.id} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-sm font-semibold flex-1" style={{ color: 'hsl(var(--text-1))' }}>{a.agentName}</h3>
+                    {a.agentType && (
+                      <span className="text-[10px] px-1.5 py-0.5 uppercase tracking-wide" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{a.agentType}</span>
+                    )}
+                    <span className="text-[10px] px-1.5 py-0.5 uppercase tracking-wide" style={{
+                      background: a.isEnabled ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--bg-muted))',
+                      color: a.isEnabled ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))',
+                    }}>
+                      {a.isEnabled ? (a.runMode === 'continuous' ? 'Continuous' : 'Event-driven') : 'Disabled'}
+                    </span>
                   </div>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
+                  {a.description && <p className="text-xs mt-2" style={{ color: 'hsl(var(--text-3))' }}>{a.description}</p>}
+                  <div className="flex flex-wrap gap-1 mt-3">
+                    {a.targetModules.map(m => (
+                      <span key={m} className="text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))' }}>{m}</span>
+                    ))}
+                  </div>
+                  <div className="flex items-center gap-2 mt-3 text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>
+                    {a.ownerTeam && <span>Team: {a.ownerTeam}</span>}
+                    {a.ownerTeam && <span>·</span>}
+                    {last ? (
+                      <span className="inline-flex items-center gap-1.5">
+                        Last run {timeAgo(last.startedAt)} <StatusBadge status={last.status} />
+                      </span>
+                    ) : (
+                      <span>No runs recorded yet for this org</span>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            )
+          })}
+        </div>
+      )}
 
-          <TabsContent value="log" className="mt-3">
-            <div className="border overflow-hidden" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
+      {/* Action log — the real execution ledger */}
+      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+        <CardHeader className="px-4 py-3" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+          <CardTitle style={{ fontSize: 14 }}>Action Log</CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {log.length === 0 ? (
+            <p className="text-sm text-center py-10" style={{ color: 'hsl(var(--text-4))' }}>
+              No autonomous actions recorded yet — run a sweep from{' '}
+              <Link to="/governance-mesh" className="underline text-[hsl(var(--brand))]">Governance Mesh</Link>.
+            </p>
+          ) : (
+            <div className="overflow-x-auto">
               <table className="w-full text-xs">
                 <thead>
                   <tr style={{ borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
-                    {['Timestamp', 'Agent', 'Autonomous Action', 'Outcome'].map(h => (
-                      <th key={h} className="px-2.5 py-2 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                    {['When', 'Agent', 'Event', 'Status', 'Summary'].map(h => (
+                      <th key={h} className="px-3 py-2 text-left text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {ACTION_LOG.map((entry, i) => {
-                    const sc = sevColor(entry.severity);
-                    return (
-                      <tr key={i} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-[hsl(var(--bg-raised))]">
-                        <td className="px-2.5 py-1.5 font-mono text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{entry.ts}</td>
-                        <td className="px-2.5 py-1.5">
-                          <span className="text-[9px] px-1 py-0.5 font-medium" style={{ background: 'hsl(var(--brand) / 0.08)', color: 'hsl(var(--brand))' }}>{entry.agent}</span>
-                        </td>
-                        <td className="px-2.5 py-1.5 text-[11px]" style={{ color: 'hsl(var(--text-2))' }}>{entry.action}</td>
-                        <td className="px-2.5 py-1.5">
-                          <span className="text-[9px] px-1 py-0.5 font-semibold uppercase tracking-wider" style={{ background: sc.bg, color: sc.tx }}>{entry.outcome}</span>
-                        </td>
-                      </tr>
-                    );
-                  })}
+                  {log.slice(0, 50).map(x => (
+                    <tr key={x.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-raised">
+                      <td className="px-3 py-2 whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>
+                        {timeAgo(x.startedAt)}{x.durationMs != null ? ` · ${x.durationMs}ms` : ''}
+                      </td>
+                      <td className="px-3 py-2">
+                        <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{x.agentName}</span>
+                      </td>
+                      <td className="px-3 py-2" style={{ color: 'hsl(var(--text-3))' }}>{x.eventType}</td>
+                      <td className="px-3 py-2"><StatusBadge status={x.status} /></td>
+                      <td className="px-3 py-2 max-w-[380px]" style={{ color: 'hsl(var(--text-2))' }}>
+                        <span className="line-clamp-2">{x.output?.summary ?? x.error ?? '—'}</span>
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>
-          </TabsContent>
-
-          <TabsContent value="efficiency" className="mt-3 space-y-3">
-            <div className="border p-3" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
-              <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-1))' }}>Hours Saved & Autonomous Actions — 7 Months</p>
-              <ResponsiveContainer width="100%" height={220}>
-                <AreaChart data={EFFICIENCY_TREND}>
-                  <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                  <XAxis dataKey="date" tick={{ fill: ct.axis, fontSize: 10 }} />
-                  <YAxis tick={{ fill: ct.axis, fontSize: 10 }} />
-                  <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 11 }} />
-                  <Area type="monotone" dataKey="hours" stroke="hsl(var(--brand))" fill="hsl(var(--brand) / 0.15)" strokeWidth={2} name="Hours Saved" />
-                  <Area type="monotone" dataKey="actions" stroke="hsl(var(--s-ok-tx))" fill="hsl(var(--s-ok-tx) / 0.1)" strokeWidth={1.5} name="Autonomous Actions" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="grid grid-cols-3 gap-3">
-              {[
-                { label: 'FTE Equivalent Automated', value: '2.4 FTE', note: 'Based on 34h/week autopilot throughput' },
-                { label: 'Annual Cost Avoidance', value: '$387K', note: 'Estimated compliance labor cost offset' },
-                { label: 'Audit Findings Prevented', value: '23', note: 'Auto-remediated before audit window' },
-              ].map((kpi, i) => (
-                <div key={i} className="p-3 border" style={{ borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))' }}>
-                  <p className="text-xl font-bold font-mono" style={{ color: 'hsl(var(--brand))' }}>{kpi.value}</p>
-                  <p className="text-[10px] font-semibold mt-0.5 uppercase tracking-wider" style={{ color: 'hsl(var(--text-1))' }}>{kpi.label}</p>
-                  <p className="text-[9px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{kpi.note}</p>
-                </div>
-              ))}
-            </div>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </TooltipProvider>
-  );
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  )
 }
