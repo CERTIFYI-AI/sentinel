@@ -908,8 +908,8 @@ export default function Overview() {
                     <td className="px-4 py-2.5">
                       <Badge style={{ background: stBg, color: stColor, borderRadius: 0, fontSize: 10, textTransform: 'capitalize' }}>{inc.status}</Badge>
                     </td>
-                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{inc.linkedModel ?? inc.linked_model ?? '—'}</td>
-                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(inc.reportedDate ?? inc.detected_at ?? inc.created_at ?? '')}</td>
+                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{inc.affected_models?.[0] ?? '—'}</td>
+                    <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(inc.detected_at ?? inc.created_at ?? '')}</td>
                   </tr>
                 );
               })}

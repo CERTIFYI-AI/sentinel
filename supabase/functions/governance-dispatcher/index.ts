@@ -36,12 +36,20 @@ const hitlAgent: AgentHandler = async (ctx: AgentContext): Promise<AgentResult> 
   const p = ctx.event.payload as any
   const highRisk = p.riskTier <= 2 || p.severity === 'CRITICAL' || p.severity === 'HIGH'
   if (!highRisk) return { status: 'skipped' }
-  await ctx.supabase.from('hitl_reviews').insert({
-    org_id: ctx.event.org_id, entity_type: 'model', entity_id: p.modelId,
+  // Real columns only; title is NOT NULL and tenant_id drives the org RLS
+  // policy (service-role writes bypass RLS but reads by the UI do not).
+  const { error } = await ctx.supabase.from('hitl_reviews').insert({
+    org_id: ctx.event.org_id, tenant_id: ctx.event.org_id,
+    entity_type: 'model', entity_id: p.modelId, model_id: p.modelId ?? null,
+    title: `HITL review: ${p.modelName ?? p.modelId ?? ctx.event.event_type}`,
     reason: `Auto-escalation from ${ctx.event.event_type}`,
-    priority: p.severity === 'CRITICAL' ? 'P0' : 'P1',
-    status: 'OPEN', blocks_deployment: true, created_by: 'EdgeHITLAgent',
+    trigger_reason: `Auto-escalation from ${ctx.event.event_type}`,
+    review_type: 'escalation',
+    priority: p.severity === 'CRITICAL' ? 'critical' : 'high',
+    status: 'pending', blocks_deployment: true,
+    metadata: { created_by: 'EdgeHITLAgent' },
   })
+  if (error) return { status: 'failed', error: error.message }
   return { status: 'succeeded' }
 }
 Object.defineProperty(hitlAgent, 'name', { value: 'HITLAgent' })

@@ -13,16 +13,26 @@ export async function hitlAgent(ctx: AgentContext): Promise<AgentResult> {
     ctx.event.event_type === 'HITL_REVIEW_REQUIRED'
   if (!isHighRisk) return { status: 'skipped', error: 'not-high-risk' }
 
+  // Real hitl_reviews columns only (title is NOT NULL; tenant_id drives the
+  // org RLS policy, so it must follow org_id explicitly here — the DB default
+  // resolves per-session and agents can run outside a user session).
+  const reason = (p.reason as string) ?? `Auto-escalation from ${ctx.event.event_type}`
   const review = await safeInsert<{ id: string }>('hitl_reviews', {
     org_id:      ctx.orgId,
+    tenant_id:   ctx.orgId,
     entity_type: p.modelId ? 'model' : 'risk',
     entity_id:   (p.modelId as string) ?? (p.riskId as string),
-    reason:      p.reason ?? `Auto-escalation from ${ctx.event.event_type}`,
-    priority:    p.severity === 'CRITICAL' ? 'P0' : 'P1',
-    status:      'OPEN',
-    assigned_team: 'compliance',
+    entity_name: (p.modelName as string) ?? (p.riskId as string) ?? null,
+    model_id:    (p.modelId as string) ?? null,
+    title:       `HITL review: ${p.modelName ?? p.riskId ?? ctx.event.event_type}`,
+    reason,
+    trigger_reason: reason,
+    review_type: 'escalation',
+    priority:    p.severity === 'CRITICAL' ? 'critical' : 'high',
+    risk_level:  p.severity === 'CRITICAL' ? 'critical' : 'high',
+    status:      'pending',
     blocks_deployment: true,
-    created_by:  'HITLAgent',
+    metadata:    { created_by: 'HITLAgent', event_type: ctx.event.event_type },
   })
 
   await safeInsert('tasks', {
