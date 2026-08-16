@@ -75,6 +75,9 @@ const VendorAssessments = lazy(() => import('./pages/vendors/VendorAssessments')
 const VendorSLAPage = lazy(() => import('./pages/vendors/VendorSLA'));
 const TPRMWorkspace = lazy(() => import('./pages/vendors/TPRMWorkspace'));
 const HITLReviewCenter = lazy(() => import('./pages/hitl/HITLReviewCenter'));
+const AiLiteracy = lazy(() => import('./pages/govern/AiLiteracy'));
+const AiAppsInventory = lazy(() => import('./pages/govern/AiAppsInventory'));
+const TrustCenterPage = lazy(() => import('./pages/govern/TrustCenterPage'));
 const HITLDetail = lazy(() => import('./pages/hitl/HITLDetail'));
 const AiAdvisor = lazy(() => import('./pages/AiAdvisor'))
 const PolicyTemplates = lazy(() => import('./pages/PolicyTemplates'))
@@ -397,6 +400,9 @@ export default function App() {
           <Route path="/bias-audits/:id" element={<RecordDeepLink to="/bias-audits" />} />
           <Route path="/evidence-sync" element={<Navigate to="/evidence-vault?tab=sync" replace />} />
           <Route path="/hitl" element={<HITLReviewCenter />} />
+          <Route path="/ai-literacy" element={<Suspense fallback={<Loading />}><AiLiteracy /></Suspense>} />
+          <Route path="/ai-apps" element={<Suspense fallback={<Loading />}><AiAppsInventory /></Suspense>} />
+          <Route path="/trust-center" element={<Suspense fallback={<Loading />}><TrustCenterPage /></Suspense>} />
           <Route path="/hitl/:id" element={<HITLDetail />} />
 
           {/* Trust Engine */}

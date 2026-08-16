@@ -7,7 +7,7 @@ import {
   Scales, Brain, Lightbulb, Briefcase, FlowArrow, DownloadSimple,
   ClipboardText, CalendarBlank, ChartPieSlice, Gauge, ClockCounterClockwise,
   FileMagnifyingGlass, Table, GlobeHemisphereWest, Lifebuoy, ListChecks,
-  FolderOpen, ShieldWarning,
+  FolderOpen, ShieldWarning, Megaphone, AppWindow,
 } from '@phosphor-icons/react'
 
 export interface CommandPaletteProps {
@@ -75,6 +75,9 @@ const ALL_ITEMS: SearchItem[] = [
   { group: 'Compliance & Regulatory', icon: FolderOpen, title: 'Evidence Vault', subtitle: 'Evidence, chain & sync', path: '/evidence-vault', keywords: ['evidence', 'documents', 'chain'] },
   { group: 'Compliance & Regulatory', icon: ClockCounterClockwise, title: 'Audit Trail', subtitle: 'Immutable audit log', path: '/audit-trail', keywords: ['audit', 'log'] },
   { group: 'Compliance & Regulatory', icon: Scroll, title: 'Policies', subtitle: 'Policy library', path: '/policies', keywords: ['policy', 'policies'] },
+  { group: 'Compliance & Regulatory', icon: GraduationCap, title: 'AI Literacy', subtitle: 'Training registry & competence tracking', path: '/ai-literacy', keywords: ['training', 'literacy', 'competence', 'education'] },
+  { group: 'Compliance & Regulatory', icon: Megaphone, title: 'Trust Center', subtitle: 'Public AI transparency page', path: '/trust-center', keywords: ['trust', 'transparency', 'badges', 'subprocessors'] },
+  { group: 'AI Assets', icon: AppWindow, title: 'AI Apps', subtitle: 'Third-party AI tools inventory', path: '/ai-apps', keywords: ['apps', 'shadow ai', 'tools', 'chatgpt', 'copilot'] },
   { group: 'Compliance & Regulatory', icon: GlobeHemisphereWest, title: 'Reg Radar', subtitle: 'Regulatory intelligence', path: '/reg-radar', keywords: ['regulatory', 'compliance updates'] },
   { group: 'Compliance & Regulatory', icon: FlowArrow, title: 'Compliance Autopilot', subtitle: 'Automated compliance', path: '/autopilot', keywords: ['autopilot', 'automation'] },
 
