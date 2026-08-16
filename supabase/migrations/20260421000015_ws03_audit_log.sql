@@ -8,7 +8,12 @@
 
 begin;
 
-create extension if not exists pgcrypto;
+-- pgcrypto is preinstalled on Supabase; the CLI's shadow-db role may not be
+-- allowed to (re)install extensions, so tolerate failure. Nothing below needs
+-- it on PG13+ (gen_random_uuid and sha256 are built-ins).
+do $$ begin
+  create extension if not exists pgcrypto;
+exception when others then null; end $$;
 
 -- ---------------------------------------------------------------------------
 -- 1. audit_log — the append-only table.
