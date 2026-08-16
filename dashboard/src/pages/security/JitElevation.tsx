@@ -1,77 +1,95 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
-// AC-06 + WS4 — JIT Elevation: request temporary privileged access with MFA gate.
+// AC-06 + WS4 — JIT Elevation: request temporary privileged access.
 import { useState, useEffect } from 'react'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select'
 import { supabase } from '../../lib/supabase'
 import { useRequiredOrgId } from '../../hooks/useTenant'
+import { CANONICAL_ROLES, ROLE_DISPLAY, type OrgRole } from '../../lib/rbac'
 import { Button } from '../../components/ui/button'
-import { Input } from '../../components/ui/input'
-import { Badge } from '../../components/ui/badge'
 import { toast } from 'sonner'
 import { ShieldCheck, Clock, AlertTriangle } from 'lucide-react'
 
-interface JitRequest {
+interface JitRow {
   id: string
-  requested_role: string
+  elevated_role: string
   reason: string
-  status: string
-  duration_mins: number
-  created_at: string
+  ticket_ref: string | null
+  requested_at: string
+  approved_at: string | null
   expires_at: string
+  revoked_at: string | null
 }
 
-interface SentinelRole {
-  slug: string
-  display_name: string
-  tier: number
+// The table has no `status` column — derive it from the timestamp columns.
+function deriveStatus(r: JitRow): 'pending' | 'active' | 'expired' | 'revoked' {
+  if (r.revoked_at) return 'revoked'
+  if (new Date(r.expires_at).getTime() <= Date.now()) return 'expired'
+  if (r.approved_at) return 'active'
+  return 'pending'
 }
+
+// The table CHECK requires expires_at <= requested_at + 8h → cap at 480 min.
+const DURATIONS = [15, 30, 60, 120, 240, 480]
 
 export default function JitElevation() {
   const orgId = useRequiredOrgId()
-  const [requests, setRequests] = useState<JitRequest[]>([])
-  const [roles, setRoles] = useState<SentinelRole[]>([])
-  const [form, setForm] = useState({ role: '', reason: '', duration: 60 })
-  const [loading, setLoading] = useState(false)
+  const [requests, setRequests] = useState<JitRow[]>([])
+  const [form, setForm] = useState({ role: '', reason: '', ticket: '', duration: 60 })
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(false)
 
   useEffect(() => {
     if (!orgId) return
-    Promise.all([
-      supabase.from('jit_elevation_requests').select('*').eq('org_id', orgId).order('created_at', { ascending: false }).limit(20),
-      supabase.from('sentinel_roles').select('*').order('tier').limit(20),
-    ]).then(([reqs, rls]) => {
-      setRequests(reqs.data ?? [])
-      setRoles((rls.data ?? []).filter((r: SentinelRole) => r.tier <= 3))
-    })
+    let cancelled = false
+    setLoading(true)
+    setError(null)
+    supabase
+      .from('jit_elevations')
+      .select('id, elevated_role, reason, ticket_ref, requested_at, approved_at, expires_at, revoked_at')
+      .eq('org_id', orgId)
+      .order('requested_at', { ascending: false })
+      .limit(50)
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) { setError(error.message); setLoading(false); return }
+        setRequests((data ?? []) as JitRow[])
+        setLoading(false)
+      })
+    return () => { cancelled = true }
   }, [orgId])
 
   async function submitRequest() {
-    if (!form.role || !form.reason) { toast.error('Role and reason are required'); return }
-    setLoading(true)
+    if (!form.role || !form.reason.trim()) { toast.error('Role and reason are required'); return }
+    setSubmitting(true)
     const { data: user } = await supabase.auth.getUser()
-    const { data, error } = await supabase.from('jit_elevation_requests').insert({
+    const requestedAt = new Date()
+    const expiresAt = new Date(requestedAt.getTime() + form.duration * 60_000)
+    const { data, error } = await supabase.from('jit_elevations').insert({
       org_id: orgId,
-      requester_id: user.user?.id,
-      requested_role: form.role,
+      user_id: user.user?.id,
+      elevated_role: form.role,
       reason: form.reason,
-      duration_mins: form.duration,
-      status: 'pending',
-    }).select().single()
-    setLoading(false)
+      ticket_ref: form.ticket || null,
+      expires_at: expiresAt.toISOString(),
+    }).select('id, elevated_role, reason, ticket_ref, requested_at, approved_at, expires_at, revoked_at').single()
+    setSubmitting(false)
     if (error) { toast.error(error.message); return }
-    setRequests(prev => [data, ...prev])
+    setRequests(prev => [data as JitRow, ...prev])
     setShowForm(false)
-    setForm({ role: '', reason: '', duration: 60 })
-    toast.success('JIT elevation request submitted — awaiting approval')
+    setForm({ role: '', reason: '', ticket: '', duration: 60 })
+    toast.success('JIT elevation request submitted')
   }
 
   const statusColor = (s: string) => ({
     pending: 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]',
-    approved: 'bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]',
-    denied: 'bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]',
+    active: 'bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]',
     expired: 'bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]',
-    revoked: 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]',
+    revoked: 'bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]',
   } as Record<string, string>)[s] ?? 'bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]'
+
+  const roleLabel = (slug: string) => ROLE_DISPLAY[slug as OrgRole]?.label ?? slug
 
   return (
     <main id="main-content" className="p-6 max-w-4xl mx-auto space-y-6">
@@ -81,15 +99,15 @@ export default function JitElevation() {
             <ShieldCheck className="text-[#368F4D]" size={22} />
             JIT Elevation
           </h1>
-          <p className="text-[hsl(var(--text-3))] text-sm mt-1">Request temporary privileged access with MFA verification and audit trail.</p>
+          <p className="text-[hsl(var(--text-3))] text-sm mt-1">Request time-boxed privileged access. Every grant is org-scoped and auto-expires.</p>
         </div>
         <Button onClick={() => setShowForm(true)} size="sm">Request Elevation</Button>
       </div>
 
-      {/* Info banner */}
+      {/* Info banner — reflects what the schema actually enforces */}
       <div className="flex items-start gap-3 p-3 bg-[hsl(var(--s-in-bg))] border border-[hsl(var(--s-in-br))] rounded text-sm text-[hsl(var(--s-in-tx))]">
         <AlertTriangle size={16} className="flex-shrink-0 mt-0.5" />
-        <p>All JIT elevations are MFA-verified, audit-logged, and automatically expire. Maximum duration: 8 hours. Tier 1 roles require CISO approval.</p>
+        <p>Elevations are org-scoped, recorded with a requested/expiry timestamp, and automatically expire. Maximum duration is 8 hours. Approval and revocation are performed by org or security admins.</p>
       </div>
 
       {/* Request form */}
@@ -102,7 +120,7 @@ export default function JitElevation() {
               <Select value={form.role || undefined} onValueChange={v => setForm(f => ({ ...f, role: v }))}>
                 <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue placeholder="Select role..." /></SelectTrigger>
                 <SelectContent style={{ borderRadius: 0 }}>
-                  {roles.map(r => <SelectItem key={r.slug} value={r.slug}>{r.display_name} (Tier {r.tier})</SelectItem>)}
+                  {CANONICAL_ROLES.map(r => <SelectItem key={r} value={r}>{ROLE_DISPLAY[r].label}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
@@ -111,10 +129,16 @@ export default function JitElevation() {
               <Select value={String(form.duration)} onValueChange={v => setForm(f => ({ ...f, duration: +v }))}>
                 <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
                 <SelectContent style={{ borderRadius: 0 }}>
-                  {[15, 30, 60, 120, 240, 480].map(d => <SelectItem key={d} value={String(d)}>{d} min {d >= 60 ? `(${d/60}h)` : ''}</SelectItem>)}
+                  {DURATIONS.map(d => <SelectItem key={d} value={String(d)}>{d} min {d >= 60 ? `(${d / 60}h)` : ''}</SelectItem>)}
                 </SelectContent>
               </Select>
             </div>
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-medium text-[hsl(var(--text-3))]" htmlFor="jit-ticket">Ticket Reference (optional)</label>
+            <input id="jit-ticket" value={form.ticket} onChange={e => setForm(f => ({ ...f, ticket: e.target.value }))}
+              placeholder="e.g. INC-1234"
+              className="w-full border border-[hsl(var(--border))] rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#368F4D]" />
           </div>
           <div className="space-y-1">
             <label className="text-xs font-medium text-[hsl(var(--text-3))]" htmlFor="jit-reason">Business Justification</label>
@@ -124,7 +148,7 @@ export default function JitElevation() {
               className="w-full border border-[hsl(var(--border))] rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#368F4D] resize-none" />
           </div>
           <div className="flex gap-2">
-            <Button onClick={submitRequest} disabled={loading} size="sm">{loading ? 'Submitting...' : 'Submit Request'}</Button>
+            <Button onClick={submitRequest} disabled={submitting} size="sm">{submitting ? 'Submitting...' : 'Submit Request'}</Button>
             <Button onClick={() => setShowForm(false)} variant="outline" size="sm">Cancel</Button>
           </div>
         </div>
@@ -135,30 +159,40 @@ export default function JitElevation() {
         <div className="p-4 border-b border-[hsl(var(--border))]">
           <h2 className="font-medium text-[hsl(var(--text-1))]">Elevation Request History</h2>
         </div>
-        {requests.length === 0 ? (
+        {loading ? (
+          <p className="p-6 text-center text-[hsl(var(--text-4))] text-sm">Loading elevation requests…</p>
+        ) : error ? (
+          <div className="p-6 text-center">
+            <p className="text-sm font-medium text-[hsl(var(--s-er-tx))]">Failed to load elevation requests</p>
+            <p className="text-xs text-[hsl(var(--text-4))] mt-1">{error}</p>
+          </div>
+        ) : requests.length === 0 ? (
           <p className="p-6 text-center text-[hsl(var(--text-4))] text-sm">No JIT elevation requests yet.</p>
         ) : (
           <table className="w-full text-sm">
             <thead className="bg-[hsl(var(--bg-muted))] text-xs text-[hsl(var(--text-3))]">
-              <tr>{['Role','Duration','Reason','Status','Requested','Expires'].map(h => (
+              <tr>{['Role', 'Ticket', 'Reason', 'Status', 'Requested', 'Expires'].map(h => (
                 <th key={h} className="px-4 py-2.5 text-left font-medium">{h}</th>
               ))}</tr>
             </thead>
             <tbody>
-              {requests.map(r => (
-                <tr key={r.id} className="border-t border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-muted))]">
-                  <td className="px-4 py-2.5 font-mono text-xs text-[hsl(var(--text-2))]">{r.requested_role}</td>
-                  <td className="px-4 py-2.5 text-xs">
-                    <span className="flex items-center gap-1"><Clock size={11} />{r.duration_mins}m</span>
-                  </td>
-                  <td className="px-4 py-2.5 text-xs text-[hsl(var(--text-3))] max-w-[200px] truncate">{r.reason}</td>
-                  <td className="px-4 py-2.5">
-                    <span className={`text-xs px-2 py-0.5 rounded font-medium capitalize ${statusColor(r.status)}`}>{r.status}</span>
-                  </td>
-                  <td className="px-4 py-2.5 text-xs text-[hsl(var(--text-4))]">{new Date(r.created_at).toLocaleString()}</td>
-                  <td className="px-4 py-2.5 text-xs text-[hsl(var(--text-4))]">{new Date(r.expires_at).toLocaleString()}</td>
-                </tr>
-              ))}
+              {requests.map(r => {
+                const status = deriveStatus(r)
+                return (
+                  <tr key={r.id} className="border-t border-[hsl(var(--border))] hover:bg-[hsl(var(--bg-muted))]">
+                    <td className="px-4 py-2.5 text-xs text-[hsl(var(--text-2))]">{roleLabel(r.elevated_role)}</td>
+                    <td className="px-4 py-2.5 text-xs font-mono text-[hsl(var(--text-3))]">{r.ticket_ref || '—'}</td>
+                    <td className="px-4 py-2.5 text-xs text-[hsl(var(--text-3))] max-w-[200px] truncate">{r.reason}</td>
+                    <td className="px-4 py-2.5">
+                      <span className={`text-xs px-2 py-0.5 rounded font-medium capitalize ${statusColor(status)}`}>{status}</span>
+                    </td>
+                    <td className="px-4 py-2.5 text-xs text-[hsl(var(--text-4))]">{new Date(r.requested_at).toLocaleString()}</td>
+                    <td className="px-4 py-2.5 text-xs text-[hsl(var(--text-4))]">
+                      <span className="flex items-center gap-1"><Clock size={11} />{new Date(r.expires_at).toLocaleString()}</span>
+                    </td>
+                  </tr>
+                )
+              })}
             </tbody>
           </table>
         )}
