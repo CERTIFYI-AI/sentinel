@@ -92,11 +92,25 @@ export default function RoPA() {
         {r.purpose && <div className="max-w-md truncate text-xs text-[hsl(var(--text-4))]">{r.purpose}</div>}
       </div>
     ) },
-    { key: 'legalBasis', header: 'Legal basis', sortable: true, render: (r) => (
-      <span className="text-xs text-[hsl(var(--text-2))]">
-        {r.legalBasis ? (LEGAL_BASIS_LABEL[r.legalBasis] ?? r.legalBasis) : '—'}
-      </span>
-    ) },
+    { key: 'legalBasis', header: 'Legal basis', sortable: true, render: (r) => {
+      if (!r.legalBasis) return <span className="text-xs text-[hsl(var(--text-4))]">—</span>
+      // Consent-based processing must be able to reach the consent evidence
+      // that makes it lawful (Art. 7(1) — the controller must demonstrate it).
+      if (r.legalBasis === 'consent') return (
+        <button
+          className="text-xs text-[hsl(var(--brand))] hover:underline"
+          onClick={(e) => { e.stopPropagation(); nav('/consent-management') }}
+          title="Relies on consent — open the consent register"
+        >
+          {LEGAL_BASIS_LABEL.consent}
+        </button>
+      )
+      return (
+        <span className="text-xs text-[hsl(var(--text-2))]">
+          {LEGAL_BASIS_LABEL[r.legalBasis] ?? r.legalBasis}
+        </span>
+      )
+    } },
     { key: 'dataSubjects', header: 'Data subjects', render: (r) => (
       <span className="text-xs text-[hsl(var(--text-3))]">{r.dataSubjects || '—'}</span>
     ) },
@@ -141,6 +155,7 @@ export default function RoPA() {
         actions={
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => nav('/dpia')}>DPIA</Button>
+            <Button variant="ghost" size="sm" onClick={() => nav('/consent-management')}>Consent</Button>
             <Button variant="ghost" size="sm" onClick={() => nav('/tia')}>Transfer Assessments</Button>
             {can('create') && <Button size="sm" icon={<Plus />} onClick={openCreate}>Add Activity</Button>}
           </div>

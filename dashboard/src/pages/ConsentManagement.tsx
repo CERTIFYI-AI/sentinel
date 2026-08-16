@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { CheckSquare, MagnifyingGlass, Plus, Eye, X, Export, Users, Warning, Pencil, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { useConsentRecordsData } from '@/hooks/useConsentRecordsData'
+import { CONSENT_STATUSES, type ConsentRecord } from '@/services/consentRecordsService'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 
 function exportCsv(rows: any[], filename: string) {
@@ -13,40 +14,27 @@ function exportCsv(rows: any[], filename: string) {
 }
 
 
-type ConsentStatus = 'Active' | 'Withdrawn' | 'Expired' | 'Pending'
+// Values are those stored in consent_records; labels are rendered separately.
+type ConsentStatus = (typeof CONSENT_STATUSES)[number]
+const STATUS_LABEL: Record<string, string> = {
+  granted: 'Granted', withdrawn: 'Withdrawn', expired: 'Expired', pending: 'Pending',
+}
 type LegalBasis = 'Consent' | 'Legitimate Interest' | 'Contract' | 'Legal Obligation' | 'Vital Interest' | 'Public Task'
 
-interface ConsentRecord {
-  id: string
-  subject: string
-  email: string
-  consentDate: string
-  expiryDate: string
-  status: ConsentStatus
-  purposes: string[]
-  legalBasis: LegalBasis
-  aiSystems: string[]
-  dataCategories: string[]
-  version: string
-  ipAddress: string
-  channel: string
-  withdrawalDate?: string
-  withdrawalReason?: string
-}
 
 
 
-const STATUS_STYLE: Record<ConsentStatus, { bg: string; color: string }> = {
-  Active: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-  Withdrawn: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  Expired: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  Pending: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
+  granted: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  withdrawn: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  expired: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
+  pending: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
 }
 
 const BLANK: Omit<ConsentRecord, 'id'> = {
-  subject: '', email: '', consentDate: '', expiryDate: '', status: 'Pending',
-  purposes: [], legalBasis: 'Consent', aiSystems: [], dataCategories: [],
-  version: '2.3', ipAddress: '', channel: 'Web Portal',
+  subject: '', email: '', consentDate: null, expiryDate: null, status: 'pending',
+  purposes: [], legalBasis: 'consent', aiSystems: [], dataCategories: [],
+  linkedModelIds: [], version: '', ipAddress: '', channel: 'Web Portal',
 }
 
 export default function ConsentManagement() {
@@ -62,15 +50,16 @@ export default function ConsentManagement() {
   if (isLoading) return <PageSkeleton />
 
   const filtered = records.filter(r => {
-    const ms = r.subject.toLowerCase().includes(search.toLowerCase()) || r.id.toLowerCase().includes(search.toLowerCase()) || r.email.toLowerCase().includes(search.toLowerCase())
+    const q = search.toLowerCase()
+    const ms = (r.subject ?? '').toLowerCase().includes(q) || r.id.toLowerCase().includes(q) || (r.email ?? '').toLowerCase().includes(q)
     return ms && (statusFilter === 'All' || r.status === statusFilter)
   })
 
   const stats = {
-    active: records.filter(r => r.status === 'Active').length,
-    withdrawn: records.filter(r => r.status === 'Withdrawn').length,
-    expired: records.filter(r => r.status === 'Expired').length,
-    pending: records.filter(r => r.status === 'Pending').length,
+    active: records.filter(r => r.status === 'granted').length,
+    withdrawn: records.filter(r => r.status === 'withdrawn').length,
+    expired: records.filter(r => r.status === 'expired').length,
+    pending: records.filter(r => r.status === 'pending').length,
   }
 
   const handleCreate = async () => {
@@ -95,8 +84,8 @@ export default function ConsentManagement() {
   }
 
   const handleWithdraw = async (id: string) => {
-    await saveConsentRecords({ id, status: 'Withdrawn', withdrawalDate: new Date().toISOString().slice(0,10) })
-    setSelected(prev => prev?.id === id ? { ...prev, status: 'Withdrawn', withdrawalDate: '2026-04-10' } : prev)
+    await saveConsentRecords({ id, status: 'withdrawn', withdrawalDate: new Date().toISOString().slice(0,10) })
+    setSelected(prev => prev?.id === id ? { ...prev, status: 'withdrawn', withdrawalDate: '2026-04-10' } : prev)
     toast.success('Consent withdrawn and AI systems notified')
   }
 
@@ -160,16 +149,16 @@ export default function ConsentManagement() {
               <tr key={r.id} className="border-b border-[hsl(var(--border))] hover:bg-raised">
                 <td className="px-3 py-2.5 font-mono text-xs text-[hsl(var(--brand))] font-medium">{r.id}</td>
                 <td className="px-3 py-2.5">
-                  <p className="font-medium text-[hsl(var(--text-1))]">{r.subject}</p>
-                  <p className="text-xs text-[hsl(var(--text-4))]">{r.email}</p>
+                  <p className="font-medium text-[hsl(var(--text-1))]">{r.subject || '—'}</p>
+                  <p className="text-xs text-[hsl(var(--text-4))]">{r.email || '—'}</p>
                 </td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.legalBasis}</td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.purposes.length} purpose{r.purposes.length !== 1 ? 's' : ''}</td>
                 <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.aiSystems.length} system{r.aiSystems.length !== 1 ? 's' : ''}</td>
-                <td className="px-3 py-2.5"><span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[r.status as ConsentStatus] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{r.status}</span></td>
-                <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.consentDate}</td>
-                <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.expiryDate}</td>
-                <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.channel}</td>
+                <td className="px-3 py-2.5"><span className="px-2 py-0.5 rounded text-xs font-medium" style={STATUS_STYLE[r.status as ConsentStatus] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{STATUS_LABEL[r.status] ?? r.status}</span></td>
+                <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.consentDate?.slice(0, 10) || '—'}</td>
+                <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.expiryDate?.slice(0, 10) || '—'}</td>
+                <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.channel || '—'}</td>
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-1">
                     <button onClick={() => { setSelected(r); setEditMode(false) }} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))]"><Eye size={13} /></button>
@@ -280,7 +269,7 @@ export default function ConsentManagement() {
                         ))}
                         {selected.aiSystems.length === 0 && <p className="text-xs text-[hsl(var(--text-4))]">No AI systems linked</p>}
                       </div>
-                      {selected.status === 'Withdrawn' && (
+                      {selected.status === 'withdrawn' && (
                         <div className="p-3 bg-[hsl(var(--s-er-bg))] border border-[hsl(var(--destructive)/0.3)] mt-2">
                           <p className="text-xs font-semibold text-[hsl(var(--destructive))] mb-1">Processing Must Cease</p>
                           <p className="text-xs text-[hsl(var(--text-2))]">All {selected.aiSystems.length} AI system(s) above must immediately stop processing data for this subject per GDPR Art. 7(3).</p>
@@ -316,7 +305,7 @@ export default function ConsentManagement() {
                   )}
 
                   <div className="flex gap-2 pt-2 border-t border-[hsl(var(--border))]">
-                    {selected.status === 'Active' && (
+                    {selected.status === 'granted' && (
                       <button onClick={() => handleWithdraw(selected.id)} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]">
                         <Warning size={13} /> Withdraw
                       </button>
@@ -385,12 +374,12 @@ export default function ConsentManagement() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Consent Date</label>
-                  <input type="date" value={form.consentDate} onChange={e => setForm(p => ({ ...p, consentDate: e.target.value }))}
+                  <input type="date" value={form.consentDate ?? ''} onChange={e => setForm(p => ({ ...p, consentDate: e.target.value }))}
                     className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Expiry Date</label>
-                  <input type="date" value={form.expiryDate} onChange={e => setForm(p => ({ ...p, expiryDate: e.target.value }))}
+                  <input type="date" value={form.expiryDate ?? ''} onChange={e => setForm(p => ({ ...p, expiryDate: e.target.value }))}
                     className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
               </div>

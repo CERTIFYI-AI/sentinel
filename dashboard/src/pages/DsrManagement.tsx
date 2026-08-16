@@ -3,6 +3,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { UserList, MagnifyingGlass, Plus, Eye, X, Export, Funnel, Pencil, Trash, Clock, CheckCircle, Warning } from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { useDsrRequestsData } from '@/hooks/useDsrRequestsData'
+import type { DsrRequest as DSRRequest } from '@/services/dsrRequestsService'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow'
@@ -21,27 +22,15 @@ function exportCsv(rows: any[], filename: string) {
 type DSRType = 'Access' | 'Erasure' | 'Rectification' | 'Portability' | 'Objection' | 'Restriction'
 type DSRStatus = 'Pending' | 'In Review' | 'Completed' | 'Rejected' | 'Overdue'
 
-interface DSRRequest {
-  id: string
-  type: DSRType
-  subject: string
-  email: string
-  submittedDate: string
-  dueDate: string
-  status: DSRStatus
-  regulation: string
-  aiSystemsAffected: string[]
-  assignee: string
-  notes: string
-  priority: 'High' | 'Medium' | 'Low'
-  daysRemaining: number
-}
 
 
 const BLANK: Omit<DSRRequest, 'id'> = {
-  type: 'Access', subject: '', email: '', submittedDate: '', dueDate: '',
-  status: 'Pending', regulation: 'GDPR Art. 15', aiSystemsAffected: [],
-  assignee: 'Unassigned', notes: '', priority: 'Medium', daysRemaining: 30,
+  requesterName: '', requestType: 'access',
+  type: 'access', subject: '', email: '', submittedDate: null, dueDate: null,
+  status: 'new', regulation: 'GDPR Art. 15', aiSystemsAffected: [],
+  linkedModelIds: [], assignee: '', notes: '', priority: 'medium',
+  // Derived from dueDate at read time; never authored here.
+  daysRemaining: null,
 }
 
 const STATUS_STYLE: Record<DSRStatus, { bg: string; color: string }> = {
@@ -51,7 +40,7 @@ const STATUS_STYLE: Record<DSRStatus, { bg: string; color: string }> = {
   Rejected: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
   Overdue: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
 }
-const TYPE_TOKEN: Record<DSRType, { bg: string; tx: string; br: string }> = {
+const TYPE_TOKEN: Record<string, { bg: string; tx: string; br: string }> = {
   Access:        { bg: 'hsl(var(--s-in-bg))', tx: 'hsl(var(--s-in-tx))', br: 'hsl(var(--s-in-br))' },
   Erasure:       { bg: 'hsl(var(--s-er-bg))', tx: 'hsl(var(--s-er-tx))', br: 'hsl(var(--s-er-br))' },
   Rectification: { bg: 'hsl(var(--s-ok-bg))', tx: 'hsl(var(--s-ok-tx))', br: 'hsl(var(--s-ok-br))' },
@@ -81,9 +70,9 @@ export default function DsrManagement() {
   if (isLoading) return <PageSkeleton />
 
   const filtered = records.filter(r => {
-    const ms = r.subject.toLowerCase().includes(search.toLowerCase()) ||
+    const ms = (r.subject ?? '').toLowerCase().includes(search.toLowerCase()) ||
       r.id.toLowerCase().includes(search.toLowerCase()) ||
-      r.email.toLowerCase().includes(search.toLowerCase())
+      (r.email ?? '').toLowerCase().includes(search.toLowerCase())
     const ss = statusFilter === 'All' || r.status === statusFilter
     const ts = typeFilter === 'All' || r.type === typeFilter
     return ms && ss && ts
@@ -120,10 +109,8 @@ export default function DsrManagement() {
   }
 
   const openEdit = (r: DSRRequest) => {
-    setForm({ type: r.type, subject: r.subject, email: r.email, submittedDate: r.submittedDate,
-      dueDate: r.dueDate, status: r.status, regulation: r.regulation,
-      aiSystemsAffected: r.aiSystemsAffected, assignee: r.assignee, notes: r.notes,
-      priority: r.priority, daysRemaining: r.daysRemaining })
+    const { id: _id, ...rest } = r
+    setForm(rest)
     setEditMode(true)
   }
 
@@ -212,12 +199,23 @@ export default function DsrManagement() {
                   <RiskBadge level={r.priority === 'High' ? 'HIGH' : r.priority === 'Medium' ? 'MEDIUM' : 'LOW'} showIcon={false} />
                 </td>
                 <td className="px-2.5 py-1.5">
-                  <p className={`text-[11px] font-mono font-medium ${r.daysRemaining < 0 ? 'text-[hsl(var(--destructive))]' : r.daysRemaining <= 7 ? 'text-[hsl(var(--s-wn-tx))]' : 'text-[hsl(var(--text-2))]'}`}>
-                    {r.dueDate}
+                  {/* daysRemaining is derived from due_date; null means no
+                      statutory deadline was recorded — shown as "—", not 0. */}
+                  <p className={`text-[11px] font-mono font-medium ${
+                    r.daysRemaining == null ? 'text-[hsl(var(--text-4))]'
+                      : r.daysRemaining < 0 ? 'text-[hsl(var(--destructive))]'
+                      : r.daysRemaining <= 7 ? 'text-[hsl(var(--s-wn-tx))]'
+                      : 'text-[hsl(var(--text-2))]'}`}>
+                    {r.dueDate?.slice(0, 10) ?? '—'}
                   </p>
-                  <p className="text-[10px] text-[hsl(var(--text-4))]">{r.daysRemaining < 0 ? `${Math.abs(r.daysRemaining)}d overdue` : r.daysRemaining === 0 ? 'Done' : `${r.daysRemaining}d`}</p>
+                  <p className="text-[10px] text-[hsl(var(--text-4))]">
+                    {r.daysRemaining == null ? 'no deadline set'
+                      : r.daysRemaining < 0 ? `${Math.abs(r.daysRemaining)}d overdue`
+                      : r.daysRemaining === 0 ? 'due today'
+                      : `${r.daysRemaining}d left`}
+                  </p>
                 </td>
-                <td className="px-2.5 py-1.5 text-[10px] text-[hsl(var(--text-3))]">{r.assignee}</td>
+                <td className="px-2.5 py-1.5 text-[10px] text-[hsl(var(--text-3))]">{r.assignee || '—'}</td>
                 <td className="px-2.5 py-1.5">
                   <div className="flex items-center gap-0.5">
                     <button onClick={() => { setSelected(r); setEditMode(false) }} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand-subtle))]"><Eye size={12} /></button>
@@ -266,7 +264,7 @@ export default function DsrManagement() {
                   {drawerTab === 'overview' && (
                     <>
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        {(() => { const tt = TYPE_TOKEN[selected.type] || TYPE_FALLBACK; return (
+                        {(() => { const tt = TYPE_TOKEN[selected.type ?? ''] || TYPE_FALLBACK; return (
                           <span className="px-1.5 py-0.5 text-[10px] font-semibold border" style={{ background: tt.bg, color: tt.tx, borderColor: tt.br }}>{selected.type}</span>
                         ); })()}
                         <StatusPill status={selected.status} />
@@ -326,14 +324,23 @@ export default function DsrManagement() {
                   {drawerTab === 'sla' && (
                     <>
                       <div className="p-3 border" style={
-                        selected.daysRemaining < 0
+                        selected.daysRemaining == null
+                          ? { background: 'hsl(var(--bg-muted))', borderColor: 'hsl(var(--border))' }
+                          : selected.daysRemaining < 0
                           ? { background: 'hsl(var(--s-er-bg))', borderColor: 'hsl(var(--s-er-br))' }
                           : selected.daysRemaining <= 7
                           ? { background: 'hsl(var(--s-wn-bg))', borderColor: 'hsl(var(--s-wn-br))' }
                           : { background: 'hsl(var(--s-ok-bg))', borderColor: 'hsl(var(--s-ok-br))' }
                       }>
-                        <p className="text-xl font-bold font-mono" style={{ color: selected.daysRemaining < 0 ? 'hsl(var(--s-er-tx))' : selected.daysRemaining <= 7 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' }}>
-                          {selected.daysRemaining < 0 ? `${Math.abs(selected.daysRemaining)}d overdue` : selected.daysRemaining === 0 ? 'Due today' : `${selected.daysRemaining}d remaining`}
+                        <p className="text-xl font-bold font-mono" style={{ color:
+                          selected.daysRemaining == null ? 'hsl(var(--text-3))'
+                            : selected.daysRemaining < 0 ? 'hsl(var(--s-er-tx))'
+                            : selected.daysRemaining <= 7 ? 'hsl(var(--s-wn-tx))'
+                            : 'hsl(var(--s-ok-tx))' }}>
+                          {selected.daysRemaining == null ? 'No deadline recorded'
+                            : selected.daysRemaining < 0 ? `${Math.abs(selected.daysRemaining)}d overdue`
+                            : selected.daysRemaining === 0 ? 'Due today'
+                            : `${selected.daysRemaining}d remaining`}
                         </p>
                         <p className="text-[10px] text-[hsl(var(--text-4))] mt-1 font-mono">SLA: {selected.dueDate} | {selected.regulation}</p>
                       </div>
@@ -477,7 +484,7 @@ export default function DsrManagement() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs text-[hsl(var(--text-4))]">Due Date</label>
-                  <input type="date" value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))}
+                  <input type="date" value={form.dueDate ?? ''} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))}
                     className="w-full mt-0.5 px-3 py-2 border border-[hsl(var(--border))] bg-surface text-sm outline-none focus:border-[hsl(var(--brand))]" />
                 </div>
                 <div>

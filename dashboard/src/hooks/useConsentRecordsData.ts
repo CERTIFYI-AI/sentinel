@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchAllConsentRecords, fetchConsentRecordsById, upsertConsentRecords, deleteConsentRecords } from '@/services/consentRecordsService'
+import { fetchAllConsentRecords, fetchConsentRecord, upsertConsentRecords, deleteConsentRecords } from '@/services/consentRecordsService'
 import { toast } from 'sonner'
 
 export function useConsentRecordsData(filters: Record<string, any> = {}) {
@@ -34,7 +34,7 @@ export function useConsentRecordsData(filters: Record<string, any> = {}) {
 export function useConsentRecordsById(id: string) {
   return useQuery({
     queryKey: ['consentRecords', id],
-    queryFn: () => fetchConsentRecordsById(id),
+    queryFn: () => fetchConsentRecord(id),
     enabled: !!id,
     staleTime: 30_000,
   })
