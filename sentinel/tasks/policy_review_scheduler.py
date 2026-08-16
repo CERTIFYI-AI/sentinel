@@ -31,6 +31,11 @@ async def run_policy_review_reminders(db_pool):
                         )
                         title = f"Policy Review Due: {policy['title']}"
                         body = f"Policy '{policy['title']}' (v{policy['version']}) is {overdue_note}."
+                        # SQL is a literal with $n binds; title/body are DATA
+                        # passed as bind parameters, never concatenated into
+                        # the statement. The asyncpg-sqli rule taints any
+                        # f-string-derived argument regardless.
+                        # nosemgrep: python.lang.security.audit.sqli.asyncpg-sqli.asyncpg-sqli
                         await db.execute(
                             """INSERT INTO notifications(tenant_id, type, title, body, metadata, created_at)
                                VALUES($1, $2, $3, $4, $5, NOW())

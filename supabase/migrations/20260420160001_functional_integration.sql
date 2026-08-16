@@ -20,7 +20,7 @@ BEGIN
   -- Common helpers (noop if already present via 006_core.sql)
   create extension if not exists pgcrypto;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 create or replace function public.set_updated_at() returns trigger
@@ -32,7 +32,7 @@ DO $seed$
 BEGIN
   -- get_org_id() already exists from 006_core.sql;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 fall-back define if missing
@@ -127,7 +127,7 @@ BEGIN
   alter table public.red_team_findings
     add column if not exists campaign_id uuid references public.red_team_campaigns(id) on delete cascade;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -136,7 +136,7 @@ BEGIN
     add column if not exists incident_id uuid,
     add column if not exists due_date timestamptz;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -147,7 +147,7 @@ BEGIN
     add column if not exists decision text,
     add column if not exists approver_id uuid;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -156,7 +156,7 @@ BEGIN
     add column if not exists rule jsonb default '{}'::jsonb,
     add column if not exists breach_count integer default 0;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -165,7 +165,7 @@ BEGIN
     add column if not exists version text default '1.0.0',
     add column if not exists content text;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -175,7 +175,7 @@ BEGIN
     add column if not exists last_used_at timestamptz,
     add column if not exists scopes text[] default '{}';
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -185,7 +185,7 @@ BEGIN
     add column if not exists sha256 text,
     add column if not exists mime_type text;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -194,7 +194,7 @@ BEGIN
     add column if not exists head_user_id uuid,
     add column if not exists parent_id uuid references public.departments(id);
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 -- Realtime publication: ensure all functional tables are in supabase_realtime
@@ -283,19 +283,19 @@ BEGIN
   -- Grant usage to authenticated + anon (anon is still RLS-guarded)
   grant usage on schema public to anon, authenticated;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   grant select, insert, update, delete on all tables in schema public to authenticated;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   grant select on all tables in schema public to anon;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_integration.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
 END $seed$;

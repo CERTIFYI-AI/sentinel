@@ -1,5 +1,5 @@
 -- Close the anon exposure (64 tables had `for all to anon,authenticated
--- using(true)` policies, and 20260420_functional_integration.sql granted
+-- using(true)` policies, and 20260420160001_functional_integration.sql granted
 -- blanket anon SELECT). Applied live via Supabase MCP on 2026-08-13.
 -- Tables with an org_id column get org isolation; legacy doc tables with no
 -- scoping column become authenticated-only. Org defaults added where missing.

@@ -1,8 +1,17 @@
 # supabase/migrations — replay contract
 
 Migrations apply in **lexicographic filename order** (`006_…`, `007_…`, `040_…`,
-`050_…`, then `2026….sql`). Two invariants keep `supabase db reset` and the
+`050_…`, then `2026….sql`). Four invariants keep `supabase db reset` and the
 `schema-drift` CI job green:
+
+0. **Every file needs a unique version prefix** (the digits before the first
+   `_`). The Supabase CLI records that prefix in
+   `supabase_migrations.schema_migrations`, so two files sharing a bare date
+   (`20260417_a.sql`, `20260417_b.sql`) abort the replay with a duplicate-key
+   error. Same-day migrations use full 14-digit versions
+   (`20260417000001_a.sql`, `20260417000002_b.sql`). Rollback scripts live in
+   `_rollbacks/` — never in this directory, or a from-zero replay would apply
+   them as forward migrations.
 
 1. **Never reference a table before the file that creates it.** If you must
    extend a table that appears later in the order, guard the statement with

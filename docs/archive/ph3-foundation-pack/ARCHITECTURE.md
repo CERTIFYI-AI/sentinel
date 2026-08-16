@@ -15,7 +15,7 @@ _Consolidated PR covering audit chain app layer, form framework, observability, 
 
 Postgres infrastructure (`audit_log`, `audit_log_head`,
 `audit_log_append()`, `audit_log_verify_chain()`) was already landed in
-`20260421_ws03_audit_log.sql`. This PR delivers the app layer:
+`20260421000015_ws03_audit_log.sql`. This PR delivers the app layer:
 
 - **`workers/middleware/withAudit.ts`** — HOC wrapping a Worker handler.
   Emits one audit row per request, fire-and-forget, outcome derived

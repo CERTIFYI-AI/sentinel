@@ -194,4 +194,4 @@ canonical id.
 Implementations: `dashboard/src/agents/sentinels/*` (client, RLS-scoped),
 `supabase/functions/mesh-sentinels/index.ts` (server, service-role,
 explicitly org-scoped per query), scheduled by the guarded pg_cron block in
-`supabase/migrations/20260816_agentic_mesh_fleet.sql`.
+`supabase/migrations/20260816000001_agentic_mesh_fleet.sql`.

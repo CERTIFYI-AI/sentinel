@@ -1,4 +1,4 @@
--- 20260816_mcp_gateway_foundation.sql
+-- 20260816000004_mcp_gateway_foundation.sql
 -- Applied live to Supabase project vhparvughsygyknblkzt on 2026-08-16.
 --
 -- MCP gateway foundation. The MCP Overview / Servers / Tool Catalog pages ran

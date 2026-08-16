@@ -1,4 +1,4 @@
--- 20260816_integrations_canonical.sql
+-- 20260816000003_integrations_canonical.sql
 -- Applied live to Supabase project vhparvughsygyknblkzt on 2026-08-16.
 --
 -- Integrations & connectivity foundation:

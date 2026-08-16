@@ -18,10 +18,10 @@
 -- and delete this file in the same change. See supabase/migrations/README.md.
 --
 -- Also defines current_user_org_id() early: files that sort before
--- 20260813_repo_org_resolver.sql already call it (evals org isolation,
+-- 20260813000013_repo_org_resolver.sql already call it (evals org isolation,
 -- audit_log default, close_anon_rls), which broke replay the same way.
 
--- Org resolver (matches 20260813_repo_org_resolver.sql exactly; that file
+-- Org resolver (matches 20260813000013_repo_org_resolver.sql exactly; that file
 -- re-applies the same definition as a safe no-op).
 create or replace function public.current_user_org_id() returns uuid language sql stable security definer set search_path='' as $$ select org_id from public.user_profiles where id = auth.uid() limit 1; $$;
 
@@ -75,8 +75,8 @@ EXCEPTION WHEN duplicate_object THEN NULL;
 END $$;
 
 -- ---------------------------------------------------------------------------
--- ws09 support tables (verbatim from 20260421_ws09_seed_support.sql, which
--- sorts AFTER 20260421_ws09_seed.sql and therefore ran too late on replay).
+-- ws09 support tables (verbatim from 20260421000021_ws09_seed_support.sql, which
+-- sorts AFTER 20260421000020_ws09_seed.sql and therefore ran too late on replay).
 -- ---------------------------------------------------------------------------
 CREATE TABLE IF NOT EXISTS public.demo_users (
   id uuid PRIMARY KEY,
@@ -895,7 +895,7 @@ CREATE TABLE IF NOT EXISTS workflow_step_actions (
 );
 
 -- model_efficiency (live-only; shape from modelEfficiencyService.ts, extended
--- by 20260814_perf_efficiency_foundation.sql)
+-- by 20260814000006_perf_efficiency_foundation.sql)
 CREATE TABLE IF NOT EXISTS model_efficiency (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid,

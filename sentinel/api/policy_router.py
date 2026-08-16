@@ -122,9 +122,22 @@ async def update_notif_settings(request: Request, body: NotifSettingsBody, db=De
     await db.execute('INSERT INTO policy_notification_settings(tenant_id) VALUES($1) ON CONFLICT DO NOTHING', tenant_id)
     updates = {k: v for k, v in body.dict().items() if v is not None}
     if updates:
-        sets = ', '.join(f'{k}=${i + 2}' for i, k in enumerate(updates))
-        vals = list(updates.values())
-        await db.execute(f'UPDATE policy_notification_settings SET {sets}, updated_at=NOW() WHERE tenant_id=$1', tenant_id, *vals)
+        # Static SQL: COALESCE keeps the current value where the PATCH body
+        # omitted a field, so no dynamic column list is ever built.
+        await db.execute(
+            'UPDATE policy_notification_settings SET '
+            'review_reminder=COALESCE($2, review_reminder), '
+            'reminder_day_of_week=COALESCE($3, reminder_day_of_week), '
+            'reminder_day_of_month=COALESCE($4, reminder_day_of_month), '
+            'notify_on_approval=COALESCE($5, notify_on_approval), '
+            'notify_on_rejection=COALESCE($6, notify_on_rejection), '
+            'notify_on_new_version=COALESCE($7, notify_on_new_version), '
+            'notify_assignees_on_review=COALESCE($8, notify_assignees_on_review), '
+            'updated_at=NOW() WHERE tenant_id=$1',
+            tenant_id, body.review_reminder, body.reminder_day_of_week,
+            body.reminder_day_of_month, body.notify_on_approval,
+            body.notify_on_rejection, body.notify_on_new_version,
+            body.notify_assignees_on_review)
     return await db.fetchrow('SELECT * FROM policy_notification_settings WHERE tenant_id=$1', tenant_id)
 
 @router.get('/shared/{token}')

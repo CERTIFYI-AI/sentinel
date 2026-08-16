@@ -55,7 +55,7 @@ BEGIN
   )
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_ws02_tenancy_sweep.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000014_ws02_tenancy_sweep.sql', SQLERRM;
 END $seed$;
 
 -- ---------------------------------------------------------------------------
@@ -155,28 +155,28 @@ BEGIN
   -- 4. Sweep. For every base table in `public`:
   --     * skip global catalogs and self-tenant tables;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_ws02_tenancy_sweep.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000014_ws02_tenancy_sweep.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   --     * ensure `org_id` exists (add + backfill from tenant_id);
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_ws02_tenancy_sweep.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000014_ws02_tenancy_sweep.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   --     * NOT NULL + FK + (org_id) index;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_ws02_tenancy_sweep.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000014_ws02_tenancy_sweep.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   --     * drop legacy tenant_id;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_ws02_tenancy_sweep.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000014_ws02_tenancy_sweep.sql', SQLERRM;
 END $seed$;
 
 --     * install canonical 5-policy RLS template.
@@ -260,7 +260,7 @@ BEGIN
   -- 5. Global catalog RLS — read-everyone, write-service-only.
   --    These tables serve every tenant;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_ws02_tenancy_sweep.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000014_ws02_tenancy_sweep.sql', SQLERRM;
 END $seed$;
 
 we still enable RLS so the only
@@ -301,7 +301,7 @@ BEGIN
   -- 6. Tenant self-tables — organizations / tenants.
   --    A user may only see rows they belong to;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_ws02_tenancy_sweep.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000014_ws02_tenancy_sweep.sql', SQLERRM;
 END $seed$;
 
 only service_role can write.

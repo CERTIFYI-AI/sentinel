@@ -15,11 +15,13 @@ import { describe, it, expect } from "vitest";
 const HERE = dirname(fileURLToPath(import.meta.url));
 const MIGRATION = resolve(
   HERE,
-  "../../../../supabase/migrations/20260421_ws02_tenancy_sweep.sql",
+  "../../../../supabase/migrations/20260421000014_ws02_tenancy_sweep.sql",
 );
 const ROLLBACK = resolve(
   HERE,
-  "../../../../supabase/migrations/20260421_ws02_tenancy_sweep.rollback.sql",
+  // Rollback scripts live outside the forward replay path (see
+  // supabase/migrations/README.md) so `supabase db reset` never applies them.
+  "../../../../supabase/migrations/_rollbacks/20260421_ws02_tenancy_sweep.rollback.sql",
 );
 
 const sweep = readFileSync(MIGRATION, "utf8");

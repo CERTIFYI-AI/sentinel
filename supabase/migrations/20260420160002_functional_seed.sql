@@ -18,7 +18,7 @@ BEGIN
   values ('00000000-0000-0000-0000-000000000001', 'Demo Tenant', 'demo.sentinel.ai', 'Technology')
   on conflict (id) do nothing;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_seed.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160002_functional_seed.sql', SQLERRM;
 END $seed$;
 
 -- Seed a couple of rows per functional table to prove round-trip connectivity

@@ -30,7 +30,7 @@ BEGIN
   --   - `organizations` table exists with uuid primary key.
   --   - A "default" organization row is guaranteed;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_ws01_tenancy_phase_a_unify.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000008_ws01_tenancy_phase_a_unify.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -47,7 +47,7 @@ BEGIN
   
   BEGIN;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_ws01_tenancy_phase_a_unify.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000008_ws01_tenancy_phase_a_unify.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -68,7 +68,7 @@ BEGIN
   )
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_ws01_tenancy_phase_a_unify.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000008_ws01_tenancy_phase_a_unify.sql', SQLERRM;
 END $seed$;
 
 -- ---------------------------------------------------------------
@@ -200,7 +200,7 @@ BEGIN
   -- ---------------------------------------------------------------
   DROP FUNCTION IF EXISTS public._ws01_cast_tenant_to_org(text);
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_ws01_tenancy_phase_a_unify.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000008_ws01_tenancy_phase_a_unify.sql', SQLERRM;
 END $seed$;
 
 COMMIT;

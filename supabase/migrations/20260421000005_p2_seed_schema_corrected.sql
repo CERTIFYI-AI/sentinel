@@ -12,7 +12,7 @@ DO $seed$
 BEGIN
   -- =============================================================================
   -- Sentinel GRC: Schema-Corrected Seed Migration (P2)
-  -- File: 20260421_p2_seed_schema_corrected.sql
+  -- File: 20260421000005_p2_seed_schema_corrected.sql
   -- Description: Seeds all empty tables using actual production column names.
   --              Corrects: risk_register→risks, org_id→tenant_id, uuid→text ids,
   --              column name mapping for incidents, vendors, bias_audits, etc.
@@ -136,7 +136,7 @@ BEGIN
      now() - interval '55 days', now() - interval '8 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -223,7 +223,7 @@ BEGIN
      now() - interval '5 days', now() - interval '1 day')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -294,7 +294,7 @@ BEGIN
      4, 3, 0, 3, now() - interval '250 days', now() - interval '75 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -355,7 +355,7 @@ BEGIN
      now() - interval '45 days', now() - interval '40 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -428,7 +428,7 @@ BEGIN
      now() - interval '10 days', now() - interval '1 day')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -459,7 +459,7 @@ BEGIN
      now() - interval '5 days', now() - interval '5 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -536,7 +536,7 @@ BEGIN
      'Monitoring', now() - interval '180 days', now() - interval '60 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -586,7 +586,7 @@ BEGIN
      now())
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -656,7 +656,7 @@ BEGIN
      now() - interval '8 days', now() - interval '8 days', now() - interval '2 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -715,7 +715,7 @@ BEGIN
      now(), now())
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -764,7 +764,7 @@ BEGIN
      now() - interval '400 days', now() - interval '35 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -813,7 +813,7 @@ BEGIN
      NULL, now() - interval '5 days', now() - interval '5 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -890,7 +890,7 @@ BEGIN
      now() + interval '60 days', false, now() - interval '5 days', now() - interval '5 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -936,7 +936,7 @@ BEGIN
      now() - interval '2 days', now() - interval '2 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -990,7 +990,7 @@ BEGIN
      NULL, 0, now() - interval '5 days', now() - interval '3 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1039,7 +1039,7 @@ BEGIN
      now() - interval '12 days', now() - interval '2 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1085,7 +1085,7 @@ BEGIN
      now() - interval '110 days', now() - interval '120 days', now() - interval '110 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1139,7 +1139,7 @@ BEGIN
      now() - interval '21 days', now() - interval '21 days', now() - interval '21 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1190,7 +1190,7 @@ BEGIN
      now() - interval '21 days', now() - interval '25 days', now() - interval '21 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p2_seed_schema_corrected.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000005_p2_seed_schema_corrected.sql', SQLERRM;
 END $seed$;
 
 -- =============================================================================

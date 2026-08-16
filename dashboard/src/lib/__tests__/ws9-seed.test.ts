@@ -10,13 +10,13 @@ const SEED_PATH = path.join(
   REPO_ROOT,
   "supabase",
   "migrations",
-  "20260421_ws09_seed.sql",
+  "20260421000020_ws09_seed.sql",
 );
 const SUPPORT_PATH = path.join(
   REPO_ROOT,
   "supabase",
   "migrations",
-  "20260421_ws09_seed_support.sql",
+  "20260421000021_ws09_seed_support.sql",
 );
 
 describe("WS9 — admin seed", () => {

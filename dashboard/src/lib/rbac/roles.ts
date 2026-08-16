@@ -42,7 +42,7 @@ export const ROLE_DISPLAY: Record<OrgRole, { label: string; description: string 
 //   "iam.*"    → any permission prefixed iam.
 //   "read.*"   → any permission prefixed read.
 //
-// Keep in sync with supabase/migrations/20260421_ws04_rbac_depth.sql.
+// Keep in sync with supabase/migrations/20260421000018_ws04_rbac_depth.sql.
 export const ROLE_PERMISSIONS: Record<OrgRole, readonly string[]> = {
   org_admin: ["*"],
   security_admin: ["iam.*", "mfa.*", "sso.*", "audit.read", "audit.export"],

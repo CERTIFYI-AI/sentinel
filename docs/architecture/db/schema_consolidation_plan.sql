@@ -44,7 +44,7 @@
 --                    vendorassessments_table, vendorsla_table
 --   agents        <= Agent, agent_registry(?), agent_gov_registry(?)
 --   datasets      <= Dataset, dataset_registry, datasetregistry_table          [DONE 2026-08-14 —
---                    20260814_drop_legacy_dataset_tables.sql also dropped datalineage_table,
+--                    20260814000002_drop_legacy_dataset_tables.sql also dropped datalineage_table,
 --                    dataquality_table, model_dataset_links, data_assets (seeds archived to
 --                    legacy_archive.*). dataset_catalog_entries KEPT — live for evals.]
 --   bias_audits   <= BiasAudit, bias_audit_records, biasauditwizard_table

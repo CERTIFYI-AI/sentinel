@@ -96,7 +96,7 @@ intersection of the two feeds gives a full tamper-evident history.
 
 ## Dev / DBA runbook
 
-Migration: `supabase/migrations/20260421_ws04_evidence_custody.sql`.
+Migration: `supabase/migrations/20260421000017_ws04_evidence_custody.sql`.
 
 Apply:
 

@@ -1,10 +1,10 @@
--- 20260816_agentic_mesh_fleet.sql
+-- 20260816000001_agentic_mesh_fleet.sql
 --
 -- Agentic Mesh — continuous sentinel fleet foundation.
 --
 -- The platform already runs a *reactive* governance mesh: 27 cascade agents
 -- triggered by business events on the governance_events bus (see
--- 20260421_autonomous_governance_mesh.sql). This migration adds the
+-- 20260421000001_autonomous_governance_mesh.sql). This migration adds the
 -- *continuous* layer: 10 always-on sentinel agents that sweep org data on an
 -- interval, intercept problems, and emit events into the SAME bus so the
 -- existing cascades fire. One mesh, two run modes.

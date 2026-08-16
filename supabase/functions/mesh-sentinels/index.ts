@@ -5,7 +5,7 @@
  * The always-on half of the Agentic Mesh: runs the 10 continuous sentinel
  * sweeps server-side with the service role, for every organization (or one
  * org when invoked with {"orgId": "..."}). Scheduled by pg_cron every 10
- * minutes (see 20260816_agentic_mesh_fleet.sql); also invocable from the
+ * minutes (see 20260816000001_agentic_mesh_fleet.sql); also invocable from the
  * mesh UI ("Run server sweep").
  *
  * Writes the SAME ledgers as the browser runner

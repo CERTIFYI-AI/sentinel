@@ -100,29 +100,23 @@ jobs:
   trivy:
     name: Supply Chain Scan (Trivy)
     runs-on: ubuntu-latest
-    # Authenticate the trivy-action's binary download to GitHub so its setup step
-    # is not rate-limited/blocked (the unauthenticated install intermittently
-    # fails at the download stage, failing the whole job before any scan runs).
-    env:
-      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v6
+      # trivy-action's setup step downloads the binary from GitHub releases and
+      # kept dying there (rate-limit/transient, even with GITHUB_TOKEN set),
+      # failing the job before any scan ran. Run the official image directly —
+      # same pattern as the Gitleaks job above.
       - name: Filesystem vuln scan
-        uses: aquasecurity/trivy-action@v0.32.0
-        with:
-          scan-type: fs
-          scan-ref: .
-          severity: HIGH,CRITICAL
-          exit-code: '1'
-          ignore-unfixed: true
-          trivyignores: .trivyignore
+        run: |
+          docker run --rm -v "$(pwd):/repo" -w /repo \
+            aquasec/trivy:0.64.1 fs \
+            --severity HIGH,CRITICAL --exit-code 1 --ignore-unfixed \
+            --ignorefile .trivyignore .
       - name: IaC / config scan
-        uses: aquasecurity/trivy-action@v0.32.0
-        with:
-          scan-type: config
-          scan-ref: .
-          severity: HIGH,CRITICAL
-          exit-code: '1'
+        run: |
+          docker run --rm -v "$(pwd):/repo" -w /repo \
+            aquasec/trivy:0.64.1 config \
+            --severity HIGH,CRITICAL --exit-code 1 .
         # Intentionally non-blocking: pre-existing IaC/config findings are
         # tracked for remediation; the filesystem vuln scan above remains
         # blocking. Flip to blocking once the backlog is cleared.

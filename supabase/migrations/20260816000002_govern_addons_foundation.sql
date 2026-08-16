@@ -1,4 +1,4 @@
--- 20260816_govern_addons_foundation.sql
+-- 20260816000002_govern_addons_foundation.sql
 --
 -- Governance add-on modules validated in the AI-governance market:
 --   * ai_trainings       — AI literacy / training registry (EU AI Act Art.4,

@@ -12,7 +12,7 @@ DO $seed$
 BEGIN
   -- =============================================================================
   -- Sentinel GRC: Full Module Seed Migration
-  -- File: 20260421_p1_seed_all_modules.sql
+  -- File: 20260421000004_p1_seed_all_modules.sql
   -- Description: Seeds all empty tables with enterprise-grade production-like data.
   --              Creates esg_reports, energy_metrics, model_efficiency tables.
   --              Adds all new tables to realtime publication.
@@ -102,7 +102,7 @@ BEGIN
      now() - interval '55 days', now() - interval '8 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -186,7 +186,7 @@ BEGIN
      now() - interval '5 days', now() - interval '1 day')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -254,7 +254,7 @@ BEGIN
      now() - interval '250 days', now() - interval '75 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -319,7 +319,7 @@ BEGIN
      now() - interval '45 days', now() - interval '40 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 -- =============================================================================
@@ -425,7 +425,7 @@ BEGIN
      now() - interval '6 days', now() - interval '6 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -497,7 +497,7 @@ BEGIN
      now() - interval '20 days', now() - interval '5 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -525,28 +525,28 @@ BEGIN
     updated_at timestamptz DEFAULT now()
   );
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   ALTER TABLE public.esg_reports ENABLE ROW LEVEL SECURITY;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   CREATE INDEX IF NOT EXISTS esg_reports_org_id_idx ON public.esg_reports(org_id);
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   DROP POLICY IF EXISTS esg_reports_tenant ON public.esg_reports;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -554,21 +554,21 @@ BEGIN
   CREATE POLICY esg_reports_tenant ON public.esg_reports FOR ALL TO authenticated
     USING (org_id = public.get_org_id()) WITH CHECK (org_id = public.get_org_id());
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   DROP POLICY IF EXISTS esg_reports_service ON public.esg_reports;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   CREATE POLICY esg_reports_service ON public.esg_reports FOR ALL TO service_role USING (true);
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -613,7 +613,7 @@ BEGIN
      NULL, now() - interval '5 days', now() - interval '5 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -641,28 +641,28 @@ BEGIN
     updated_at timestamptz DEFAULT now()
   );
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   ALTER TABLE public.energy_metrics ENABLE ROW LEVEL SECURITY;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   CREATE INDEX IF NOT EXISTS energy_metrics_org_id_idx ON public.energy_metrics(org_id);
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   DROP POLICY IF EXISTS energy_metrics_tenant ON public.energy_metrics;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -670,21 +670,21 @@ BEGIN
   CREATE POLICY energy_metrics_tenant ON public.energy_metrics FOR ALL TO authenticated
     USING (org_id = public.get_org_id()) WITH CHECK (org_id = public.get_org_id());
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   DROP POLICY IF EXISTS energy_metrics_service ON public.energy_metrics;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   CREATE POLICY energy_metrics_service ON public.energy_metrics FOR ALL TO service_role USING (true);
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -741,7 +741,7 @@ BEGIN
      '2026-04-20', now() - interval '1 day', now() - interval '1 day')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -774,28 +774,28 @@ BEGIN
     updated_at timestamptz DEFAULT now()
   );
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   ALTER TABLE public.model_efficiency ENABLE ROW LEVEL SECURITY;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   CREATE INDEX IF NOT EXISTS model_efficiency_org_id_idx ON public.model_efficiency(org_id);
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   DROP POLICY IF EXISTS model_efficiency_tenant ON public.model_efficiency;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -803,21 +803,21 @@ BEGIN
   CREATE POLICY model_efficiency_tenant ON public.model_efficiency FOR ALL TO authenticated
     USING (org_id = public.get_org_id()) WITH CHECK (org_id = public.get_org_id());
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   DROP POLICY IF EXISTS model_efficiency_service ON public.model_efficiency;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
 BEGIN
   CREATE POLICY model_efficiency_service ON public.model_efficiency FOR ALL TO service_role USING (true);
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -858,7 +858,7 @@ BEGIN
      '2026-04-05', now() - interval '16 days', now() - interval '16 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -910,7 +910,7 @@ BEGIN
      now() - interval '42 days', now() - interval '42 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -986,7 +986,7 @@ BEGIN
      now() - interval '3 days', now() - interval '1 day')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1046,7 +1046,7 @@ BEGIN
      now() - interval '1 day', now() - interval '1 day')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1122,7 +1122,7 @@ BEGIN
      now() - interval '18 days', now() - interval '14 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1166,7 +1166,7 @@ BEGIN
      now() - interval '2 days', now() - interval '2 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1242,7 +1242,7 @@ BEGIN
      now() - interval '150 days', now() - interval '60 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1302,7 +1302,7 @@ BEGIN
      now() - interval '2 days', now() - interval '2 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1394,7 +1394,7 @@ BEGIN
      now() - interval '10 days', now() - interval '7 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1446,7 +1446,7 @@ BEGIN
      now() - interval '42 days', now() - interval '42 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1498,7 +1498,7 @@ BEGIN
      now() - interval '101 days', now() - interval '20 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 DO $seed$
@@ -1558,7 +1558,7 @@ BEGIN
      now() - interval '18 days', now() - interval '3 days')
   ON CONFLICT (id) DO NOTHING;
 EXCEPTION WHEN OTHERS THEN
-  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421_p1_seed_all_modules.sql', SQLERRM;
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260421000004_p1_seed_all_modules.sql', SQLERRM;
 END $seed$;
 
 -- =============================================================================

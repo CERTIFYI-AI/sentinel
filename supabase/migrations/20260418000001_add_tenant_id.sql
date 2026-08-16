@@ -1,6 +1,6 @@
 -- ============================================================
 -- Add tenant_id column to existing tables that are missing it
--- Run this after 20260418_core_grc_tables.sql if tables were
+-- Run this after 20260418000002_core_grc_tables.sql if tables were
 -- created with an older schema
 -- ============================================================
 

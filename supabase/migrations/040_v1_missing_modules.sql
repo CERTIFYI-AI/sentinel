@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS regulator_filings (
   status text DEFAULT 'draft' CHECK (status IN ('draft','in_review','submitted','acknowledged','closed')),
   deadline timestamptz, submitted_at timestamptz,
   -- FK to incidents is added in 20260817_replay_repair.sql: incidents is
-  -- created later (20260418_core_grc_tables.sql), so an inline REFERENCES
+  -- created later (20260418000002_core_grc_tables.sql), so an inline REFERENCES
   -- here broke every from-zero replay (supabase db reset / CI drift job).
   linked_incident_id uuid,
   regulator_name text, regulator_contact text, reference_number text,

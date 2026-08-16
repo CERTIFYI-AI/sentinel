@@ -1,6 +1,6 @@
 -- ============================================================================
 -- Apache-2.0 © 2026 CERTIFYI-AI
--- Rollback for 20260421_ws02_tenancy_sweep.sql
+-- Rollback for 20260421000014_ws02_tenancy_sweep.sql
 --
 -- Intent: drop the canonical RLS policies and indexes installed by the sweep.
 -- We do NOT re-create `tenant_id` columns — backfill is irreversible.

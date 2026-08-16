@@ -1,5 +1,5 @@
 -- Fix 5: Risk schema extension - inherent/residual, appetite, treatment, KRI
--- Replay-safety guard: risks is created later in 20260418_core_grc_tables.sql
+-- Replay-safety guard: risks is created later in 20260418000002_core_grc_tables.sql
 -- On the live database this migration already ran when risks existed, so the
 -- guard is a no-op there. On a from-zero replay risks does not exist yet at
 -- this position; the statement is skipped here and re-applied idempotently by

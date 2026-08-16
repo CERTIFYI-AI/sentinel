@@ -2,7 +2,7 @@
  * Agentic Mesh — the continuous sentinel fleet.
  *
  * 10 always-on governance agents. Names must match the agent_registry seed
- * in supabase/migrations/20260816_agentic_mesh_fleet.sql — the registry row
+ * in supabase/migrations/20260816000001_agentic_mesh_fleet.sql — the registry row
  * is the catalog (copy, interval, targets); these are the implementations.
  */
 import type { SentinelDefinition } from './types'

@@ -22,9 +22,9 @@ testing. Fully idempotent and safe to run against production.
 
 ## Files
 - `scripts/ws9-gen-seed.mjs` — deterministic generator (stable UUIDs)
-- `supabase/migrations/20260421_ws09_seed_support.sql` — supporting tables
+- `supabase/migrations/20260421000021_ws09_seed_support.sql` — supporting tables
   (`demo_users`, `framework_bindings`, `training_assignments`) with RLS
-- `supabase/migrations/20260421_ws09_seed.sql` — the seed itself
+- `supabase/migrations/20260421000020_ws09_seed.sql` — the seed itself
 
 ## Idempotency
 - UUIDs derived from a namespaced SHA-1 (`ws9:<kind>:<key>`), so re-runs
