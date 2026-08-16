@@ -12,6 +12,7 @@ import {
   Scales, TestTube, Robot, Gauge, XCircle,
   Sparkle, FileText, ListBullets, CalendarCheck, Copy, Plus,
   ShieldCheck, CaretRight, Bank, Siren, UsersThree, CurrencyDollar, Crosshair,
+  SealCheck, Vault, Pulse,
 } from '@phosphor-icons/react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -902,6 +903,28 @@ function ModelDetailView({ model }: { model: Model }) {
               source={backlinks?.arenaRuns}
               loading={backlinksLoading}
               viewAllTo={`/security/model-arena?model=${model.id}`}
+            />
+            <BacklinkCard
+              title="Conformity Assessments"
+              icon={<SealCheck size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.conformityAssessments}
+              loading={backlinksLoading}
+              viewAllTo="/conformity"
+              itemTo={item => `/conformity?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="Evidence Vault"
+              icon={<Vault size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.evidence}
+              loading={backlinksLoading}
+              viewAllTo={`/evidence-vault?model=${model.id}`}
+            />
+            <BacklinkCard
+              title="Post-Market Monitoring"
+              icon={<Pulse size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.postMarketPlans}
+              loading={backlinksLoading}
+              viewAllTo={`/post-market?model=${model.id}`}
             />
           </div>
         </div>

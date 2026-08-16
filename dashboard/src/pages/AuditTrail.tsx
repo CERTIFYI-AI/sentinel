@@ -18,7 +18,8 @@
 
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { ClockCounterClockwise, Export, Eye, Warning } from '@phosphor-icons/react';
+import { ClockCounterClockwise, Export, Eye, Warning, X } from '@phosphor-icons/react';
+import { auditWriteHealthy } from '@/lib/auditLogger';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -61,7 +62,11 @@ const ENTITY_ROUTES: Record<string, (id: string) => string> = {
   ai_model: id => `/models/inventory/${id}`,
   use_case: id => `/use-cases/${id}`,
   risk: id => `/risks?open=${id}`,
-  control: id => `/controls/${id}`,
+  control: id => `/compliance/controls?open=${id}`,
+  policy: id => `/policies?open=${id}`,
+  evidence: id => `/evidence-vault?open=${id}`,
+  filing: id => `/regulator-filings?open=${id}`,
+  hitl_review: id => `/hitl/${id}`,
 };
 
 function entityRoute(e: AuditLogRecord): string | null {
@@ -112,6 +117,7 @@ export default function AuditTrail() {
   const [moduleFilter, setModuleFilter] = useState('all');
   const [actorFilter, setActorFilter] = useState('all');
   const [viewItem, setViewItem] = useState<AuditLogRecord | null>(null);
+  const [healthBannerDismissed, setHealthBannerDismissed] = useState(false);
 
   const modules = useMemo(
     () => Array.from(new Set(logs.map(e => e.module).filter(Boolean))).sort(),
@@ -168,6 +174,27 @@ export default function AuditTrail() {
         }
       />
 
+      {/* Writer health — auditWriteHealthy flips false after any failed
+          audit_log insert, meaning the trail below may be incomplete. */}
+      {!auditWriteHealthy && !healthBannerDismissed && (
+        <div role="alert" className="p-3 flex items-center gap-2" style={{
+          background: 'hsl(var(--s-wn-bg))', border: '1px solid hsl(var(--s-wn-tx))', borderRadius: 0,
+        }}>
+          <Warning size={16} style={{ color: 'hsl(var(--s-wn-tx))', flexShrink: 0 }} />
+          <span className="text-sm" style={{ color: 'hsl(var(--s-wn-tx))' }}>
+            Audit writes are failing — recent actions may be missing from this trail.
+          </span>
+          <button
+            className="ml-auto p-1"
+            aria-label="Dismiss warning"
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'hsl(var(--s-wn-tx))' }}
+            onClick={() => setHealthBannerDismissed(true)}
+          >
+            <X size={14} />
+          </button>
+        </div>
+      )}
+
       {error ? (
         <div role="alert" className="p-4 flex items-center gap-2" style={{
           background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--destructive))', borderRadius: 0,
@@ -179,13 +206,14 @@ export default function AuditTrail() {
         </div>
       ) : (
         <>
-          {/* Stats — derived from loaded events only */}
+          {/* Stats — derived from loaded events only; an empty log shows an
+              honest "—" rather than a fabricated zero count. */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
             {[
-              { label: 'Total Events', value: logs.length },
-              { label: 'Showing', value: filtered.length },
-              { label: 'Actors', value: actors.length },
-              { label: 'Modules', value: modules.length },
+              { label: 'Total Events', value: logs.length === 0 ? '—' : logs.length },
+              { label: 'Showing', value: logs.length === 0 ? '—' : filtered.length },
+              { label: 'Actors', value: logs.length === 0 ? '—' : actors.length },
+              { label: 'Modules', value: logs.length === 0 ? '—' : modules.length },
             ].map(stat => (
               <Card key={stat.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
                 <CardContent className="pt-5">

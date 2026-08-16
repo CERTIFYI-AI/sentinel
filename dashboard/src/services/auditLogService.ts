@@ -32,18 +32,24 @@ export type AuditLogRecord = {
   createdAt: string;
 };
 
+// audit_log carries two writer shapes: lib/auditLogger fills module /
+// entity_type / entity_id, while audit_client_event rows fill action /
+// resource_type / resource_id instead. Prefer the classic columns and fall
+// back to the client-event ones so both shapes render with a real module and
+// entity instead of 'general' / '—'.
 function mapRow(row: any): AuditLogRecord {
+  const action: string = row.action ?? '';
   return {
     id: row.id,
     orgId: row.org_id ?? null,
     actorId: row.actor_id ?? null,
-    actorName: row.actor_name ?? 'System',
+    actorName: row.actor_name ?? 'User',
     actorRole: row.actor_role ?? null,
-    module: row.module ?? '',
-    entityType: row.entity_type ?? '',
-    entityId: row.entity_id ?? null,
+    module: row.module ?? (action.includes('.') ? action.split('.')[0] : ''),
+    entityType: row.entity_type ?? row.resource_type ?? '',
+    entityId: row.entity_id ?? row.resource_id ?? null,
     entityName: row.entity_name ?? null,
-    action: row.action ?? '',
+    action,
     oldValues: row.old_values ?? null,
     newValues: row.new_values ?? null,
     createdAt: row.created_at,

@@ -29,6 +29,8 @@ import {
 import { toast } from 'sonner';
 import { useEvidenceData, useEvidenceChain } from '../hooks/useEvidenceData';
 import { useModelsData } from '../hooks/useModelsData';
+import { useIncidents } from '@/hooks/useRiskIncidents';
+import { InterlinkChip } from '../components/ui/InterlinkChip';
 import type { EvidenceRecord } from '../services/evidenceService';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -81,12 +83,25 @@ interface UploadForm {
   collection_date: string;
   description: string;
   url: string;
+  /** → incidents.id (uuid); empty = not linked. */
+  linked_incident_id: string;
+  /** → conformity_assessments.id (text ref); empty = not linked. */
+  linked_assessment_id: string;
 }
 
 const EMPTY_FORM: UploadForm = {
   title: '', type: 'Report', source: '',
   collection_date: new Date().toISOString().split('T')[0],
   description: '', url: '',
+  linked_incident_id: '', linked_assessment_id: '',
+};
+
+// Chain-of-custody entries reference governed entities by type + id — these
+// are the modules a chain row can deep-link back into.
+const CHAIN_ENTITY_ROUTES: Record<string, (id: string) => string> = {
+  incident: id => `/risk/incidents?open=${id}`,
+  risk: id => `/risks?open=${id}`,
+  model: id => `/models/inventory/${id}`,
 };
 
 // Derived from the record's own collection date — <=30d Fresh, <=90d Aging, else Stale.
@@ -103,6 +118,7 @@ export default function EvidenceVault() {
   const { evidence, isLoading, error, save, remove, isSaving } = useEvidenceData();
   const { chain, isLoading: chainLoading, error: chainError } = useEvidenceChain();
   const { models } = useModelsData();
+  const { items: incidents } = useIncidents();
 
   // ?tab=vault|chain|sync selects the initial tab (used by legacy-route redirects).
   const initialTab = ['vault', 'chain', 'sync'].includes(searchParams.get('tab') || '')
@@ -176,6 +192,12 @@ export default function EvidenceVault() {
   const resolveModel = (ref: string) =>
     models.find(m => m.id === ref || m.slug === ref);
 
+  // Resolved display label for a linked incident — never a raw uuid.
+  const incidentLabel = (id: string) => {
+    const inc = incidents.find(i => i.id === id);
+    return inc ? (inc.incidentId ? `${inc.incidentId} — ${inc.title}` : inc.title) : 'Unavailable';
+  };
+
   const handleUpload = async () => {
     try {
       await save({
@@ -185,6 +207,8 @@ export default function EvidenceVault() {
         collection_date: form.collection_date || null,
         description: form.description.trim() || null,
         url: form.url.trim() || null,
+        linked_incident_id: form.linked_incident_id || null,
+        linked_assessment_id: form.linked_assessment_id.trim() || null,
         freshness_status: deriveFreshness(form.collection_date),
         auto_collected: false,
       } as Partial<EvidenceRecord>);
@@ -473,7 +497,19 @@ export default function EvidenceVault() {
                           <td className="p-3">
                             <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{entry.action}</Badge>
                           </td>
-                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{entry.entity_type}</td>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>
+                            {/* Deep link back into the source module when the
+                                entity type is routable — never a raw uuid. */}
+                            {(() => {
+                              const route = CHAIN_ENTITY_ROUTES[(entry.entity_type || '').toLowerCase()] as
+                                ((id: string) => string) | undefined;
+                              return route && entry.entity_id ? (
+                                <InterlinkChip label={entry.entity_type.replace(/_/g, ' ')} to={route(entry.entity_id)} />
+                              ) : (
+                                <span>{entry.entity_type}</span>
+                              );
+                            })()}
+                          </td>
                           <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{entry.actor || '—'}</td>
                           <td className="p-3 text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{truncateHash(entry.prev_hash)}</td>
                           <td className="p-3 text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{truncateHash(entry.hash)}</td>
@@ -617,6 +653,26 @@ export default function EvidenceVault() {
                   </div>
                 </div>
 
+                {(viewItem.linked_incident_id || viewItem.linked_assessment_id) && (
+                  <div className="pt-1">
+                    <p className="text-xs font-semibold mb-1.5" style={{ color: 'hsl(var(--text-2))' }}>Source Records</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewItem.linked_incident_id && (
+                        <InterlinkChip
+                          label={incidentLabel(viewItem.linked_incident_id)}
+                          to={`/risk/incidents?open=${viewItem.linked_incident_id}`}
+                        />
+                      )}
+                      {viewItem.linked_assessment_id && (
+                        <InterlinkChip
+                          label={`Assessment ${viewItem.linked_assessment_id}`}
+                          to={`/conformity?open=${viewItem.linked_assessment_id}`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
+
                 {(viewItem.url || viewItem.file_url) && (
                   <div className="pt-1">
                     <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Artifact</p>
@@ -679,6 +735,34 @@ export default function EvidenceVault() {
             <div>
               <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Description</label>
               <Textarea rows={3} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} style={{ borderRadius: 0 }} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Source Incident (optional)</label>
+                <Select
+                  value={form.linked_incident_id || 'none'}
+                  onValueChange={v => setForm(p => ({ ...p, linked_incident_id: v === 'none' ? '' : v }))}
+                >
+                  <SelectTrigger style={{ width: '100%', borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value="none">Not linked</SelectItem>
+                    {incidents.filter(i => i.id).map(i => (
+                      <SelectItem key={i.id} value={i.id!}>
+                        {i.incidentId ? `${i.incidentId} — ${i.title}` : i.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Assessment Ref (optional)</label>
+                <Input
+                  value={form.linked_assessment_id}
+                  placeholder="Conformity assessment id"
+                  onChange={e => setForm(p => ({ ...p, linked_assessment_id: e.target.value }))}
+                  style={{ borderRadius: 0 }}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
