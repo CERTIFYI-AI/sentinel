@@ -77,6 +77,10 @@ create index if not exists dpia_assessments_ropa_idx   on public.dpia_assessment
 
 -- ── Consent records: org-scope + the fields the page actually renders ───────
 
+-- Replay-safety (heal-before-police): April-era unify loops strip tenant_id
+-- on a fresh replay; the live DB always has it (no-op there).
+alter table public.consent_records
+  add column if not exists tenant_id text not null default 'default';
 alter table public.consent_records
   alter column tenant_id set default (current_user_org_id())::text;
 
