@@ -136,7 +136,6 @@ const NAV: NavSection[] = [
       { label: 'Model Efficiency',       to: '/model-efficiency',        icon: BatteryCharging },
       { label: 'GenAI Risk Profiles',    to: '/genai-risks',             icon: Warning },
       { label: 'Playground',             to: '/ai-gateway/playground',   icon: Sparkle },
-      { label: 'Model Catalog',          to: '/ai-gateway/models',       icon: Table },
       {
         label: 'MCP Servers', to: '/mcp-gateway/servers', icon: Plugs,
         children: [
