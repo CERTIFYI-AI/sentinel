@@ -24,9 +24,10 @@ import {
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useAuthStore } from '../../stores/authStore';
-import { useExceptions } from '../../hooks/useRiskIncidents';
+import { useExceptions, useApprovals } from '../../hooks/useRiskIncidents';
 import type { ExceptionRecord } from '../../services/incidentResponseService';
 import { useModelsData } from '@/hooks/useModelsData';
 import { useRisksData } from '@/hooks/useRisksData';
@@ -200,6 +201,11 @@ export default function ExceptionManagement() {
   const { orgName } = useSettingsStore();
   const { user } = useAuthStore();
   const { items: exceptions, isLoading, error, save, remove, isSaving } = useExceptions();
+  // Central approval queue — exceptions surface there as approvals rows, and
+  // decisions made here settle the matching pending row (both ways stay in sync;
+  // oversightService.decideApproval mirrors queue decisions back onto exceptions).
+  const { items: approvalItems, save: saveApprovalRequest, decide: decideApprovalRequest } = useApprovals();
+  const qc = useQueryClient();
   const { models } = useModelsData();
   const { risks } = useRisksData();
   const { data: policyOptions = [] } = usePolicies();
@@ -247,7 +253,16 @@ export default function ExceptionManagement() {
   }, [openParam, exceptions, isLoading]);
 
   const modelName = (id: string) => models.find(m => m.id === id)?.name ?? 'Unavailable';
-  const riskTitle = (id: string) => risks.find(r => r.id === id)?.title ?? 'Risk';
+  const riskTitle = (id: string) => risks.find(r => r.id === id)?.title ?? 'Unavailable';
+
+  // Resolve a stored policy reference against the real policies table. When it
+  // resolves, show the picker's label; when it doesn't, fall back to the raw
+  // text (plain, not styled as a code) with the unresolved state in the title.
+  const resolvePolicy = (ref: string): { label: string; resolved: boolean } => {
+    const p = policyOptions.find(po => (po.policyRef ?? po.id) === ref);
+    if (!p) return { label: ref, resolved: false };
+    return { label: p.policyRef ? `${p.policyRef} · ${p.title}` : p.title, resolved: true };
+  };
   const currentUserName = user?.fullName ?? user?.email ?? '';
   const currentUserRole = user?.role ?? '';
 
@@ -322,10 +337,25 @@ export default function ExceptionManagement() {
       linkedModelIds: form.linkedModelIds,
     };
     try {
-      await save(record); // hook toasts success; throws on failure
+      const saved = await save(record); // hook toasts success; throws on failure
       setCreateOpen(false);
       setForm({ ...EMPTY_FORM });
       setSystemInput(''); setTagInput('');
+      // Surface the pending request in the central approvals queue too, so it
+      // reaches reviewers who work from Approval Workflows.
+      if (saved.status === 'pending' && saved.id) {
+        try {
+          await saveApprovalRequest({
+            entityType: 'exception',
+            entityId: saved.id,
+            entityName: `${saved.exceptionId ?? saved.id} — ${saved.title}`,
+            requestedBy: saved.requestedBy ?? null,
+            requestedAction: 'approve_exception',
+            status: 'pending',
+            stepIndex: 0,
+          });
+        } catch { /* approvals hook surfaced the error; the exception itself persisted */ }
+      }
     } catch { /* hook surfaces the error toast */ }
   };
 
@@ -364,6 +394,22 @@ export default function ExceptionManagement() {
     try {
       await save(updated); // hook toasts success; throws on failure
       setDecisionOpen(false);
+      // Settle the matching pending row in the central approvals queue, so a
+      // decision made here doesn't leave a stale request behind. No matching
+      // row → nothing to do.
+      const pendingApproval = approvalItems.find(a =>
+        a.entityType === 'exception' && a.entityId === decisionTarget.id && a.status === 'pending');
+      if (pendingApproval?.id) {
+        try {
+          await decideApprovalRequest({
+            id: pendingApproval.id,
+            decision: decision === 'denied' ? 'rejected' : 'approved',
+            approver: actor,
+          });
+          // decideApproval also syncs the exceptions row — refresh our cache.
+          qc.invalidateQueries({ queryKey: ['ri-exceptions'] });
+        } catch { /* approvals hook surfaced the error; the exception decision persisted */ }
+      }
     } catch { /* hook surfaces the error toast */ }
   };
 
@@ -560,7 +606,17 @@ export default function ExceptionManagement() {
                       </td>
                       <td className="px-3 py-2 max-w-[200px]">
                         <p className="text-xs font-semibold truncate" style={{ color: 'hsl(var(--text-1))' }}>{exc.title}</p>
-                        <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{exc.policyRef ?? '—'}</p>
+                        {exc.policyRef ? (() => {
+                          const pol = resolvePolicy(exc.policyRef);
+                          return (
+                            <p className="text-[10px] truncate" style={{ color: 'hsl(var(--text-4))' }}
+                              title={pol.resolved ? undefined : `Unresolved reference: ${exc.policyRef}`}>
+                              {pol.label}
+                            </p>
+                          );
+                        })() : (
+                          <p className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>—</p>
+                        )}
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex items-center gap-1">
@@ -657,9 +713,16 @@ export default function ExceptionManagement() {
                 </p>
                 {(selected.policyRef || selected.linkedRiskId || (selected.linkedModelIds ?? []).length > 0) && (
                   <div className="flex gap-1.5 mt-2 flex-wrap">
-                    {selected.policyRef && (
-                      <InterlinkChip label={selected.policyRef} to={`/policies?open=${selected.policyRef}`} />
-                    )}
+                    {selected.policyRef && (() => {
+                      const pol = resolvePolicy(selected.policyRef);
+                      return pol.resolved ? (
+                        <InterlinkChip label={pol.label} to={`/policies?open=${selected.policyRef}`} />
+                      ) : (
+                        <span title={`Unresolved reference: ${selected.policyRef}`}>
+                          <InterlinkChip label={pol.label} to={`/policies?open=${selected.policyRef}`} />
+                        </span>
+                      );
+                    })()}
                     {selected.linkedRiskId && (
                       <InterlinkChip label={riskTitle(selected.linkedRiskId)} to={`/risks?open=${selected.linkedRiskId}`} />
                     )}

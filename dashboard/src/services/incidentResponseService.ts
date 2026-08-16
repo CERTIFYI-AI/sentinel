@@ -64,6 +64,7 @@ export interface IncidentRecord {
   regulatoryReportable?: boolean
   rootCause?: string | null
   impactDescription?: string | null
+  lessonsLearned?: string | null
   financialImpact?: number | null
   linkedRiskIds?: string[]
   createdAt?: string
@@ -92,6 +93,7 @@ const mapIncident = (r: any): IncidentRecord => ({
   regulatoryReportable: r.regulatory_reportable ?? false,
   rootCause: r.root_cause ?? null,
   impactDescription: r.impact_description ?? null,
+  lessonsLearned: r.lessons_learned ?? null,
   financialImpact: r.financial_impact ?? null,
   linkedRiskIds: r.linked_risk_ids ?? [],
   createdAt: r.created_at,
@@ -120,6 +122,7 @@ const incidentToRow = (i: IncidentRecord): Record<string, unknown> => ({
   regulatory_reportable: i.regulatoryReportable,
   root_cause: i.rootCause,
   impact_description: i.impactDescription,
+  lessons_learned: i.lessonsLearned,
   financial_impact: i.financialImpact,
   linked_risk_ids: i.linkedRiskIds,
   updated_at: new Date().toISOString(),

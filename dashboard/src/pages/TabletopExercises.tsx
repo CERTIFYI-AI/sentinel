@@ -301,7 +301,7 @@ export default function TabletopExercises() {
                 </td>
                 <td className="px-4 py-3" onClick={e => e.stopPropagation()}>
                   {item.linkedPlaybookId
-                    ? <InterlinkChip label={playbookName(item.linkedPlaybookId) ?? "Unavailable"} to="/incidents/playbooks" />
+                    ? <InterlinkChip label={playbookName(item.linkedPlaybookId) ?? "Unavailable"} to={`/incidents/playbooks?open=${item.linkedPlaybookId}`} />
                     : <span className="text-xs text-[hsl(var(--text-3))]">—</span>}
                 </td>
                 <td className="px-4 py-3"><StatusBadge status={prettyStatus(item.status)} /></td>
@@ -393,7 +393,7 @@ export default function TabletopExercises() {
           ]} />
           {viewItem.linkedPlaybookId && (
             <FormSection title="Linked Playbook">
-              <InterlinkChip label={playbookName(viewItem.linkedPlaybookId) ?? "Unavailable"} to="/incidents/playbooks" />
+              <InterlinkChip label={playbookName(viewItem.linkedPlaybookId) ?? "Unavailable"} to={`/incidents/playbooks?open=${viewItem.linkedPlaybookId}`} />
             </FormSection>
           )}
           <FormSection title="Scenario">

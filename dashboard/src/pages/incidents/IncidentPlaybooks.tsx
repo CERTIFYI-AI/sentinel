@@ -2,10 +2,12 @@
 // Incident Response Playbooks — real org-scoped backend (incident_playbooks /
 // playbook_runs via useRiskIncidents). No fabricated incidents: the active
 // banner renders only for persisted runs with status 'active'.
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import {
   Siren, Play, CheckCircle, Clock, ArrowRight, MagnifyingGlass, Export,
   ShieldWarning, Brain, Lock, ClipboardText, FlagCheckered,
+  Plus, PencilSimple, Trash, X,
 } from '@phosphor-icons/react';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
@@ -16,9 +18,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { Label } from '../../components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { Textarea } from '../../components/ui/textarea';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { toast } from 'sonner';
 import { formatDate } from '../../data/seed';
-import { usePlaybooks, usePlaybookRuns, useIncidents } from '../../hooks/useRiskIncidents';
+import { usePlaybooks, usePlaybookRuns, useIncidents, useTabletops } from '../../hooks/useRiskIncidents';
 import type { PlaybookRecord, PlaybookRunRecord } from '../../services/incidentResponseService';
 import { useModelsData } from '@/hooks/useModelsData';
 import { InterlinkChip } from '@/components/ui/InterlinkChip';
@@ -45,11 +49,59 @@ function categoryIcon(category?: string) {
 
 const stepKey = (phaseName: string, idx: number) => `${phaseName}:${idx}`;
 
+const PB_STATUS_OPTIONS = ['active', 'draft', 'archived'];
+
+// Editor state — phases keep steps as text lines ("step text", optionally
+// suffixed with " @Role"); escalation tiers are renumbered on save.
+interface PhaseForm { name: string; slaMinutes: string; stepsText: string }
+interface EscForm { role: string; channel: string }
+interface PbForm {
+  playbookRef: string;
+  name: string;
+  category: string;
+  description: string;
+  status: string;
+  phases: PhaseForm[];
+  escalation: EscForm[];
+}
+
+const EMPTY_PB_FORM: PbForm = {
+  playbookRef: '', name: '', category: '', description: '', status: 'draft',
+  phases: [], escalation: [],
+};
+
+const stepToLine = (s: { text: string; role?: string }) => (s.role ? `${s.text} @${s.role}` : s.text);
+const lineToStep = (line: string): { text: string; role?: string } => {
+  const at = line.lastIndexOf(' @');
+  return at > 0
+    ? { text: line.slice(0, at).trim(), role: line.slice(at + 2).trim() || undefined }
+    : { text: line.trim() };
+};
+
+function playbookToForm(pb: PlaybookRecord): PbForm {
+  return {
+    playbookRef: pb.playbookRef ?? '',
+    name: pb.name,
+    category: pb.category ?? '',
+    description: pb.description ?? '',
+    status: pb.status,
+    phases: pb.phases.map(p => ({
+      name: p.name,
+      slaMinutes: p.sla_minutes != null ? String(p.sla_minutes) : '',
+      stepsText: p.steps.map(stepToLine).join('\n'),
+    })),
+    escalation: pb.escalationChain.map(t => ({ role: t.role, channel: t.contact_channel ?? '' })),
+  };
+}
+
 export default function IncidentPlaybooks() {
-  const { items: playbooks, isLoading, error } = usePlaybooks();
+  const { items: playbooks, isLoading, error, save: savePlaybook, remove: removePlaybook, isSaving: isSavingPlaybook } = usePlaybooks();
   const { runs, saveRun, isSaving } = usePlaybookRuns();
   const { items: incidents } = useIncidents();
+  const { items: tabletops } = useTabletops();
   const { models } = useModelsData();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openParam = searchParams.get('open');
 
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<PlaybookRecord | null>(null);
@@ -59,6 +111,88 @@ export default function IncidentPlaybooks() {
   const [actIncidentId, setActIncidentId] = useState('');
   const [actSeverity, setActSeverity] = useState('');
   const [actCommander, setActCommander] = useState('');
+
+  // Create/edit dialog — editBase carries the fields the dialog doesn't touch
+  // (version, regulatory templates, linked models) through the round-trip.
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editBase, setEditBase] = useState<PlaybookRecord | null>(null);
+  const [pbForm, setPbForm] = useState<PbForm>(EMPTY_PB_FORM);
+  const [deleteTarget, setDeleteTarget] = useState<PlaybookRecord | null>(null);
+
+  // Deep link: ?open=<uuid or playbookRef> opens that playbook's detail.
+  useEffect(() => {
+    if (!openParam || playbooks.length === 0) return;
+    const match = playbooks.find(p => p.id === openParam || p.playbookRef === openParam);
+    if (match) { setSelected(match); setTab('steps'); }
+  }, [openParam, playbooks]);
+
+  const closeDetail = () => {
+    setSelected(null);
+    if (openParam) {
+      const next = new URLSearchParams(searchParams);
+      next.delete('open');
+      setSearchParams(next, { replace: true });
+    }
+  };
+
+  // "Last tested" derives from real completed tabletop exercises linked to
+  // the playbook; the manually recorded date is a labelled fallback.
+  const lastTestedInfo = (pb: PlaybookRecord): { date: string; source: 'tabletop' | 'recorded' } | null => {
+    const completed = tabletops
+      .filter(t => t.linkedPlaybookId === pb.id && t.completedAt)
+      .map(t => t.completedAt as string)
+      .sort();
+    if (completed.length) return { date: completed[completed.length - 1], source: 'tabletop' };
+    if (pb.lastTestedDate) return { date: pb.lastTestedDate, source: 'recorded' };
+    return null;
+  };
+
+  const openCreate = () => { setEditBase(null); setPbForm(EMPTY_PB_FORM); setEditorOpen(true); };
+  const openEdit = (pb: PlaybookRecord) => { setEditBase(pb); setPbForm(playbookToForm(pb)); setEditorOpen(true); };
+
+  const handleSavePlaybook = async () => {
+    if (!pbForm.name.trim()) { toast.error('Playbook name is required'); return; }
+    const record: PlaybookRecord = {
+      ...(editBase ?? { phases: [], escalationChain: [], regulatoryTemplates: [], status: 'draft', name: '' }),
+      id: editBase?.id,
+      playbookRef: pbForm.playbookRef.trim() || undefined,
+      name: pbForm.name.trim(),
+      category: pbForm.category.trim() || undefined,
+      description: pbForm.description.trim() || undefined,
+      status: pbForm.status,
+      phases: pbForm.phases
+        .filter(p => p.name.trim())
+        .map(p => ({
+          name: p.name.trim(),
+          sla_minutes: p.slaMinutes.trim() !== '' && !Number.isNaN(Number(p.slaMinutes)) ? Number(p.slaMinutes) : undefined,
+          steps: p.stepsText.split('\n').map(s => s.trim()).filter(Boolean).map(lineToStep),
+        })),
+      escalationChain: pbForm.escalation
+        .filter(t => t.role.trim())
+        .map((t, i) => ({ tier: i + 1, role: t.role.trim(), contact_channel: t.channel.trim() || undefined })),
+    };
+    try {
+      const saved = await savePlaybook(record); // hook toasts success; throws on failure
+      if (selected?.id && selected.id === saved.id) setSelected(saved);
+      setEditorOpen(false);
+      setEditBase(null);
+      setPbForm(EMPTY_PB_FORM);
+    } catch { /* hook surfaces the error toast */ }
+  };
+
+  const handleDeletePlaybook = async () => {
+    if (!deleteTarget?.id) return;
+    try {
+      await removePlaybook(deleteTarget.id); // hook toasts success; throws on failure
+      if (selected?.id === deleteTarget.id) closeDetail();
+      setDeleteTarget(null);
+    } catch { /* hook surfaces the error toast */ }
+  };
+
+  const setPhase = (idx: number, patch: Partial<PhaseForm>) =>
+    setPbForm(f => ({ ...f, phases: f.phases.map((p, i) => (i === idx ? { ...p, ...patch } : p)) }));
+  const setEsc = (idx: number, patch: Partial<EscForm>) =>
+    setPbForm(f => ({ ...f, escalation: f.escalation.map((t, i) => (i === idx ? { ...t, ...patch } : t)) }));
 
   const modelName = (id: string) => models.find(m => m.id === id)?.name ?? 'Unavailable';
   const playbookName = (id: string) => playbooks.find(p => p.id === id)?.name ?? 'Unavailable';
@@ -82,9 +216,11 @@ export default function IncidentPlaybooks() {
     (p.category ?? '').toLowerCase().includes(search.toLowerCase()),
   );
 
-  const lastTestedDates = playbooks.map(p => p.lastTestedDate).filter(Boolean) as string[];
-  const lastTested = lastTestedDates.length
-    ? formatDate(lastTestedDates.sort().slice(-1)[0])
+  // Derived across playbooks: completed linked tabletop exercises first,
+  // recorded dates as fallback (per-card labels say which one it is).
+  const testedDates = playbooks.map(pb => lastTestedInfo(pb)?.date).filter(Boolean) as string[];
+  const lastTested = testedDates.length
+    ? formatDate(testedDates.sort().slice(-1)[0])
     : '—';
 
   const openActivate = (playbookId?: string) => {
@@ -168,6 +304,9 @@ export default function IncidentPlaybooks() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={handleExport}>
             <Export size={14} /> Export JSON
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={openCreate}>
+            <Plus size={14} /> New Playbook
           </Button>
           <Button size="sm" className="gap-1.5 rounded-none bg-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.9)]" onClick={() => openActivate()}>
             <Play size={14} /> Activate Playbook
@@ -274,6 +413,9 @@ export default function IncidentPlaybooks() {
             <Siren size={28} className="mx-auto text-[hsl(var(--text-4))]" />
             <p className="text-sm font-medium text-[hsl(var(--text-2))] mt-2">No playbooks defined yet</p>
             <p className="text-xs text-[hsl(var(--text-4))] mt-1">Playbooks created for this organization will appear here.</p>
+            <Button size="sm" variant="outline" className="mt-3 rounded-none gap-1.5" onClick={openCreate}>
+              <Plus size={13} /> Create the first playbook
+            </Button>
           </CardContent>
         </Card>
       ) : (
@@ -322,13 +464,30 @@ export default function IncidentPlaybooks() {
                     </div>
                   )}
                   <div className="flex items-center justify-between border-t border-[hsl(var(--border))] pt-2">
-                    <span className="text-xs text-[hsl(var(--text-4))]">
-                      {pb.version ?? '—'} · {pb.lastTestedDate ? `Tested ${formatDate(pb.lastTestedDate)}` : 'Not tested yet'}
-                    </span>
-                    <Button size="sm" variant="outline" className="h-6 text-xs rounded-none gap-1"
-                      onClick={e => { e.stopPropagation(); openActivate(pb.id); }}>
-                      <Play size={10} /> Activate
-                    </Button>
+                    {(() => {
+                      const tested = lastTestedInfo(pb);
+                      return (
+                        <span className="text-xs text-[hsl(var(--text-4))]">
+                          {pb.version ?? '—'} · {tested
+                            ? `Tested ${formatDate(tested.date)} (${tested.source === 'tabletop' ? 'tabletop exercise' : 'recorded date'})`
+                            : 'Not tested yet'}
+                        </span>
+                      );
+                    })()}
+                    <div className="flex items-center gap-1">
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-none" aria-label={`Edit ${pb.name}`}
+                        onClick={e => { e.stopPropagation(); openEdit(pb); }}>
+                        <PencilSimple size={12} className="text-[hsl(var(--brand))]" />
+                      </Button>
+                      <Button size="sm" variant="ghost" className="h-6 w-6 p-0 rounded-none" aria-label={`Delete ${pb.name}`}
+                        onClick={e => { e.stopPropagation(); setDeleteTarget(pb); }}>
+                        <Trash size={12} className="text-[hsl(var(--destructive))]" />
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-6 text-xs rounded-none gap-1"
+                        onClick={e => { e.stopPropagation(); openActivate(pb.id); }}>
+                        <Play size={10} /> Activate
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -341,7 +500,7 @@ export default function IncidentPlaybooks() {
       )}
 
       {/* Playbook Detail Sheet */}
-      <Sheet open={!!selected} onOpenChange={v => !v && setSelected(null)}>
+      <Sheet open={!!selected} onOpenChange={v => !v && closeDetail()}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto" style={{ borderRadius: 0 }}>
           {selected && (
             <>
@@ -354,10 +513,25 @@ export default function IncidentPlaybooks() {
                       {selected.owner ? ` · Owner: ${selected.owner}` : ''}
                     </p>
                   </div>
-                  <Badge style={{ background: selected.status === 'active' ? 'hsl(var(--s-ok-bg))' : 'hsl(220 14% 60% / 0.15)', color: selected.status === 'active' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>
-                    {selected.status}
-                  </Badge>
+                  <div className="flex items-center gap-1.5">
+                    <Button size="sm" variant="outline" className="h-6 text-xs rounded-none gap-1" onClick={() => openEdit(selected)}>
+                      <PencilSimple size={11} /> Edit
+                    </Button>
+                    <Badge style={{ background: selected.status === 'active' ? 'hsl(var(--s-ok-bg))' : 'hsl(220 14% 60% / 0.15)', color: selected.status === 'active' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>
+                      {selected.status}
+                    </Badge>
+                  </div>
                 </div>
+                {(() => {
+                  const tested = lastTestedInfo(selected);
+                  return (
+                    <p className="text-xs text-[hsl(var(--text-4))]">
+                      {tested
+                        ? `Last tested ${formatDate(tested.date)} — ${tested.source === 'tabletop' ? 'derived from a completed tabletop exercise' : 'manually recorded date'}`
+                        : 'Not tested yet — no completed tabletop exercise is linked to this playbook.'}
+                    </p>
+                  );
+                })()}
                 {selected.description && (
                   <p className="text-xs text-[hsl(var(--text-3))] border-l-2 border-[hsl(var(--brand))] pl-3 py-1">{selected.description}</p>
                 )}
@@ -565,6 +739,125 @@ export default function IncidentPlaybooks() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Create / Edit Playbook Dialog — closes only after the write persists */}
+      <Dialog open={editorOpen} onOpenChange={v => { if (!v) { setEditorOpen(false); setEditBase(null); } }}>
+        <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto" style={{ borderRadius: 0 }}>
+          <DialogHeader>
+            <DialogTitle>{editBase ? `Edit Playbook — ${editBase.name}` : 'New Incident Response Playbook'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Name *</Label>
+                <Input value={pbForm.name} onChange={e => setPbForm(f => ({ ...f, name: e.target.value }))}
+                  placeholder="e.g. Model Failure Response" className="rounded-none mt-1 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">Reference</Label>
+                <Input value={pbForm.playbookRef} onChange={e => setPbForm(f => ({ ...f, playbookRef: e.target.value }))}
+                  placeholder="e.g. PB-001 (optional)" className="rounded-none mt-1 text-sm" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Category</Label>
+                <Input value={pbForm.category} onChange={e => setPbForm(f => ({ ...f, category: e.target.value }))}
+                  placeholder="e.g. Model Behavior, Security, Bias" className="rounded-none mt-1 text-sm" />
+              </div>
+              <div>
+                <Label className="text-xs">Status</Label>
+                <Select value={pbForm.status} onValueChange={v => setPbForm(f => ({ ...f, status: v }))}>
+                  <SelectTrigger className="rounded-none mt-1 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PB_STATUS_OPTIONS.map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs">Description</Label>
+              <Textarea rows={2} value={pbForm.description} onChange={e => setPbForm(f => ({ ...f, description: e.target.value }))}
+                placeholder="When to use this playbook and what it covers" className="rounded-none mt-1 text-sm" />
+            </div>
+
+            {/* Phases editor */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Phases</Label>
+                <Button type="button" size="sm" variant="outline" className="h-6 text-xs rounded-none gap-1"
+                  onClick={() => setPbForm(f => ({ ...f, phases: [...f.phases, { name: '', slaMinutes: '', stepsText: '' }] }))}>
+                  <Plus size={11} /> Add Phase
+                </Button>
+              </div>
+              {pbForm.phases.length === 0 && (
+                <p className="text-xs text-[hsl(var(--text-4))]">No phases yet — add the response phases in order (e.g. Detect, Contain, Remediate).</p>
+              )}
+              {pbForm.phases.map((phase, pi) => (
+                <div key={pi} className="border border-[hsl(var(--border))] p-3 space-y-2" style={{ borderLeft: `3px solid ${phaseColor(pi)}` }}>
+                  <div className="flex items-center gap-2">
+                    <Input value={phase.name} onChange={e => setPhase(pi, { name: e.target.value })}
+                      placeholder={`Phase ${pi + 1} name`} className="rounded-none h-8 text-sm flex-1" />
+                    <Input value={phase.slaMinutes} onChange={e => setPhase(pi, { slaMinutes: e.target.value })}
+                      type="number" min={0} placeholder="SLA (min)" className="rounded-none h-8 text-sm w-28" />
+                    <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-none" aria-label={`Remove phase ${phase.name || pi + 1}`}
+                      onClick={() => setPbForm(f => ({ ...f, phases: f.phases.filter((_, i) => i !== pi) }))}>
+                      <X size={12} className="text-[hsl(var(--destructive))]" />
+                    </Button>
+                  </div>
+                  <Textarea rows={3} value={phase.stepsText} onChange={e => setPhase(pi, { stepsText: e.target.value })}
+                    placeholder={'One step per line. Append "@Role" to assign a role, e.g.\nFreeze model rollout @ML Ops'}
+                    className="rounded-none text-xs font-mono" />
+                </div>
+              ))}
+            </div>
+
+            {/* Escalation chain editor */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <Label className="text-xs">Escalation Chain</Label>
+                <Button type="button" size="sm" variant="outline" className="h-6 text-xs rounded-none gap-1"
+                  onClick={() => setPbForm(f => ({ ...f, escalation: [...f.escalation, { role: '', channel: '' }] }))}>
+                  <Plus size={11} /> Add Tier
+                </Button>
+              </div>
+              {pbForm.escalation.length === 0 && (
+                <p className="text-xs text-[hsl(var(--text-4))]">No escalation tiers yet — tiers are numbered in the order listed.</p>
+              )}
+              {pbForm.escalation.map((tier, ti) => (
+                <div key={ti} className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-[hsl(var(--text-4))] w-7 flex-shrink-0">T{ti + 1}</span>
+                  <Input value={tier.role} onChange={e => setEsc(ti, { role: e.target.value })}
+                    placeholder="Role (e.g. Incident Commander)" className="rounded-none h-8 text-sm flex-1" />
+                  <Input value={tier.channel} onChange={e => setEsc(ti, { channel: e.target.value })}
+                    placeholder="Contact channel (e.g. #ai-incidents)" className="rounded-none h-8 text-sm flex-1" />
+                  <Button type="button" size="sm" variant="ghost" className="h-8 w-8 p-0 rounded-none" aria-label={`Remove tier ${ti + 1}`}
+                    onClick={() => setPbForm(f => ({ ...f, escalation: f.escalation.filter((_, i) => i !== ti) }))}>
+                    <X size={12} className="text-[hsl(var(--destructive))]" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" className="rounded-none" onClick={() => { setEditorOpen(false); setEditBase(null); }}>Cancel</Button>
+            <Button size="sm" className="rounded-none" disabled={isSavingPlaybook || !pbForm.name.trim()} onClick={handleSavePlaybook}>
+              {isSavingPlaybook ? 'Saving…' : 'Save Playbook'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDeletePlaybook}
+        type="danger"
+        title="Delete Playbook"
+        message={<p>Delete <strong>{deleteTarget?.name}</strong>? Past runs keep their history, but the playbook can no longer be activated. This cannot be undone.</p>}
+        confirmLabel="Delete"
+      />
     </div>
   );
 }

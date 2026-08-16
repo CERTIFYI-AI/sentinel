@@ -5,7 +5,7 @@
 // the dialog closes only after the save resolves (the hook owns the toasts).
 import { useEffect, useState, type ReactNode } from "react";
 import { useSearchParams } from "react-router-dom";
-import { AlertTriangle, Plus, Search, Filter, Download, X, Eye } from "lucide-react";
+import { AlertTriangle, Plus, Search, Filter, Download, X, Eye, Pencil, FileText } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardContent } from "../components/ui/card";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -16,7 +16,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { InterlinkChip } from "@/components/ui/InterlinkChip";
-import { useIncidents, usePlaybooks } from "@/hooks/useRiskIncidents";
+import { useIncidents, usePlaybooks, useRemediations, useHitlReviews } from "@/hooks/useRiskIncidents";
+import { useFilings } from "@/hooks/useComplianceGroup";
+import { useEvidenceData } from "@/hooks/useEvidenceData";
 import type { IncidentRecord } from "@/services/incidentResponseService";
 import { useModelsData } from "@/hooks/useModelsData";
 import { useRisksData } from "@/hooks/useRisksData";
@@ -60,11 +62,48 @@ const EMPTY_FORM = {
 
 const incidentRef = (inc: IncidentRecord) => inc.incidentId || (inc.id ? inc.id.slice(0, 8) : "—");
 
+const STATUSES = ["open", "investigating", "containment", "remediation", "resolved", "closed"] as const;
+
+// Edit form — the fields the response team updates over an incident's life.
+interface EditForm {
+  severity: string;
+  status: string;
+  category: string;
+  assignee: string;
+  slaHours: string;            // text input → number | null on save
+  regulatoryReportable: boolean;
+  rootCause: string;
+  impactDescription: string;
+  lessonsLearned: string;
+  linkedRiskIds: string[];
+}
+
+function toEditForm(inc: IncidentRecord): EditForm {
+  return {
+    severity: inc.severity,
+    status: inc.status,
+    category: inc.category ?? CATEGORIES[0],
+    assignee: inc.assignee ?? "",
+    slaHours: inc.slaHours != null ? String(inc.slaHours) : "",
+    regulatoryReportable: inc.regulatoryReportable ?? false,
+    rootCause: inc.rootCause ?? "",
+    impactDescription: inc.impactDescription ?? "",
+    lessonsLearned: inc.lessonsLearned ?? "",
+    linkedRiskIds: inc.linkedRiskIds ?? [],
+  };
+}
+
 export default function IncidentLog() {
   const { items: incidents, isLoading, error, save, isSaving } = useIncidents();
   const { items: playbooks } = usePlaybooks();
   const { models } = useModelsData();
   const { risks } = useRisksData();
+  // Cross-module interlinks rendered in the detail sheet — all real rows,
+  // filtered client-side to the open incident.
+  const { items: filings, save: saveFilingRecord, isSaving: isSavingFiling } = useFilings();
+  const { evidence } = useEvidenceData();
+  const { items: remediations } = useRemediations();
+  const { items: hitlReviews } = useHitlReviews();
   const [searchParams, setSearchParams] = useSearchParams();
   const modelParam = searchParams.get("model");
   const openParam = searchParams.get("open");
@@ -74,6 +113,8 @@ export default function IncidentLog() {
   const [sevFilter, setSevFilter] = useState("all");
   const [form, setForm] = useState({ ...EMPTY_FORM });
   const [detail, setDetail] = useState<IncidentRecord | null>(null);
+  const [editTarget, setEditTarget] = useState<IncidentRecord | null>(null);
+  const [editForm, setEditForm] = useState<EditForm | null>(null);
 
   const modelName = (id?: string | null) => (id ? models.find((m) => m.id === id)?.name ?? "Unavailable" : undefined);
   const playbookName = (id?: string | null) => (id ? playbooks.find((p) => p.id === id)?.name ?? "Unavailable" : undefined);
@@ -125,6 +166,52 @@ export default function IncidentLog() {
     } catch {
       /* dialog stays open; the hook already toasted the real error */
     }
+  };
+
+  const openEdit = (inc: IncidentRecord) => {
+    setEditTarget(inc);
+    setEditForm(toEditForm(inc));
+  };
+
+  const submitEdit = async () => {
+    if (!editTarget || !editForm) return;
+    const slaParsed = editForm.slaHours.trim() === "" ? null : Number(editForm.slaHours);
+    const record: IncidentRecord = {
+      ...editTarget,
+      severity: editForm.severity,
+      status: editForm.status,
+      category: editForm.category,
+      assignee: editForm.assignee.trim() || null,
+      slaHours: slaParsed != null && !Number.isNaN(slaParsed) ? slaParsed : null,
+      regulatoryReportable: editForm.regulatoryReportable,
+      rootCause: editForm.rootCause.trim() || null,
+      impactDescription: editForm.impactDescription.trim() || null,
+      lessonsLearned: editForm.lessonsLearned.trim() || null,
+      linkedRiskIds: editForm.linkedRiskIds,
+    };
+    try {
+      const saved = await save(record); // hook toasts success; throws on failure
+      if (detail?.id === saved.id) setDetail(saved);
+      setEditTarget(null);
+      setEditForm(null);
+    } catch { /* dialog stays open; the hook already toasted the real error */ }
+  };
+
+  // Art. 73 prompt: draft the serious-incident filing directly from the
+  // incident when it is regulatory-reportable and no filing exists yet.
+  const draftFiling = async (inc: IncidentRecord) => {
+    if (!inc.id) return;
+    try {
+      await saveFilingRecord({
+        title: `Filing: ${incidentRef(inc)} — ${inc.title}`,
+        regulation: "EU-AI-Act-73",
+        type: "incident_report",
+        status: "draft",
+        linkedIncidentId: inc.id,
+        deadline: new Date(Date.now() + 72 * 3600 * 1000).toISOString(),
+      });
+      // The filings hook toasts success and invalidates its query.
+    } catch { /* the filings hook already toasted the real error */ }
   };
 
   const filtered = incidents.filter((inc) => {
@@ -270,9 +357,14 @@ export default function IncidentLog() {
                       <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))] whitespace-nowrap">{inc.assignee || "—"}</td>
                       <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))] whitespace-nowrap">{formatDate(inc.detectedAt ?? inc.createdAt ?? "")}</td>
                       <td className="px-4 py-3">
-                        <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setDetail(inc); }}>
-                          <Eye size={14} className="text-[hsl(var(--brand))]" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={(e) => { e.stopPropagation(); setDetail(inc); }}>
+                            <Eye size={14} className="text-[hsl(var(--brand))]" />
+                          </Button>
+                          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" aria-label={`Edit ${incidentRef(inc)}`} onClick={(e) => { e.stopPropagation(); openEdit(inc); }}>
+                            <Pencil size={14} className="text-[hsl(var(--brand))]" />
+                          </Button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -368,6 +460,114 @@ export default function IncidentLog() {
         </DialogContent>
       </Dialog>
 
+      {/* Edit Incident dialog — prefilled; closes ONLY after the write persists */}
+      <Dialog open={!!editTarget} onOpenChange={(o) => { if (!o) { setEditTarget(null); setEditForm(null); } }}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 560 }} className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editTarget ? `Edit ${incidentRef(editTarget)} — ${editTarget.title}` : "Edit Incident"}</DialogTitle>
+          </DialogHeader>
+          {editForm && (
+            <div className="space-y-3 py-2">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Severity</label>
+                  <Select value={editForm.severity} onValueChange={(v) => setEditForm({ ...editForm, severity: v })}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {SEVERITIES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Status</label>
+                  <Select value={editForm.status} onValueChange={(v) => setEditForm({ ...editForm, status: v })}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {STATUSES.map((s) => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Category</label>
+                  <Select value={editForm.category} onValueChange={(v) => setEditForm({ ...editForm, category: v })}>
+                    <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                    <SelectContent style={{ borderRadius: 0 }}>
+                      {(CATEGORIES.includes(editForm.category as (typeof CATEGORIES)[number]) ? CATEGORIES : [editForm.category, ...CATEGORIES]).map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Assignee</label>
+                  <Input value={editForm.assignee} onChange={(e) => setEditForm({ ...editForm, assignee: e.target.value })} placeholder="e.g. Jane Doe" style={{ borderRadius: 0 }} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">SLA Target (hours)</label>
+                  <Input type="number" min={0} value={editForm.slaHours} onChange={(e) => setEditForm({ ...editForm, slaHours: e.target.value })} placeholder="e.g. 72" style={{ borderRadius: 0 }} />
+                </div>
+                <div className="flex items-end pb-2">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox checked={editForm.regulatoryReportable} onCheckedChange={(c) => setEditForm({ ...editForm, regulatoryReportable: c === true })} />
+                    <span className="text-xs font-medium text-[hsl(var(--text-2))]">Regulatory reportable (Art. 73)</span>
+                  </label>
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Root Cause</label>
+                <textarea value={editForm.rootCause} onChange={(e) => setEditForm({ ...editForm, rootCause: e.target.value })} rows={2} className="w-full border border-[hsl(var(--border))] rounded-none px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:ring-2 focus:ring-[hsl(var(--s-ok-br))] focus:border-[hsl(var(--s-ok-br))] outline-none resize-none" placeholder="What actually caused the incident?" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Impact Description</label>
+                <textarea value={editForm.impactDescription} onChange={(e) => setEditForm({ ...editForm, impactDescription: e.target.value })} rows={2} className="w-full border border-[hsl(var(--border))] rounded-none px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:ring-2 focus:ring-[hsl(var(--s-ok-br))] focus:border-[hsl(var(--s-ok-br))] outline-none resize-none" placeholder="Who and what was affected, and how badly?" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Lessons Learned</label>
+                <textarea value={editForm.lessonsLearned} onChange={(e) => setEditForm({ ...editForm, lessonsLearned: e.target.value })} rows={2} className="w-full border border-[hsl(var(--border))] rounded-none px-3 py-2 text-sm bg-[hsl(var(--bg-surface))] text-[hsl(var(--text-1))] focus:ring-2 focus:ring-[hsl(var(--s-ok-br))] focus:border-[hsl(var(--s-ok-br))] outline-none resize-none" placeholder="What should change so this does not recur?" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Linked Risks</label>
+                {risks.length === 0 ? (
+                  <p className="text-xs text-[hsl(var(--text-4))]">No risks in the register yet.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-1.5">
+                    {risks.map((r) => {
+                      const on = editForm.linkedRiskIds.includes(r.id);
+                      return (
+                        <button key={r.id} type="button"
+                          onClick={() => setEditForm({
+                            ...editForm,
+                            linkedRiskIds: on
+                              ? editForm.linkedRiskIds.filter((x) => x !== r.id)
+                              : [...editForm.linkedRiskIds, r.id],
+                          })}
+                          className={`text-[11px] px-2 py-1 border transition-colors ${
+                            on
+                              ? "bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] border-[hsl(var(--brand))/30]"
+                              : "bg-[hsl(var(--bg-raised))] text-[hsl(var(--text-3))] border-[hsl(var(--border))]"
+                          }`}>
+                          {r.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => { setEditTarget(null); setEditForm(null); }}>Cancel</Button>
+            <Button style={{ borderRadius: 0 }} disabled={isSaving} onClick={submitEdit}>
+              {isSaving ? "Saving..." : "Save Changes"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Detail sheet */}
       <Sheet open={!!detail} onOpenChange={(o) => { if (!o) closeDetail(); }}>
         <SheetContent className="w-[560px] sm:max-w-[560px] overflow-y-auto" style={{ borderRadius: 0 }}>
@@ -379,6 +579,11 @@ export default function IncidentLog() {
                   {incidentRef(detail)} — {detail.title}
                 </SheetTitle>
               </SheetHeader>
+              <div className="mt-3">
+                <Button variant="outline" size="sm" style={{ borderRadius: 0 }} leftIcon={<Pencil size={13} />} onClick={() => openEdit(detail)}>
+                  Edit Incident
+                </Button>
+              </div>
               <div className="mt-4 space-y-4">
                 <div className="grid grid-cols-2 gap-3">
                   <DetailBox label="Severity">
@@ -408,9 +613,24 @@ export default function IncidentLog() {
 
                 <DetailBox label="Response Playbook">
                   {detail.playbookId
-                    ? <InterlinkChip label={playbookName(detail.playbookId) ?? "Unavailable"} to="/incidents/playbooks" />
+                    ? <InterlinkChip label={playbookName(detail.playbookId) ?? "Unavailable"} to={`/incidents/playbooks?open=${detail.playbookId}`} />
                     : <span className="text-sm text-[hsl(var(--text-4))]">None linked</span>}
                 </DetailBox>
+
+                {/* Post-market origin — only when the incident really came in
+                    through monitoring (no invented provenance). */}
+                {(detail.source === "post_market_monitoring" || detail.detectionMethod) && (
+                  <DetailBox label="Origin">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {detail.detectionMethod && (
+                        <span className="text-sm text-[hsl(var(--text-1))]">Detected via {detail.detectionMethod.replace(/_/g, " ")}</span>
+                      )}
+                      {detail.source === "post_market_monitoring" && (
+                        <InterlinkChip label="Post-Market Monitoring" to="/post-market" />
+                      )}
+                    </div>
+                  </DetailBox>
+                )}
 
                 <DetailBox label="Linked Risks">
                   {detail.linkedRiskIds?.length ? (
@@ -425,8 +645,87 @@ export default function IncidentLog() {
                 {detail.description && <DetailBox label="Description" value={detail.description} />}
                 {detail.impactDescription && <DetailBox label="Impact" value={detail.impactDescription} />}
                 {detail.rootCause && <DetailBox label="Root Cause" value={detail.rootCause} />}
+                {detail.lessonsLearned && <DetailBox label="Lessons Learned" value={detail.lessonsLearned} />}
                 {detail.financialImpact != null && <DetailBox label="Financial Impact" value={`$${detail.financialImpact.toLocaleString()}`} />}
                 {(detail.responseTeam ?? []).length > 0 && <DetailBox label="Response Team" value={detail.responseTeam!.join(", ")} />}
+
+                {/* Regulator filings raised for this incident (Art. 73). */}
+                <DetailBox label="Regulator Filings">
+                  {(() => {
+                    const linked = filings.filter((f) => f.linkedIncidentId === detail.id);
+                    if (linked.length > 0) {
+                      return (
+                        <div className="flex flex-wrap gap-1.5">
+                          {linked.map((f) => (
+                            <InterlinkChip key={f.id} label={f.filingRef ? `${f.filingRef} — ${f.title}` : f.title} to={`/regulator-filings?open=${f.id}`} />
+                          ))}
+                        </div>
+                      );
+                    }
+                    if (detail.regulatoryReportable) {
+                      return (
+                        <div className="space-y-2">
+                          <p className="text-xs text-[hsl(var(--s-wn-tx))]">
+                            Marked regulatory reportable (EU AI Act Art. 73) but no filing has been drafted yet.
+                          </p>
+                          <Button variant="outline" size="sm" style={{ borderRadius: 0 }} disabled={isSavingFiling}
+                            leftIcon={<FileText size={13} />} onClick={() => draftFiling(detail)}>
+                            {isSavingFiling ? "Drafting…" : "Draft regulator filing"}
+                          </Button>
+                        </div>
+                      );
+                    }
+                    return <span className="text-sm text-[hsl(var(--text-4))]">No filings linked</span>;
+                  })()}
+                </DetailBox>
+
+                {/* Evidence records preserved against this incident. */}
+                <DetailBox label="Evidence">
+                  {(() => {
+                    const linked = evidence.filter((e) => e.linked_incident_id === detail.id);
+                    return linked.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {linked.map((e) => (
+                          <InterlinkChip key={e.id} label={e.title || "Unavailable"} to={`/evidence-vault?open=${e.id}`} />
+                        ))}
+                      </div>
+                    ) : <span className="text-sm text-[hsl(var(--text-4))]">No evidence linked</span>;
+                  })()}
+                </DetailBox>
+
+                {/* Remediation plans raised from this incident, with progress. */}
+                <DetailBox label="Remediation Plans">
+                  {(() => {
+                    const linked = remediations.filter((r) => r.incidentId === detail.id);
+                    return linked.length > 0 ? (
+                      <div className="space-y-1.5">
+                        {linked.map((r) => (
+                          <div key={r.id} className="flex items-center gap-2 flex-wrap">
+                            <InterlinkChip label={r.planRef ? `${r.planRef} — ${r.title}` : r.title} to={`/remediation-tracker?open=${r.id}`} />
+                            <span className="text-xs font-mono text-[hsl(var(--text-3))]">{r.progressPct}%</span>
+                            <div className="w-16 h-1.5 bg-[hsl(var(--bg-raised))] overflow-hidden">
+                              <div className="h-full bg-[hsl(var(--s-ok-tx))]" style={{ width: `${r.progressPct}%` }} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : <span className="text-sm text-[hsl(var(--text-4))]">No remediation plans linked</span>;
+                  })()}
+                </DetailBox>
+
+                {/* Human-oversight reviews raised against this incident. */}
+                <DetailBox label="HITL Reviews">
+                  {(() => {
+                    const linked = hitlReviews.filter((h) => h.entityId === detail.id);
+                    return linked.length > 0 ? (
+                      <div className="flex flex-wrap gap-1.5">
+                        {linked.map((h) => (
+                          <InterlinkChip key={h.id} label={`${h.title} (${h.status})`} to={`/hitl/${h.id}`} />
+                        ))}
+                      </div>
+                    ) : <span className="text-sm text-[hsl(var(--text-4))]">No reviews linked</span>;
+                  })()}
+                </DetailBox>
 
                 <DetailBox label="Workflow">
                   <InterlinkChip label="Open in Workflow" to={`/incident-workflow?open=${detail.id}`} />

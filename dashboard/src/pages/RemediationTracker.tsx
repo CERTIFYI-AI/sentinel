@@ -122,10 +122,31 @@ export default function RemediationTracker() {
   }, [openParam, items, isLoading]);
 
   const modelName = (id: string) => models.find(m => m.id === id)?.name ?? 'Unavailable';
-  const riskLabel = (id: string) => risks.find(r => r.id === id)?.title ?? 'Risk';
+  const riskLabel = (id: string) => risks.find(r => r.id === id)?.title ?? 'Unavailable';
   const incidentLabel = (id: string) => {
     const inc = incidents.find(i => i.id === id);
     return inc ? (inc.incidentId ? `${inc.incidentId} — ${inc.title}` : inc.title) : 'Unavailable';
+  };
+
+  // Where the plan came from — audit findings and failed control tests raise
+  // plans through this pipeline; incident-sourced plans link via incidentId.
+  const sourceChip = (item: RemediationRecord) => {
+    if (item.sourceType === 'audit_finding') {
+      return <InterlinkChip label={item.sourceId ? `Finding ${item.sourceId}` : 'Audit finding'} to="/audits" />;
+    }
+    if (item.sourceType === 'control_test') {
+      return <InterlinkChip label="Control test" to="/control-testing" />;
+    }
+    if ((item.sourceType === 'incident' || !item.sourceType) && item.incidentId) return null; // incident chip renders from incidentId
+    if (item.sourceType) {
+      return (
+        <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}
+          title={item.sourceId ? `Unresolved reference: ${item.sourceId}` : undefined}>
+          {item.sourceType.replace(/_/g, ' ')}{item.sourceId ? ` · ${item.sourceId}` : ''}
+        </span>
+      );
+    }
+    return null;
   };
 
   const filtered = items.filter(item => {
@@ -400,6 +421,7 @@ export default function RemediationTracker() {
                     const pc = severityColor(item.priority ?? 'medium');
                     const sc = statusColor(item.status);
                     const barColor = statusBarColor(item);
+                    const srcChip = sourceChip(item);
                     return (
                       <tr key={item.id} style={{ borderTop: '1px solid hsl(var(--border))', cursor: 'pointer' }}
                         onClick={() => setDetail(item)}
@@ -408,6 +430,9 @@ export default function RemediationTracker() {
                         <td className="p-3 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{item.planRef ?? '—'}</td>
                         <td className="p-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))', maxWidth: 240 }}>
                           <span className="block truncate">{item.title}</span>
+                          {srcChip && (
+                            <span className="inline-flex mt-1" onClick={e => e.stopPropagation()}>{srcChip}</span>
+                          )}
                         </td>
                         <td className="p-3 text-sm" style={{ color: 'hsl(var(--text-2))' }}>{item.assignee ?? item.owner ?? 'Unassigned'}</td>
                         <td className="p-3">
@@ -536,10 +561,16 @@ export default function RemediationTracker() {
                 </div>
                 {(detail.sourceType || detail.sourceId) && (
                   <div className="p-3" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
-                    <p className="text-[10px] font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>Source</p>
-                    <p className="text-xs font-medium mt-1" style={{ color: 'hsl(var(--text-1))' }}>
-                      {detail.sourceType ?? '—'}{detail.sourceId ? ` · ${detail.sourceId}` : ''}
-                    </p>
+                    <p className="text-[10px] font-semibold uppercase tracking-wide mb-1.5" style={{ color: 'hsl(var(--text-4))' }}>Source</p>
+                    {sourceChip(detail) ?? (
+                      detail.incidentId
+                        ? <InterlinkChip label={incidentLabel(detail.incidentId)} to={`/risk/incidents?open=${detail.incidentId}`} />
+                        : (
+                          <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>
+                            {detail.sourceType ?? '—'}{detail.sourceId ? ` · ${detail.sourceId}` : ''}
+                          </p>
+                        )
+                    )}
                   </div>
                 )}
                 <div>
@@ -651,6 +682,18 @@ export default function RemediationTracker() {
                   <SelectItem value="none">No incident linked</SelectItem>
                   {incidents.filter(i => i.id).map(i => (
                     <SelectItem key={i.id} value={i.id!}>{i.incidentId ? `${i.incidentId} — ` : ''}{i.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Linked Risk</Label>
+              <Select value={form.riskId || 'none'} onValueChange={v => setForm(f => ({ ...f, riskId: v === 'none' ? '' : v }))}>
+                <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="No risk linked" /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  <SelectItem value="none">No risk linked</SelectItem>
+                  {risks.filter(r => r.id).map(r => (
+                    <SelectItem key={r.id} value={r.id}>{r.risk_id ? `${r.risk_id} — ` : ''}{r.title}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
