@@ -189,7 +189,7 @@ export default function RoPA() {
     { key: 'processorVendorId', header: 'Processor', render: (r) => (
       r.processorVendorId
         ? <LinkChip id={r.processorVendorId} resolve={vendorName}
-            href={(id) => `/vendors?open=${id}`} onNavigate={nav} />
+            href={(id) => `/vendors/${id}`} onNavigate={nav} />
         : <span className="text-xs text-[hsl(var(--text-3))]">{r.processorName || '—'}</span>
     ) },
     { key: 'retentionPeriod', header: 'Retention', render: (r) => (

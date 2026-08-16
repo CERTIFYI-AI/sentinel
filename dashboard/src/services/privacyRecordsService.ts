@@ -14,6 +14,7 @@
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { logAction } from '../lib/auditLogger'
+import { emitEvent } from '../lib/governance/eventBus'
 
 // ── RoPA (GDPR Art. 30) ─────────────────────────────────────────────────────
 
@@ -250,4 +251,37 @@ export async function deleteTiaRecord(id: string): Promise<void> {
   const { error } = await supabase.from('transfer_impact_assessments').delete().eq('id', id)
   if (error) throw new Error(error.message)
   void logAction({ module: 'privacy', entityType: 'transfer_impact_assessments', entityId: id, action: 'delete' })
+}
+
+// ── Autonomous sweep trigger ────────────────────────────────────────────────
+
+/**
+ * Ask the mesh to sweep the privacy registers (PrivacyPostureAgent).
+ *
+ * The sweep looks for duties that are invisible on their own page and only
+ * wrong in relation to something else: a Chapter V transfer with no mechanism,
+ * a DPIA closed at high residual risk with nothing in the risk register, a
+ * consent still granted past its expiry, a rights request past the Art. 12(3)
+ * month. Each finding becomes a real risk linked back to the record.
+ *
+ * The org id is resolved server-side via current_user_org_id() rather than
+ * chosen here — the client must never pick a tenant, on an event any more than
+ * on a row. Throws if it cannot resolve one, because an event emitted against
+ * the wrong org would be worse than no event.
+ */
+export async function requestPrivacyScan(): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot run the sweep.')
+
+  const { data: orgId, error } = await supabase.rpc('current_user_org_id')
+  if (error) throw new Error(`Could not resolve the organisation: ${error.message}`)
+  if (!orgId) throw new Error('No organisation is associated with this account.')
+
+  const event = await emitEvent('PRIVACY_SCAN_REQUESTED', 'privacy', {
+    requestedAt: new Date().toISOString(),
+  }, String(orgId))
+
+  // emitEvent returns null when the bus refuses the event (cascade limit, or a
+  // failed insert). Surfacing that is the difference between a sweep that ran
+  // and a button that lit up.
+  if (!event) throw new Error('The governance bus did not accept the sweep request.')
 }

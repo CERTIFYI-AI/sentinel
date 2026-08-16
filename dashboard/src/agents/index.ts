@@ -36,6 +36,10 @@ import { evidenceCollectionAgent }     from './evidenceCollectionAgent'
 import { financialImpactAgent }        from './financialImpactAgent'
 import { trainingUpdateAgent }         from './trainingUpdateAgent'
 
+// ---- Privacy (GDPR) cascade ----
+import { consentWithdrawalAgent }      from './consentWithdrawalAgent'
+import { privacyPostureAgent }         from './privacyPostureAgent'
+
 // MODEL_REGISTERED → 12 agents
 registerAgent('MODEL_REGISTERED', riskAssessmentAgent,       'RiskAssessmentAgent')
 registerAgent('MODEL_REGISTERED', complianceMapAgent,        'ComplianceMapAgent')
@@ -73,6 +77,15 @@ registerAgent('INCIDENT_CREATED', evidenceCollectionAgent,     'EvidenceCollecti
 registerAgent('INCIDENT_CREATED', financialImpactAgent,        'FinancialImpactAgent')
 registerAgent('INCIDENT_CREATED', narrativeEngineAgent,        'NarrativeEngineAgent')
 registerAgent('INCIDENT_CREATED', trainingUpdateAgent,         'TrainingUpdateAgent')
+
+// CONSENT_WITHDRAWN → Art. 7(3) cessation becomes tracked work
+registerAgent('CONSENT_WITHDRAWN', consentWithdrawalAgent, 'ConsentWithdrawalAgent')
+
+// PRIVACY_SCAN_REQUESTED → sweep the registers for unmet statutory duties.
+// Also runs after an incident, because a breach is exactly when an unlawful
+// transfer or an untracked residual risk matters most.
+registerAgent('PRIVACY_SCAN_REQUESTED', privacyPostureAgent, 'PrivacyPostureAgent')
+registerAgent('INCIDENT_CREATED',       privacyPostureAgent, 'PrivacyPostureAgent')
 
 // wildcard notification agent (runs on every event)
 registerAgent('*', notificationAgent, 'NotificationAgent')

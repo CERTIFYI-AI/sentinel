@@ -24,6 +24,7 @@
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
 import { logAction } from '@/lib/auditLogger'
+import { emitEvent } from '@/lib/governance/eventBus'
 
 /** Fixed by consent_records_status_check. */
 export const CONSENT_STATUSES = ['granted', 'pending', 'withdrawn', 'expired'] as const
@@ -183,21 +184,59 @@ export async function upsertConsentRecords(record: Partial<ConsentRecord>): Prom
 }
 
 /**
- * Withdrawal under Art. 7(3). The withdrawal date is stamped by this function
- * and returned from the database, so what the UI shows afterwards is what was
- * actually stored — the page previously wrote an unrelated hardcoded date into
- * local state and toasted that AI systems had been notified, which nothing did.
+ * Withdrawal under Art. 7(3). The withdrawal date is stamped here and read back
+ * from the database, so what the UI shows afterwards is what was actually
+ * stored — the page previously wrote a hardcoded 2026-04-10 into local state
+ * and toasted that AI systems had been notified, which nothing did.
  *
- * Notifying the linked systems is the caller's job (see the ConsentWithdrawal
- * agent); this function only records the fact and throws if it cannot.
+ * Withdrawing is not a state change; it is an obligation that starts running.
+ * Emitting CONSENT_WITHDRAWN is what makes that real: ConsentWithdrawalAgent
+ * opens the Art. 7(3) cessation task against the linked systems and raises a
+ * risk while they are still processing. Without the emit the agent is dormant,
+ * which is the state the whole mesh was in before the model registry started
+ * emitting.
+ *
+ * The emit is deliberately fire-and-forget and never rethrows: an agent
+ * failure must not make the user's withdrawal appear to have failed when the
+ * record was written. Cascade outcomes are observable in Agent Control.
  */
 export async function withdrawConsent(id: string, reason?: string): Promise<ConsentRecord> {
-  return upsertConsentRecords({
-    id,
-    status: 'withdrawn',
-    withdrawalDate: new Date().toISOString().slice(0, 10),
-    withdrawalReason: reason,
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot withdraw.')
+
+  const { data, error } = await supabase
+    .from('consent_records')
+    .update({
+      status: 'withdrawn',
+      withdrawal_date: new Date().toISOString().slice(0, 10),
+      withdrawal_reason: reason || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', id)
+    .select().single()
+  if (error) throw new Error(error.message)
+
+  const record = fromRow(data)
+  void logAction({
+    module: 'privacy', entityType: 'consent_records',
+    entityId: id, entityName: record.consentRef, action: 'withdraw',
   })
+
+  void emitEvent(
+    'CONSENT_WITHDRAWN',
+    'consent-management',
+    {
+      consentId: record.id,
+      consentRef: record.consentRef,
+      subjectRef: record.subjectRef ?? record.subjectName,
+      affectedModels: record.linkedModelIds,
+      ropaId: record.linkedRopaId,
+      reason,
+      withdrawnAt: record.withdrawalDate ?? new Date().toISOString(),
+    },
+    (data as any).tenant_id ?? '',
+  ).catch((e) => console.warn('[consentRecordsService] cascade emit failed:', e))
+
+  return record
 }
 
 export async function deleteConsentRecords(id: string): Promise<boolean> {

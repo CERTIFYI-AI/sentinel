@@ -45,6 +45,11 @@ export const GovernanceEventType = {
   // Data governance
   DATA_GOVERNANCE_CHECK:   'DATA_GOVERNANCE_CHECK',
 
+  // Privacy (GDPR)
+  CONSENT_WITHDRAWN:       'CONSENT_WITHDRAWN',
+  PRIVACY_SCAN_REQUESTED:  'PRIVACY_SCAN_REQUESTED',
+  PRIVACY_GAP_FOUND:       'PRIVACY_GAP_FOUND',
+
   // Vendor
   VENDOR_LINKED:           'VENDOR_LINKED',
   VENDOR_NOTIFIED:         'VENDOR_NOTIFIED',
@@ -102,6 +107,29 @@ export interface ModelRegisteredPayload {
   dataSensitivity: 'PII' | 'PHI' | 'CONFIDENTIAL' | 'PUBLIC'
   estimatedParams?: number
   expectedRequestsPerDay?: number
+}
+
+export interface ConsentWithdrawnPayload {
+  consentId:     string
+  consentRef?:   string
+  subjectRef?:   string
+  /** The systems that must now cease processing this subject's data. */
+  affectedModels: string[]
+  ropaId?:       string | null
+  reason?:       string
+  withdrawnAt:   string
+}
+
+export interface PrivacyGapFoundPayload {
+  /** Which statutory duty the gap sits under. */
+  kind:         'TRANSFER_NO_MECHANISM' | 'DPIA_RESIDUAL_UNTRACKED' | 'CONSENT_LAPSED' | 'DSR_OVERDUE'
+  entityTable:  string
+  entityId:     string
+  entityRef?:   string
+  title:        string
+  description:  string
+  severity:     Severity
+  riskId?:      string
 }
 
 export interface RiskDetectedPayload {

@@ -56,12 +56,30 @@ function moduleBadge(module: string) {
 
 // ── Cross-module deep links for audited entities ─────────────────────────────
 
+// Keyed by the entityType each service passes to logAction. An audited entity
+// with no entry here renders as plain text, which makes the trail a dead end —
+// the reader can see that a record changed but cannot reach it. The privacy
+// entity types were missing entirely, so every DSR, consent, RoPA, DPIA and
+// transfer entry terminated here.
 const ENTITY_ROUTES: Record<string, (id: string) => string> = {
   model: id => `/models/inventory/${id}`,
   ai_model: id => `/models/inventory/${id}`,
+  ai_models: id => `/models/inventory/${id}`,
   use_case: id => `/use-cases/${id}`,
+  use_cases: id => `/use-cases/${id}`,
   risk: id => `/risks?open=${id}`,
+  risks: id => `/risks?open=${id}`,
   control: id => `/controls/${id}`,
+  dataset: id => `/datasets/${id}`,
+  datasets: id => `/datasets/${id}`,
+  vendor: id => `/vendors/${id}`,
+  vendors: id => `/vendors/${id}`,
+  // Privacy group — statutory records under GDPR and EU AI Act Art. 12.
+  dsar_requests: () => '/dsr',
+  consent_records: id => `/consent-management?open=${id}`,
+  ropa_records: id => `/ropa?open=${id}`,
+  dpia_assessments: () => '/dpia',
+  transfer_impact_assessments: () => '/tia',
 };
 
 function entityRoute(e: AuditLogRecord): string | null {

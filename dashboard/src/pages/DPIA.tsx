@@ -191,7 +191,7 @@ export default function DPIA() {
         </span>
       )
       return <LinkChip id={d.linkedRiskId} resolve={riskName}
-        href={(id) => `/risk?open=${id}`} onNavigate={nav} />
+        href={(id) => `/risks?open=${id}`} onNavigate={nav} />
     } },
     { key: 'nextReviewAt', header: 'Next review', sortable: true, render: (d) => {
       const n = daysUntil(d.nextReviewAt)

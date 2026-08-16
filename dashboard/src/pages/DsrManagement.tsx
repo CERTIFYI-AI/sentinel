@@ -16,7 +16,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
-import { UserList, Plus, Warning, Export } from '@phosphor-icons/react'
+import { UserList, Plus, Warning, Export, Robot } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -38,6 +38,7 @@ import {
   DSR_TYPE_LABEL, DSR_STATUS_LABEL, DSR_TYPE_ARTICLE, statutoryDueDate,
   type DsrRequest, type DsrRequestType, type DsrStatus, type DsrPriority,
 } from '@/services/dsrRequestsService'
+import { requestPrivacyScan } from '@/services/privacyRecordsService'
 
 const STATUS_TONE: Record<DsrStatus, string> = {
   pending: 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]',
@@ -94,6 +95,7 @@ export default function DsrManagement() {
   const [toDelete, setToDelete] = useState<DsrRequest | null>(null)
   const [statusFilter, setStatusFilter] = useState<string>('all')
   const [typeFilter, setTypeFilter] = useState<string>('all')
+  const [sweeping, setSweeping] = useState(false)
 
   const set = <K extends keyof DsrRequest>(k: K, v: DsrRequest[K] | undefined) =>
     setForm((f) => ({ ...f, [k]: v }))
@@ -154,6 +156,25 @@ export default function DsrManagement() {
     a.click()
     URL.revokeObjectURL(a.href)
     toast.success(`Exported ${rows.length} request${rows.length === 1 ? '' : 's'}`)
+  }
+
+  /**
+   * Hand the privacy registers to PrivacyPostureAgent. The sweep opens a risk
+   * for each unmet statutory duty it finds across DSR, consent, DPIA and TIA —
+   * it never closes one, and never edits a statutory record, because deciding
+   * that a transfer is lawful or a residual risk accepted is a human call under
+   * Art. 14 oversight.
+   */
+  async function runSweep() {
+    setSweeping(true)
+    try {
+      await requestPrivacyScan()
+      toast.success('Privacy sweep queued — findings appear in the risk register')
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Could not start the privacy sweep')
+    } finally {
+      setSweeping(false)
+    }
   }
 
   const columns: Column<DsrRequest>[] = [
@@ -244,6 +265,8 @@ export default function DsrManagement() {
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="sm" onClick={() => nav('/ropa')}>RoPA</Button>
             <Button variant="ghost" size="sm" onClick={() => nav('/consent-management')}>Consent</Button>
+            <Button variant="secondary" size="sm" icon={<Robot />} onClick={runSweep}
+              loading={sweeping} disabled={sweeping}>Run privacy sweep</Button>
             <Button variant="secondary" size="sm" icon={<Export />} onClick={exportCsv}>Export CSV</Button>
             {can('create') && <Button size="sm" icon={<Plus />} onClick={openCreate}>New request</Button>}
           </div>
