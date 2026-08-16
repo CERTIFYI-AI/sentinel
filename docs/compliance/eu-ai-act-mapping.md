@@ -43,3 +43,37 @@ The following Sentinel features map to Article 43 conformity assessment procedur
 2. **Trust score** — quantified confidence metric per response
 3. **HITL escalation** — mandatory human review for low-trust outputs
 4. **PII sanitizer** — data minimisation (Article 10.3)
+
+---
+
+## Module Coverage — Connectivity, Agent Tooling, Evaluation & Workforce
+
+Added with the connectivity and gateway build-out (August 2026). Each row states
+the module that produces the evidence, not merely the capability that exists.
+
+| Article | Requirement | Evidence-producing module | Status |
+|---|---|---|---|
+| Art. 4 | AI literacy of staff dealing with AI systems | [AI Literacy](../modules/ai-literacy.md) — programmes, enrolment, completion | Implemented |
+| Art. 4 / 26 | Deployer awareness of AI systems in use | [AI Apps](../modules/ai-apps.md) — incl. shadow-AI discovery via SSO | Implemented |
+| Art. 9 | Continuous risk management, findings managed to closure | [Tasks](../modules/tasks.md) — owner, SLA, entity link | Implemented |
+| Art. 9 | Defined, risk-proportionate testing regime | [Eval Techniques](../modules/eval-techniques.md) — cadence, currency, coverage | Implemented |
+| Art. 9 | Blast-radius sizing of agent capabilities | [MCP Gateway](../modules/mcp-gateway.md) — risk tier, side effects, data ceiling | Implemented |
+| Art. 10 | Data governance — provenance of data crossing boundaries | [Integrations](../modules/integrations.md) — `data_flows`, direction, source system | Implemented |
+| Art. 12 | Record-keeping across governance actions | All modules above via `logAction`; soft-delete preserves evidence | Implemented |
+| Art. 13 | Transparency — simulated vs measured output distinguishable | [Playground](../modules/playground.md) — explicit simulation labelling | Implemented |
+| Art. 13 / 50 | Outward transparency and subprocessor disclosure | [Trust Center](../modules/trust-center.md) | Implemented |
+| Art. 14 | Human oversight over autonomous action | [MCP Gateway](../modules/mcp-gateway.md) — `requires_hitl`, agent allow-lists; [Tasks](../modules/tasks.md) — HITL reviews | Implemented |
+| Art. 15 | Accuracy, robustness — pipeline and tool-surface health | [Integrations](../modules/integrations.md) health/sync; [MCP Gateway](../modules/mcp-gateway.md) server health | Implemented |
+
+### Notes for assessors
+
+- **Human oversight is enforced at the capability layer, not only the prompt
+  layer.** An MCP tool with an empty `allowed_agent_ids` array permits *no*
+  agent; the interface states this rather than treating empty as unrestricted.
+- **Simulated values never enter the evidence record.** The Playground labels its
+  output on screen and directs users to Live Inference Traces for measured
+  telemetry.
+- **Secrets are never recoverable.** Webhook signing secrets are stored as sha256
+  digests with a display prefix only (Art. 15 robustness; GDPR Art. 32).
+- **"Not measured" is distinguishable from "measured zero"** throughout the UI —
+  a null metric renders as `—`. This matters when a figure is cited as evidence.

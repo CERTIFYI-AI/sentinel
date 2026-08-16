@@ -1,0 +1,195 @@
+# Technical Debt Register
+
+> Debt that is not written down does not exist, and will be rediscovered by an
+> auditor instead of by us. Every accepted shortcut belongs here with an owner
+> and a reason — see [`../contributing/review-process.md`](../contributing/review-process.md).
+
+Last reviewed: 2026-08-16
+
+---
+
+## TD-000 — Cross-tenant RLS holes (FIXED 2026-08-16, retained as a lesson)
+
+**Status:** Closed · **Severity:** P0 (security) · **Found by:** Gate 4 sweep
+
+Four real tenant-scoped tables — `webhook_endpoints`, `agents`,
+`shadow_ai_findings`, `executive_digests` — each carried a correct org-isolation
+policy **and** a second PERMISSIVE policy with predicate `true` (or an
+`auth.role()` check with no tenant condition) for the `authenticated` role.
+
+Postgres **OR-combines** permissive policies, so the second policy silently
+widened access past the first. Any authenticated user in any organisation could
+read — and in three cases write — every other tenant's rows.
+
+**Why this is the important entry in this register:** RLS was *enabled* on all
+four tables the entire time. "RLS is on" is therefore not a sufficient assurance
+statement, and neither is "an isolation policy exists". The only sound check is
+that **no permissive policy lacks a tenant predicate**.
+
+All four tables were empty when found, so this closed a latent hole rather than
+an active exposure. Fixed in `supabase/migrations/20260816_fix_cross_tenant_rls.sql`,
+which carries a regression query to re-run after any RLS change. That query is
+now part of Gate 4.
+
+---
+
+## TD-003 — Five different org-resolution helpers
+
+**Status:** Open · **Severity:** P2 · **Owner:** Platform team
+
+RLS predicates across the schema resolve the caller's organisation five
+different ways:
+
+| Helper | Used by (examples) |
+|---|---|
+| `current_user_org_id()` | `integrations`, `mcp_servers`, `mcp_tools`, `tasks`, `eval_techniques` |
+| `get_org_id()` | `assets`, `audit_log`, `roles`, `bia_records`, `ropa_records` |
+| `get_user_org_id()` | `ai_models`, `departments`, `user_profiles`, `model_versions` |
+| `current_setting('app.current_org_id')` | `agent_registry`, `evidence_chain`, `governance_events` |
+| `auth.jwt() ->> 'org_id'` | `agent_registry` (read), `governance_events` (read) |
+
+`ai_models` and `agent_registry` each carry **two** isolation policies using
+*different* helpers. If the helpers ever disagree — different fallback on null,
+different source of truth — the OR-combination means the **more permissive one
+wins**, which is precisely how TD-000 happened.
+
+Converge on a single helper, then assert the others are unused. Until then,
+every new RLS policy must use `current_user_org_id()`.
+
+---
+
+## TD-001 — Modules still reading generic demo tables (P0, 22 modules)
+
+**Status:** Open · **Severity:** P0 · **Owner:** Platform team
+
+### What
+
+Twenty-two modules still read a generic `<name>_table (id, doc jsonb)` demo
+table via `useSupabaseTable(...)`, seeded from a hardcoded in-file array. This
+violates the platform's first-principle contract (*"Never wire a page to a
+generic `<name>_table (id, doc jsonb)` demo table"*) in `CLAUDE.md`.
+
+### Why it matters
+
+These are not cosmetic. A module on a demo table typically also:
+
+- **fakes success** — mutations write to local state and toast success whether or
+  not anything persisted;
+- **escapes org scoping** — the demo table has no `org_id` default and no RLS
+  isolation policy, so tenancy is not enforced by the schema;
+- **displays seeded values as real** — a compliance figure that was never
+  measured is indistinguishable from one that was.
+- **has no tenant column at all** — every `*_table` demo table carries an
+  `_authenticated_all` policy with predicate `true`, so all ~45 of them are
+  readable and writable by any authenticated user in any organisation. They are
+  excluded from the TD-000 regression query only because they have no tenant
+  column to check; that is a reason to migrate them, not to exempt them.
+
+For a product used as the system of record for AI Act and ISO/IEC 42001
+conformity, the third point is the serious one: a regulator may rely on a number
+that has no provenance.
+
+### Affected modules
+
+| Module | Page | Demo table |
+|---|---|---|
+| Asset Management | `pages/AssetManagement.tsx` | `assetmanagement_table` |
+| Business Impact Analysis | `pages/BIA.tsx` | `bia_table` |
+| DPIA | `pages/DPIA.tsx` | `dpia_table` |
+| Identity Governance (IGA) | `pages/IGA.tsx` | `iga_table` |
+| Model Risk Committee | `pages/ModelRiskCommittee.tsx` | `modelriskcommittee_table` |
+| Regulator Filings | `pages/RegulatorFilings.tsx` | `regulatorfilings_table` |
+| RoPA | `pages/RoPA.tsx` | `ropa_table` |
+| Transfer Impact Assessment | `pages/TIA.tsx` | `tia_table` |
+| Tabletop Exercises | `pages/TabletopExercises.tsx` | `tabletopexercises_table` |
+| Transparency Reports | `pages/TransparencyReports.tsx` | `transparencyreports_table` |
+| Committee Management | `pages/committee/CommitteeManagement.tsx` | `committeemanagement_table` |
+| Compliance Controls | `pages/compliance/ComplianceControls.tsx` | `compliancecontrols_table` |
+| Regulatory Radar | `pages/governance/RegRadar.tsx` | `regradar_table` |
+| HITL Review Center | `pages/hitl/HITLReviewCenter.tsx` | `hitlreviewcenter_table` |
+| Reporting | `pages/reporting/Reporting.tsx` | `reporting_table` |
+| Attack Surface | `pages/security/AttackSurface.tsx` | `attacksurface_table` |
+| Keys Vault | `pages/security/KeysVault.tsx` | `keysvault_table` |
+| Policy Firewall | `pages/security/PolicyFirewall.tsx` | `policyfirewall_table` |
+| Red Team Lab | `pages/security/RedTeamLab.tsx` | `redteamlab_table` |
+| Report Generator | `pages/security/ReportGenerator.tsx` | `reportgenerator_table` |
+| Vendor Assessments | `pages/vendors/VendorAssessments.tsx` | `vendorassessments_table` |
+| Vendor SLA | `pages/vendors/VendorSLA.tsx` | `vendorsla_table` |
+
+### Remediation priority
+
+Ordered by regulatory exposure — how directly a fabricated record in that module
+would mislead an assessor:
+
+**Tier 1 — statutory records (do first)**
+`DPIA`, `RoPA`, `TIA`, `Regulator Filings`, `Compliance Controls`,
+`HITL Review Center`. These are named artefacts under GDPR Arts. 30/35, the AI
+Act's Art. 14 oversight record, and conformity evidence. A seeded row here is the
+highest-consequence defect in the register.
+
+**Tier 2 — governance process records**
+`Model Risk Committee`, `Committee Management`, `Vendor Assessments`,
+`Vendor SLA`, `BIA`, `Tabletop Exercises`, `Transparency Reports`.
+
+**Tier 3 — operational surfaces**
+`Asset Management`, `IGA`, `Reporting`, `Report Generator`, `Regulatory Radar`,
+`Attack Surface`, `Keys Vault`, `Policy Firewall`, `Red Team Lab`.
+
+### Known-good remediation pattern
+
+Six modules have already been migrated off this pattern; follow the same shape:
+
+1. Check whether a **real table already exists but is unused** — this was true
+   for `eval_techniques` (existed, zero rows, never read) and `webhook_endpoints`
+   (existed, no UI, no RLS). Extend the real table rather than creating a
+   competing one.
+2. Create/extend the org-scoped table: `org_id uuid not null default
+   current_user_org_id()`, RLS enabled, isolation policy on both `using` and
+   `with check`, `is_deleted` for soft delete.
+3. Write a service on the contract: camelCase↔snake_case mapping, writes
+   **throw**, reads surface real errors, `logAction` on every mutation.
+4. Write a React Query hook that invalidates on mutation.
+5. Rebuild the page on platform primitives with all three of
+   skeleton/empty/error, and interlink it in both directions.
+6. Prove the interlinks with a query (`total` must equal `resolves`) and record
+   the result.
+
+Reference implementations: `integrationsService.ts`, `mcpService.ts`,
+`evalTechniqueService.ts`.
+
+### Why not fixed in one pass
+
+Each module is a genuine backend build (table, RLS, seeds, service, hook, page
+rewrite, interlinks, docs, compliance mapping) — roughly the scope of the
+Integrations or MCP work, times twenty-two. Batching them into a single change
+would produce a diff no reviewer could meaningfully assess against the four
+gates, which is itself a compliance risk. They are therefore sequenced by tier.
+
+---
+
+## TD-002 — `Benchmark` page shares the Validation Lab dataset
+
+**Status:** Open · **Severity:** P3 · **Owner:** Evals
+
+`pages/Benchmark.tsx` reads `validationRunHooks.useList()` — the same dataset as
+the Validation Lab — and presents a scored view over it. This is defensible
+(Benchmarks *is* a view over completed runs) but the relationship is implicit.
+Either give it its own scoring/benchmark records, or document it explicitly as a
+derived view so it is not mistaken for an independent evidence source.
+
+---
+
+## Closed
+
+| ID | Item | Closed |
+|---|---|---|
+| — | Integrations on `integrations_table` demo table | 2026-08-16 |
+| — | Tasks on `tasks_table` with local-only writes and fake success | 2026-08-16 |
+| — | Eval Techniques on `evaltechniques_table` demo table | 2026-08-16 |
+| — | MCP Overview / Servers / Tool Catalog fully mock, no backing tables | 2026-08-16 |
+| — | Model Catalog dual data source (demo + real), local-only writes | 2026-08-16 |
+| — | Model Catalog / Model Registry duplicate module | 2026-08-16 |
+| — | `webhook_endpoints` orphaned: no UI, no RLS, no tenant default | 2026-08-16 |
+| — | `tasks.tenant_id` defaulted to literal `'default'` (outside org isolation) | 2026-08-16 |
+| — | Agent registry banner claimed 27 agents; 26 exist | 2026-08-16 |
+| — | 11 modules isolated (sidebar-only, zero inbound links) | 2026-08-16 |
