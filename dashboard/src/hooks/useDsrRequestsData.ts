@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { fetchAllDsrRequests, fetchDsrRequestsById, upsertDsrRequests, deleteDsrRequests } from '@/services/dsrRequestsService'
+import { fetchAllDsrRequests, fetchDsrRequest, upsertDsrRequests, deleteDsrRequests } from '@/services/dsrRequestsService'
 import { toast } from 'sonner'
 
 export function useDsrRequestsData(filters: Record<string, any> = {}) {
@@ -34,7 +34,7 @@ export function useDsrRequestsData(filters: Record<string, any> = {}) {
 export function useDsrRequestsById(id: string) {
   return useQuery({
     queryKey: ['dsrRequests', id],
-    queryFn: () => fetchDsrRequestsById(id),
+    queryFn: () => fetchDsrRequest(id),
     enabled: !!id,
     staleTime: 30_000,
   })
