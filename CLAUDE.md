@@ -39,6 +39,37 @@ Concretely, for any new or edited module:
 - **Link affordances**: pill-style links with hover states; when an id can't be
   resolved to a name show "Unavailable" — never a raw uuid.
 
+## Mandatory review before merge
+
+**Every change to `main` must pass the four role gates in
+[`docs/contributing/review-process.md`](docs/contributing/review-process.md).**
+This is binding, not advisory, and applies to one-line changes as much as to
+features. Run the gates in order, and let each one re-check the one before it:
+
+1. **Engineering & QA/QC** — typecheck clean; no fake success; no demo
+   `<name>_table`; org scoping filled DB-side; RLS on new tables; every
+   interlink *proven with a query* (`total` must equal `resolves`); the module
+   has real inbound **and** outbound links.
+2. **UI/UX** — platform primitives only (`PageHeader`, `DataTable`,
+   `FormDialog`, `ConfirmDialog`, and all three of skeleton/empty/error);
+   semantic colour tokens; **null renders `—`, never `0`**; simulated values
+   labelled as such; unresolvable ids show "Unavailable"; no dead-end records.
+3. **Documentation** — `docs/modules/<module>.md` exists and its field table
+   matches the actual schema; interlinks documented both ways; README and
+   CHANGELOG updated; migration carries a *why* comment. A new module without a
+   module doc does not merge.
+4. **Compliance** — mapped in `docs/compliance/eu-ai-act-mapping.md` and
+   `docs/compliance/iso-42001-mapping.md` (ISO/IEC **42001**), or recorded as
+   out of scope with a reason; Art. 12 audit logging via `logAction`; Art. 14
+   human-oversight path where the module acts autonomously; evidence chain
+   never weakened; secrets stored as digests, never plaintext.
+
+Record the outcome of all four gates in the PR description, with evidence
+(query output, counts). A gate that does not apply is marked **N/A with a
+reason** — never left blank. Accepted debt goes in
+`docs/reference/technical-debt.md` with an owner; undocumented debt does not
+exist and will be found by an auditor instead of by us.
+
 ## Conventions
 
 - Model detail route: `/models/inventory/:id` (canonical). Use cases:
@@ -46,3 +77,6 @@ Concretely, for any new or edited module:
 - Migrations live in `supabase/migrations/` — write idempotent SQL and keep the
   file in the repo even when applied live.
 - Typecheck before shipping: `cd dashboard && npx tsc --noEmit`.
+- Every new module needs a `docs/modules/<module>.md` written to the standard
+  shape (purpose → why it exists → how it works → fields → interlinks →
+  compliance → operations). Docs are part of the change, not a follow-up.

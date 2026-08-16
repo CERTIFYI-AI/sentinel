@@ -35,3 +35,31 @@ sentinel compliance export --framework iso-42001 --output evidence/
 - Sentinel automates evidence collection for ISO 42001 Annex A controls
 - The immutable audit chain provides tamper-evident logs required by clause 9.1
 - Trust score thresholds map to AI risk treatment plans (clause 6.1.3)
+
+---
+
+## Annex A Coverage — Connectivity, Agent Tooling, Evaluation & Workforce
+
+Added with the connectivity and gateway build-out (August 2026).
+
+| Control | Requirement | Evidence-producing module | Status |
+|---|---|---|---|
+| A.3.2 | Roles and accountability documented | [Tasks](../modules/tasks.md) (owner per finding); [Eval Techniques](../modules/eval-techniques.md) (owner per method) | Implemented |
+| A.4.2 | Competence | [AI Literacy](../modules/ai-literacy.md) — completion evidence per programme | Implemented |
+| A.4.3 | Awareness | [AI Literacy](../modules/ai-literacy.md); [AI Apps](../modules/ai-apps.md) sanctioned-tool guidance | Implemented |
+| A.6.2.2 | AI system objectives, tested against | [Eval Techniques](../modules/eval-techniques.md) — coverage per model | Implemented |
+| A.6.2.4 | Verification and validation planning | [Eval Techniques](../modules/eval-techniques.md) — cadence and due dates; [Playground](../modules/playground.md) — pre-change rehearsal | Implemented |
+| A.6.2.6 | Operation monitoring | [Integrations](../modules/integrations.md) health/sync; [MCP Gateway](../modules/mcp-gateway.md) server health | Implemented |
+| A.6.2.8 | Corrective action and continual improvement | [Tasks](../modules/tasks.md) — findings tracked to closure | Implemented |
+| A.7.2 | Resources documented with owners | [Integrations](../modules/integrations.md) — connector owners | Implemented |
+| A.9.2 | Operational controls over AI capability | [MCP Gateway](../modules/mcp-gateway.md) — approval state, data ceiling | Implemented |
+| A.9.3 | Access control over AI capability | [MCP Gateway](../modules/mcp-gateway.md) — per-tool agent allow-lists, scopes | Implemented |
+| A.10.2 | Third parties and suppliers | [AI Apps](../modules/ai-apps.md) → vendors; [Trust Center](../modules/trust-center.md) subprocessors | Implemented |
+
+### Management-system notes
+
+- Every table above is org-scoped with RLS, and the tenant column is filled by
+  the `current_user_org_id()` database default rather than by the client — so
+  tenant isolation is a property of the schema, not of application code.
+- Records that may constitute evidence are **soft-deleted** (`is_deleted`), never
+  hard-deleted, preserving the clause 9.1 monitoring record.

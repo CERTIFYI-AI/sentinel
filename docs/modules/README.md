@@ -84,6 +84,21 @@ Not shipped. Listed here so the roadmap is visible alongside the module referenc
   Hub, GCP SCC, Azure Defender), AI safety (Lakera, Garak, PyRIT), identity
   (Okta, Entra).
 
+## Connectivity, Gateway & Workforce Modules
+
+Added with the August 2026 build-out. Each has a full module guide covering
+purpose, why it exists, how it works, field-level schema, interlinks in both
+directions, compliance mapping and operations.
+
+- [Integrations](integrations.md) — inbound/outbound connectors and webhook endpoints
+- [MCP Gateway](mcp-gateway.md) — MCP servers and the governed tool catalogue
+- [Eval Techniques](eval-techniques.md) — the evaluation regime, cadence and coverage
+- [Tasks](tasks.md) — the governance work queue with SLA and entity links
+- [AI Apps](ai-apps.md) — third-party and shadow-AI application inventory
+- [AI Literacy](ai-literacy.md) — Art. 4 training programmes and completion evidence
+- [Trust Center](trust-center.md) — outward transparency and subprocessor disclosure
+- [Playground](playground.md) — guardrail rehearsal (simulated, explicitly labelled)
+
 ## See Also
 - Framework mappings: [`../compliance/`](../compliance/README.md)
 - Operational guides: [`../guides/`](../guides/README.md)
