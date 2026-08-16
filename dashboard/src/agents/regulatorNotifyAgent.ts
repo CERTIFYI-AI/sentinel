@@ -15,8 +15,17 @@ function regulationFor(t: RegulatorTemplate): string {
 }
 
 export async function regulatorNotifyAgent(ctx: AgentContext): Promise<AgentResult> {
-  const p = ctx.event.payload as unknown as IncidentCreatedPayload
-  const jurisdictions = ['US','UK','EU']
+  const p = ctx.event.payload as unknown as (IncidentCreatedPayload & { regulatoryReportable?: boolean })
+  // Draft filings ONLY when the incident is actually reportable: either the
+  // reporter flagged it (Art. 73 checkbox) or it is a P0/P1 data breach.
+  // The previous unconditional ['US','UK','EU'] fan-out drafted 2+ filings —
+  // each with a statutory deadline on the compliance calendar — for every
+  // test incident.
+  const reportable = p.regulatoryReportable === true
+    || (p.type === 'DATA_BREACH' && (p.severity === 'P0' || p.severity === 'P1'))
+  if (!reportable) return { status: 'skipped', error: 'not-regulatory-reportable' }
+  const jurisdictions = ['EU']  // primary supervisory scope; others only on P0 breaches
+  if (p.severity === 'P0' && p.type === 'DATA_BREACH') jurisdictions.push('US', 'UK')
   const templates = regulatorTemplates({
     severity: p.severity, dataBreach: p.type === 'DATA_BREACH', jurisdictions,
   })

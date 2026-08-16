@@ -27,8 +27,15 @@ export async function reportingSweep(ctx: SentinelContext): Promise<SentinelResu
   const [events, execs, risks, incidents, models] = await Promise.all([
     supabase.from('governance_events').select('id', { count: 'exact', head: true }).eq('org_id', ctx.orgId).gte('created_at', dayAgo),
     supabase.from('agent_executions').select('id', { count: 'exact', head: true }).eq('org_id', ctx.orgId).eq('status', 'failed').gte('started_at', dayAgo),
-    supabase.from('risks').select('id', { count: 'exact', head: true }).in('status', ['open', 'OPEN']),
-    supabase.from('incidents').select('id', { count: 'exact', head: true }).in('status', ['open', 'OPEN', 'investigating']),
+    // org-scoped like the sibling queries (RLS alone is not enough under a
+    // service-role client), and matching the UI's status semantics: a risk
+    // is open unless resolved/closed/accepted.
+    supabase.from('risks').select('id', { count: 'exact', head: true })
+      .eq('tenant_id', ctx.orgId).eq('is_deleted', false)
+      .not('status', 'in', '(resolved,closed,accepted,mitigated)'),
+    supabase.from('incidents').select('id', { count: 'exact', head: true })
+      .eq('tenant_id', ctx.orgId)
+      .not('status', 'in', '(resolved,closed)'),
     supabase.from('ai_models').select('id', { count: 'exact', head: true }),
   ])
 

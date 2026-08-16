@@ -226,6 +226,8 @@ export interface ApprovalRecord {
   decision?: string | null
   decidedAt?: string | null
   createdAt?: string
+  decisions?: { step: number; name?: string | null; approver: string; decision: string; at: string }[]
+  dueAt?: string | null
 }
 
 const mapApproval = (r: any): ApprovalRecord => ({
@@ -243,6 +245,8 @@ const mapApproval = (r: any): ApprovalRecord => ({
   decision: r.decision ?? null,
   decidedAt: r.decided_at ?? null,
   createdAt: r.created_at,
+  decisions: Array.isArray(r.decisions) ? r.decisions : [],
+  dueAt: r.due_at ?? null,
 })
 
 export const fetchApprovals = () => selectAll('approvals', mapApproval)
@@ -262,7 +266,16 @@ export const saveApproval = (a: ApprovalRecord) =>
     updated_at: new Date().toISOString(),
   }, mapApproval)
 
-/** Decide an approval request — audited, throws on failure. */
+/** Decide an approval request — audited, throws on failure.
+ *
+ * Multi-step semantics: when the request is bound to a workflow whose
+ * definition declares N steps, an approval only ADVANCES the current step
+ * (recording the decider in the per-step `decisions` ledger); the request
+ * reaches `approved` only after the final step. A rejection at any step is
+ * terminal. Single-step / workflow-less requests decide immediately.
+ * Also keeps exceptions in sync: deciding an approval whose entity is an
+ * exception updates the exception row's status + approval_chain so the two
+ * surfaces can never disagree. */
 export async function decideApproval(
   id: string,
   decision: 'approved' | 'rejected',
@@ -270,19 +283,57 @@ export async function decideApproval(
 ): Promise<ApprovalRecord> {
   const orgId = await currentOrgId()
   return withAudit(orgId, `approval.${decision}`, 'approval', id, async () => {
+    const now = new Date().toISOString()
+    const { data: row, error: readErr } = await client()
+      .from('approvals').select('*').eq('id', id).single()
+    if (readErr) throw new Error(`Could not load the approval: ${readErr.message}`)
+
+    let steps: { name?: string; sla_hours?: number }[] = []
+    if (row.workflow_id) {
+      const { data: wf } = await client()
+        .from('approval_workflows').select('steps').eq('id', row.workflow_id).maybeSingle()
+      if (Array.isArray(wf?.steps)) steps = wf!.steps
+    }
+    const stepIndex: number = row.step_index ?? 0
+    const decisions: unknown[] = Array.isArray(row.decisions) ? row.decisions : []
+    decisions.push({ step: stepIndex, name: steps[stepIndex]?.name ?? null, approver, decision, at: now })
+
+    const isFinal = decision === 'rejected' || stepIndex + 1 >= Math.max(steps.length, 1)
+    const patch: Record<string, unknown> = {
+      decisions,
+      approver,
+      updated_at: now,
+    }
+    if (isFinal) {
+      patch.status = decision
+      patch.decision = decision
+      patch.decided_at = now
+    } else {
+      patch.step_index = stepIndex + 1
+      // re-arm the next step's SLA when the definition declares one
+      const sla = steps[stepIndex + 1]?.sla_hours
+      if (sla) patch.due_at = new Date(Date.now() + sla * 3600 * 1000).toISOString()
+    }
     const { data, error } = await client()
-      .from('approvals')
-      .update({
-        status: decision,
-        decision,
-        approver,
-        decided_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', id)
-      .select()
-      .single()
+      .from('approvals').update(patch).eq('id', id).select().single()
     if (error) throw new Error(`The decision did not persist: ${error.message}`)
+
+    // Exception sync — the Exception Management page tracks the same decision
+    // in exceptions.approval_chain; keep both surfaces consistent.
+    if (isFinal && row.entity_type === 'exception' && row.entity_id) {
+      const excStatus = decision === 'approved' ? 'approved' : 'denied'
+      const { data: exc } = await client()
+        .from('exceptions').select('approval_chain').eq('id', row.entity_id).maybeSingle()
+      if (exc) {
+        const chain = Array.isArray(exc.approval_chain) ? exc.approval_chain : []
+        chain.push({ role: approver, decision: excStatus, date: now.slice(0, 10), notes: 'Decided in Approval Workflows' })
+        const { error: excErr } = await client()
+          .from('exceptions')
+          .update({ status: excStatus, approver, approval_chain: chain, updated_at: now })
+          .eq('id', row.entity_id)
+        if (excErr) console.warn('[oversightService] exception sync failed: %s', excErr.message)
+      }
+    }
     return mapApproval(data)
   })
 }

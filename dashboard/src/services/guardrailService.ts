@@ -223,35 +223,32 @@ export interface EscalationInput {
 }
 
 /**
- * Creates a real incident from a guardrail event. The incidents table has no
- * metadata jsonb column, so the guardrail event linkage is carried as a
- * machine-readable marker in the description: [guardrail_event:<uuid>].
+ * Creates a real incident from a guardrail event, through the canonical
+ * incident service so the write shape is correct (uuid PK from the DB,
+ * NOT NULL title satisfied) and INCIDENT_CREATED fires for the mesh
+ * cascade. The previous direct insert violated three schema constraints and
+ * bypassed the emitter — every escalation click threw.
  * Returns the persisted incident id.
  */
 export async function createIncidentFromEvent(input: EscalationInput): Promise<string> {
-  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot create incident.')
-  const id = `INC-${crypto.randomUUID().slice(0, 8).toUpperCase()}`
-  const description =
-    `Escalated from Trust Engine guardrail event. Policy "${input.policyLabel ?? 'Unavailable'}" ` +
-    `took action "${input.action ?? 'unknown'}" (severity: ${input.severity ?? 'unknown'})` +
-    `${input.modelName ? ` on model ${input.modelName}` : ''}. ` +
-    `[guardrail_event:${input.eventId}]`
-  const { data, error } = await supabase
-    .from('incidents')
-    .insert({
-      id,
-      incident_type: 'guardrail_escalation',
-      severity: input.severity ?? 'medium',
-      status: 'open',
-      occurred_date: input.occurredAt,
-      detected_date: new Date().toISOString(),
-      reporter: input.reporter,
-      ai_use_case_or_framework: 'Trust Engine — Runtime Guardrails',
-      model_system_version: input.modelName,
-      description,
-    })
-    .select('id')
-    .single()
-  if (error) { console.warn('[guardrailService] escalate:', error.message); throw new Error(error.message) }
-  return data.id as string
+  const { saveIncident } = await import('./incidentResponseService')
+  const saved = await saveIncident({
+    incidentId: `INC-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`,
+    title: `Guardrail escalation — ${input.policyLabel ?? 'policy'} ${input.action ?? 'triggered'}`,
+    description:
+      `Escalated from Trust Engine guardrail event. Policy "${input.policyLabel ?? 'Unavailable'}" ` +
+      `took action "${input.action ?? 'unknown'}" (severity: ${input.severity ?? 'unknown'})` +
+      `${input.modelName ? ` on model ${input.modelName}` : ''}. ` +
+      `[guardrail_event:${input.eventId}]`,
+    severity: (input.severity ?? 'medium').toLowerCase(),
+    status: 'open',
+    category: 'security',
+    incidentType: 'guardrail_escalation',
+    detectionMethod: 'guardrail_block',
+    detectedAt: new Date().toISOString(),
+    occurredDate: input.occurredAt,
+    assignee: input.reporter,
+  })
+  if (!saved.id) throw new Error('The incident write did not persist')
+  return saved.id
 }

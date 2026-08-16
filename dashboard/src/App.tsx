@@ -351,7 +351,7 @@ export default function App() {
           <Route path="/compliance/gap-analysis" element={<GapAnalysis />} />
           <Route path="/compliance/policies" element={<Navigate to="/policies" replace />} />
           <Route path="/policies" element={<Policies />} />
-          <Route path="/risk" element={<Navigate to="/risks" replace />} />
+          <Route path="/risk" element={<RedirectWithQuery to="/risks" />} />
           <Route path="/risk/matrix" element={<RiskMatrix />} />
           <Route path="/risk/vendors" element={<Navigate to="/vendors" replace />} />
           <Route path="/risk/incidents" element={<IncidentLog />} />
@@ -426,7 +426,7 @@ export default function App() {
           <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
           <Route path="/ciso" element={<Suspense fallback={<Loading />}><CisoDashboard /></Suspense>} />
           <Route path="/ciso/report" element={<Suspense fallback={<Loading />}><BoardReport /></Suspense>} />
-          <Route path="/risk/register" element={<Navigate to="/risks" replace />} />
+          <Route path="/risk/register" element={<RedirectWithQuery to="/risks" />} />
           <Route path="/risk/:id" element={<RecordDeepLink to="/risks" />} />
           <Route path="/models/:id" element={<ParamRedirect to="/models/inventory" />} />
           <Route path="/policies/:id" element={<PolicyDetail />} />

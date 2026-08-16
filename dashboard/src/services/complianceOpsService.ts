@@ -249,6 +249,10 @@ export async function fetchCalendarEvents(): Promise<CalendarEventRecord[]> {
   }
   for (const r of exceptions) {
     if (!r.expiry_date) continue
+    // A denied or already-expired exception has no upcoming deadline.
+    const st = String(r.status ?? '').toLowerCase()
+    if (st === 'denied' || st === 'expired') continue
+    if (String(r.expiry_date) < today) continue
     events.push({
       id: `exception:${r.id}`,
       title: r.title ? `Exception expires: ${r.title}` : 'Exception expires',
@@ -265,6 +269,7 @@ export async function fetchCalendarEvents(): Promise<CalendarEventRecord[]> {
   }
   for (const r of tabletops) {
     if (!r.scheduled_at || r.scheduled_at <= nowIso) continue
+    if (['cancelled', 'completed'].includes(String(r.status ?? '').toLowerCase())) continue
     events.push({
       id: `tabletop:${r.id}`,
       title: r.name ? `Tabletop exercise: ${r.name}` : 'Tabletop exercise',

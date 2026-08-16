@@ -152,9 +152,13 @@ export default function AuditManagement() {
     return map;
   }, [findings.items]);
 
-  // Remediation plans already raised from a finding (source_id = finding_ref).
-  const plansForFinding = (f: AuditFindingRecord): RemediationRecord[] =>
-    f.findingRef ? remediations.items.filter(p => p.sourceId === f.findingRef) : [];
+  // Remediation plans already raised from a finding. Match on the same key
+  // handleCreateRemediation stores (finding_ref, falling back to the uuid) so
+  // ref-less findings still show their plans instead of inviting duplicates.
+  const plansForFinding = (f: AuditFindingRecord): RemediationRecord[] => {
+    const key = f.findingRef ?? f.id;
+    return key ? remediations.items.filter(p => p.sourceId === key) : [];
+  };
 
   const filtered = useMemo(() => audits.items.filter(a => {
     if (search) {

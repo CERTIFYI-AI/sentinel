@@ -41,23 +41,29 @@ export type RiskRecord = {
 
 // Internal: maps 'risks' table row → RiskRecord UI shape
 function mapRow(row: any): RiskRecord {
+  // Fallback ORDER MATTERS: on the versioned schema both legacy and canonical
+  // columns exist, and the wrong preference lets a column DEFAULT (severity=1,
+  // categories='{}', mitigation_status='not_started') mask the populated
+  // value — the exact bug that rendered all 80 seeded risks as impact-1,
+  // uncategorized, "Not_started". Prefer the column seeds and agents write;
+  // fall back to the legacy alias only when it is genuinely absent/empty.
   const likelihood = row.likelihood ?? 3
-  const impact = row.severity ?? row.impact ?? 3
-  // Several legacy rows carry risk_score = 0; derive from L×I so the UI never
-  // shows a fabricated-looking zero for a scored risk.
+  const sevInt = typeof row.severity === 'number' && row.severity >= 1 ? row.severity : null
+  const impact = row.impact ?? sevInt ?? 3
   const stored = row.risk_score != null ? Number(row.risk_score) : 0
+  const catFromArray = Array.isArray(row.categories) && row.categories.length > 0 ? row.categories[0] : null
   return {
     id: row.id,
     org_id: row.tenant_id,
     risk_id: row.risk_id ?? null,
     title: row.name ?? row.title ?? '',
     description: row.description ?? '',
-    category: Array.isArray(row.categories) ? row.categories[0] ?? '' : (row.category ?? ''),
+    category: row.category ?? catFromArray ?? '',
     likelihood,
     impact,
     risk_score: stored > 0 ? stored : likelihood * impact,
-    status: row.mitigation_status ?? row.status ?? 'Open',
-    owner: row.action_owner ?? row.owner ?? '',
+    status: row.status ?? row.mitigation_status ?? 'open',
+    owner: row.owner ?? row.owner_name ?? row.action_owner ?? '',
     mitigation: row.mitigation_plan ?? row.mitigation ?? '',
     frameworks: Array.isArray(row.applicable_frameworks) ? row.applicable_frameworks : [],
     linked_model_ids: Array.isArray(row.linked_model_ids) ? row.linked_model_ids : [],
@@ -82,21 +88,27 @@ function mapToRow(record: Partial<RiskRecord>): Record<string, any> {
   // succeed on a from-zero schema and display stays consistent with `name`.
   if (record.title != null) { row.name = record.title; row.title = record.title }
   if (record.description != null) row.description = record.description
-  if (record.category != null) row.categories = [record.category]
+  // Write BOTH the canonical column and its legacy alias so every reader era
+  // sees the same value (the read path prefers the canonical one).
+  if (record.category != null) { row.category = record.category; row.categories = [record.category] }
   if (record.tags != null) row.categories = record.tags
   if (record.likelihood != null) row.likelihood = record.likelihood
-  if (record.impact != null) row.severity = record.impact
+  if (record.impact != null) { row.impact = record.impact; row.severity = record.impact }
   if (record.risk_score != null) row.risk_score = record.risk_score
   else if (record.likelihood != null && record.impact != null) {
     row.risk_score = record.likelihood * record.impact
   }
-  if (record.status != null) row.mitigation_status = record.status
-  if (record.owner != null) row.action_owner = record.owner
+  if (record.status != null) { row.status = record.status.toLowerCase(); row.mitigation_status = record.status.toLowerCase() }
+  if (record.owner != null) { row.owner = record.owner; row.action_owner = record.owner }
   if (record.mitigation != null) row.mitigation_plan = record.mitigation
+  // Business code: generate one for new records so the register never shows
+  // a truncated uuid as the risk's identity.
   if (record.risk_id != null) row.risk_id = record.risk_id
+  else if (!record.id) row.risk_id = `RSK-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`
   if (record.frameworks != null) row.applicable_frameworks = record.frameworks
   if (record.linked_model_ids != null) row.linked_model_ids = record.linked_model_ids
   if (record.linked_control_ids != null) row.linked_control_ids = record.linked_control_ids
+  if (record.linked_incident_ids != null) row.linked_incident_ids = record.linked_incident_ids
   if (record.residual_likelihood !== undefined) row.residual_likelihood = record.residual_likelihood
   if (record.residual_impact !== undefined) row.residual_impact = record.residual_impact
   if (record.deadline !== undefined) row.deadline = record.deadline
