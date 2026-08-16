@@ -78,8 +78,6 @@ const HITLReviewCenter = lazy(() => import('./pages/hitl/HITLReviewCenter'));
 const HITLDetail = lazy(() => import('./pages/hitl/HITLDetail'));
 const AiAdvisor = lazy(() => import('./pages/AiAdvisor'))
 const PolicyTemplates = lazy(() => import('./pages/PolicyTemplates'))
-const BiasAuditWizard = lazy(() => import('./pages/bias-audits/BiasAuditWizard'));
-const BiasAuditResults = lazy(() => import('./pages/bias-audits/BiasAuditResults'));
 const ControlDetail = lazy(() => import('./pages/controls/ControlDetail'));
 const DatasetRegistry = lazy(() => import('./pages/datasets/DatasetRegistry'));
 const DatasetDetail = lazy(() => import('./pages/datasets/DatasetDetail'));
@@ -394,8 +392,9 @@ export default function App() {
 
           {/* Risk & Compliance */}
           <Route path="/bias-audits" element={<Suspense fallback={<Loading />}><BiasAuditList /></Suspense>} />
-          <Route path="/bias-audits/wizard" element={<BiasAuditWizard />} />
-          <Route path="/bias-audits/:id" element={<BiasAuditResults />} />
+          {/* Legacy mock wizard/results retired — old links deep-link into the list */}
+          <Route path="/bias-audits/wizard" element={<Navigate to="/bias-audits" replace />} />
+          <Route path="/bias-audits/:id" element={<RecordDeepLink to="/bias-audits" />} />
           <Route path="/evidence-sync" element={<Navigate to="/evidence-vault?tab=sync" replace />} />
           <Route path="/hitl" element={<HITLReviewCenter />} />
           <Route path="/hitl/:id" element={<HITLDetail />} />
