@@ -72,7 +72,7 @@ export async function dispatchEvent(
     try {
       result = await withTimeout(handler({
         event, supabase: sb,
-        log: (m, x) => console.log(`[${name}] ${m}`, x ?? {}),
+        log: (m, x) => console.log('[%s] %s', name, m, x ?? {}),
         now: () => Date.now(),
         emit: async (type, source, payload) => {
           if ((event.cascade_depth ?? 0) >= MAX_CASCADE_DEPTH) {

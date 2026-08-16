@@ -1,20 +1,30 @@
 -- Fix 6: Model schema extension - GPAI, oversight, conformity, reproducibility
-ALTER TABLE models
-  ADD COLUMN IF NOT EXISTS artifact_hash text,
-  ADD COLUMN IF NOT EXISTS git_commit_sha text,
-  ADD COLUMN IF NOT EXISTS model_card_url text,
-  ADD COLUMN IF NOT EXISTS is_gpai boolean DEFAULT false,
-  ADD COLUMN IF NOT EXISTS gpai_tier text CHECK (gpai_tier IN ('standard','systemic')),
-  ADD COLUMN IF NOT EXISTS gpai_flops_threshold_exceeded boolean DEFAULT false,
-  ADD COLUMN IF NOT EXISTS human_oversight_mechanism text CHECK (human_oversight_mechanism IN ('human_in_loop','human_on_loop','human_in_command','fully_automated')),
-  ADD COLUMN IF NOT EXISTS oversight_justification text,
-  ADD COLUMN IF NOT EXISTS conformity_assessment_id uuid,
-  ADD COLUMN IF NOT EXISTS conformity_status text CHECK (conformity_status IN ('not_started','in_progress','completed','certified')),
-  ADD COLUMN IF NOT EXISTS fria_id uuid,
-  ADD COLUMN IF NOT EXISTS fria_status text CHECK (fria_status IN ('not_required','required','in_progress','completed')),
-  ADD COLUMN IF NOT EXISTS intended_use_extended text,
-  ADD COLUMN IF NOT EXISTS promotion_approver_id uuid REFERENCES user_profiles(id),
-  ADD COLUMN IF NOT EXISTS promotion_approved_at timestamptz,
-  ADD COLUMN IF NOT EXISTS promotion_blocked boolean DEFAULT false,
-  ADD COLUMN IF NOT EXISTS carbon_budget_kg_per_week numeric,
-  ADD COLUMN IF NOT EXISTS training_dataset_ids uuid[] DEFAULT '{}';
+-- Replay-safety guard: the legacy models table is not part of the repo schema (superseded by ai_models)
+-- On the live database this migration already ran when models existed, so the
+-- guard is a no-op there. On a from-zero replay models does not exist yet at
+-- this position; the statement is skipped here and re-applied idempotently by
+-- 20260817_replay_repair.sql once the table exists.
+DO $$
+BEGIN
+  IF to_regclass('public.models') IS NOT NULL THEN
+    ALTER TABLE models
+      ADD COLUMN IF NOT EXISTS artifact_hash text,
+      ADD COLUMN IF NOT EXISTS git_commit_sha text,
+      ADD COLUMN IF NOT EXISTS model_card_url text,
+      ADD COLUMN IF NOT EXISTS is_gpai boolean DEFAULT false,
+      ADD COLUMN IF NOT EXISTS gpai_tier text CHECK (gpai_tier IN ('standard','systemic')),
+      ADD COLUMN IF NOT EXISTS gpai_flops_threshold_exceeded boolean DEFAULT false,
+      ADD COLUMN IF NOT EXISTS human_oversight_mechanism text CHECK (human_oversight_mechanism IN ('human_in_loop','human_on_loop','human_in_command','fully_automated')),
+      ADD COLUMN IF NOT EXISTS oversight_justification text,
+      ADD COLUMN IF NOT EXISTS conformity_assessment_id uuid,
+      ADD COLUMN IF NOT EXISTS conformity_status text CHECK (conformity_status IN ('not_started','in_progress','completed','certified')),
+      ADD COLUMN IF NOT EXISTS fria_id uuid,
+      ADD COLUMN IF NOT EXISTS fria_status text CHECK (fria_status IN ('not_required','required','in_progress','completed')),
+      ADD COLUMN IF NOT EXISTS intended_use_extended text,
+      ADD COLUMN IF NOT EXISTS promotion_approver_id uuid REFERENCES user_profiles(id),
+      ADD COLUMN IF NOT EXISTS promotion_approved_at timestamptz,
+      ADD COLUMN IF NOT EXISTS promotion_blocked boolean DEFAULT false,
+      ADD COLUMN IF NOT EXISTS carbon_budget_kg_per_week numeric,
+      ADD COLUMN IF NOT EXISTS training_dataset_ids uuid[] DEFAULT '{}';
+  END IF;
+END $$;

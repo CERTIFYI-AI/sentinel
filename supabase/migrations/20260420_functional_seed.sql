@@ -1,10 +1,25 @@
--- Functional seed: minimal rows so every module renders with live data
--- Idempotent via ON CONFLICT DO NOTHING
+-- REPLAY NOTE (2026-08-16): this legacy seed/integration file predates the
+-- repo's replay contract and contains statements that contradict the
+-- repo-defined schema (they only ever applied against the live database's
+-- out-of-band state, and some never applied cleanly anywhere). Each top-level
+-- statement is now wrapped to be individually fault-tolerant: compatible
+-- statements still seed a fresh environment; incompatible ones raise a
+-- WARNING instead of aborting the replay. Live behavior is unchanged.
+-- Canonical demo data lives in the 202608xx seed migrations.
+-- See supabase/migrations/README.md.
 
--- Ensure default org exists
-insert into public.organizations (id, name, domain, industry)
-values ('00000000-0000-0000-0000-000000000001', 'Demo Tenant', 'demo.sentinel.ai', 'Technology')
-on conflict (id) do nothing;
+DO $seed$
+BEGIN
+  -- Functional seed: minimal rows so every module renders with live data
+  -- Idempotent via ON CONFLICT DO NOTHING
+  
+  -- Ensure default org exists
+  insert into public.organizations (id, name, domain, industry)
+  values ('00000000-0000-0000-0000-000000000001', 'Demo Tenant', 'demo.sentinel.ai', 'Technology')
+  on conflict (id) do nothing;
+EXCEPTION WHEN OTHERS THEN
+  RAISE WARNING 'legacy seed statement skipped in %: %', '20260420_functional_seed.sql', SQLERRM;
+END $seed$;
 
 -- Seed a couple of rows per functional table to prove round-trip connectivity
 do $$

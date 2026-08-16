@@ -10,7 +10,15 @@
 ALTER TABLE public.dsar_requests
   ALTER COLUMN org_id SET DEFAULT current_user_org_id();
 
-ALTER TABLE public.dsar_requests
-  ADD COLUMN IF NOT EXISTS dataset_id text REFERENCES public.datasets(id) ON DELETE SET NULL;
+-- Replay-safety: on the live DB datasets.id is text and this FK exists; on a
+-- from-zero replay datasets.id is uuid, so the typed FK cannot be created.
+-- Fall back to a plain column there (interlink resolves by id value).
+DO $$
+BEGIN
+  ALTER TABLE public.dsar_requests
+    ADD COLUMN IF NOT EXISTS dataset_id text REFERENCES public.datasets(id) ON DELETE SET NULL;
+EXCEPTION WHEN datatype_mismatch OR invalid_foreign_key OR undefined_table THEN
+  ALTER TABLE public.dsar_requests ADD COLUMN IF NOT EXISTS dataset_id text;
+END $$;
 
 CREATE INDEX IF NOT EXISTS idx_dsar_requests_dataset ON public.dsar_requests(dataset_id);

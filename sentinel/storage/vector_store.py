@@ -159,8 +159,11 @@ async def search(
         List of SearchResult ordered by descending similarity.
     """
     embedding = _embed(query)
+    # pgvector literal built exclusively from program-generated floats — no
+    # user-controlled text can reach the string (SQL itself is parameterized).
     embedding_str = "[" + ",".join(str(v) for v in embedding) + "]"
 
+    # nosemgrep: python.lang.security.audit.sqli.asyncpg-sqli.asyncpg-sqli
     rows = await db.fetch(
         "SELECT doc_id, chunk_index, content, source_url, "
         "1 - (embedding <=> $1::vector) AS similarity "

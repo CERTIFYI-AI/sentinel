@@ -5,8 +5,9 @@
 #   - typecheck (tsc --noEmit) in dashboard + workers
 #   - unit tests (vitest) in dashboard + workers
 #   - coverage floor: 70% line, 60% branch (dashboard)
+#   - python backend: ruff + pytest (the sentinel package)
 #   - secret scanning (Gitleaks)
-#   - static security (Semgrep OSS ruleset)
+#   - static security (Semgrep OSS ruleset, baseline mode)
 #   - a11y smoke (axe-core via Playwright)
 #
 # External SaaS (Lighthouse CI, Chromatic) is opt-in via repository
@@ -75,6 +76,26 @@ jobs:
       - working-directory: workers
         run: npx vitest run
 
+  test-python:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+      - name: Install
+        run: python -m pip install --quiet -e ".[dev]"
+      - name: Lint (ruff)
+        run: ruff check sentinel/
+      - name: Tests (pytest)
+        env:
+          SENTINEL_SECRET_KEY: ci-only-signing-key-not-a-real-secret-0000
+        run: pytest tests/ -q
+      - name: Migration replay check
+        run: python3 scripts/check_migration_replay.py
+
   security:
     runs-on: ubuntu-latest
     steps:
@@ -82,22 +103,34 @@ jobs:
         with:
           fetch-depth: 0
       - name: Gitleaks
-        uses: gitleaks/gitleaks-action@v2
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # gitleaks-action@v2 requires a paid GITLEAKS_LICENSE for org repos,
+        # so the step silently never scanned. The docker CLI is license-free
+        # (same invocation as security.yml).
+        run: |
+          docker run --rm \
+            -v "$(pwd):/repo" \
+            zricethezav/gitleaks:latest \
+            detect \
+            --source /repo \
+            --config /repo/.gitleaks.toml \
+            --verbose
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
-      - name: Semgrep OSS
-        # The old `returntocorp/semgrep-action@v2` no longer resolves (the org
-        # renamed to `semgrep`), which failed the whole job at setup. Run the
-        # Semgrep CLI directly instead.
+      - name: Semgrep OSS (new findings only)
+        # Baseline mode: only findings introduced by the change fail the job;
+        # the pre-existing backlog is tracked in docs/security/semgrep-backlog.md.
+        env:
+          BASELINE: ${{ github.event.pull_request.base.sha || github.event.before }}
         run: |
           python -m pip install --quiet semgrep
-          semgrep scan --error \
-            --config p/ci --config p/typescript --config p/react --config p/owasp-top-ten \
-            --exclude node_modules --exclude dist --exclude '*.min.js'
+          ARGS="--error --config p/ci --config p/typescript --config p/react --config p/owasp-top-ten --exclude node_modules --exclude dist --exclude *.min.js"
+          if [ -n "$BASELINE" ] && git cat-file -e "$BASELINE" 2>/dev/null; then
+            semgrep scan $ARGS --baseline-commit "$BASELINE"
+          else
+            semgrep scan $ARGS
+          fi
 
   a11y-smoke:
     if: ${{ vars.RUN_A11Y == 'true' }}

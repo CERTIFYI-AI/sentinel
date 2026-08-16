@@ -50,6 +50,12 @@ create index if not exists integrations_status_idx   on public.integrations (sta
 create index if not exists integrations_category_idx on public.integrations (category);
 
 -- Webhook endpoints: org-scope the existing table and enforce isolation.
+-- (tenant_id / last_success_at were added to the live table out-of-band;
+-- recreate them for from-zero replays — no-op live.)
+alter table public.webhook_endpoints
+  add column if not exists tenant_id text,
+  add column if not exists last_success_at timestamptz;
+
 alter table public.webhook_endpoints
   alter column tenant_id set default (current_user_org_id())::text;
 

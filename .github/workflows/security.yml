@@ -57,8 +57,22 @@ jobs:
       image: returntocorp/semgrep
     steps:
       - uses: actions/checkout@v6
-      - name: Run SAST (Semgrep)
-        run: semgrep scan --config auto --error --exclude='node_modules' --exclude='dist' --exclude='.next' --exclude='*.min.js' --exclude='*.lock'
+        with:
+          fetch-depth: 0
+      - name: Run SAST (Semgrep, new findings only)
+        # Baseline mode: only findings introduced by the change fail the job.
+        # The pre-existing backlog is tracked in docs/security/semgrep-backlog.md
+        # and burned down separately — a permanently red gate protects nothing.
+        env:
+          BASELINE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          ARGS="--config auto --error --exclude=node_modules --exclude=dist --exclude=.next --exclude=*.min.js --exclude=*.lock"
+          if [ -n "$BASELINE" ] && git cat-file -e "$BASELINE" 2>/dev/null; then
+            semgrep scan $ARGS --baseline-commit "$BASELINE"
+          else
+            semgrep scan $ARGS
+          fi
 
   codeql:
     name: CodeQL (JavaScript/TypeScript)

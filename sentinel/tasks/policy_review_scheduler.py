@@ -10,7 +10,7 @@ async def run_policy_review_reminders(db_pool):
         for tenant_row in tenants:
             tenant_id = tenant_row['tenant_id']
             try:
-                settings = await db.fetchrow('SELECT * FROM policy_notification_settings WHERE tenant_id=', tenant_id)
+                settings = await db.fetchrow('SELECT * FROM policy_notification_settings WHERE tenant_id=$1', tenant_id)
                 if not settings: continue
                 today = date.today()
                 rr = settings['review_reminder']
@@ -22,20 +22,22 @@ async def run_policy_review_reminders(db_pool):
                 elif rr == 'AS_NEEDED':
                     should_remind = True
                 if not should_remind: continue
-                due_policies = await db.fetch('SELECT * FROM v_policies_due_review WHERE tenant_id=', tenant_id)
+                due_policies = await db.fetch('SELECT * FROM v_policies_due_review WHERE tenant_id=$1', tenant_id)
                 for policy in due_policies:
                     try:
                         days_overdue = policy['days_overdue'] or 0
+                        overdue_note = (
+                            f"overdue by {days_overdue} days" if days_overdue > 0 else "due for review"
+                        )
+                        title = f"Policy Review Due: {policy['title']}"
+                        body = f"Policy '{policy['title']}' (v{policy['version']}) is {overdue_note}."
                         await db.execute(
                             """INSERT INTO notifications(tenant_id, type, title, body, metadata, created_at)
-                               VALUES(,,,,,NOW())
+                               VALUES($1, $2, $3, $4, $5, NOW())
                                ON CONFLICT DO NOTHING""",
-                            tenant_id, 'POLICY_REVIEW_DUE',
-                            f"Policy Review Due: {policy['title']}",
-                            f"Policy '{policy['title']}' (v{policy['version']}) is {'overdue by ' + str(days_overdue) + ' days' if days_overdue > 0 else 'due for review'}.",
-                            '{}')
+                            tenant_id, 'POLICY_REVIEW_DUE', title, body, '{}')
                         await db.execute(
-                            "INSERT INTO policy_activity_log(tenant_id,policy_id,actor_id,action,detail) VALUES(,,,,)",
+                            "INSERT INTO policy_activity_log(tenant_id,policy_id,actor_id,action,detail) VALUES($1,$2,$3,$4,$5)",
                             tenant_id, str(policy['id']), 'system', 'REVIEW_REMINDER_SENT',
                             '{}')
                         logger.info(f'Reminder sent for policy {policy["id"]} in tenant {tenant_id}')

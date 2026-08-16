@@ -56,11 +56,15 @@ supabase/.temp/
 
 # Development artifacts
 attached_assets/
-scripts/*.pyc
-scripts/__pycache__/
-*.py
 __pycache__/
 *.pyc
+
+# Compiled duplicates of vite.config.ts (stale .js shadows the .ts config)
+dashboard/vite.config.js
+dashboard/vite.config.d.ts
+
+# Cloudflare wrangler local state (account cache, miniflare sqlite, tmp bundles)
+.wrangler/
 
 # Local tooling / stray root artifacts (project lives in dashboard/)
 .venv/

@@ -25,7 +25,11 @@ DECLARE
   ];
   org_tables text[] := ARRAY['dsar_requests'];
 BEGIN
+  -- Replay-safety: several of these tables exist only on the live database
+  -- (created out-of-band; see supabase/migrations/README.md). Skip the ones a
+  -- from-zero replay does not have instead of failing the whole reset.
   FOREACH t IN ARRAY tenant_tables LOOP
+    IF to_regclass('public.' || t) IS NULL THEN CONTINUE; END IF;
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t || '_org', t);
     EXECUTE format(
       'CREATE POLICY %I ON public.%I FOR ALL TO authenticated '
@@ -35,6 +39,7 @@ BEGIN
   END LOOP;
 
   FOREACH t IN ARRAY org_tables LOOP
+    IF to_regclass('public.' || t) IS NULL THEN CONTINUE; END IF;
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t || '_org', t);
     EXECUTE format(
       'CREATE POLICY %I ON public.%I FOR ALL TO authenticated '
@@ -43,7 +48,9 @@ BEGIN
       t || '_org', t);
   END LOOP;
 
-  EXECUTE 'DROP POLICY IF EXISTS training_assignments_owner ON public.training_assignments';
-  EXECUTE 'CREATE POLICY training_assignments_owner ON public.training_assignments '
-       || 'FOR ALL TO authenticated USING (user_id = (auth.uid())::text) WITH CHECK (user_id = (auth.uid())::text)';
+  IF to_regclass('public.training_assignments') IS NOT NULL THEN
+    EXECUTE 'DROP POLICY IF EXISTS training_assignments_owner ON public.training_assignments';
+    EXECUTE 'CREATE POLICY training_assignments_owner ON public.training_assignments '
+         || 'FOR ALL TO authenticated USING (user_id = (auth.uid())::text) WITH CHECK (user_id = (auth.uid())::text)';
+  END IF;
 END $$;

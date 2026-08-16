@@ -61,7 +61,10 @@ create table if not exists public.ai_apps (
   org_id           uuid not null default current_user_org_id(),
   name             text not null,
   category         text not null default 'assistant',    -- assistant | code | content | transcription | analytics | other
-  vendor_id        text references public.vendors(id) on delete set null,
+  -- Interlink to vendors is by id value; no inline FK because the live
+  -- vendors.id is text while the repo-replayed vendors.id is uuid (see
+  -- supabase/migrations/README.md, baseline gap). Resolved at render time.
+  vendor_id        text,
   approval_status  text not null default 'under_review', -- approved | under_review | restricted | blocked
   trust_grade      text,                                 -- A | B | C | D | F; null = ungraded
   allowed_data     text not null default 'public',       -- public | internal | confidential | restricted

@@ -448,7 +448,9 @@ CREATE INDEX IF NOT EXISTS idx_agents_tenant ON agents(tenant_id);
 
 -- ── Bias Audits ────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS bias_audits (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- text PK: the live table keys audits by text ids ('ba-cs3-002' etc.);
+  -- uuid here made every canonical-era seed fail on from-zero replay.
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   tenant_id TEXT NOT NULL DEFAULT 'default',
   model_id TEXT,
   dataset_id TEXT,
