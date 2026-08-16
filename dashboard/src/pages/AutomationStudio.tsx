@@ -1,782 +1,273 @@
+// SPDX-License-Identifier: Apache-2.0
+// Automation Studio — governance automation rules on the real backend
+// (automation_rules + automation_runs via useAutomationRules/useAutomationRuns).
+// No simulated engine: "Validate" performs a real configuration check and
+// records an honest 'validated'/'failed' run — nothing is executed and no
+// synthetic outcome is invented. Toasts come from the hooks (sonner) only.
 import { useState, useMemo } from 'react'
-import { useSupabaseTable } from '@/hooks/useSupabaseTable'
+import { Link } from 'react-router-dom'
 import {
   Lightning, Plus, X, Play, Pause, Copy, MagnifyingGlass,
-  CheckCircle, Warning, Clock, ArrowRight, Gear, FlowArrow,
-  Bell, Shield, FileText, Robot, Code, Download, Eye,
-  Trash, PencilSimple, CaretDown, CaretUp, ArrowDown, Check,
-  Timer,
+  CheckCircle, Warning, Trash, ArrowDown, ArrowRight, Robot, ListChecks,
 } from '@phosphor-icons/react'
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '../components/ui/dialog'
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '../components/ui/alert-dialog'
 import { Input } from '../components/ui/input'
 import { Textarea } from '../components/ui/textarea'
 import { Label } from '../components/ui/label'
 import { Button } from '../components/ui/button'
 import {
-
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../components/ui/select'
+import { toast } from 'sonner'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { PageHeader } from '../components/ui/PageHeader'
+import { PageSkeleton } from '../components/ui/PageSkeleton'
+import { StatCardRow, type StatCardRowItem } from '../components/ui/StatCardRow'
+import { useAutomationRules, useAutomationRuns, useValidateAutomationRule } from '../hooks/useRiskIncidents'
+import { useAuthStore } from '../stores/authStore'
+import type { AutomationRuleRecord } from '../services/oversightService'
+import { formatDate, timeAgo } from '../data/seed'
 
-// ── Types ─────────────────────────────────────────────────────────────────────
-type WorkflowStatus = 'Active' | 'Paused' | 'Draft' | 'Error'
-type TriggerType = 'Risk Threshold' | 'Control Failure' | 'Model Drift' | 'Regulatory Deadline' | 'Incident Created' | 'Evidence Gap' | 'Approval Required' | 'Scheduled' | 'API/Webhook' | 'CI/CD Gate'
-type ActionType = 'Create Task' | 'Notify Slack' | 'Open Jira Ticket' | 'ServiceNow Incident' | 'Email Stakeholder' | 'Block Deployment' | 'Request Approval' | 'Generate Report' | 'Remediation Task' | 'Regulatory Notification'
-type NodeType = 'trigger' | 'condition' | 'action'
+// ── Vocabulary (matches the seeded automation_rules records) ─────────────────
 
-interface WorkflowNode {
-  id: string
-  type: NodeType
-  nodeType: string
-  label: string
-  config: Record<string, string>
-}
-
-interface RunLog {
-  time: string
-  status: 'Success' | 'Failed' | 'Running'
-  duration: string
-  trigger: string
-  actionsRun: number
-  message?: string
-}
-
-interface Workflow {
-  id: string
-  name: string
-  description: string
-  status: WorkflowStatus
-  trigger: TriggerType
-  actions: ActionType[]
-  lastRun: string
-  runCount: number
-  successRate: number
-  category: string
-  integrations: string[]
-  isTemplate?: boolean
-  nodes: WorkflowNode[]
-  runLogs: RunLog[]
-  createdDate: string
-}
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-const TRIGGER_TYPES: TriggerType[] = [
-  'CI/CD Gate', 'Model Drift', 'Risk Threshold', 'Regulatory Deadline',
-  'Incident Created', 'Evidence Gap', 'Control Failure', 'Approval Required',
-  'Scheduled', 'API/Webhook',
+const TRIGGER_TYPES = [
+  { value: 'incident_created', label: 'Incident Created' },
+  { value: 'model_drift', label: 'Model Drift' },
+  { value: 'approval_required', label: 'Approval Required' },
+  { value: 'schedule', label: 'Schedule' },
+  { value: 'manual', label: 'Manual' },
 ]
 
-const ACTION_TYPES: ActionType[] = [
-  'Block Deployment', 'Create Task', 'Notify Slack', 'Open Jira Ticket',
-  'ServiceNow Incident', 'Email Stakeholder', 'Request Approval',
-  'Generate Report', 'Remediation Task', 'Regulatory Notification',
+const ACTION_TYPES = [
+  { value: 'create_hitl_review', label: 'Create HITL Review' },
+  { value: 'create_approval', label: 'Create Approval Request' },
+  { value: 'create_task', label: 'Create Task' },
+  { value: 'hold_deployments', label: 'Hold Deployments' },
+  { value: 'notify', label: 'Notify Channel' },
 ]
 
-const CATEGORIES = ['Compliance Automation', 'Model Risk', 'Incident Response', 'Evidence Automation', 'Financial Risk', 'Security', 'Custom']
+const triggerLabel = (v?: string) => TRIGGER_TYPES.find(t => t.value === v)?.label ?? (v ? v.replace(/_/g, ' ') : 'Not configured')
+const actionLabel = (v?: string) => ACTION_TYPES.find(a => a.value === v)?.label ?? (v ? v.replace(/_/g, ' ') : 'Unknown action')
 
-const TRIGGER_DEFAULT_CONFIG: Record<TriggerType, Record<string, string>> = {
-  'CI/CD Gate': { pipeline: 'GitHub Actions', event: 'pull_request:main' },
-  'Model Drift': { metric: 'fairness_score', direction: 'drops_below', threshold: '75' },
-  'Risk Threshold': { metric: 'risk_score', operator: '>', threshold: '20' },
-  'Regulatory Deadline': { days_before: '60,30,7', regulations: 'EU AI Act' },
-  'Incident Created': { severity: 'P0,P1', category: 'AI Model Failure' },
-  'Evidence Gap': { gap_age_days: '14', frameworks: 'EU AI Act, ISO 42001' },
-  'Control Failure': { control_type: 'Technical', severity: 'High' },
-  'Approval Required': { approval_type: 'Model Deployment', sla_hours: '24' },
-  'Scheduled': { cron: '0 8 * * MON', timezone: 'UTC' },
-  'API/Webhook': { endpoint: '/api/webhooks/trigger', auth: 'Bearer' },
+const STATUS_STYLE: Record<string, React.CSSProperties> = {
+  active: { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  paused: { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+  draft: { background: 'hsl(220 13% 50% / 0.12)', color: 'hsl(var(--text-4))' },
 }
 
-const ACTION_DEFAULT_CONFIG: Record<ActionType, Record<string, string>> = {
-  'Block Deployment': { reason: 'Governance check failed', severity: 'P1' },
-  'Create Task': { owner: 'compliance_lead', priority: 'High', due_days: '7' },
-  'Notify Slack': { channel: '#ai-compliance', message: 'Governance alert triggered' },
-  'Open Jira Ticket': { project: 'AICOMP', priority: 'High', assignee: 'compliance-team' },
-  'ServiceNow Incident': { category: 'AI Governance', priority: 'P1', assignment_group: 'AI Risk' },
-  'Email Stakeholder': { recipients: 'CISO, CRO', subject: 'Governance alert' },
-  'Request Approval': { approvers: 'CISO, DPO', sla_hours: '4' },
-  'Generate Report': { format: 'PDF', recipients: 'board_distribution' },
-  'Remediation Task': { assignee: 'risk_owner', due_days: '14', priority: 'High' },
-  'Regulatory Notification': { deadline_eu: '72h', deadline_us: '4d', attach_evidence: 'true' },
+const RUN_STATUS_COLOR: Record<string, string> = {
+  completed: 'hsl(var(--s-ok-tx))',
+  validated: 'hsl(var(--s-in-tx))',
+  failed: 'hsl(var(--destructive))',
 }
 
-const ACTION_ICONS: Record<ActionType, React.ElementType> = {
-  'Block Deployment': Shield,
-  'Create Task': CheckCircle,
-  'Notify Slack': Bell,
-  'Open Jira Ticket': FileText,
-  'ServiceNow Incident': Warning,
-  'Email Stakeholder': Bell,
-  'Request Approval': Eye,
-  'Generate Report': FileText,
-  'Remediation Task': Gear,
-  'Regulatory Notification': Warning,
-}
+// Config values round-trip as JSON where possible so arrays/numbers survive edits.
+const configToRows = (cfg: Record<string, unknown> | undefined): [string, string][] =>
+  Object.entries(cfg ?? {}).map(([k, v]) => [k, typeof v === 'string' ? v : JSON.stringify(v)])
 
-const STATUS_STYLE: Record<WorkflowStatus, React.CSSProperties> = {
-  Active: { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-  Paused: { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  Draft: { background: 'hsl(220 13% 50% / 0.12)', color: 'hsl(var(--text-4))' },
-  Error: { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-}
-
-const NODE_COLOR: Record<NodeType, string> = {
-  trigger: 'hsl(var(--s-in-tx))',
-  condition: 'hsl(var(--s-wn-tx))',
-  action: 'hsl(var(--s-ok-tx))',
-}
-
-const INTEGRATIONS = [
-  { name: 'GitHub Actions', icon: '⚙️', status: 'Connected', category: 'CI/CD', description: 'Gate model deployments in GitHub Actions pipelines' },
-  { name: 'Jira', icon: '🎯', status: 'Connected', category: 'Ticketing', description: 'Auto-create compliance tickets with risk context' },
-  { name: 'Slack', icon: '💬', status: 'Connected', category: 'Notification', description: 'Real-time alerts to compliance and risk channels' },
-  { name: 'ServiceNow', icon: '🔧', status: 'Connected', category: 'ITSM', description: 'Create P0/P1 incidents for AI governance failures' },
-  { name: 'GitLab CI', icon: '🦊', status: 'Available', category: 'CI/CD', description: 'Gate deployments in GitLab pipelines' },
-  { name: 'Azure DevOps', icon: '☁️', status: 'Available', category: 'CI/CD', description: 'Integration with Azure Pipelines' },
-  { name: 'PagerDuty', icon: '🚨', status: 'Available', category: 'Alerting', description: 'Critical AI incidents routed to on-call' },
-  { name: 'Microsoft Teams', icon: '📋', status: 'Available', category: 'Notification', description: 'Compliance alerts to Teams channels' },
-]
-
-// ── Seed Data ─────────────────────────────────────────────────────────────────
-const SEED_WORKFLOWS: Workflow[] = [
-  {
-    id: 'WF-T001', name: 'EU AI Act — Conformity Gate',
-    description: 'Block model deployments that fail EU AI Act conformity checks. Auto-creates Jira ticket and notifies compliance team.',
-    status: 'Active', trigger: 'CI/CD Gate', actions: ['Block Deployment', 'Open Jira Ticket', 'Notify Slack', 'Email Stakeholder'],
-    lastRun: '2026-04-12T14:32:00Z', runCount: 847, successRate: 99.2, category: 'Compliance Automation',
-    integrations: ['GitHub Actions', 'Jira', 'Slack'], isTemplate: true, createdDate: '2025-11-15',
-    nodes: [
-      { id: 'n1', type: 'trigger', nodeType: 'CI/CD Gate', label: 'CI/CD Pipeline Gate', config: { pipeline: 'GitHub Actions', event: 'pull_request:main' } },
-      { id: 'n2', type: 'condition', nodeType: 'Risk Check', label: 'EU AI Act Conformity Score', config: { field: 'conformity_score', operator: '<', threshold: '80' } },
-      { id: 'n3', type: 'action', nodeType: 'Block Deployment', label: 'Block Merge / Deployment', config: { reason: 'EU AI Act conformity check failed', severity: 'P1' } },
-      { id: 'n4', type: 'action', nodeType: 'Open Jira Ticket', label: 'Create Jira Compliance Ticket', config: { project: 'AICOMP', priority: 'High', assignee: 'compliance-team' } },
-      { id: 'n5', type: 'action', nodeType: 'Notify Slack', label: 'Alert #ai-compliance', config: { channel: '#ai-compliance', message: 'Deployment blocked: EU AI Act conformity check failed for {{model_name}}' } },
-    ],
-    runLogs: [
-      { time: '2026-04-12 14:32:11', status: 'Success', duration: '1.2s', trigger: 'Automated', actionsRun: 4 },
-      { time: '2026-04-12 11:15:04', status: 'Success', duration: '0.9s', trigger: 'Automated', actionsRun: 4 },
-      { time: '2026-04-11 09:44:38', status: 'Success', duration: '2.1s', trigger: 'Manual', actionsRun: 4 },
-      { time: '2026-04-10 17:22:55', status: 'Success', duration: '0.4s', trigger: 'Automated', actionsRun: 2 },
-    ],
-  },
-  {
-    id: 'WF-T002', name: 'Bias Drift → Regulatory Alert',
-    description: "When a model's fairness score drops below threshold, pause the model, open a P1 JIRA, and notify the DPO via ServiceNow.",
-    status: 'Active', trigger: 'Model Drift', actions: ['ServiceNow Incident', 'Request Approval', 'Notify Slack', 'Regulatory Notification'],
-    lastRun: '2026-04-11T09:15:00Z', runCount: 12, successRate: 100, category: 'Model Risk',
-    integrations: ['ServiceNow', 'Slack', 'Jira'], isTemplate: true, createdDate: '2025-12-01',
-    nodes: [
-      { id: 'n1', type: 'trigger', nodeType: 'Model Drift', label: 'Fairness Score Alert', config: { metric: 'fairness_score', direction: 'drops_below', threshold: '75' } },
-      { id: 'n2', type: 'condition', nodeType: 'Risk Check', label: 'High-Risk Category Check', config: { field: 'risk_tier', operator: 'in', values: 'HIGH,CRITICAL' } },
-      { id: 'n3', type: 'action', nodeType: 'ServiceNow Incident', label: 'Create ServiceNow P1', config: { category: 'AI Model Risk', priority: 'P1', assignment_group: 'AI Governance' } },
-      { id: 'n4', type: 'action', nodeType: 'Request Approval', label: 'HITL Approval Gate', config: { approvers: 'CISO, DPO', sla_hours: '4', decision: 'suspend_or_continue' } },
-    ],
-    runLogs: [
-      { time: '2026-04-11 09:15:22', status: 'Success', duration: '3.4s', trigger: 'Automated', actionsRun: 4, message: 'Bias drift detected on CreditScore-v3: fairness 71.2% (threshold 75%)' },
-      { time: '2026-03-28 14:02:11', status: 'Success', duration: '2.8s', trigger: 'Automated', actionsRun: 4 },
-    ],
-  },
-  {
-    id: 'WF-T003', name: 'Regulatory Deadline Escalation',
-    description: 'Automatically escalate compliance tasks 60/30/7 days before regulatory deadlines. Creates board-level brief at T-7.',
-    status: 'Active', trigger: 'Regulatory Deadline', actions: ['Create Task', 'Email Stakeholder', 'Generate Report'],
-    lastRun: '2026-04-12T08:00:00Z', runCount: 156, successRate: 98.7, category: 'Compliance Automation',
-    integrations: ['Email', 'Calendar'], isTemplate: true, createdDate: '2025-10-01',
-    nodes: [
-      { id: 'n1', type: 'trigger', nodeType: 'Regulatory Deadline', label: 'Deadline Proximity Alert', config: { days_before: '60,30,7', regulations: 'EU AI Act, CFPB, SEC' } },
-      { id: 'n2', type: 'action', nodeType: 'Create Task', label: 'Assign Remediation Tasks', config: { owner: 'compliance_lead', priority: 'based_on_days_remaining' } },
-      { id: 'n3', type: 'action', nodeType: 'Email Stakeholder', label: 'Executive Escalation Email', config: { recipients: 'CISO, CFO, GC', template: 'regulatory_deadline_T-{{days}}' } },
-      { id: 'n4', type: 'action', nodeType: 'Generate Report', label: 'Board Brief (T-7 only)', config: { condition: 'days_before == 7', format: 'PDF', recipients: 'board_distribution' } },
-    ],
-    runLogs: [
-      { time: '2026-04-12 08:00:01', status: 'Success', duration: '0.7s', trigger: 'Scheduled', actionsRun: 3 },
-      { time: '2026-04-11 08:00:02', status: 'Success', duration: '0.6s', trigger: 'Scheduled', actionsRun: 2 },
-      { time: '2026-04-10 08:00:01', status: 'Success', duration: '0.8s', trigger: 'Scheduled', actionsRun: 3 },
-    ],
-  },
-  {
-    id: 'WF-T004', name: 'AI Incident → Multi-Regulator Notify',
-    description: 'P0/P1 AI incidents trigger automatic regulatory notification to SEC, FCA, and ICO within required timeframes.',
-    status: 'Active', trigger: 'Incident Created', actions: ['Regulatory Notification', 'Generate Report', 'ServiceNow Incident', 'Notify Slack'],
-    lastRun: '2026-04-10T22:47:00Z', runCount: 3, successRate: 100, category: 'Incident Response',
-    integrations: ['Regulatory APIs', 'ServiceNow', 'Slack'], isTemplate: true, createdDate: '2026-01-10',
-    nodes: [
-      { id: 'n1', type: 'trigger', nodeType: 'Incident Created', label: 'P0/P1 Incident Trigger', config: { severity: 'P0,P1', category: 'AI Model Failure' } },
-      { id: 'n2', type: 'condition', nodeType: 'Scope Check', label: 'Regulated Market Check', config: { markets: 'EU, UK, US', ai_act_high_risk: 'true' } },
-      { id: 'n3', type: 'action', nodeType: 'Regulatory Notification', label: 'Auto-Notify SEC/FCA/ICO', config: { deadline_eu: '72h', deadline_us: '4d', deadline_uk: '72h', attach_evidence: 'true' } },
-      { id: 'n4', type: 'action', nodeType: 'Generate Report', label: 'Evidence Package Generation', config: { include: 'chain_of_custody,model_card,incident_log', format: 'court_admissible' } },
-    ],
-    runLogs: [
-      { time: '2026-04-10 22:47:31', status: 'Success', duration: '8.3s', trigger: 'Automated', actionsRun: 4, message: 'P1 incident INC-0034: Credit model misclassification event' },
-    ],
-  },
-  {
-    id: 'WF-T005', name: 'Evidence Gap → Auto-Collection',
-    description: 'Detect compliance evidence gaps and auto-trigger evidence collection via integrations, then assign review task.',
-    status: 'Paused', trigger: 'Evidence Gap', actions: ['Create Task', 'Notify Slack', 'Email Stakeholder'],
-    lastRun: '2026-04-09T11:00:00Z', runCount: 44, successRate: 93.2, category: 'Evidence Automation',
-    integrations: ['SharePoint', 'Jira', 'Slack'], createdDate: '2025-09-20',
-    nodes: [
-      { id: 'n1', type: 'trigger', nodeType: 'Evidence Gap', label: 'Gap Detection Trigger', config: { gap_age_days: '14', frameworks: 'EU AI Act, ISO 42001' } },
-      { id: 'n2', type: 'action', nodeType: 'Create Task', label: 'Assign Evidence Collection Task', config: { assignee: 'control_owner', due_days: '7' } },
-    ],
-    runLogs: [
-      { time: '2026-04-09 11:00:04', status: 'Success', duration: '1.1s', trigger: 'Scheduled', actionsRun: 2 },
-      { time: '2026-04-02 11:00:03', status: 'Failed', duration: '0.3s', trigger: 'Scheduled', actionsRun: 0, message: 'SharePoint connection timeout' },
-    ],
-  },
-  {
-    id: 'WF-T006', name: 'Risk Threshold Breach → CFO Alert',
-    description: 'When total ALE breaches $5M threshold, alert CFO and trigger financial risk review workflow.',
-    status: 'Draft', trigger: 'Risk Threshold', actions: ['Email Stakeholder', 'Generate Report', 'Create Task'],
-    lastRun: 'Never', runCount: 0, successRate: 0, category: 'Financial Risk',
-    integrations: ['Email', 'Calendar'], createdDate: '2026-03-01',
-    nodes: [
-      { id: 'n1', type: 'trigger', nodeType: 'Risk Threshold', label: 'ALE Threshold Breach', config: { metric: 'total_ALE', operator: '>', threshold: '5000000', currency: 'USD' } },
-      { id: 'n2', type: 'action', nodeType: 'Email Stakeholder', label: 'Alert CFO/CRO', config: { recipients: 'CFO, CRO, CISO', subject: 'ALERT: Total AI Risk ALE exceeds $5M' } },
-    ],
-    runLogs: [],
-  },
-]
-
-// ── Toast ─────────────────────────────────────────────────────────────────────
-function showToast(msg: string, type: 'success' | 'error' | 'info' = 'success') {
-  const el = document.createElement('div')
-  el.textContent = msg
-  Object.assign(el.style, {
-    position: 'fixed', bottom: '24px', right: '24px', zIndex: '9999',
-    background: type === 'success' ? 'hsl(var(--s-ok-bg))' : type === 'error' ? 'hsl(var(--s-er-bg))' : 'hsl(var(--bg-surface))',
-    color: type === 'success' ? 'hsl(var(--s-ok-tx))' : type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))',
-    border: `1px solid ${type === 'success' ? 'hsl(var(--s-ok-bg))' : type === 'error' ? 'hsl(var(--destructive)/0.3)' : 'hsl(var(--border))'}`,
-    padding: '10px 20px', fontSize: '13px', boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+const rowsToConfig = (rows: [string, string][]): Record<string, unknown> => {
+  const out: Record<string, unknown> = {}
+  rows.forEach(([k, v]) => {
+    if (!k.trim()) return
+    try { out[k.trim()] = JSON.parse(v) } catch { out[k.trim()] = v }
   })
-  document.body.appendChild(el)
-  setTimeout(() => el.remove(), 3000)
-}
-
-// ── Node Row (editable) ───────────────────────────────────────────────────────
-function NodeRow({ node, index, total, onUpdate, onDelete }: {
-  node: WorkflowNode
-  index: number
-  total: number
-  onUpdate: (id: string, config: Record<string, string>) => void
-  onDelete: (id: string) => void
-}) {
-  const [editing, setEditing] = useState(false)
-  const [localConfig, setLocalConfig] = useState({ ...node.config })
-
-  const save = () => {
-    onUpdate(node.id, localConfig)
-    setEditing(false)
-    showToast('Node configuration saved')
-  }
-
-  return (
-    <div className="relative pl-12">
-      <div className="absolute left-[17px] top-4 w-3.5 h-3.5 rounded-full border-2 z-10"
-        style={{ borderColor: NODE_COLOR[node.type], background: 'hsl(var(--bg-surface))' }} />
-      <div className="border" style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))' }}>
-        <div className="flex items-center justify-between p-3">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] px-1.5 py-0.5 font-semibold uppercase"
-              style={{ background: NODE_COLOR[node.type] + '20', color: NODE_COLOR[node.type] }}>
-              {node.type}
-            </span>
-            <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{node.label}</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <button onClick={() => { setLocalConfig({ ...node.config }); setEditing(e => !e) }}
-              className="p-1.5 hover:bg-surface transition-colors"
-              title={editing ? 'Collapse' : 'Edit config'}>
-              <PencilSimple size={11} style={{ color: 'hsl(var(--text-4))' }} />
-            </button>
-            <button onClick={() => onDelete(node.id)}
-              className="p-1.5 hover:bg-surface transition-colors" title="Remove step">
-              <Trash size={11} style={{ color: 'hsl(var(--s-er-tx))' }} />
-            </button>
-            <button onClick={() => { setLocalConfig({ ...node.config }); setEditing(e => !e) }}
-              className="p-1.5 hover:bg-surface transition-colors">
-              {editing ? <CaretUp size={11} style={{ color: 'hsl(var(--text-4))' }} /> : <CaretDown size={11} style={{ color: 'hsl(var(--text-4))' }} />}
-            </button>
-          </div>
-        </div>
-
-        {editing ? (
-          <div className="px-3 pb-3 space-y-2 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
-            <p className="text-[10px] font-semibold uppercase mt-2 mb-1" style={{ color: 'hsl(var(--text-4))' }}>Configuration</p>
-            {Object.entries(localConfig).map(([k, v]) => (
-              <div key={k} className="flex items-center gap-2">
-                <span className="text-[10px] font-mono w-28 flex-shrink-0" style={{ color: 'hsl(var(--text-4))' }}>{k}</span>
-                <input
-                  value={v}
-                  onChange={e => setLocalConfig(c => ({ ...c, [k]: e.target.value }))}
-                  className="flex-1 px-2 py-1 text-xs border bg-surface text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]"
-                  style={{ borderColor: 'hsl(var(--border))' }}
-                />
-              </div>
-            ))}
-            <div className="flex gap-2 mt-2">
-              <button onClick={save} className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] hover:opacity-90">
-                <Check size={11} /> Save
-              </button>
-              <button onClick={() => setEditing(false)} className="px-3 py-1.5 text-xs border hover:bg-surface" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
-                Cancel
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="px-3 pb-2.5 flex flex-wrap gap-x-4 gap-y-0.5">
-            {Object.entries(node.config).map(([k, v]) => (
-              <div key={k} className="flex items-center gap-1 text-[10px]">
-                <span style={{ color: 'hsl(var(--text-4))' }}>{k.replace(/_/g, ' ')}:</span>
-                <span className="font-mono" style={{ color: 'hsl(var(--text-2))' }}>{v}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-      {index < total - 1 && (
-        <div className="flex justify-start pl-5 py-1">
-          <ArrowDown size={10} style={{ color: 'hsl(var(--text-4))' }} />
-        </div>
-      )}
-    </div>
-  )
+  return out
 }
 
 // ═════════════════════════════════════════════════════════════════════════════
 // MAIN COMPONENT
 // ═════════════════════════════════════════════════════════════════════════════
 export default function AutomationStudio() {
-  const [tab, setTab] = useState<'workflows' | 'integrations'>('workflows')
+  const { items: rules, isLoading, error, save, remove, isSaving } = useAutomationRules()
+  const validate = useValidateAutomationRule()
+  const user = useAuthStore(s => s.user)
+  const currentUser = user?.fullName || user?.email || 'Reviewer'
+
   const [search, setSearch] = useState('')
-  const [catFilter, setCatFilter] = useState('All')
-  const [selected, setSelected] = useState<Workflow | null>(null)
-  const [drawerTab, setDrawerTab] = useState<'overview' | 'builder' | 'logs'>('overview')
-  const { data: workflows, setData: setWorkflows } = useSupabaseTable<Workflow>('automationstudio_table', SEED_WORKFLOWS)
-
-  // New Workflow dialog
+  const [statusFilter, setStatusFilter] = useState('all')
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [drawerTab, setDrawerTab] = useState<'overview' | 'builder' | 'runs'>('overview')
   const [newOpen, setNewOpen] = useState(false)
-  const [newForm, setNewForm] = useState({
-    name: '', description: '', trigger: '' as TriggerType | '', category: 'Custom',
-    selectedActions: [] as ActionType[],
-  })
+  const [deleteTarget, setDeleteTarget] = useState<AutomationRuleRecord | null>(null)
 
-  // YAML Import dialog
-  const [yamlOpen, setYamlOpen] = useState(false)
-  const [yamlText, setYamlText] = useState('')
+  const selected = useMemo(() => rules.find(r => r.id === selectedId) ?? null, [rules, selectedId])
+  const runsQuery = useAutomationRuns(selected?.id)
 
-  // Delete confirm
-  const [deleteTarget, setDeleteTarget] = useState<Workflow | null>(null)
+  const filtered = useMemo(() => rules.filter(r => {
+    const q = search.toLowerCase()
+    const m = !q || r.name.toLowerCase().includes(q) || (r.description ?? '').toLowerCase().includes(q) || (r.ruleRef ?? '').toLowerCase().includes(q)
+    const s = statusFilter === 'all' || r.status === statusFilter
+    return m && s
+  }), [search, statusFilter, rules])
 
-  // Test run simulation
-  const [testRunning, setTestRunning] = useState<string | null>(null)
+  // KPIs — derived from real rule records only.
+  const activeCount = rules.filter(r => r.status === 'active').length
+  const draftCount = rules.filter(r => r.status === 'draft').length
+  const totalRuns = rules.reduce((s, r) => s + (r.runCount ?? 0), 0)
+  const lastActivity = rules
+    .map(r => r.lastRunAt)
+    .filter((d): d is string => !!d)
+    .sort()
+    .pop()
 
-  const categories = ['All', ...Array.from(new Set(SEED_WORKFLOWS.map(w => w.category)))]
-  const filtered = useMemo(() => workflows.filter(w => {
-    const m = !search || w.name.toLowerCase().includes(search.toLowerCase()) || w.description.toLowerCase().includes(search.toLowerCase())
-    const c = catFilter === 'All' || w.category === catFilter
-    return m && c
-  }), [search, catFilter, workflows])
+  const kpis: StatCardRowItem[] = [
+    { label: 'Active Rules', value: String(activeCount), icon: <Lightning size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} /> },
+    { label: 'Drafts', value: String(draftCount), icon: <ListChecks size={18} style={{ color: 'hsl(var(--text-3))' }} /> },
+    { label: 'Recorded Runs', value: totalRuns.toLocaleString(), icon: <CheckCircle size={18} weight="fill" style={{ color: 'hsl(var(--brand))' }} /> },
+    { label: 'Last Activity', value: lastActivity ? timeAgo(lastActivity) : '—', icon: <Play size={18} style={{ color: 'hsl(var(--s-in-tx))' }} /> },
+  ]
 
-  // ── Handlers ───────────────────────────────────────────────────────────────
-  const toggleStatus = (wf: Workflow) => {
-    const next = wf.status === 'Active' ? 'Paused' : 'Active'
-    setWorkflows(prev => prev.map(w => w.id === wf.id ? { ...w, status: next } : w))
-    if (selected?.id === wf.id) setSelected(prev => prev ? { ...prev, status: next } : prev)
-    showToast(`${wf.name} ${next === 'Active' ? 'activated' : 'paused'}`)
+  const toggleStatus = async (rule: AutomationRuleRecord) => {
+    const next = rule.status === 'active' ? 'paused' : 'active'
+    try { await save({ ...rule, status: next }) } catch { /* hook toasts */ }
   }
 
-  const cloneWorkflow = (wf: Workflow) => {
-    const clone: Workflow = {
-      ...wf,
-      id: `WF-C${Date.now().toString().slice(-4)}`,
-      name: `${wf.name} (Copy)`,
-      status: 'Draft',
-      runCount: 0,
-      successRate: 0,
-      lastRun: 'Never',
-      isTemplate: false,
-      runLogs: [],
-      createdDate: new Date().toISOString().split('T')[0],
-    }
-    setWorkflows(prev => [clone, ...prev])
-    showToast('Workflow cloned as draft')
+  const cloneRule = async (rule: AutomationRuleRecord) => {
+    try {
+      await save({ ...rule, id: undefined, ruleRef: undefined, name: `${rule.name} (copy)`, status: 'draft', createdBy: currentUser })
+    } catch { /* hook toasts */ }
   }
 
-  const deleteWorkflow = (wf: Workflow) => {
-    setWorkflows(prev => prev.filter(w => w.id !== wf.id))
-    if (selected?.id === wf.id) setSelected(null)
-    setDeleteTarget(null)
-    showToast(`${wf.name} deleted`)
+  const confirmDelete = async () => {
+    if (!deleteTarget?.id) return
+    try {
+      await remove(deleteTarget.id)
+      if (selectedId === deleteTarget.id) setSelectedId(null)
+      setDeleteTarget(null)
+    } catch { /* hook toasts */ }
   }
 
-  const updateNodeConfig = (wfId: string, nodeId: string, config: Record<string, string>) => {
-    setWorkflows(prev => prev.map(w =>
-      w.id === wfId ? { ...w, nodes: w.nodes.map(n => n.id === nodeId ? { ...n, config } : n) } : w
-    ))
-    setSelected(prev => prev && prev.id === wfId
-      ? { ...prev, nodes: prev.nodes.map(n => n.id === nodeId ? { ...n, config } : n) }
-      : prev
-    )
+  const runValidation = (rule: AutomationRuleRecord) => {
+    // Records an honest 'validated'/'failed' run — nothing is executed.
+    validate.mutate(rule)
   }
 
-  const deleteNode = (wfId: string, nodeId: string) => {
-    setWorkflows(prev => prev.map(w =>
-      w.id === wfId ? { ...w, nodes: w.nodes.filter(n => n.id !== nodeId) } : w
-    ))
-    setSelected(prev => prev && prev.id === wfId
-      ? { ...prev, nodes: prev.nodes.filter(n => n.id !== nodeId) }
-      : prev
-    )
-  }
-
-  const addActionNode = (wfId: string, actionType: ActionType) => {
-    const node: WorkflowNode = {
-      id: `n${Date.now()}`,
-      type: 'action',
-      nodeType: actionType,
-      label: actionType,
-      config: { ...ACTION_DEFAULT_CONFIG[actionType] },
-    }
-    setWorkflows(prev => prev.map(w =>
-      w.id === wfId ? { ...w, nodes: [...w.nodes, node], actions: [...w.actions, actionType] } : w
-    ))
-    setSelected(prev => prev && prev.id === wfId
-      ? { ...prev, nodes: [...prev.nodes, node], actions: [...prev.actions, actionType] }
-      : prev
-    )
-    showToast(`${actionType} step added`)
-  }
-
-  const handleTestRun = (wf: Workflow) => {
-    setTestRunning(wf.id)
-    setTimeout(() => {
-      const success = Math.random() > 0.1
-      const newLog: RunLog = {
-        time: new Date().toISOString().replace('T', ' ').slice(0, 19),
-        status: success ? 'Success' : 'Failed',
-        duration: `${(Math.random() * 3 + 0.5).toFixed(1)}s`,
-        trigger: 'Manual Test',
-        actionsRun: success ? wf.actions.length : Math.floor(Math.random() * wf.actions.length),
-        message: success ? undefined : 'Simulated test failure — check integration config',
-      }
-      setWorkflows(prev => prev.map(w =>
-        w.id === wf.id ? { ...w, runCount: w.runCount + 1, lastRun: new Date().toISOString(), runLogs: [newLog, ...w.runLogs] } : w
-      ))
-      setSelected(prev => prev && prev.id === wf.id
-        ? { ...prev, runCount: prev.runCount + 1, lastRun: new Date().toISOString(), runLogs: [newLog, ...prev.runLogs] }
-        : prev
-      )
-      setTestRunning(null)
-      showToast(success ? 'Test run completed successfully' : 'Test run failed — see logs', success ? 'success' : 'error')
-    }, 2000)
-  }
-
-  const handleCreateWorkflow = () => {
-    if (!newForm.name.trim() || !newForm.trigger) {
-      showToast('Name and trigger type are required', 'error'); return
-    }
-    const id = `WF-${Date.now().toString().slice(-4)}`
-    const triggerNode: WorkflowNode = {
-      id: 'n1',
-      type: 'trigger',
-      nodeType: newForm.trigger,
-      label: newForm.trigger,
-      config: { ...TRIGGER_DEFAULT_CONFIG[newForm.trigger] },
-    }
-    const actionNodes: WorkflowNode[] = newForm.selectedActions.map((a, i) => ({
-      id: `n${i + 2}`,
-      type: 'action' as NodeType,
-      nodeType: a,
-      label: a,
-      config: { ...ACTION_DEFAULT_CONFIG[a] },
-    }))
-    const wf: Workflow = {
-      id,
-      name: newForm.name,
-      description: newForm.description || `${newForm.trigger} workflow with ${newForm.selectedActions.length} action(s)`,
-      status: 'Draft',
-      trigger: newForm.trigger,
-      actions: newForm.selectedActions,
-      lastRun: 'Never',
-      runCount: 0,
-      successRate: 0,
-      category: newForm.category,
-      integrations: [],
-      isTemplate: false,
-      nodes: [triggerNode, ...actionNodes],
-      runLogs: [],
-      createdDate: new Date().toISOString().split('T')[0],
-    }
-    setWorkflows(prev => [wf, ...prev])
-    setNewOpen(false)
-    setNewForm({ name: '', description: '', trigger: '', category: 'Custom', selectedActions: [] })
-    showToast(`Workflow "${wf.name}" created as Draft`)
-    setSelected(wf)
-    setDrawerTab('builder')
-  }
-
-  const handleYamlImport = () => {
-    if (!yamlText.trim()) { showToast('Paste YAML content first', 'error'); return }
-    const id = `WF-YAML-${Date.now().toString().slice(-4)}`
-    const importedWf: Workflow = {
-      id,
-      name: 'Imported Workflow',
-      description: 'Imported from YAML. Review and configure before activating.',
-      status: 'Draft',
-      trigger: 'API/Webhook',
-      actions: ['Create Task'],
-      lastRun: 'Never',
-      runCount: 0,
-      successRate: 0,
-      category: 'Custom',
-      integrations: [],
-      isTemplate: false,
-      createdDate: new Date().toISOString().split('T')[0],
-      nodes: [
-        { id: 'n1', type: 'trigger', nodeType: 'API/Webhook', label: 'Webhook Trigger', config: { endpoint: '/api/webhooks/trigger', auth: 'Bearer' } },
-      ],
-      runLogs: [],
-    }
-    setWorkflows(prev => [importedWf, ...prev])
-    setYamlOpen(false)
-    setYamlText('')
-    showToast(`YAML imported as "${importedWf.name}" — review configuration in the builder`)
-    setSelected(importedWf)
-    setDrawerTab('builder')
-  }
-
-  const toggleAction = (a: ActionType) => {
-    setNewForm(f => ({
-      ...f,
-      selectedActions: f.selectedActions.includes(a)
-        ? f.selectedActions.filter(x => x !== a)
-        : [...f.selectedActions, a],
-    }))
-  }
-
-  const activeCount = workflows.filter(w => w.status === 'Active').length
-  const totalRuns = workflows.reduce((s, w) => s + w.runCount, 0)
+  if (isLoading) return <PageSkeleton title="Automation Studio" showStats rows={5} />
 
   return (
     <div className="space-y-5">
-
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-            <Lightning size={20} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-            Governance Automation Studio
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
-            No-code governance workflow builder — Sentinel becomes the gate in your CI/CD pipeline and the mirror in Jira/ServiceNow
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => setYamlOpen(true)}
-            className="flex items-center gap-1.5 px-3 py-2 border text-sm transition-colors hover:bg-raised"
-            style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-            <Code size={14} /> Import YAML
-          </button>
+      <PageHeader
+        title="Governance Automation Studio"
+        subtitle="Rules that route governance events to human oversight — validated honestly, never simulated"
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Oversight' }, { label: 'Automation Studio' }]}
+        actions={
           <button onClick={() => setNewOpen(true)}
             className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium hover:opacity-90"
             style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus size={14} /> New Workflow
+            <Plus size={14} /> New Rule
           </button>
+        }
+      />
+
+      {error && (
+        <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load automation rules</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{(error as Error).message}</p>
         </div>
-      </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Active Workflows', value: activeCount, sub: 'Running automations', color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Total Executions', value: totalRuns.toLocaleString(), sub: 'Across all workflows', color: 'hsl(var(--brand))' },
-          { label: 'Integrations', value: INTEGRATIONS.filter(i => i.status === 'Connected').length, sub: 'CI/CD + ITSM connected', color: 'hsl(var(--text-1))' },
-          { label: 'Deployments Gated', value: '847', sub: 'Blocked via CI/CD', color: 'hsl(var(--s-wn-tx))' },
-        ].map(s => (
-          <div key={s.label} className="border p-4" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
-            <p className="text-[10px] uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>{s.label}</p>
-            <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{s.sub}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* Tabs */}
-      <div className="flex border-b" style={{ borderColor: 'hsl(var(--border))' }}>
-        {([['workflows', 'Workflow Library'], ['integrations', 'Integration Hub']] as const).map(([t, l]) => (
-          <button key={t} onClick={() => setTab(t)} className="px-5 py-2.5 text-sm font-medium transition-colors"
-            style={tab === t ? { color: 'hsl(var(--brand))', borderBottom: '2px solid hsl(var(--brand))' } : { color: 'hsl(var(--text-4))' }}>
-            {l}
-          </button>
-        ))}
-      </div>
-
-      {/* Workflows tab */}
-      {tab === 'workflows' && (
-        <>
-          <div className="flex items-center gap-2 p-3 border"
-            style={{ borderColor: 'hsl(var(--s-in-bg))', background: 'hsl(var(--s-in-bg))' }}>
-            <Lightning size={14} style={{ color: 'hsl(var(--s-in-tx))' }} className="flex-shrink-0" />
-            <p className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>
-              <span className="font-semibold" style={{ color: 'hsl(var(--s-in-tx))' }}>Sentinel as CI/CD Gate:</span>{' '}
-              Workflows with "CI/CD Gate" trigger block deployments that fail AI governance checks directly in GitHub Actions, GitLab CI, or Azure DevOps — before code reaches production.
-            </p>
-          </div>
-
-          <div className="flex gap-3">
-            <div className="relative flex-1 max-w-sm">
-              <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
-              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workflows…"
-                className="w-full pl-9 pr-3 py-2 text-sm border bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]"
-                style={{ borderColor: 'hsl(var(--border))' }} />
-            </div>
-            <Select value={catFilter} onValueChange={setCatFilter}>
-              <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-              <SelectContent style={{ borderRadius: 0 }}>
-                {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <span className="flex items-center text-xs ml-auto" style={{ color: 'hsl(var(--text-4))' }}>
-              {filtered.length} of {workflows.length}
-            </span>
-          </div>
-
-          <div className="space-y-2.5">
-            {filtered.map(wf => (
-              <div key={wf.id} className="border transition-colors hover:border-[hsl(var(--brand)/0.3)]"
-                style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))', borderLeft: `3px solid ${wf.status === 'Active' ? 'hsl(var(--s-ok-tx))' : wf.status === 'Error' ? 'hsl(var(--destructive))' : 'transparent'}` }}>
-                <div className="flex items-start gap-4 p-4">
-                  <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { setSelected(wf); setDrawerTab('overview') }}>
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                      <span className="font-mono text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{wf.id}</span>
-                      <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[wf.status] || { background: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{wf.status}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{wf.category}</span>
-                      {wf.trigger === 'CI/CD Gate' && (
-                        <span className="text-[10px] px-1.5 py-0.5 font-semibold"
-                          style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>CI/CD Gate</span>
-                      )}
-                    </div>
-                    <h3 className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{wf.name}</h3>
-                    <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'hsl(var(--text-4))' }}>{wf.description}</p>
-                    <div className="flex items-center gap-4 mt-2 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                      <span>Trigger: <span className="font-medium" style={{ color: 'hsl(var(--text-3))' }}>{wf.trigger}</span></span>
-                      <span>{wf.actions.length} action{wf.actions.length !== 1 ? 's' : ''}</span>
-                      <span>{wf.runCount > 0 ? `${wf.runCount.toLocaleString()} runs` : 'Not run'}</span>
-                      {wf.runCount > 0 && <span className="font-medium" style={{ color: 'hsl(var(--s-ok-tx))' }}>{wf.successRate}% success</span>}
-                      {wf.lastRun !== 'Never' && <span>Last: {wf.lastRun.slice(0, 10)}</span>}
-                    </div>
-                    <div className="flex gap-1 mt-2 flex-wrap">
-                      {wf.integrations.map(i => (
-                        <span key={i} className="text-[10px] px-1.5 py-0.5 border"
-                          style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}>{i}</span>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-                    <button onClick={() => handleTestRun(wf)} disabled={testRunning === wf.id}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] border transition-colors hover:bg-raised"
-                      style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}
-                      title="Test run">
-                      {testRunning === wf.id ? <Timer size={11} className="animate-spin" /> : <Play size={11} />}
-                      {testRunning === wf.id ? 'Running…' : 'Test'}
-                    </button>
-                    <button onClick={() => cloneWorkflow(wf)} title="Clone" className="p-2 border hover:bg-raised"
-                      style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>
-                      <Copy size={13} />
-                    </button>
-                    <button onClick={() => toggleStatus(wf)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium border transition-colors"
-                      style={wf.status === 'Active'
-                        ? { borderColor: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }
-                        : { borderColor: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }}>
-                      {wf.status === 'Active' ? <><Pause size={11} /> Pause</> : <><Play size={11} /> Activate</>}
-                    </button>
-                    <button onClick={() => setDeleteTarget(wf)} className="p-2 border hover:bg-[hsl(var(--s-er-bg))]"
-                      style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--s-er-tx))' }} title="Delete">
-                      <Trash size={13} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-            {filtered.length === 0 && (
-              <div className="py-12 text-center text-sm" style={{ color: 'hsl(var(--text-4))' }}>No workflows match your search.</div>
-            )}
-          </div>
-        </>
       )}
 
-      {/* Integrations tab */}
-      {tab === 'integrations' && (
-        <>
-          <div className="flex items-center gap-2 p-3 border"
-            style={{ borderColor: 'hsl(var(--s-in-bg))', background: 'hsl(var(--s-in-bg))' }}>
-            <FlowArrow size={14} style={{ color: 'hsl(var(--s-in-tx))' }} className="flex-shrink-0" />
-            <p className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>
-              <span className="font-semibold" style={{ color: 'hsl(var(--s-in-tx))' }}>Sentinel as Workflow Mirror:</span>{' '}
-              When connected to Jira and ServiceNow, every compliance finding, risk update, and incident automatically creates tickets in your existing toolchain — and vice versa.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            {INTEGRATIONS.map(int => (
-              <div key={int.name} className="border p-4" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">{int.icon}</span>
-                    <div>
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{int.name}</p>
-                        <span className="text-[10px] px-1.5 py-0.5 border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{int.category}</span>
-                      </div>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{int.description}</p>
-                    </div>
-                  </div>
-                  <div className="flex-shrink-0">
-                    {int.status === 'Connected'
-                      ? <span className="text-[11px] px-2 py-0.5 flex items-center gap-1 font-medium"
-                        style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }}>
-                        <CheckCircle size={10} /> Connected
-                      </span>
-                      : <button onClick={() => showToast(`${int.name} integration initiated — follow OAuth flow`)}
-                        className="text-[11px] px-2 py-1 hover:opacity-90 font-medium"
-                        style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-                        Connect
-                      </button>
-                    }
-                  </div>
+      <StatCardRow cards={kpis} />
+
+      {/* Cross-link to the agent orchestration domain */}
+      <div className="flex items-center gap-3 p-3 border"
+        style={{ borderColor: 'hsl(var(--s-in-bg))', background: 'hsl(var(--s-in-bg))' }}>
+        <Robot size={16} style={{ color: 'hsl(var(--s-in-tx))' }} className="flex-shrink-0" />
+        <p className="text-xs flex-1" style={{ color: 'hsl(var(--text-2))' }}>
+          <span className="font-semibold" style={{ color: 'hsl(var(--s-in-tx))' }}>Looking for multi-agent orchestration?</span>{' '}
+          These rules route governance events to human review. Agent-to-agent choreography lives in its own module.
+        </p>
+        <Link to="/multi-agent" className="flex items-center gap-1 text-xs font-medium hover:underline flex-shrink-0" style={{ color: 'hsl(var(--s-in-tx))' }}>
+          Open Choreography <ArrowRight size={12} />
+        </Link>
+      </div>
+
+      {/* Filters */}
+      <div className="flex gap-3">
+        <div className="relative flex-1 max-w-sm">
+          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search rules…"
+            className="w-full pl-9 pr-3 py-2 text-sm border bg-surface text-[hsl(var(--text-1))] placeholder:text-[hsl(var(--text-4))] focus:outline-none focus:border-[hsl(var(--brand))]"
+            style={{ borderColor: 'hsl(var(--border))' }} />
+        </div>
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="w-36" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+          <SelectContent style={{ borderRadius: 0 }}>
+            <SelectItem value="all">All statuses</SelectItem>
+            {['active', 'paused', 'draft'].map(s => <SelectItem key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</SelectItem>)}
+          </SelectContent>
+        </Select>
+        <span className="flex items-center text-xs ml-auto" style={{ color: 'hsl(var(--text-4))' }}>
+          {filtered.length} of {rules.length}
+        </span>
+      </div>
+
+      {/* Rule list */}
+      <div className="space-y-2.5">
+        {filtered.map(rule => (
+          <div key={rule.id} className="border transition-colors hover:border-[hsl(var(--brand)/0.3)]"
+            style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))', borderLeft: `3px solid ${rule.status === 'active' ? 'hsl(var(--s-ok-tx))' : 'transparent'}` }}>
+            <div className="flex items-start gap-4 p-4">
+              <div className="flex-1 min-w-0 cursor-pointer" onClick={() => { setSelectedId(rule.id ?? null); setDrawerTab('overview') }}>
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  {rule.ruleRef && <span className="font-mono text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{rule.ruleRef}</span>}
+                  <span className="text-[11px] px-2 py-0.5 font-medium capitalize" style={STATUS_STYLE[rule.status] ?? STATUS_STYLE.draft}>{rule.status}</span>
+                  <span className="text-[10px] px-1.5 py-0.5 border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{triggerLabel(rule.triggerType)}</span>
+                </div>
+                <h3 className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{rule.name}</h3>
+                {rule.description && <p className="text-xs mt-0.5 line-clamp-1" style={{ color: 'hsl(var(--text-4))' }}>{rule.description}</p>}
+                <div className="flex items-center gap-4 mt-2 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                  <span>{rule.actions.length} action{rule.actions.length !== 1 ? 's' : ''}</span>
+                  <span>{rule.runCount > 0 ? `${rule.runCount.toLocaleString()} recorded run${rule.runCount !== 1 ? 's' : ''}` : 'Not run yet'}</span>
+                  {rule.lastRunAt && <span>Last run {timeAgo(rule.lastRunAt)}</span>}
+                  {rule.lastRunStatus && (
+                    <span className="font-medium capitalize" style={{ color: RUN_STATUS_COLOR[rule.lastRunStatus] ?? 'hsl(var(--text-3))' }}>
+                      {rule.lastRunStatus}
+                    </span>
+                  )}
+                  {rule.createdBy && <span>By {rule.createdBy}</span>}
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="border p-4" style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))' }}>
-            <p className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>Webhook / REST API</p>
-            <p className="text-xs mb-3" style={{ color: 'hsl(var(--text-4))' }}>Trigger any workflow via webhook or use Sentinel's REST API to integrate with any system not listed above.</p>
-            <div className="flex items-center gap-2">
-              <code className="flex-1 px-3 py-2 border text-[11px] font-mono truncate"
-                style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--brand))' }}>
-                POST https://api.sentinel.ai/v1/workflows/trigger
-              </code>
-              <button onClick={() => { navigator.clipboard.writeText('POST https://api.sentinel.ai/v1/workflows/trigger'); showToast('Endpoint copied') }}
-                className="px-3 py-2 border text-xs hover:bg-surface"
-                style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-                Copy
-              </button>
+              <div className="flex items-center gap-1.5 flex-shrink-0">
+                <button onClick={() => runValidation(rule)} disabled={validate.isPending}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] border transition-colors hover:bg-raised disabled:opacity-50"
+                  style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}
+                  title="Check the configuration and record an honest validation run — nothing is executed">
+                  <CheckCircle size={11} /> {validate.isPending ? 'Validating…' : 'Validate'}
+                </button>
+                <button onClick={() => cloneRule(rule)} disabled={isSaving} title="Clone as draft" className="p-2 border hover:bg-raised disabled:opacity-50"
+                  style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>
+                  <Copy size={13} />
+                </button>
+                <button onClick={() => toggleStatus(rule)} disabled={isSaving}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-[11px] font-medium border transition-colors disabled:opacity-50"
+                  style={rule.status === 'active'
+                    ? { borderColor: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }
+                    : { borderColor: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }}>
+                  {rule.status === 'active' ? <><Pause size={11} /> Pause</> : <><Play size={11} /> Activate</>}
+                </button>
+                <button onClick={() => setDeleteTarget(rule)} className="p-2 border hover:bg-[hsl(var(--s-er-bg))]"
+                  style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--s-er-tx))' }} title="Delete">
+                  <Trash size={13} />
+                </button>
+              </div>
             </div>
           </div>
-        </>
-      )}
+        ))}
+        {filtered.length === 0 && (
+          <div className="py-12 text-center text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+            {rules.length === 0
+              ? 'No automation rules configured yet — create one to route governance events to human oversight.'
+              : 'No rules match your search.'}
+          </div>
+        )}
+      </div>
 
-      {/* ── Detail Drawer ─────────────────────────────────────────────────────── */}
+      {/* ── Detail drawer ─────────────────────────────────────────────────── */}
       {selected && (
         <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
+          <div className="flex-1 bg-black/40" onClick={() => setSelectedId(null)} />
           <div className="w-[560px] flex flex-col h-full border-l"
             style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
 
@@ -784,21 +275,22 @@ export default function AutomationStudio() {
             <div className="flex items-start justify-between p-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
               <div className="flex-1 min-w-0 pr-3">
                 <div className="flex items-center gap-2 mb-0.5">
-                  <p className="font-mono text-[10px]" style={{ color: 'hsl(var(--brand))' }}>{selected.id}</p>
-                  <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { background: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{selected.status}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{selected.category}</span>
+                  {selected.ruleRef && <p className="font-mono text-[10px]" style={{ color: 'hsl(var(--brand))' }}>{selected.ruleRef}</p>}
+                  <span className="text-[11px] px-2 py-0.5 font-medium capitalize" style={STATUS_STYLE[selected.status] ?? STATUS_STYLE.draft}>{selected.status}</span>
                 </div>
                 <h2 className="text-base font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{selected.name}</h2>
-                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>Trigger: {selected.trigger} · Created {selected.createdDate}</p>
+                <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
+                  Trigger: {triggerLabel(selected.triggerType)}{selected.createdAt ? ` · Created ${formatDate(selected.createdAt)}` : ''}
+                </p>
               </div>
-              <button onClick={() => setSelected(null)} className="p-1 flex-shrink-0">
+              <button onClick={() => setSelectedId(null)} className="p-1 flex-shrink-0" aria-label="Close">
                 <X size={18} style={{ color: 'hsl(var(--text-4))' }} />
               </button>
             </div>
 
             {/* Drawer tabs */}
             <div className="flex border-b" style={{ borderColor: 'hsl(var(--border))' }}>
-              {([['overview', 'Overview'], ['builder', 'Flow Builder'], ['logs', 'Run Logs']] as const).map(([t, l]) => (
+              {([['overview', 'Overview'], ['builder', 'Rule Builder'], ['runs', 'Run History']] as const).map(([t, l]) => (
                 <button key={t} onClick={() => setDrawerTab(t)} className="flex-1 py-2.5 text-[11px] font-medium transition-colors"
                   style={drawerTab === t ? { color: 'hsl(var(--brand))', borderBottom: '2px solid hsl(var(--brand))' } : { color: 'hsl(var(--text-4))' }}>
                   {l}
@@ -807,298 +299,422 @@ export default function AutomationStudio() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-4 space-y-4">
-              {/* Overview */}
               {drawerTab === 'overview' && (
                 <>
-                  <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>{selected.description}</p>
+                  {selected.description && <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-2))' }}>{selected.description}</p>}
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { label: 'Trigger', value: selected.trigger },
-                      { label: 'Category', value: selected.category },
-                      { label: 'Total Runs', value: selected.runCount.toLocaleString() },
-                      { label: 'Success Rate', value: selected.runCount > 0 ? `${selected.successRate}%` : 'N/A' },
-                      { label: 'Last Run', value: selected.lastRun === 'Never' ? 'Never' : selected.lastRun.slice(0, 10) },
+                      { label: 'Trigger', value: triggerLabel(selected.triggerType) },
+                      { label: 'Status', value: selected.status },
+                      { label: 'Recorded Runs', value: selected.runCount.toLocaleString() },
+                      { label: 'Last Run', value: selected.lastRunAt ? timeAgo(selected.lastRunAt) : 'Never' },
+                      { label: 'Last Run Status', value: selected.lastRunStatus ?? '—' },
                       { label: 'Actions', value: `${selected.actions.length} configured` },
-                      { label: 'Created', value: selected.createdDate },
-                      { label: 'Nodes', value: `${selected.nodes.length} steps` },
+                      { label: 'Created By', value: selected.createdBy ?? '—' },
+                      { label: 'Created', value: selected.createdAt ? formatDate(selected.createdAt) : '—' },
                     ].map(f => (
                       <div key={f.label} className="p-3 border" style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))' }}>
                         <p className="text-[10px] uppercase" style={{ color: 'hsl(var(--text-4))' }}>{f.label}</p>
-                        <p className="text-xs font-medium mt-0.5" style={{ color: 'hsl(var(--text-1))' }}>{f.value}</p>
+                        <p className="text-xs font-medium mt-0.5 capitalize" style={{ color: 'hsl(var(--text-1))' }}>{f.value}</p>
                       </div>
                     ))}
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold uppercase mb-2" style={{ color: 'hsl(var(--text-3))' }}>Actions</p>
-                    <div className="space-y-1.5">
-                      {selected.actions.map((a, i) => {
-                        const Icon = ACTION_ICONS[a] || Lightning
-                        return (
+                    {selected.actions.length === 0 ? (
+                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No actions configured — add them in the Rule Builder.</p>
+                    ) : (
+                      <div className="space-y-1.5">
+                        {selected.actions.map((a, i) => (
                           <div key={i} className="flex items-center gap-2 p-2 border" style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))' }}>
                             <span className="text-[10px] w-4" style={{ color: 'hsl(var(--text-4))' }}>{i + 1}.</span>
-                            <Icon size={11} style={{ color: 'hsl(var(--brand))' }} />
-                            <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a}</span>
+                            <Lightning size={11} style={{ color: 'hsl(var(--brand))' }} />
+                            <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{actionLabel(a.type)}</span>
                           </div>
-                        )
-                      })}
-                    </div>
-                  </div>
-                  {selected.integrations.length > 0 && (
-                    <div>
-                      <p className="text-[11px] font-semibold uppercase mb-2" style={{ color: 'hsl(var(--text-3))' }}>Integrations</p>
-                      <div className="flex gap-1.5 flex-wrap">
-                        {selected.integrations.map(i => (
-                          <span key={i} className="text-[11px] px-2 py-1 border" style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>{i}</span>
                         ))}
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </>
               )}
 
-              {/* Flow Builder — editable */}
               {drawerTab === 'builder' && (
-                <>
-                  <div className="flex items-center justify-between">
-                    <p className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--text-3))' }}>
-                      {selected.nodes.length} Step{selected.nodes.length !== 1 ? 's' : ''} — click <PencilSimple size={10} className="inline" /> to edit any config
-                    </p>
-                  </div>
-
-                  <div className="relative">
-                    <div className="absolute left-5 top-4 bottom-4 w-px" style={{ background: 'hsl(var(--border))' }} />
-                    <div className="space-y-0">
-                      {selected.nodes.map((node, idx) => (
-                        <NodeRow
-                          key={node.id}
-                          node={node}
-                          index={idx}
-                          total={selected.nodes.length}
-                          onUpdate={(nodeId, config) => updateNodeConfig(selected.id, nodeId, config)}
-                          onDelete={(nodeId) => deleteNode(selected.id, nodeId)}
-                        />
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Add action step */}
-                  <div className="border border-dashed p-3" style={{ borderColor: 'hsl(var(--border))' }}>
-                    <p className="text-[10px] font-semibold uppercase mb-2" style={{ color: 'hsl(var(--text-4))' }}>Add Action Step</p>
-                    <div className="flex flex-wrap gap-1.5">
-                      {ACTION_TYPES.map(a => (
-                        <button key={a} onClick={() => addActionNode(selected.id, a)}
-                          className="text-[10px] px-2 py-1 border transition-colors hover:border-[hsl(var(--brand)/0.4)] hover:text-[hsl(var(--brand))]"
-                          style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
-                          + {a}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
+                <RuleBuilder
+                  key={selected.id}
+                  rule={selected}
+                  isSaving={isSaving}
+                  onSave={async (draft) => {
+                    try { await save(draft) } catch { /* hook toasts */ }
+                  }}
+                />
               )}
 
-              {/* Run Logs */}
-              {drawerTab === 'logs' && (
+              {drawerTab === 'runs' && (
                 <>
                   <p className="text-[11px] font-semibold uppercase" style={{ color: 'hsl(var(--text-3))' }}>
-                    Recent Executions {selected.runLogs.length > 0 ? `(${selected.runLogs.length})` : ''}
+                    Run History {runsQuery.data && runsQuery.data.length > 0 ? `(${runsQuery.data.length})` : ''}
                   </p>
-                  {selected.runLogs.length === 0 ? (
-                    <div className="text-center py-10 text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-                      No executions yet. Click <strong>Test</strong> to simulate a run.
+                  {runsQuery.isLoading && (
+                    <p className="text-xs py-6 text-center" style={{ color: 'hsl(var(--text-4))' }}>Loading run history…</p>
+                  )}
+                  {runsQuery.error != null && (
+                    <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-3">
+                      <p className="text-xs text-[hsl(var(--destructive))]">{(runsQuery.error as Error).message}</p>
                     </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {selected.runLogs.map((run, i) => (
-                        <div key={i} className="p-3 border flex items-start gap-3"
-                          style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))' }}>
-                          <div className={`w-2 h-2 rounded-full flex-shrink-0 mt-1`}
-                            style={{ background: run.status === 'Success' ? 'hsl(var(--s-ok-tx))' : run.status === 'Running' ? 'hsl(var(--s-in-tx))' : 'hsl(var(--destructive))' }} />
+                  )}
+                  {!runsQuery.isLoading && !runsQuery.error && (runsQuery.data ?? []).length === 0 && (
+                    <div className="text-center py-10 text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+                      No runs recorded for this rule yet.<br />
+                      <span className="text-xs">Use <strong>Validate</strong> to record an honest configuration check — nothing is executed.</span>
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    {(runsQuery.data ?? []).map(run => (
+                      <div key={run.id} className="p-3 border"
+                        style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))' }}>
+                        <div className="flex items-start gap-3">
+                          <div className="w-2 h-2 rounded-full flex-shrink-0 mt-1"
+                            style={{ background: RUN_STATUS_COLOR[run.status] ?? 'hsl(var(--text-4))' }} />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
-                              <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{run.status}</p>
-                              <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{run.duration} · {run.actionsRun} action{run.actionsRun !== 1 ? 's' : ''}</span>
+                              <p className="text-xs font-semibold capitalize" style={{ color: 'hsl(var(--text-1))' }}>{run.status}</p>
+                              <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
+                                {run.actionsRun != null ? `${run.actionsRun} action${run.actionsRun !== 1 ? 's' : ''} · ` : ''}
+                                {run.startedAt ? timeAgo(run.startedAt) : ''}
+                              </span>
                             </div>
-                            <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{run.time} · {run.trigger}</p>
-                            {run.message && (
-                              <p className="text-[10px] mt-1 italic" style={{ color: run.status === 'Failed' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-3))' }}>{run.message}</p>
+                            <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
+                              {run.startedAt ? new Date(run.startedAt).toLocaleString() : ''}{run.triggerSource ? ` · ${run.triggerSource.replace(/_/g, ' ')}` : ''}
+                            </p>
+                            {run.log.length > 0 && (
+                              <div className="mt-1.5 space-y-0.5">
+                                {run.log.map((l, i) => (
+                                  <p key={i} className="text-[10px]" style={{ color: 'hsl(var(--text-3))' }}>· {l.message}</p>
+                                ))}
+                              </div>
+                            )}
+                            {run.error && (
+                              <p className="text-[10px] mt-1 italic" style={{ color: 'hsl(var(--s-er-tx))' }}>{run.error}</p>
                             )}
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
+                      </div>
+                    ))}
+                  </div>
                 </>
               )}
             </div>
 
             {/* Footer actions */}
             <div className="p-4 border-t flex gap-2" style={{ borderColor: 'hsl(var(--border))' }}>
-              <button onClick={() => handleTestRun(selected)} disabled={testRunning === selected.id}
-                className="flex-1 py-2 border text-sm transition-colors hover:bg-raised flex items-center justify-center gap-1.5"
+              <button onClick={() => runValidation(selected)} disabled={validate.isPending}
+                className="flex-1 py-2 border text-sm transition-colors hover:bg-raised flex items-center justify-center gap-1.5 disabled:opacity-50"
                 style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-                {testRunning === selected.id ? <Timer size={13} className="animate-spin" /> : <Play size={13} />}
-                {testRunning === selected.id ? 'Running…' : 'Test Run'}
+                <CheckCircle size={13} />
+                {validate.isPending ? 'Validating…' : 'Validate'}
               </button>
-              <button onClick={() => toggleStatus(selected)}
-                className="flex-1 py-2 border text-sm transition-colors hover:bg-raised"
+              <button onClick={() => toggleStatus(selected)} disabled={isSaving}
+                className="flex-1 py-2 border text-sm transition-colors hover:bg-raised disabled:opacity-50"
                 style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-                {selected.status === 'Active' ? 'Pause' : 'Activate'}
+                {selected.status === 'active' ? 'Pause' : 'Activate'}
               </button>
-              <button onClick={() => cloneWorkflow(selected)}
-                className="flex-1 py-2 text-sm font-medium hover:opacity-90"
+              <button onClick={() => cloneRule(selected)} disabled={isSaving}
+                className="flex-1 py-2 text-sm font-medium hover:opacity-90 disabled:opacity-50"
                 style={{ background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-                Clone & Edit
+                Clone as Draft
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── New Workflow Dialog ───────────────────────────────────────────────── */}
-      <Dialog open={newOpen} onOpenChange={setNewOpen}>
-        <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto" style={{ borderRadius: 0 }}>
-          <DialogHeader>
-            <DialogTitle>Create New Workflow</DialogTitle>
-            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-              Configure the trigger and select actions. You can edit individual step configs in the Flow Builder after creation.
-            </p>
-          </DialogHeader>
+      {/* ── New rule dialog ───────────────────────────────────────────────── */}
+      <NewRuleDialog
+        open={newOpen}
+        onOpenChange={setNewOpen}
+        isSaving={isSaving}
+        currentUser={currentUser}
+        onCreate={async (draft) => {
+          try {
+            const created = await save(draft)
+            setNewOpen(false)
+            if (created?.id) { setSelectedId(created.id); setDrawerTab('builder') }
+          } catch { /* hook toasts; keep dialog open */ }
+        }}
+      />
 
-          <div className="space-y-5 py-2">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Workflow Name <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span></Label>
-              <Input placeholder="e.g., GDPR Breach → Regulator Notify" value={newForm.name}
-                onChange={e => setNewForm(f => ({ ...f, name: e.target.value }))} style={{ borderRadius: 0 }} />
+      {/* ── Delete confirm ────────────────────────────────────────────────── */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        type="danger"
+        title="Delete Rule"
+        description={`Delete "${deleteTarget?.name}"? The rule stops firing immediately. This cannot be undone.`}
+        confirmLabel="Delete Rule"
+        onConfirm={confirmDelete}
+        onClose={() => setDeleteTarget(null)}
+      />
+    </div>
+  )
+}
+
+// ── Rule Builder — edits trigger + actions, persists via save() ──────────────
+
+function RuleBuilder({ rule, isSaving, onSave }: {
+  rule: AutomationRuleRecord
+  isSaving: boolean
+  onSave: (r: AutomationRuleRecord) => Promise<void>
+}) {
+  const [triggerType, setTriggerType] = useState(rule.triggerType ?? 'manual')
+  const [triggerRows, setTriggerRows] = useState<[string, string][]>(configToRows(rule.triggerConfig))
+  const [actions, setActions] = useState<{ type: string; rows: [string, string][] }[]>(
+    rule.actions.map(a => ({ type: a.type, rows: configToRows(a.config) }))
+  )
+  const [dirty, setDirty] = useState(false)
+
+  const touch = () => setDirty(true)
+
+  const addAction = (type: string) => { setActions(prev => [...prev, { type, rows: [] }]); touch() }
+  const removeAction = (i: number) => { setActions(prev => prev.filter((_, idx) => idx !== i)); touch() }
+
+  const submit = async () => {
+    if (!actions.length) { toast.error('A rule needs at least one action.'); return }
+    await onSave({
+      ...rule,
+      triggerType,
+      triggerConfig: rowsToConfig(triggerRows),
+      actions: actions.map(a => ({ type: a.type, config: rowsToConfig(a.rows) })),
+    })
+    setDirty(false)
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="relative">
+        <div className="absolute left-5 top-4 bottom-4 w-px" style={{ background: 'hsl(var(--border))' }} />
+
+        {/* Trigger node */}
+        <div className="relative pl-12">
+          <div className="absolute left-[17px] top-4 w-3.5 h-3.5 rounded-full border-2 z-10"
+            style={{ borderColor: 'hsl(var(--s-in-tx))', background: 'hsl(var(--bg-surface))' }} />
+          <div className="border p-3 space-y-2" style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))' }}>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] px-1.5 py-0.5 font-semibold uppercase"
+                style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>Trigger</span>
+              <Select value={triggerType} onValueChange={v => { setTriggerType(v); touch() }}>
+                <SelectTrigger className="h-8 text-xs flex-1" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {TRIGGER_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
             </div>
+            <ConfigRows rows={triggerRows} onChange={rows => { setTriggerRows(rows); touch() }} />
+          </div>
+          <div className="flex justify-start pl-5 py-1">
+            <ArrowDown size={10} style={{ color: 'hsl(var(--text-4))' }} />
+          </div>
+        </div>
 
-            <div className="space-y-1.5">
-              <Label className="text-xs font-semibold">Description</Label>
-              <Textarea placeholder="Describe what this workflow automates and when it fires…" rows={2}
-                value={newForm.description} onChange={e => setNewForm(f => ({ ...f, description: e.target.value }))} style={{ borderRadius: 0 }} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Trigger Type <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span></Label>
-                <Select value={newForm.trigger} onValueChange={v => setNewForm(f => ({ ...f, trigger: v as TriggerType }))}>
-                  <SelectTrigger style={{ borderRadius: 0 }}>
-                    <SelectValue placeholder="Select trigger…" />
-                  </SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {TRIGGER_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+        {/* Action nodes */}
+        {actions.map((a, i) => (
+          <div key={i} className="relative pl-12">
+            <div className="absolute left-[17px] top-4 w-3.5 h-3.5 rounded-full border-2 z-10"
+              style={{ borderColor: 'hsl(var(--s-ok-tx))', background: 'hsl(var(--bg-surface))' }} />
+            <div className="border p-3 space-y-2" style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))' }}>
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-[10px] px-1.5 py-0.5 font-semibold uppercase"
+                    style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }}>Action</span>
+                  <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{actionLabel(a.type)}</span>
+                </div>
+                <button onClick={() => removeAction(i)} className="p-1 hover:bg-surface" title="Remove action" aria-label={`Remove action ${i + 1}`}>
+                  <Trash size={11} style={{ color: 'hsl(var(--s-er-tx))' }} />
+                </button>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs font-semibold">Category</Label>
-                <Select value={newForm.category} onValueChange={v => setNewForm(f => ({ ...f, category: v }))}>
-                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {CATEGORIES.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
+              <ConfigRows rows={a.rows} onChange={rows => { setActions(prev => prev.map((x, idx) => idx === i ? { ...x, rows } : x)); touch() }} />
             </div>
-
-            {newForm.trigger && (
-              <div className="p-3 border" style={{ background: 'hsl(var(--s-in-bg))', borderColor: 'hsl(var(--s-in-bg))' }}>
-                <p className="text-[10px] font-semibold uppercase mb-1.5" style={{ color: 'hsl(var(--s-in-tx))' }}>Default Trigger Config</p>
-                {Object.entries(TRIGGER_DEFAULT_CONFIG[newForm.trigger]).map(([k, v]) => (
-                  <div key={k} className="flex items-center gap-2 text-[10px]">
-                    <span className="w-28 flex-shrink-0" style={{ color: 'hsl(var(--text-4))' }}>{k}</span>
-                    <span className="font-mono" style={{ color: 'hsl(var(--text-2))' }}>{v}</span>
-                  </div>
-                ))}
-                <p className="text-[10px] mt-2" style={{ color: 'hsl(var(--text-4))' }}>Edit these in the Flow Builder after creation.</p>
+            {i < actions.length - 1 && (
+              <div className="flex justify-start pl-5 py-1">
+                <ArrowDown size={10} style={{ color: 'hsl(var(--text-4))' }} />
               </div>
             )}
-
-            <div className="space-y-2">
-              <Label className="text-xs font-semibold">Actions <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span></Label>
-              <p className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>Select one or more actions to perform when the trigger fires:</p>
-              <div className="grid grid-cols-2 gap-1.5">
-                {ACTION_TYPES.map(a => {
-                  const selected = newForm.selectedActions.includes(a)
-                  const Icon = ACTION_ICONS[a] || Lightning
-                  return (
-                    <button key={a} type="button" onClick={() => toggleAction(a)}
-                      className="flex items-center gap-2 p-2.5 border text-left text-xs transition-colors"
-                      style={{
-                        background: selected ? 'hsl(var(--brand-subtle))' : 'hsl(var(--bg-raised))',
-                        borderColor: selected ? 'hsl(var(--brand)/0.3)' : 'hsl(var(--border))',
-                        color: selected ? 'hsl(var(--brand))' : 'hsl(var(--text-3))',
-                      }}>
-                      <Icon size={12} />
-                      <span className="flex-1">{a}</span>
-                      {selected && <Check size={11} />}
-                    </button>
-                  )
-                })}
-              </div>
-            </div>
           </div>
+        ))}
+      </div>
 
-          <DialogFooter>
-            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setNewOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={handleCreateWorkflow}>
-              Create Workflow
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Add action */}
+      <div className="border border-dashed p-3" style={{ borderColor: 'hsl(var(--border))' }}>
+        <p className="text-[10px] font-semibold uppercase mb-2" style={{ color: 'hsl(var(--text-4))' }}>Add Action</p>
+        <div className="flex flex-wrap gap-1.5">
+          {ACTION_TYPES.map(a => (
+            <button key={a.value} onClick={() => addAction(a.value)}
+              className="text-[10px] px-2 py-1 border transition-colors hover:border-[hsl(var(--brand)/0.4)] hover:text-[hsl(var(--brand))]"
+              style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+              + {a.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-      {/* ── YAML Import Dialog ────────────────────────────────────────────────── */}
-      <Dialog open={yamlOpen} onOpenChange={setYamlOpen}>
-        <DialogContent className="max-w-xl" style={{ borderRadius: 0 }}>
-          <DialogHeader>
-            <DialogTitle>Import Workflow from YAML</DialogTitle>
-            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-              Paste your workflow YAML definition below. The workflow will be imported as a Draft for review before activation.
-            </p>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="p-3 border text-xs font-mono leading-relaxed"
-              style={{ background: 'hsl(var(--bg-raised))', borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
-              {`name: "My Workflow"\ndescription: "Auto-escalate on risk threshold breach"\ntrigger:\n  type: risk_threshold\n  config:\n    metric: risk_score\n    operator: ">\"\n    threshold: "20"\nactions:\n  - type: notify_slack\n    channel: "#compliance"\n  - type: create_task\n    assignee: risk_owner`}
-            </div>
-            <Textarea
-              placeholder="Paste your YAML here…"
-              rows={10}
-              value={yamlText}
-              onChange={e => setYamlText(e.target.value)}
-              className="font-mono text-xs"
-              style={{ borderRadius: 0 }}
-            />
-          </div>
-          <DialogFooter>
-            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setYamlOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={handleYamlImport}>
-              Import & Review
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Delete Confirm ────────────────────────────────────────────────────── */}
-      <AlertDialog open={!!deleteTarget} onOpenChange={open => { if (!open) setDeleteTarget(null) }}>
-        <AlertDialogContent style={{ borderRadius: 0 }}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Workflow?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will permanently delete <strong>{deleteTarget?.name}</strong>. All run history will be lost. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }}
-              onClick={() => deleteTarget && deleteWorkflow(deleteTarget)}>
-              Delete Workflow
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <div className="flex items-center justify-between">
+        {dirty
+          ? <p className="text-[10px]" style={{ color: 'hsl(var(--s-wn-tx))' }}>Unsaved changes</p>
+          : <span />}
+        <Button
+          onClick={submit}
+          disabled={!dirty || isSaving}
+          style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
+        >
+          {isSaving ? 'Saving…' : 'Save Rule'}
+        </Button>
+      </div>
     </div>
+  )
+}
+
+// Editable key/value config rows (values round-trip through JSON when possible).
+function ConfigRows({ rows, onChange }: {
+  rows: [string, string][]
+  onChange: (rows: [string, string][]) => void
+}) {
+  return (
+    <div className="space-y-1.5">
+      {rows.map(([k, v], i) => (
+        <div key={i} className="flex items-center gap-2">
+          <input value={k} onChange={e => onChange(rows.map((r, idx) => idx === i ? [e.target.value, r[1]] : r))}
+            className="w-32 px-2 py-1 text-[10px] font-mono border bg-surface text-[hsl(var(--text-2))] focus:outline-none focus:border-[hsl(var(--brand))]"
+            style={{ borderColor: 'hsl(var(--border))' }} placeholder="key" aria-label={`Config key ${i + 1}`} />
+          <input value={v} onChange={e => onChange(rows.map((r, idx) => idx === i ? [r[0], e.target.value] : r))}
+            className="flex-1 px-2 py-1 text-[10px] font-mono border bg-surface text-[hsl(var(--text-1))] focus:outline-none focus:border-[hsl(var(--brand))]"
+            style={{ borderColor: 'hsl(var(--border))' }} placeholder="value" aria-label={`Config value ${i + 1}`} />
+          <button onClick={() => onChange(rows.filter((_, idx) => idx !== i))} className="p-1" title="Remove" aria-label={`Remove config row ${i + 1}`}>
+            <X size={10} style={{ color: 'hsl(var(--text-4))' }} />
+          </button>
+        </div>
+      ))}
+      <button onClick={() => onChange([...rows, ['', '']])}
+        className="text-[10px] px-2 py-0.5 border transition-colors hover:text-[hsl(var(--brand))]"
+        style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>
+        + config entry
+      </button>
+    </div>
+  )
+}
+
+// ── New rule dialog ───────────────────────────────────────────────────────────
+
+function NewRuleDialog({ open, onOpenChange, isSaving, currentUser, onCreate }: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  isSaving: boolean
+  currentUser: string
+  onCreate: (r: AutomationRuleRecord) => Promise<void>
+}) {
+  const [name, setName] = useState('')
+  const [description, setDescription] = useState('')
+  const [triggerType, setTriggerType] = useState('')
+  const [selectedActions, setSelectedActions] = useState<string[]>([])
+
+  const toggleAction = (a: string) =>
+    setSelectedActions(prev => prev.includes(a) ? prev.filter(x => x !== a) : [...prev, a])
+
+  const canCreate = name.trim().length > 0 && !!triggerType && selectedActions.length > 0
+
+  const submit = () => {
+    if (!canCreate) {
+      toast.error('Name, trigger type and at least one action are required.')
+      return
+    }
+    onCreate({
+      name: name.trim(),
+      description: description.trim() || undefined,
+      status: 'draft',
+      triggerType,
+      triggerConfig: {},
+      actions: selectedActions.map(type => ({ type, config: {} })),
+      runCount: 0,
+      createdBy: currentUser,
+    }).then(() => {
+      setName(''); setDescription(''); setTriggerType(''); setSelectedActions([])
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-xl max-h-[90vh] overflow-y-auto" style={{ borderRadius: 0 }}>
+        <DialogHeader>
+          <DialogTitle>Create Automation Rule</DialogTitle>
+          <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+            The rule is created as a draft. Configure trigger and action details in the Rule Builder, then activate it.
+          </p>
+        </DialogHeader>
+
+        <div className="space-y-5 py-2">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Rule Name <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span></Label>
+            <Input placeholder="e.g. Critical incident → HITL escalation" value={name}
+              onChange={e => setName(e.target.value)} style={{ borderRadius: 0 }} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Description</Label>
+            <Textarea placeholder="Describe what this rule automates and when it fires…" rows={2}
+              value={description} onChange={e => setDescription(e.target.value)} style={{ borderRadius: 0 }} />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className="text-xs font-semibold">Trigger Type <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span></Label>
+            <Select value={triggerType} onValueChange={setTriggerType}>
+              <SelectTrigger style={{ borderRadius: 0 }}>
+                <SelectValue placeholder="Select trigger…" />
+              </SelectTrigger>
+              <SelectContent style={{ borderRadius: 0 }}>
+                {TRIGGER_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label className="text-xs font-semibold">Actions <span style={{ color: 'hsl(var(--s-er-tx))' }}>*</span></Label>
+            <p className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>Select one or more actions to perform when the trigger fires:</p>
+            <div className="grid grid-cols-2 gap-1.5">
+              {ACTION_TYPES.map(a => {
+                const isSelected = selectedActions.includes(a.value)
+                return (
+                  <button key={a.value} type="button" onClick={() => toggleAction(a.value)}
+                    className="flex items-center gap-2 p-2.5 border text-left text-xs transition-colors"
+                    style={{
+                      background: isSelected ? 'hsl(var(--brand-subtle))' : 'hsl(var(--bg-raised))',
+                      borderColor: isSelected ? 'hsl(var(--brand)/0.3)' : 'hsl(var(--border))',
+                      color: isSelected ? 'hsl(var(--brand))' : 'hsl(var(--text-3))',
+                    }}>
+                    <Lightning size={12} />
+                    <span className="flex-1">{a.label}</span>
+                    {isSelected && <CheckCircle size={11} />}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
+
+          <div className="flex items-start gap-2 p-3 border" style={{ background: 'hsl(var(--s-in-bg))', borderColor: 'hsl(var(--s-in-bg))' }}>
+            <Warning size={13} style={{ color: 'hsl(var(--s-in-tx))', flexShrink: 0, marginTop: 1 }} />
+            <p className="text-[11px]" style={{ color: 'hsl(var(--text-2))' }}>
+              Rules never execute from this screen. <strong>Validate</strong> records an honest configuration check in the run history — no synthetic runs are ever created.
+            </p>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button
+            style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
+            onClick={submit}
+            disabled={!canCreate || isSaving}
+          >
+            {isSaving ? 'Creating…' : 'Create Draft Rule'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   )
 }

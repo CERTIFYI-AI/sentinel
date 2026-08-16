@@ -1,544 +1,348 @@
+// SPDX-License-Identifier: Apache-2.0
+// Approval Workflows — workflow definitions (approval_workflows) plus live,
+// entity-linked approval requests (approvals). Decisions persist via
+// decide() and are audited server-side; all KPIs are derived from records.
 import { useState } from 'react'
-import { useSupabaseTable } from '@/hooks/useSupabaseTable'
+import { useAuthStore } from './../stores/authStore'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { exportCsv } from '@/lib/exportUtils';
-import { FlowArrow, Plus, Eye, X, Trash, PencilSimple, Export, CheckCircle, Clock, Warning, MagnifyingGlass, ArrowRight, Pause, Play, User, ClipboardText } from '@phosphor-icons/react'
+import {
+  FlowArrow, Plus, X, Trash, PencilSimple, CheckCircle, XCircle, Clock,
+  MagnifyingGlass, Pause, Play, ShieldCheck, BellRinging,
+} from '@phosphor-icons/react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { PageHeader } from '../components/ui/PageHeader'
+import { PageSkeleton } from '../components/ui/PageSkeleton'
+import { StatCardRow, type StatCardRowItem } from '../components/ui/StatCardRow'
+import { InterlinkChip } from '@/components/ui/InterlinkChip'
+import { useApprovalWorkflows, useApprovals } from '../hooks/useRiskIncidents'
+import { useModelsData } from '@/hooks/useModelsData'
+import type { ApprovalWorkflowRecord, ApprovalRecord } from '../services/oversightService'
+import { formatDate } from '../data/seed'
 
+type StepDraft = { name: string; approver_role: string; required: boolean; sla_hours: number }
 
-type WFStatus = 'Active' | 'Paused' | 'Disabled'
-type WFType = 'Model Release' | 'Policy Update' | 'Vendor' | 'Exception' | 'Access Control' | 'Incident' | 'Audit Finding' | 'Risk Acceptance'
-
-interface ApprovalStep {
-  order: number
-  name: string
-  approvers: string[]
-  required: number
-  sla: string
-}
-
-interface PendingApproval {
-  id: string
-  title: string
-  requestedBy: string
-  requestedAt: string
-  dueAt: string
-  currentStep: string
-  urgent: boolean
-}
-
-interface Workflow {
-  id: string
-  name: string
-  type: WFType
-  status: WFStatus
-  description: string
-  pending: number
-  approvers: string
-  sla: string
-  lastTriggered: string
-  totalCompleted: number
-  avgCycleTime: string
-  steps: ApprovalStep[]
-  pendingApprovals: PendingApproval[]
-  createdAt: string
-  createdBy: string
-  requiresMFA: boolean
-  escalationHours: number
-  notifyOnEscalation: boolean
-}
-
-const SEED: Workflow[] = [
-  {
-    id: 'WF-001', name: 'Model Deployment Approval', type: 'Model Release', status: 'Active', pending: 3,
-    approvers: 'Risk + Compliance + Engineering', sla: '48h', lastTriggered: '2026-04-07', totalCompleted: 47, avgCycleTime: '36h',
-    description: 'Multi-stage approval for promoting AI models to production. Ensures risk, compliance, and engineering sign-off before any production deployment.',
-    requiresMFA: true, escalationHours: 24, notifyOnEscalation: true, createdAt: '2025-09-01', createdBy: 'Sarah Chen',
-    steps: [
-      { order: 1, name: 'Risk Assessment Sign-off', approvers: ['Michael Torres (Risk)'], required: 1, sla: '24h' },
-      { order: 2, name: 'Compliance Review', approvers: ['James Patel (Compliance)'], required: 1, sla: '16h' },
-      { order: 3, name: 'Engineering Gate', approvers: ['Lead Engineer', 'CTO'], required: 1, sla: '8h' },
-    ],
-    pendingApprovals: [
-      { id: 'PA-001', title: 'Loan Scoring Model v3.1 → Production', requestedBy: 'Priya Sharma', requestedAt: '2026-04-07 10:00', dueAt: '2026-04-09 10:00', currentStep: 'Step 2: Compliance Review', urgent: true },
-      { id: 'PA-002', title: 'Fraud Detection v5.0 → Production', requestedBy: 'Marcus Chen', requestedAt: '2026-04-07 14:30', dueAt: '2026-04-09 14:30', currentStep: 'Step 1: Risk Assessment', urgent: false },
-      { id: 'PA-003', title: 'Customer Churn Predictor v2.4 → Production', requestedBy: 'AI Team', requestedAt: '2026-04-08 09:00', dueAt: '2026-04-10 09:00', currentStep: 'Step 3: Engineering Gate', urgent: false },
-    ],
-  },
-  {
-    id: 'WF-002', name: 'Policy Change Approval', type: 'Policy Update', status: 'Active', pending: 1,
-    approvers: 'Legal + CISO', sla: '72h', lastTriggered: '2026-04-06', totalCompleted: 23, avgCycleTime: '54h',
-    description: 'Approval workflow for AI governance policy changes. All modifications to core AI policies require legal and CISO sign-off.',
-    requiresMFA: false, escalationHours: 48, notifyOnEscalation: true, createdAt: '2025-09-15', createdBy: 'James Patel',
-    steps: [
-      { order: 1, name: 'Legal Review', approvers: ['Linda Park (General Counsel)'], required: 1, sla: '48h' },
-      { order: 2, name: 'CISO Approval', approvers: ['Sarah Chen (CISO)'], required: 1, sla: '24h' },
-    ],
-    pendingApprovals: [
-      { id: 'PA-004', title: 'AI Bias Testing Policy v2 — Amendment', requestedBy: 'Compliance Team', requestedAt: '2026-04-06 11:00', dueAt: '2026-04-09 11:00', currentStep: 'Step 1: Legal Review', urgent: false },
-    ],
-  },
-  {
-    id: 'WF-003', name: 'High-Risk Vendor Onboarding', type: 'Vendor', status: 'Active', pending: 2,
-    approvers: 'Procurement + Security + Legal', sla: '5 days', lastTriggered: '2026-04-05', totalCompleted: 12, avgCycleTime: '4.2 days',
-    description: 'Due diligence and approval process for onboarding AI vendors classified as high-risk. Includes security assessment, contractual review, and executive sign-off.',
-    requiresMFA: false, escalationHours: 72, notifyOnEscalation: true, createdAt: '2025-10-01', createdBy: 'Procurement',
-    steps: [
-      { order: 1, name: 'Vendor Questionnaire Review', approvers: ['Procurement Team'], required: 1, sla: '48h' },
-      { order: 2, name: 'Security Assessment', approvers: ['James Wilson (Security)'], required: 1, sla: '48h' },
-      { order: 3, name: 'Legal Contract Review', approvers: ['Legal Counsel'], required: 1, sla: '24h' },
-      { order: 4, name: 'Executive Sign-off', approvers: ['CFO', 'CISO'], required: 2, sla: '24h' },
-    ],
-    pendingApprovals: [
-      { id: 'PA-005', title: 'DataBridge AI — High-Risk Vendor Onboarding', requestedBy: 'Procurement', requestedAt: '2026-04-05 09:00', dueAt: '2026-04-10 09:00', currentStep: 'Step 3: Legal Contract Review', urgent: true },
-      { id: 'PA-006', title: 'NeuralOps Inc — Integration Partnership', requestedBy: 'Engineering', requestedAt: '2026-04-05 14:00', dueAt: '2026-04-10 14:00', currentStep: 'Step 2: Security Assessment', urgent: false },
-    ],
-  },
-  {
-    id: 'WF-004', name: 'Exception Request', type: 'Exception', status: 'Active', pending: 0,
-    approvers: 'Risk Manager + CISO', sla: '24h', lastTriggered: '2026-04-03', totalCompleted: 34, avgCycleTime: '18h',
-    description: 'Fast-track workflow for control exceptions. Allows teams to request temporary policy exceptions with time-bounded approval.',
-    requiresMFA: false, escalationHours: 12, notifyOnEscalation: true, createdAt: '2025-11-01', createdBy: 'Michael Torres',
-    steps: [
-      { order: 1, name: 'Risk Manager Review', approvers: ['Michael Torres (Risk)'], required: 1, sla: '12h' },
-      { order: 2, name: 'CISO Final Approval', approvers: ['Sarah Chen (CISO)'], required: 1, sla: '12h' },
-    ],
-    pendingApprovals: [],
-  },
-  {
-    id: 'WF-005', name: 'Data Access Escalation', type: 'Access Control', status: 'Paused', pending: 0,
-    approvers: 'Data Owner + Privacy Officer', sla: '24h', lastTriggered: '2026-03-28', totalCompleted: 8, avgCycleTime: '12h',
-    description: 'Elevated access requests for sensitive training data and production AI pipelines. Paused for workflow redesign.',
-    requiresMFA: true, escalationHours: 8, notifyOnEscalation: true, createdAt: '2025-12-01', createdBy: 'Data Team',
-    steps: [
-      { order: 1, name: 'Data Owner Approval', approvers: ['Data Owner'], required: 1, sla: '12h' },
-      { order: 2, name: 'Privacy Officer Sign-off', approvers: ['Maria Santos (DPO)'], required: 1, sla: '12h' },
-    ],
-    pendingApprovals: [],
-  },
-  {
-    id: 'WF-006', name: 'Incident Severity Upgrade', type: 'Incident', status: 'Active', pending: 1,
-    approvers: 'Incident Commander + VP Eng', sla: '4h', lastTriggered: '2026-04-08', totalCompleted: 19, avgCycleTime: '2.8h',
-    description: 'Emergency approval workflow for upgrading incident severity. Activates exec escalation chain and regulatory notification process.',
-    requiresMFA: true, escalationHours: 2, notifyOnEscalation: true, createdAt: '2025-09-20', createdBy: 'CISO Office',
-    steps: [
-      { order: 1, name: 'Incident Commander Declaration', approvers: ['Incident Commander'], required: 1, sla: '1h' },
-      { order: 2, name: 'VP Engineering Concurrence', approvers: ['VP Engineering'], required: 1, sla: '1h' },
-      { order: 3, name: 'CISO Executive Notification', approvers: ['Sarah Chen (CISO)'], required: 1, sla: '2h' },
-    ],
-    pendingApprovals: [
-      { id: 'PA-007', title: 'INC-2026-047 Severity Upgrade: P3 → P1', requestedBy: 'On-call Engineer', requestedAt: '2026-04-08 03:15', dueAt: '2026-04-08 07:15', currentStep: 'Step 1: Incident Commander', urgent: true },
-    ],
-  },
+const APPLIES_TO = [
+  { value: 'model_release', label: 'Model Release' },
+  { value: 'exception', label: 'Exception' },
+  { value: 'incident_report', label: 'Incident Report' },
+  { value: 'policy_change', label: 'Policy Change' },
 ]
 
-const BLANK: Omit<Workflow, 'id' | 'totalCompleted' | 'avgCycleTime' | 'steps' | 'pendingApprovals' | 'createdAt'> = {
-  name: '', type: 'Model Release', status: 'Active', pending: 0,
-  approvers: '', sla: '48h', lastTriggered: '', description: '',
-  createdBy: 'Sarah Chen', requiresMFA: false, escalationHours: 24, notifyOnEscalation: true,
-}
+const ENTITY_TYPES = [
+  { value: 'model', label: 'Model' },
+  { value: 'exception', label: 'Exception' },
+  { value: 'incident', label: 'Incident' },
+  { value: 'policy', label: 'Policy' },
+]
 
-const STATUS_STYLE: Record<WFStatus, { bg: string; color: string }> = {
-  Active: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-  Paused: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-  Disabled: { bg: 'hsl(0 0% 50% / 0.10)', color: 'hsl(var(--text-4))' },
-}
+const INPUT_CLS = 'w-full px-3 py-2 border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] text-sm focus:outline-none focus:border-[hsl(var(--brand))]'
 
-const TYPE_COLOR: Record<WFType, string> = {
-  'Model Release': 'hsl(var(--brand))',
-  'Policy Update': '#a855f7',
-  Vendor: 'hsl(var(--r-hi-tx))',
-  Exception: 'hsl(var(--s-er-tx))',
-  'Access Control': 'hsl(var(--s-in-tx))',
-  Incident: 'hsl(var(--s-er-tx))',
-  'Audit Finding': '#eab308',
-  'Risk Acceptance': 'hsl(var(--r-hi-tx))',
-}
+const appliesToLabel = (v?: string) => APPLIES_TO.find(a => a.value === v)?.label ?? (v ? v.replace(/_/g, ' ') : 'Any')
 
 export default function ApprovalWorkflows() {
-  const { data: records, setData: setRecords } = useSupabaseTable<Workflow>('approvalworkflows_table', SEED)
-  const [search, setSearch] = useState('')
-  const [statusFilter, setStatusFilter] = useState('All')
-  const [selected, setSelected] = useState<Workflow | null>(null)
-  const [formOpen, setFormOpen] = useState(false)
-  const [editing, setEditing] = useState<Workflow | null>(null)
-  const [form, setForm] = useState<typeof BLANK>(BLANK)
-  const [deleteTarget, setDeleteTarget] = useState<Workflow | null>(null)
-  const [approveTarget, setApproveTarget] = useState<{ wf: Workflow; pa: PendingApproval } | null>(null)
+  const user = useAuthStore(s => s.user)
+  const currentUser = user?.fullName || user?.email || 'Reviewer'
+  const workflows = useApprovalWorkflows()
+  const approvals = useApprovals()
+  const { models } = useModelsData()
 
-  const filtered = records.filter(r => {
+  const [search, setSearch] = useState('')
+  const [workflowFilter, setWorkflowFilter] = useState('all')
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<ApprovalWorkflowRecord | null>(null)
+  const [requestOpen, setRequestOpen] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<ApprovalWorkflowRecord | null>(null)
+  const [decideTarget, setDecideTarget] = useState<{ approval: ApprovalRecord; decision: 'approved' | 'rejected' } | null>(null)
+
+  const modelName = (id?: string | null) =>
+    (id && models.find(m => m.id === id)?.name) ?? 'Unavailable'
+  const workflowName = (id?: string | null) =>
+    (id && workflows.items.find(w => w.id === id)?.name) ?? null
+
+  const isLoading = workflows.isLoading || approvals.isLoading
+  if (isLoading) return <PageSkeleton title="Approval Workflows" showStats rows={5} />
+
+  const pendingApprovals = approvals.items.filter(a => a.status === 'pending')
+  const weekAgo = Date.now() - 7 * 24 * 3600000
+  const decidedThisWeek = approvals.items.filter(a => a.decidedAt && new Date(a.decidedAt).getTime() >= weekAgo).length
+  const activeWorkflows = workflows.items.filter(w => w.isActive).length
+
+  const filteredWorkflows = workflows.items.filter(w => {
     const q = search.toLowerCase()
-    const ms = r.name.toLowerCase().includes(q) || r.type.toLowerCase().includes(q) || r.id.toLowerCase().includes(q)
-    return ms && (statusFilter === 'All' || r.status === statusFilter)
+    return !q || w.name.toLowerCase().includes(q) || (w.description ?? '').toLowerCase().includes(q) || appliesToLabel(w.appliesTo).toLowerCase().includes(q)
   })
 
-  const totalPending = records.reduce((s, r) => s + r.pending, 0)
-  const stats = {
-    total: records.length,
-    active: records.filter(r => r.status === 'Active').length,
-    pending: totalPending,
-    avgCycle: '28h',
-  }
+  const visiblePending = pendingApprovals.filter(a => workflowFilter === 'all' || a.workflowId === workflowFilter)
 
-  function openCreate() {
-    setEditing(null)
-    setForm({ ...BLANK })
-    setFormOpen(true)
-  }
+  const kpis: StatCardRowItem[] = [
+    { label: 'Pending Requests', value: String(pendingApprovals.length), icon: <Clock size={18} weight="fill" style={{ color: 'hsl(var(--s-wn-tx))' }} /> },
+    { label: 'Decided This Week', value: String(decidedThisWeek), icon: <CheckCircle size={18} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} /> },
+    { label: 'Active Workflows', value: String(activeWorkflows), icon: <FlowArrow size={18} weight="fill" style={{ color: 'hsl(var(--brand))' }} /> },
+    { label: 'Total Workflows', value: String(workflows.items.length), icon: <FlowArrow size={18} style={{ color: 'hsl(var(--text-3))' }} /> },
+  ]
 
-  function openEdit(r: Workflow, e?: React.MouseEvent) {
-    e?.stopPropagation()
-    setEditing(r)
-    setForm({ name: r.name, type: r.type, status: r.status, pending: r.pending, approvers: r.approvers, sla: r.sla, lastTriggered: r.lastTriggered, description: r.description, createdBy: r.createdBy, requiresMFA: r.requiresMFA, escalationHours: r.escalationHours, notifyOnEscalation: r.notifyOnEscalation })
-    setFormOpen(true)
-    setSelected(null)
-  }
-
-  function saveForm() {
-    if (!form.name.trim()) { toast.error('Workflow name is required.'); return }
-    if (editing) {
-      setRecords(prev => prev.map(r => r.id === editing.id ? { ...r, ...form } : r))
-      toast.success('Workflow updated')
-    } else {
-      const newW: Workflow = { ...form, id: `WF-${String(records.length + 1).padStart(3, '0')}`, totalCompleted: 0, avgCycleTime: '—', steps: [], pendingApprovals: [], createdAt: new Date().toISOString().slice(0, 10) }
-      setRecords(prev => [newW, ...prev])
-      toast.success('Workflow created')
+  const entityChip = (a: ApprovalRecord) => {
+    if (!a.entityId) {
+      return <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{a.entityName || '—'}</span>
     }
-    setFormOpen(false)
-  }
-
-  function toggleStatus(r: Workflow, e: React.MouseEvent) {
-    e.stopPropagation()
-    const next: WFStatus = r.status === 'Active' ? 'Paused' : 'Active'
-    setRecords(prev => prev.map(x => x.id === r.id ? { ...x, status: next } : x))
-    toast.success(`Workflow ${next === 'Active' ? 'resumed' : 'paused'}`)
-  }
-
-  function confirmDelete() {
-    if (!deleteTarget) return
-    setRecords(prev => prev.filter(r => r.id !== deleteTarget.id))
-    toast.success(`Workflow ${deleteTarget.id} deleted`)
-    setDeleteTarget(null)
-    if (selected?.id === deleteTarget.id) setSelected(null)
-  }
-
-  function approvePA() {
-    if (!approveTarget) return
-    const { wf, pa } = approveTarget
-    setRecords(prev => prev.map(r => r.id === wf.id ? {
-      ...r,
-      pending: Math.max(0, r.pending - 1),
-      pendingApprovals: r.pendingApprovals.filter(p => p.id !== pa.id),
-      totalCompleted: r.totalCompleted + 1,
-    } : r))
-    if (selected?.id === wf.id) {
-      setSelected(prev => prev ? { ...prev, pending: Math.max(0, prev.pending - 1), pendingApprovals: prev.pendingApprovals.filter(p => p.id !== pa.id) } : prev)
+    if (a.entityType === 'model') {
+      const resolved = models.find(m => m.id === a.entityId)?.name
+      return <InterlinkChip label={resolved ?? a.entityName ?? 'Unavailable'} to={`/models/inventory/${a.entityId}`} />
     }
-    toast.success(`Approved: ${pa.title}`)
-    setApproveTarget(null)
+    if (a.entityType === 'exception') {
+      return <InterlinkChip label={a.entityName || 'Exception'} to={`/exceptions?open=${a.entityId}`} />
+    }
+    if (a.entityType === 'incident') {
+      return <InterlinkChip label={a.entityName || 'Incident'} to={`/risk/incidents?open=${a.entityId}`} />
+    }
+    return <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{a.entityName || '—'}</span>
   }
 
-  const sf = (k: keyof typeof form, v: any) => setForm(prev => ({ ...prev, [k]: v }))
+  const toggleActive = async (w: ApprovalWorkflowRecord) => {
+    try {
+      await workflows.save({ ...w, isActive: !w.isActive })
+    } catch { /* hook toasts the error */ }
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTarget?.id) return
+    try {
+      await workflows.remove(deleteTarget.id)
+      setDeleteTarget(null)
+    } catch { /* hook toasts the error */ }
+  }
+
+  const confirmDecision = async () => {
+    if (!decideTarget?.approval.id) return
+    try {
+      await approvals.decide({ id: decideTarget.approval.id, decision: decideTarget.decision, approver: currentUser })
+      setDecideTarget(null)
+    } catch { /* hook toasts the error */ }
+  }
 
   return (
     <div className="space-y-5">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <FlowArrow size={20} className="text-[hsl(var(--brand))]" />
-            Approval Workflows
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Manage multi-stage approval pipelines for governance actions</p>
-        </div>
-        <div className="flex gap-2">
-          <button onClick={() => exportCsv(filtered as any, 'approval-workflows.csv')} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
-            <Export size={14} /> Export
-          </button>
-          <button onClick={openCreate} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90">
-            <Plus size={14} /> New Workflow
-          </button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Total Workflows', value: stats.total, color: 'hsl(var(--text-1))' },
-          { label: 'Active', value: stats.active, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Pending Approvals', value: stats.pending, color: 'hsl(var(--s-wn-tx))' },
-          { label: 'Avg Cycle Time', value: stats.avgCycle, color: 'hsl(var(--brand))' },
-        ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-            <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+      <PageHeader
+        title="Approval Workflows"
+        subtitle="Multi-stage approval pipelines for governance actions — every decision is audited"
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Oversight' }, { label: 'Approval Workflows' }]}
+        actions={
+          <div className="flex gap-2">
+            <button onClick={() => setRequestOpen(true)} className="flex items-center gap-1.5 px-3 py-2 border border-[hsl(var(--border))] text-sm text-[hsl(var(--text-2))] hover:bg-raised">
+              <Plus size={14} /> New Request
+            </button>
+            <button onClick={() => { setEditing(null); setFormOpen(true) }} className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90">
+              <Plus size={14} /> New Workflow
+            </button>
           </div>
-        ))}
-      </div>
+        }
+      />
 
-      {/* Pending Approvals Banner */}
-      {totalPending > 0 && (
-        <div className="flex items-center gap-3 px-4 py-3 border border-[hsl(var(--s-wn-bg))] bg-[hsl(var(--s-wn-bg))] rounded">
-          <Clock size={16} className="text-[hsl(var(--s-wn-tx))] flex-shrink-0" />
-          <p className="text-sm text-[hsl(var(--text-2))]">
-            <span className="font-semibold text-[hsl(var(--s-wn-tx))]">{totalPending} approval(s) pending</span> — review and action items below each workflow.
+      {(workflows.error || approvals.error) && (
+        <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load approval data</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">
+            {((workflows.error ?? approvals.error) as Error).message}
           </p>
         </div>
       )}
 
-      {/* Filters */}
+      <StatCardRow cards={kpis} />
+
+      {/* ── Pending approvals — live, entity-linked requests ─────────────── */}
+      <div className="rounded border border-[hsl(var(--border))] bg-surface">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[hsl(var(--border))]">
+          <p className="text-sm font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
+            <Clock size={15} className="text-[hsl(var(--s-wn-tx))]" />
+            Pending Approvals ({visiblePending.length})
+          </p>
+          <Select value={workflowFilter} onValueChange={setWorkflowFilter}>
+            <SelectTrigger className="w-64 h-8 text-xs" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+            <SelectContent style={{ borderRadius: 0 }}>
+              <SelectItem value="all">All workflows</SelectItem>
+              {workflows.items.filter(w => w.id).map(w => (
+                <SelectItem key={w.id} value={w.id!}>{w.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {visiblePending.length === 0 ? (
+          <div className="py-10 text-center text-sm text-[hsl(var(--text-4))]">
+            {pendingApprovals.length === 0
+              ? 'Nothing awaiting approval — the queue is clear.'
+              : 'No pending requests for this workflow.'}
+          </div>
+        ) : (
+          <div>
+            {visiblePending.map(a => (
+              <div key={a.id} className="flex items-start justify-between gap-3 px-4 py-3 border-b border-[hsl(var(--border))] last:border-b-0">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-1">
+                    {entityChip(a)}
+                    <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{a.entityType}</span>
+                    {workflowName(a.workflowId) && (
+                      <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{workflowName(a.workflowId)}</span>
+                    )}
+                  </div>
+                  <p className="text-sm font-medium text-[hsl(var(--text-1))]">
+                    {(a.requestedAction ?? 'approval').replace(/_/g, ' ')}
+                    <span className="text-xs font-normal text-[hsl(var(--text-4))]"> · requested by {a.requestedBy || 'Unknown'}{a.createdAt ? ` · ${formatDate(a.createdAt)}` : ''}</span>
+                  </p>
+                  {a.reason && <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{a.reason}</p>}
+                </div>
+                <div className="flex items-center gap-2 flex-shrink-0">
+                  <button
+                    onClick={() => setDecideTarget({ approval: a, decision: 'approved' })}
+                    disabled={approvals.isDeciding}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90 disabled:opacity-50"
+                  >
+                    <CheckCircle size={11} /> Approve
+                  </button>
+                  <button
+                    onClick={() => setDecideTarget({ approval: a, decision: 'rejected' })}
+                    disabled={approvals.isDeciding}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--destructive))] hover:bg-raised disabled:opacity-50"
+                  >
+                    <XCircle size={11} /> Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* ── Workflow definitions ─────────────────────────────────────────── */}
       <div className="flex gap-3">
         <div className="flex items-center gap-2 flex-1 border border-[hsl(var(--border))] bg-surface px-3">
           <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
           <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search workflows…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
         </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            {['All', 'Active', 'Paused', 'Disabled'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
       </div>
 
-      {/* Workflow Cards */}
       <div className="space-y-3">
-        {filtered.length === 0 && (
-          <div className="py-10 text-center text-sm text-[hsl(var(--text-4))]">No workflows found.</div>
+        {filteredWorkflows.length === 0 && (
+          <div className="py-10 text-center text-sm text-[hsl(var(--text-4))]">
+            {workflows.items.length === 0
+              ? 'No approval workflows defined yet — create one to route governance decisions.'
+              : 'No workflows match your search.'}
+          </div>
         )}
-        {filtered.map(r => {
-          const ss = STATUS_STYLE[r.status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }
+        {filteredWorkflows.map(w => {
+          const pendingForWf = pendingApprovals.filter(a => a.workflowId === w.id).length
           return (
-            <div key={r.id} className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
-              {/* Card Header */}
-              <div className="flex items-center justify-between px-4 py-3 cursor-pointer hover:bg-raised" onClick={() => setSelected(r)}>
+            <div key={w.id} className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
+              <div className="flex items-center justify-between px-4 py-3">
                 <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ background: TYPE_COLOR[r.type] }} />
+                  <div className="w-1 h-10 rounded-full flex-shrink-0" style={{ background: w.isActive ? 'hsl(var(--brand))' : 'hsl(var(--text-4))' }} />
                   <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="font-mono text-[10px] text-[hsl(var(--text-4))]">{r.id}</span>
-                      <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{r.type}</span>
-                      <span className="text-[11px] px-2 py-0.5 font-medium" style={ss}>{r.status}</span>
-                      {r.pending > 0 && <span className="text-[10px] px-1.5 py-0.5 font-semibold text-[hsl(var(--bg-surface))]" style={{ background: 'hsl(var(--s-wn-tx))' }}>{r.pending} pending</span>}
+                    <div className="flex items-center gap-2 mb-0.5 flex-wrap">
+                      <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{appliesToLabel(w.appliesTo)}</span>
+                      <span className="text-[11px] px-2 py-0.5 font-medium" style={w.isActive
+                        ? { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }
+                        : { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>
+                        {w.isActive ? 'Active' : 'Paused'}
+                      </span>
+                      {w.requiresMfa && (
+                        <span className="text-[10px] px-1.5 py-0.5 flex items-center gap-1 font-medium" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>
+                          <ShieldCheck size={10} /> MFA
+                        </span>
+                      )}
+                      {w.escalationHours != null && (
+                        <span className="text-[10px] px-1.5 py-0.5 flex items-center gap-1 border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">
+                          <BellRinging size={10} /> Escalate after {w.escalationHours}h{w.notifyOnEscalation ? ' · notify' : ''}
+                        </span>
+                      )}
+                      {pendingForWf > 0 && (
+                        <span className="text-[10px] px-1.5 py-0.5 font-semibold text-[hsl(var(--bg-surface))]" style={{ background: 'hsl(var(--s-wn-tx))' }}>{pendingForWf} pending</span>
+                      )}
                     </div>
-                    <p className="text-sm font-semibold text-[hsl(var(--text-1))] truncate">{r.name}</p>
-                    <p className="text-xs text-[hsl(var(--text-4))]">Approvers: {r.approvers} · SLA: {r.sla} · Completed: {r.totalCompleted}</p>
+                    <p className="text-sm font-semibold text-[hsl(var(--text-1))] truncate">{w.name}</p>
+                    {w.description && <p className="text-xs text-[hsl(var(--text-4))] truncate">{w.description}</p>}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 flex-shrink-0">
-                  <button onClick={e => toggleStatus(r, e)} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">
-                    {r.status === 'Active' ? <><Pause size={11} /> Pause</> : <><Play size={11} /> Resume</>}
+                  <button onClick={() => toggleActive(w)} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">
+                    {w.isActive ? <><Pause size={11} /> Pause</> : <><Play size={11} /> Resume</>}
                   </button>
-                  <button onClick={e => openEdit(r, e)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]"><PencilSimple size={14} /></button>
-                  <button onClick={e => { e.stopPropagation(); setDeleteTarget(r) }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]"><Trash size={14} /></button>
-                  <ArrowRight size={14} className="text-[hsl(var(--text-4))]" />
+                  <button onClick={() => { setEditing(w); setFormOpen(true) }} className="p-1.5 hover:bg-raised text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))]" aria-label={`Edit ${w.name}`}><PencilSimple size={14} /></button>
+                  <button onClick={() => setDeleteTarget(w)} className="p-1.5 hover:bg-raised text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]" aria-label={`Delete ${w.name}`}><Trash size={14} /></button>
                 </div>
               </div>
-
-              {/* Pending Approvals Inline */}
-              {r.pendingApprovals.length > 0 && (
-                <div className="border-t border-[hsl(var(--border))] bg-[hsl(var(--s-wn-bg))]">
-                  {r.pendingApprovals.map(pa => (
-                    <div key={pa.id} className="flex items-center justify-between px-4 py-2.5 border-b border-[hsl(var(--border))] last:border-b-0">
-                      <div className="flex items-center gap-3 min-w-0">
-                        {pa.urgent && <Warning size={13} className="text-[hsl(var(--destructive))] flex-shrink-0" />}
-                        <div className="min-w-0">
-                          <p className="text-xs font-medium text-[hsl(var(--text-2))] truncate">{pa.title}</p>
-                          <p className="text-[10px] text-[hsl(var(--text-4))]">{pa.currentStep} · By: {pa.requestedBy} · Due: {pa.dueAt}</p>
+              {/* Steps */}
+              <div className="border-t border-[hsl(var(--border))] px-4 py-3">
+                {w.steps.length === 0 ? (
+                  <p className="text-xs text-[hsl(var(--text-4))]">No steps configured — edit the workflow to add approval steps.</p>
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {w.steps.map((s, i) => (
+                      <div key={i} className="flex items-center gap-2 px-2.5 py-1.5 border border-[hsl(var(--border))] bg-raised">
+                        <span className="w-4 h-4 rounded-full bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] flex items-center justify-center text-[10px] font-bold flex-shrink-0">{i + 1}</span>
+                        <div>
+                          <p className="text-xs font-medium text-[hsl(var(--text-1))]">{s.name}</p>
+                          <p className="text-[10px] text-[hsl(var(--text-4))]">
+                            {s.approver_role}{s.sla_hours != null ? ` · SLA ${s.sla_hours}h` : ''}{s.required === false ? ' · optional' : ''}
+                          </p>
                         </div>
                       </div>
-                      <button
-                        onClick={() => setApproveTarget({ wf: r, pa })}
-                        className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90 flex-shrink-0 ml-3"
-                      >
-                        <CheckCircle size={11} /> Approve
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )
         })}
       </div>
 
-      {/* Detail Drawer */}
-      {selected && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="absolute inset-0 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="relative ml-auto w-[600px] h-full bg-surface border-l border-[hsl(var(--border))] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
-              <div>
-                <span className="font-mono text-xs text-[hsl(var(--text-4))]">{selected.id}</span>
-                <h2 className="text-base font-semibold text-[hsl(var(--text-1))] mt-0.5">{selected.name}</h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>{selected.status}</span>
-                  <span className="text-[10px] px-1.5 py-0.5 bg-raised border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{selected.type}</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <button onClick={e => openEdit(selected, e)} className="flex items-center gap-1.5 px-3 py-1.5 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised"><PencilSimple size={12} /> Edit</button>
-                <button onClick={() => setSelected(null)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
-              </div>
-            </div>
-
-            <div className="flex-1 overflow-y-auto p-5 space-y-5 text-sm">
-              <p className="text-sm text-[hsl(var(--text-3))]">{selected.description}</p>
-
-              {/* Metrics */}
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { label: 'SLA', value: selected.sla },
-                  { label: 'Avg Cycle Time', value: selected.avgCycleTime },
-                  { label: 'Completed', value: selected.totalCompleted },
-                ].map(s => (
-                  <div key={s.label} className="p-3 border border-[hsl(var(--border))] text-center">
-                    <p className="text-[10px] text-[hsl(var(--text-4))] uppercase mb-1">{s.label}</p>
-                    <p className="text-lg font-bold text-[hsl(var(--text-1))]">{s.value}</p>
-                  </div>
-                ))}
-              </div>
-
-              {/* Config */}
-              <div className="grid grid-cols-2 gap-3 p-4 border border-[hsl(var(--border))] rounded">
-                <InfoRow label="MFA Required" value={selected.requiresMFA ? 'Yes' : 'No'} />
-                <InfoRow label="Escalation After" value={`${selected.escalationHours}h`} />
-                <InfoRow label="Created By" value={selected.createdBy} />
-                <InfoRow label="Created At" value={selected.createdAt} />
-                <InfoRow label="Last Triggered" value={selected.lastTriggered || '—'} />
-              </div>
-
-              {/* Steps */}
-              <div>
-                <p className="text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wider mb-2">Approval Steps ({selected.steps.length})</p>
-                {selected.steps.length === 0 ? (
-                  <p className="text-xs text-[hsl(var(--text-4))]">No steps configured yet.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {selected.steps.map(step => (
-                      <div key={step.order} className="flex items-center gap-3 p-3 border border-[hsl(var(--border))]">
-                        <div className="w-6 h-6 rounded-full bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] flex items-center justify-center text-xs font-bold flex-shrink-0">{step.order}</div>
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-[hsl(var(--text-1))]">{step.name}</p>
-                          <p className="text-xs text-[hsl(var(--text-4))]">{step.approvers.join(' · ')} — {step.required} of {step.approvers.length} required · SLA: {step.sla}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Pending */}
-              <div>
-                <p className="text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wider mb-2">Pending Approvals ({selected.pendingApprovals.length})</p>
-                {selected.pendingApprovals.length === 0 ? (
-                  <p className="text-xs text-[hsl(var(--text-4))]">No pending approvals.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {selected.pendingApprovals.map(pa => (
-                      <div key={pa.id} className="p-3 border border-[hsl(var(--border))] flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{pa.id}</span>
-                            {pa.urgent && <span className="text-[10px] px-1.5 py-0.5 font-medium" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>Urgent</span>}
-                          </div>
-                          <p className="text-sm font-medium text-[hsl(var(--text-1))]">{pa.title}</p>
-                          <p className="text-xs text-[hsl(var(--text-4))]">{pa.currentStep} · {pa.requestedBy} · Due: {pa.dueAt}</p>
-                        </div>
-                        <button onClick={() => setApproveTarget({ wf: selected, pa })} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90 flex-shrink-0">
-                          <CheckCircle size={11} /> Approve
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Create / Edit Modal */}
+      {/* Create / edit dialog with steps editor */}
       {formOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setFormOpen(false)} />
-          <div className="relative w-[520px] max-h-[80vh] overflow-y-auto bg-surface border border-[hsl(var(--border))] flex flex-col">
-            <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
-              <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{editing ? 'Edit Workflow' : 'New Approval Workflow'}</h2>
-              <button onClick={() => setFormOpen(false)}><X size={16} className="text-[hsl(var(--text-4))]" /></button>
-            </div>
-            <div className="p-5 space-y-4 text-sm">
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Workflow Name *" colSpan>
-                  <input value={form.name} onChange={e => sf('name', e.target.value)} className={INPUT_CLS} placeholder="e.g. Model Deployment Approval" />
-                </Field>
-                <Field label="Type">
-                  <Select value={form.type} onValueChange={v => sf('type', v as WFType)}>
-                    <SelectTrigger className={INPUT_CLS}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {['Model Release', 'Policy Update', 'Vendor', 'Exception', 'Access Control', 'Incident', 'Audit Finding', 'Risk Acceptance'].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="Status">
-                  <Select value={form.status} onValueChange={v => sf('status', v as WFStatus)}>
-                    <SelectTrigger className={INPUT_CLS}><SelectValue /></SelectTrigger>
-                    <SelectContent style={{ borderRadius: 0 }}>
-                      {['Active', 'Paused', 'Disabled'].map(v => <SelectItem key={v} value={v}>{v}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
-                </Field>
-                <Field label="SLA">
-                  <input value={form.sla} onChange={e => sf('sla', e.target.value)} className={INPUT_CLS} placeholder="e.g. 48h" />
-                </Field>
-                <Field label="Approvers (summary)" colSpan>
-                  <input value={form.approvers} onChange={e => sf('approvers', e.target.value)} className={INPUT_CLS} placeholder="e.g. Risk + Compliance + CISO" />
-                </Field>
-                <Field label="Escalation After (hours)">
-                  <input type="number" value={form.escalationHours} onChange={e => sf('escalationHours', +e.target.value)} className={INPUT_CLS} min={1} />
-                </Field>
-                <Field label="Created By">
-                  <input value={form.createdBy} onChange={e => sf('createdBy', e.target.value)} className={INPUT_CLS} placeholder="e.g. Sarah Chen" />
-                </Field>
-              </div>
-              <Field label="Description" colSpan>
-                <textarea value={form.description} onChange={e => sf('description', e.target.value)} rows={3} className={INPUT_CLS + ' resize-none'} placeholder="Describe the purpose of this approval workflow…" />
-              </Field>
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 text-xs text-[hsl(var(--text-2))]">
-                  <input type="checkbox" checked={form.requiresMFA} onChange={e => sf('requiresMFA', e.target.checked)} className="w-4 h-4 accent-[hsl(var(--brand))]" />
-                  Require MFA for approvals
-                </label>
-                <label className="flex items-center gap-2 text-xs text-[hsl(var(--text-2))]">
-                  <input type="checkbox" checked={form.notifyOnEscalation} onChange={e => sf('notifyOnEscalation', e.target.checked)} className="w-4 h-4 accent-[hsl(var(--brand))]" />
-                  Notify on escalation
-                </label>
-              </div>
-            </div>
-            <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
-              <button onClick={() => setFormOpen(false)} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
-              <button onClick={saveForm} className="px-4 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90">{editing ? 'Save Changes' : 'Create Workflow'}</button>
-            </div>
-          </div>
-        </div>
+        <WorkflowFormDialog
+          editing={editing}
+          isSaving={workflows.isSaving}
+          onClose={() => { setFormOpen(false); setEditing(null) }}
+          onSave={async (record) => {
+            try {
+              await workflows.save(record)
+              setFormOpen(false)
+              setEditing(null)
+            } catch { /* hook toasts the error; keep dialog open */ }
+          }}
+        />
       )}
 
-      {/* Approve Confirm */}
+      {/* New request dialog */}
+      {requestOpen && (
+        <NewRequestDialog
+          models={models}
+          workflows={workflows.items}
+          currentUser={currentUser}
+          onClose={() => setRequestOpen(false)}
+          onSave={async (record) => {
+            try {
+              await approvals.save(record)
+              setRequestOpen(false)
+            } catch { /* hook toasts the error; keep dialog open */ }
+          }}
+        />
+      )}
+
+      {/* Decision confirm */}
       <ConfirmDialog
-        open={!!approveTarget}
-        title="Approve Request"
-        description={`Approve "${approveTarget?.pa.title}"? This action will advance the item to the next stage.`}
-        confirmLabel="Approve"
-        
-        onConfirm={approvePA}
-        onClose={() => setApproveTarget(null)}
+        open={!!decideTarget}
+        type={decideTarget?.decision === 'rejected' ? 'danger' : 'info'}
+        title={decideTarget?.decision === 'approved' ? 'Approve Request' : 'Reject Request'}
+        description={`${decideTarget?.decision === 'approved' ? 'Approve' : 'Reject'} "${decideTarget?.approval.entityName ?? 'this request'}" (${(decideTarget?.approval.requestedAction ?? '').replace(/_/g, ' ')}) as ${currentUser}? The decision is persisted and written to the audit log.`}
+        confirmLabel={approvals.isDeciding ? 'Saving…' : (decideTarget?.decision === 'approved' ? 'Approve' : 'Reject')}
+        onConfirm={confirmDecision}
+        onClose={() => setDecideTarget(null)}
       />
 
-      {/* Delete Confirm */}
+      {/* Delete confirm */}
       <ConfirmDialog
         open={!!deleteTarget}
         title="Delete Workflow"
-        description={`Delete "${deleteTarget?.name}"? This will remove all configuration and pending approvals. This action cannot be undone.`}
+        description={`Delete "${deleteTarget?.name}"? Existing approval requests keep their history, but this definition is removed. This action cannot be undone.`}
         confirmLabel="Delete"
         type="danger"
         onConfirm={confirmDelete}
@@ -548,22 +352,251 @@ export default function ApprovalWorkflows() {
   )
 }
 
-const INPUT_CLS = 'w-full px-3 py-2 border border-[hsl(var(--border))] bg-raised text-[hsl(var(--text-1))] text-sm focus:outline-none focus:border-[hsl(var(--brand))]'
+// ── Workflow create/edit dialog with a real steps editor ─────────────────────
+
+function WorkflowFormDialog({ editing, isSaving, onClose, onSave }: {
+  editing: ApprovalWorkflowRecord | null
+  isSaving: boolean
+  onClose: () => void
+  onSave: (r: ApprovalWorkflowRecord) => Promise<void>
+}) {
+  const [name, setName] = useState(editing?.name ?? '')
+  const [description, setDescription] = useState(editing?.description ?? '')
+  const [appliesTo, setAppliesTo] = useState(editing?.appliesTo ?? 'model_release')
+  const [requiresMfa, setRequiresMfa] = useState(editing?.requiresMfa ?? false)
+  const [escalationHours, setEscalationHours] = useState<number>(editing?.escalationHours ?? 24)
+  const [notifyOnEscalation, setNotifyOnEscalation] = useState(editing?.notifyOnEscalation ?? true)
+  const [steps, setSteps] = useState<StepDraft[]>(
+    (editing?.steps ?? []).map(s => ({
+      name: s.name ?? '',
+      approver_role: s.approver_role ?? '',
+      required: s.required !== false,
+      sla_hours: s.sla_hours ?? 24,
+    }))
+  )
+
+  const addStep = () => setSteps(prev => [...prev, { name: '', approver_role: '', required: true, sla_hours: 24 }])
+  const removeStep = (i: number) => setSteps(prev => prev.filter((_, idx) => idx !== i))
+  const patchStep = (i: number, patch: Partial<StepDraft>) =>
+    setSteps(prev => prev.map((s, idx) => idx === i ? { ...s, ...patch } : s))
+
+  const validSteps = steps.filter(s => s.name.trim() && s.approver_role.trim())
+  const canSave = name.trim().length > 0 && steps.length > 0 && validSteps.length === steps.length
+
+  const submit = () => {
+    if (!name.trim()) { toast.error('Workflow name is required.'); return }
+    if (steps.length === 0) { toast.error('Add at least one approval step.'); return }
+    if (validSteps.length !== steps.length) { toast.error('Every step needs a name and an approver role.'); return }
+    onSave({
+      id: editing?.id,
+      name: name.trim(),
+      description: description.trim() || undefined,
+      appliesTo,
+      steps: steps.map(s => ({ name: s.name.trim(), approver_role: s.approver_role.trim(), required: s.required, sla_hours: s.sla_hours })),
+      requiresMfa,
+      escalationHours,
+      notifyOnEscalation,
+      isActive: editing?.isActive ?? true,
+    })
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative w-[560px] max-h-[85vh] overflow-y-auto bg-surface border border-[hsl(var(--border))] flex flex-col">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+          <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{editing ? 'Edit Workflow' : 'New Approval Workflow'}</h2>
+          <button onClick={onClose} aria-label="Close"><X size={16} className="text-[hsl(var(--text-4))]" /></button>
+        </div>
+        <div className="p-5 space-y-4 text-sm">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Workflow Name *" colSpan>
+              <input value={name} onChange={e => setName(e.target.value)} className={INPUT_CLS} placeholder="e.g. Model release to production" />
+            </Field>
+            <Field label="Applies To">
+              <Select value={appliesTo} onValueChange={setAppliesTo}>
+                <SelectTrigger className={INPUT_CLS}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {APPLIES_TO.map(a => <SelectItem key={a.value} value={a.value}>{a.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Escalation After (hours)">
+              <input type="number" value={escalationHours} onChange={e => setEscalationHours(Math.max(1, +e.target.value || 1))} className={INPUT_CLS} min={1} />
+            </Field>
+          </div>
+          <Field label="Description" colSpan>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} className={INPUT_CLS + ' resize-none'} placeholder="Describe the purpose of this approval workflow…" />
+          </Field>
+
+          {/* Steps editor */}
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-xs font-medium text-[hsl(var(--text-3))]">Approval Steps *</p>
+              <button onClick={addStep} className="flex items-center gap-1 px-2 py-1 text-xs border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">
+                <Plus size={11} /> Add Step
+              </button>
+            </div>
+            {steps.length === 0 ? (
+              <p className="text-xs text-[hsl(var(--text-4))] border border-dashed border-[hsl(var(--border))] p-3">
+                No steps yet — every workflow needs at least one approval step.
+              </p>
+            ) : (
+              <div className="space-y-2">
+                {steps.map((s, i) => (
+                  <div key={i} className="flex items-center gap-2 p-2 border border-[hsl(var(--border))]">
+                    <span className="w-5 h-5 rounded-full bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))] flex items-center justify-center text-[10px] font-bold flex-shrink-0">{i + 1}</span>
+                    <input value={s.name} onChange={e => patchStep(i, { name: e.target.value })} className={INPUT_CLS + ' flex-1'} placeholder="Step name" aria-label={`Step ${i + 1} name`} />
+                    <input value={s.approver_role} onChange={e => patchStep(i, { approver_role: e.target.value })} className={INPUT_CLS + ' flex-1'} placeholder="Approver role" aria-label={`Step ${i + 1} approver role`} />
+                    <input type="number" min={1} value={s.sla_hours} onChange={e => patchStep(i, { sla_hours: Math.max(1, +e.target.value || 1) })} className={INPUT_CLS + ' w-20'} title="SLA hours" aria-label={`Step ${i + 1} SLA hours`} />
+                    <label className="flex items-center gap-1 text-[10px] text-[hsl(var(--text-3))] flex-shrink-0">
+                      <input type="checkbox" checked={s.required} onChange={e => patchStep(i, { required: e.target.checked })} className="w-3.5 h-3.5 accent-[hsl(var(--brand))]" />
+                      Req.
+                    </label>
+                    <button onClick={() => removeStep(i)} className="p-1 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))]" aria-label={`Remove step ${i + 1}`}><Trash size={13} /></button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-xs text-[hsl(var(--text-2))]">
+              <input type="checkbox" checked={requiresMfa} onChange={e => setRequiresMfa(e.target.checked)} className="w-4 h-4 accent-[hsl(var(--brand))]" />
+              Require MFA for approvals
+            </label>
+            <label className="flex items-center gap-2 text-xs text-[hsl(var(--text-2))]">
+              <input type="checkbox" checked={notifyOnEscalation} onChange={e => setNotifyOnEscalation(e.target.checked)} className="w-4 h-4 accent-[hsl(var(--brand))]" />
+              Notify on escalation
+            </label>
+          </div>
+        </div>
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
+          <button onClick={onClose} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
+          <button onClick={submit} disabled={!canSave || isSaving} className="px-4 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90 disabled:opacity-50">
+            {isSaving ? 'Saving…' : editing ? 'Save Changes' : 'Create Workflow'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── New approval request dialog ───────────────────────────────────────────────
+
+function NewRequestDialog({ models, workflows, currentUser, onClose, onSave }: {
+  models: { id: string; name: string }[]
+  workflows: ApprovalWorkflowRecord[]
+  currentUser: string
+  onClose: () => void
+  onSave: (r: ApprovalRecord) => Promise<void>
+}) {
+  const [entityType, setEntityType] = useState('model')
+  const [modelId, setModelId] = useState('')
+  const [entityId, setEntityId] = useState('')
+  const [entityName, setEntityName] = useState('')
+  const [workflowId, setWorkflowId] = useState('none')
+  const [requestedAction, setRequestedAction] = useState('')
+  const [reason, setReason] = useState('')
+  const [saving, setSaving] = useState(false)
+
+  const isModel = entityType === 'model'
+  const canSubmit = requestedAction.trim().length > 0 && (isModel ? !!modelId : entityName.trim().length > 0)
+
+  const submit = async () => {
+    if (!canSubmit || saving) return
+    const model = models.find(m => m.id === modelId)
+    setSaving(true)
+    try {
+      await onSave({
+        entityType,
+        entityId: isModel ? modelId : (entityId.trim() || null),
+        entityName: isModel ? (model?.name ?? null) : entityName.trim(),
+        workflowId: workflowId === 'none' ? null : workflowId,
+        requestedBy: currentUser,
+        requestedAction: requestedAction.trim(),
+        status: 'pending',
+        reason: reason.trim() || null,
+        stepIndex: 0,
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="relative w-[500px] max-h-[85vh] overflow-y-auto bg-surface border border-[hsl(var(--border))]">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-[hsl(var(--border))]">
+          <h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">New Approval Request</h2>
+          <button onClick={onClose} aria-label="Close"><X size={16} className="text-[hsl(var(--text-4))]" /></button>
+        </div>
+        <div className="p-5 space-y-4 text-sm">
+          <div className="grid grid-cols-2 gap-4">
+            <Field label="Entity Type *">
+              <Select value={entityType} onValueChange={setEntityType}>
+                <SelectTrigger className={INPUT_CLS}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {ENTITY_TYPES.map(t => <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+            <Field label="Workflow">
+              <Select value={workflowId} onValueChange={setWorkflowId}>
+                <SelectTrigger className={INPUT_CLS}><SelectValue /></SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  <SelectItem value="none">No workflow</SelectItem>
+                  {workflows.filter(w => w.id).map(w => <SelectItem key={w.id} value={w.id!}>{w.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+          </div>
+          {isModel ? (
+            <Field label="Model *" colSpan>
+              <Select value={modelId} onValueChange={setModelId}>
+                <SelectTrigger className={INPUT_CLS}>
+                  <SelectValue placeholder={models.length ? 'Select a registered model' : 'No models registered'} />
+                </SelectTrigger>
+                <SelectContent style={{ borderRadius: 0 }}>
+                  {models.map(m => <SelectItem key={m.id} value={m.id}>{m.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </Field>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              <Field label="Entity Name *">
+                <input value={entityName} onChange={e => setEntityName(e.target.value)} className={INPUT_CLS} placeholder="e.g. EXC-2026-704 retention extension" />
+              </Field>
+              <Field label="Entity ID (optional)">
+                <input value={entityId} onChange={e => setEntityId(e.target.value)} className={INPUT_CLS} placeholder="Record id for deep-linking" />
+              </Field>
+            </div>
+          )}
+          <Field label="Requested Action *" colSpan>
+            <input value={requestedAction} onChange={e => setRequestedAction(e.target.value)} className={INPUT_CLS} placeholder="e.g. promote_to_production" />
+          </Field>
+          <Field label="Reason" colSpan>
+            <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3} className={INPUT_CLS + ' resize-none'} placeholder="Business justification for this request…" />
+          </Field>
+          <p className="text-[11px] text-[hsl(var(--text-4))]">Requested by {currentUser}</p>
+        </div>
+        <div className="flex justify-end gap-2 px-5 py-4 border-t border-[hsl(var(--border))]">
+          <button onClick={onClose} className="px-4 py-2 text-sm border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-raised">Cancel</button>
+          <button onClick={submit} disabled={!canSubmit || saving} className="px-4 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] bg-[hsl(var(--brand))] hover:opacity-90 disabled:opacity-50">
+            {saving ? 'Submitting…' : 'Submit Request'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function Field({ label, children, colSpan }: { label: string; children: React.ReactNode; colSpan?: boolean }) {
   return (
     <div className={colSpan ? 'col-span-2' : ''}>
       <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">{label}</label>
       {children}
-    </div>
-  )
-}
-
-function InfoRow({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div>
-      <p className="text-[10px] text-[hsl(var(--text-4))] uppercase tracking-wide">{label}</p>
-      <p className="text-sm text-[hsl(var(--text-1))] font-medium mt-0.5">{value}</p>
     </div>
   )
 }
