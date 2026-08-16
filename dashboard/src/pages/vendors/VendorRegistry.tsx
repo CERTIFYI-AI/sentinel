@@ -239,6 +239,10 @@ export default function VendorRegistry() {
             <Button variant="ghost" onClick={() => navigate('/ai-apps')} style={{ borderRadius: 0 }}>
               AI Apps{vendorLinkedApps != null ? ` (${vendorLinkedApps})` : ''}
             </Button>
+            {/* Subprocessors published externally are drawn from these records. */}
+            <Button variant="ghost" onClick={() => navigate('/trust-center')} style={{ borderRadius: 0 }}>
+              Trust Center
+            </Button>
             <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
               <Export className="h-4 w-4" />Export CSV
             </Button>

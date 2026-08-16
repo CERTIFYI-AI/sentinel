@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom'
 import { useState, useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { usePolicies, useUpsertPolicy, useDeletePolicy } from '@/hooks/queries/usePolicies';
@@ -43,6 +44,7 @@ const EMPTY_POLICY: Omit<Policy, 'id'> = {
 };
 
 export default function Policies() {
+  const navigate = useNavigate()
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
   const { data: supabasePolicies, isLoading: policiesLoading } = usePolicies();
@@ -118,6 +120,11 @@ export default function Policies() {
         breadcrumbs={[{ label: 'Home', href: '/overview' }, { label: 'Policies' }]}
         actions={
           <>
+            {/* A policy nobody has been trained on is not an operating control —
+                AI Literacy holds the completion evidence (Art. 4). */}
+            <Button variant="ghost" size="sm" onClick={() => navigate('/ai-literacy')}>
+              Training
+            </Button>
             <Button variant="outline" size="sm"><Download size={14} /> Export</Button>
             <Button size="sm" onClick={() => { setFormData(EMPTY_POLICY); setCreateOpen(true); }}>
               <Plus size={14} /> New Policy
