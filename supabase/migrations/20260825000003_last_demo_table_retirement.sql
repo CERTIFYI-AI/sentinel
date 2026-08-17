@@ -1,5 +1,5 @@
 -- ---------------------------------------------------------------------------
--- 20260825000001_last_demo_table_retirement.sql
+-- 20260825000003_last_demo_table_retirement.sql
 --
 -- TD-001, final wave. The last five modules reading a generic
 -- `<name>_table (id, doc jsonb)` demo table — Asset Registry, Business Impact

@@ -51,7 +51,7 @@ export interface MrcVote {
 
 // The committee roster — quorum (SR 11-7 §IV.C) is counted from this, not from
 // a hardcoded list in the page. Backed by mrc_committee_members
-// (20260825000001_last_demo_table_retirement.sql), which replaces the
+// (20260825000003_last_demo_table_retirement.sql), which replaces the
 // modelriskcommittee_table demo table.
 export interface MrcMember {
   id: string

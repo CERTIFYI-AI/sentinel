@@ -3,7 +3,7 @@
 //
 // accessReviewService — Identity Governance access reviews on the real,
 // org-scoped `access_reviews` table (supabase/migrations/040_v1_missing_
-// modules.sql; system interlinks added in 20260825000001_last_demo_table_
+// modules.sql; system interlinks added in 20260825000003_last_demo_table_
 // retirement.sql).
 //
 // Replaces the `iga_table (id, doc jsonb)` demo table the page used to write

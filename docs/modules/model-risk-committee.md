@@ -29,7 +29,7 @@ directory).
 `ai_models` rows — the AIIA seed wrote model uuids that exist in no registry
 row, while the tables' denormalised `model_name` rendered a plausible name over
 a dead link. `model_id` was `text` with no foreign key, so any string was legal.
-`20260825000001_last_demo_table_retirement.sql` converts it to `uuid`,
+`20260825000003_last_demo_table_retirement.sql` converts it to `uuid`,
 re-resolves each reference by name against `ai_models` (nulling what does not
 resolve — never inventing), then adds the FK. Post-migration: **agenda items
 4/4, votes 8/8 resolve**, and a fabricated id is now rejected by the database.
