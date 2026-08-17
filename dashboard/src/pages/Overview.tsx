@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+import { isOverdueTask } from '@/services/taskService';
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -129,7 +130,7 @@ export default function Overview() {
   // history, not a live executive signal.
   const criticalIncidents = incidents.filter((i: any) => i.severity === 'critical' && isActiveIncidentStatus(i.status)).length;
   const openIncidents = incidents.filter((i: any) => isActiveIncidentStatus(i.status)).length;
-  const overdueGaps = tasks.filter((t: any) => t.status !== 'completed' && t.due_date && new Date(t.due_date) < new Date()).length;
+  const overdueGaps = tasks.filter((t: any) => isOverdueTask(t)).length;
   const pendingHitl = hitlReviews.filter(r => r.status === 'pending' || r.status === 'info_requested').length;
 
   // Executive digest — derived from REAL counts at render time (the previous
@@ -208,7 +209,7 @@ export default function Overview() {
     score: (f.score ?? f.compliance_score ?? f.complianceScore ?? null) as number | null,
   }));
 
-  const overdueGapItems = tasks.filter((t: any) => t.status !== 'completed' && t.due_date && new Date(t.due_date) < new Date()).slice(0, 5);
+  const overdueGapItems = tasks.filter((t: any) => isOverdueTask(t)).slice(0, 5);
 
   const quickActions = [
     { label: 'Start Audit', desc: 'Launch a new compliance audit', icon: ShieldCheck, to: '/audits' },

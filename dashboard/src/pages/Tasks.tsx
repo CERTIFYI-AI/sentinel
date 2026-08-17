@@ -3,6 +3,7 @@ import { useTaskData } from '../hooks/useTaskData';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { PageHeader } from '../components/ui/PageHeader';
 import { EmptyState } from '../components/ui/EmptyState';
+import { ErrorState } from '../components/ui/ErrorState';
 import { Link } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -204,7 +205,7 @@ export default function Tasks() {
   // Single source of truth: the canonical org-scoped `tasks` table. Every
   // mutation persists through save/remove — no local-only state that would
   // make a failed write look like a success.
-  const { tasks: liveTasks, isLoading, save, remove } = useTaskData();
+  const { tasks: liveTasks, isLoading, error, save, remove } = useTaskData();
   const tasks = liveTasks as Task[];
   const [view, setView] = useState<'table' | 'kanban'>('table');
   const [search, setSearch] = useState('');
@@ -221,6 +222,20 @@ export default function Tasks() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
 
   if (isLoading) return <PageSkeleton title="Tasks" />;
+  // A thrown query must never render as an empty state: the read path used to
+  // fail on a missing column and the user was shown "No tasks found", i.e. a
+  // backend error presented as a clean, zero-work queue.
+  if (error) {
+    return (
+      <div style={{ padding: 24 }}>
+        <ErrorState
+          title="Could not load tasks"
+          error={error}
+          onRetry={() => window.location.reload()}
+        />
+      </div>
+    );
+  }
 
   const overdue = tasks.filter(t => t.status === 'overdue').length;
   const inProgress = tasks.filter(t => t.status === 'in_progress').length;
