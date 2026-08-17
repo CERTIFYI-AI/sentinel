@@ -1,368 +1,318 @@
-// @ts-nocheck
-import { useState, useMemo } from "react";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
-import { UserList, Plus, MagnifyingGlass, Eye, PencilSimple, Trash, Export, X, Warning, CheckCircle, XCircle } from "@phosphor-icons/react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
-import { EmptyState } from "@/components/ui/EmptyState";
-import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import Breadcrumbs from "@/components/Breadcrumbs";
-import { StatusBadge, BulkActionToolbar, PaginationBar, CrudModal, CrudSlideOver, FormSection, FormFooter, MetaBar, ActivityTimeline, useSortAndPage, Th, TInput, TSelect, TTextarea, TToggle } from "@/components/ui/crud-helpers";
-import { toast } from "sonner";
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// Identity Governance — who (and what) can reach the AI estate, on the real
+// org-scoped tables: `identities`, `sod_rules`, `sod_violations`,
+// `access_reviews`.
+//
+// The previous page read `iga_table` (doc-jsonb demo table), seeded ten
+// fictional identities, and saved through a setTimeout so every toast was
+// fake success. Its "AI systems access" column listed model names as free
+// strings that resolved to nothing. Access is now a list of ai_models ids
+// derived from privilege level by the database (admin -> all registered
+// models, operator -> production models, viewer -> none) — a stated demo
+// seeding rule, labelled as such, not an entitlement scan — and every chip
+// resolves to a real registry record.
 
-const IDENTITY_TYPES = ["Human","Service Account","API Key","Bot"];
-const PRIVILEGE_LEVELS = ["Admin","Operator","Viewer","No Access"];
-const REVIEW_STATUSES = ["Current","Due","Overdue","Revoked"];
-const IDENTITY_STATUSES = ["Active","Inactive","Suspended","Revoked"];
-const DEPTS = ["IT","Security","Data Science","Compliance","Finance","HR","Operations","Risk","Product","Legal"];
-const REVIEWERS = ["Dr. Sarah Chen","Alex Kumar","James Wilson","Emma Rodriguez","Nina Patel"];
-const AI_SYSTEMS_LIST = ["GPT-4o Risk Scorer v2","Fraud Detection v3","HR Screening Model","NLP Classifier","Customer Support Orchestrator","Credit Scoring Engine","Bias Monitoring System"];
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { UserList, Plus, Warning } from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { Card, CardContent } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DataTable, type Column } from '@/components/ui/DataTable'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { FormDialog, Field } from '@/components/evals/FormDialog'
+import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
+import { LinkChips } from '@/components/ui/LinkChips'
+import { useIdentityGovernanceData } from '@/hooks/useAdminData'
+import { useModelOptions } from '@/hooks/useAiiaData'
+import {
+  IDENTITY_TYPES, PRIVILEGE_LEVELS, REVIEW_STATUSES, type Identity,
+} from '@/services/resilienceService'
 
-const PRIV_COLORS: Record<string,string> = {
-  "Admin": "bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]",
-  "Operator": "bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]",
-  "Viewer": "bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]",
-  "No Access": "bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]",
-};
+const PRIV_TONE: Record<string, string> = {
+  admin: 'bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]',
+  operator: 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]',
+  viewer: 'bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]',
+}
 
-const SEED: any[] = [
-  { id:"IGA-001", name:"Dr. Sarah Chen", email:"s.chen@acme.com", type:"Human", role:"CISO", department:"Security", manager:"CEO", privilegeLevel:"Admin", aiSystemsAccess:["GPT-4o Risk Scorer v2","Fraud Detection v3","HR Screening Model","NLP Classifier","Customer Support Orchestrator","Credit Scoring Engine","Bias Monitoring System"], reviewStatus:"Current", reviewer:"James Wilson", nextReview:"2026-07-01", lastLogin:"2026-04-17", status:"Active", riskFlags:[], entitlements:[{ system:"Sentinel GRC", role:"Super Admin", granted:"2025-01-01", grantedBy:"CEO", justification:"CISO role requires full platform access" }], createdAt:"2025-01-01", updatedAt:"2026-04-01", createdBy:"admin" },
-  { id:"IGA-002", name:"Alex Kumar", email:"a.kumar@acme.com", type:"Human", role:"MLOps Engineer", department:"Data Science", manager:"Dr. Sarah Chen", privilegeLevel:"Operator", aiSystemsAccess:["GPT-4o Risk Scorer v2","Fraud Detection v3","Credit Scoring Engine"], reviewStatus:"Due", reviewer:"Dr. Sarah Chen", nextReview:"2026-04-30", lastLogin:"2026-04-15", status:"Active", riskFlags:[], entitlements:[{ system:"ML Platform", role:"Model Deployer", granted:"2025-03-15", grantedBy:"Dr. Sarah Chen", justification:"MLOps role requires deployment access" }], createdAt:"2025-03-01", updatedAt:"2026-03-15", createdBy:"schen" },
-  { id:"IGA-003", name:"James Wilson", email:"j.wilson@acme.com", type:"Human", role:"DPO", department:"Compliance", manager:"CEO", privilegeLevel:"Operator", aiSystemsAccess:["GPT-4o Risk Scorer v2","HR Screening Model","Bias Monitoring System"], reviewStatus:"Current", reviewer:"Dr. Sarah Chen", nextReview:"2026-07-01", lastLogin:"2026-04-16", status:"Active", riskFlags:[], entitlements:[{ system:"Sentinel GRC", role:"DPO", granted:"2025-01-01", grantedBy:"CEO", justification:"DPO statutory role" }], createdAt:"2025-01-01", updatedAt:"2026-04-01", createdBy:"admin" },
-  { id:"IGA-004", name:"Emma Rodriguez", email:"e.rodriguez@acme.com", type:"Human", role:"HR Director", department:"HR", manager:"CEO", privilegeLevel:"Viewer", aiSystemsAccess:["HR Screening Model"], reviewStatus:"Overdue", reviewer:"James Wilson", nextReview:"2026-03-31", lastLogin:"2026-04-10", status:"Active", riskFlags:["Access review overdue > 14 days"], entitlements:[{ system:"HR Platform", role:"HR Admin", granted:"2025-02-01", grantedBy:"CEO", justification:"HR Director needs full HR system access" },{ system:"AI Screening Tool", role:"Viewer", granted:"2025-04-01", grantedBy:"Dr. Sarah Chen", justification:"Required for screening oversight" }], createdAt:"2025-02-01", updatedAt:"2026-01-01", createdBy:"admin" },
-  { id:"IGA-005", name:"model-serving-svc", email:"model-svc@acme-internal", type:"Service Account", role:"ML Model Serving", department:"IT", manager:"Alex Kumar", privilegeLevel:"Operator", aiSystemsAccess:["GPT-4o Risk Scorer v2","Fraud Detection v3","Credit Scoring Engine","Customer Support Orchestrator"], reviewStatus:"Current", reviewer:"Alex Kumar", nextReview:"2026-06-01", lastLogin:"2026-04-17", status:"Active", riskFlags:[], entitlements:[{ system:"Model Serving API", role:"Service Operator", granted:"2025-08-01", grantedBy:"Alex Kumar", justification:"Required for automated model inference pipeline" }], createdAt:"2025-08-01", updatedAt:"2026-04-01", createdBy:"akumar" },
-  { id:"IGA-006", name:"fraud-detection-api-key", email:"N/A", type:"API Key", role:"Fraud Detection Integration", department:"IT", manager:"Alex Kumar", privilegeLevel:"Operator", aiSystemsAccess:["Fraud Detection v3"], reviewStatus:"Due", reviewer:"Alex Kumar", nextReview:"2026-05-01", lastLogin:"2026-04-17", status:"Active", riskFlags:[], entitlements:[{ system:"Fraud Detection API", role:"API Consumer", granted:"2025-05-01", grantedBy:"Alex Kumar", justification:"PSD2 integration requires API access" }], createdAt:"2025-05-01", updatedAt:"2026-04-01", createdBy:"akumar" },
-  { id:"IGA-007", name:"Nina Patel", email:"n.patel@acme.com", type:"Human", role:"Privacy Analyst", department:"Compliance", manager:"James Wilson", privilegeLevel:"Viewer", aiSystemsAccess:["Bias Monitoring System"], reviewStatus:"Current", reviewer:"James Wilson", nextReview:"2026-07-01", lastLogin:"2026-04-14", status:"Active", riskFlags:[], entitlements:[{ system:"Sentinel GRC", role:"Privacy Viewer", granted:"2025-06-01", grantedBy:"James Wilson", justification:"Privacy analyst needs read access to GRC platform" }], createdAt:"2025-06-01", updatedAt:"2026-01-01", createdBy:"jwilson" },
-  { id:"IGA-008", name:"Mike Johnson (Departed)", email:"m.johnson@acme.com", type:"Human", role:"Former IT Manager", department:"IT", manager:"Dr. Sarah Chen", privilegeLevel:"Admin", aiSystemsAccess:["GPT-4o Risk Scorer v2","Fraud Detection v3","HR Screening Model","NLP Classifier","Customer Support Orchestrator","Credit Scoring Engine"], reviewStatus:"Overdue", reviewer:"Dr. Sarah Chen", nextReview:"2026-01-01", lastLogin:"2026-01-05", status:"Suspended", riskFlags:["Orphaned account — no login 102 days","Excessive privileges — Admin level for departed user","Immediate revocation recommended"], entitlements:[{ system:"Sentinel GRC", role:"Admin", granted:"2023-01-01", grantedBy:"CEO", justification:"IT Manager role" },{ system:"ML Platform", role:"Admin", granted:"2024-03-01", grantedBy:"Dr. Sarah Chen", justification:"Escalated access for incident response" }], createdAt:"2023-01-01", updatedAt:"2026-01-05", createdBy:"admin" },
-  { id:"IGA-009", name:"reporting-bot", email:"bot@acme-internal", type:"Bot", role:"Compliance Reporting Bot", department:"Compliance", manager:"James Wilson", privilegeLevel:"Viewer", aiSystemsAccess:["Bias Monitoring System"], reviewStatus:"Current", reviewer:"James Wilson", nextReview:"2026-06-01", lastLogin:"2026-04-17", status:"Active", riskFlags:[], entitlements:[{ system:"Sentinel GRC", role:"Report Generator", granted:"2025-09-01", grantedBy:"James Wilson", justification:"Automated weekly reporting" }], createdAt:"2025-09-01", updatedAt:"2026-01-01", createdBy:"jwilson" },
-  { id:"IGA-010", name:"Lisa Park", email:"l.park@acme.com", type:"Human", role:"Product Manager", department:"Product", manager:"CEO", privilegeLevel:"Viewer", aiSystemsAccess:["Customer Support Orchestrator"], reviewStatus:"Current", reviewer:"Dr. Sarah Chen", nextReview:"2026-07-01", lastLogin:"2026-04-16", status:"Active", riskFlags:[], entitlements:[{ system:"Sentinel GRC", role:"Viewer", granted:"2025-04-01", grantedBy:"Dr. Sarah Chen", justification:"PM needs read access for governance reporting" }], createdAt:"2025-04-01", updatedAt:"2026-01-01", createdBy:"schen" },
-];
+const REVIEW_TONE: Record<string, string> = {
+  current: 'bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]',
+  due: 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]',
+  overdue: 'bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]',
+  revoked: 'bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]',
+}
 
-const EMPTY: any = { name:"", email:"", type:"Human", role:"", department:"", manager:"", privilegeLevel:"Viewer", aiSystemsAccess:[], reviewStatus:"Current", reviewer:"", nextReview:"", status:"Active", riskFlags:[], entitlements:[] };
+const EMPTY: Partial<Identity> = {
+  displayName: '', email: '', identityType: 'human', role: '', department: '',
+  privilegeLevel: 'viewer', reviewStatus: 'current',
+}
+
+function cap(s?: string): string {
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : '—'
+}
 
 export default function IGA() {
-  const { data: items, setData: setItems } = useSupabaseTable('iga_table', SEED);
-  const [search, setSearch] = useState("");
-  const [typeFilter, setTypeFilter] = useState("all");
-  const [reviewFilter, setReviewFilter] = useState("all");
-  const [activeTab, setActiveTab] = useState<"identities"|"campaigns">("identities");
-  const [modal, setModal] = useState<"create"|"edit"|"view"|null>(null);
-  const [form, setForm] = useState<any>(EMPTY);
-  const [editId, setEditId] = useState<string|null>(null);
-  const [viewItem, setViewItem] = useState<any>(null);
-  const [deleteTarget, setDeleteTarget] = useState<any>(null);
-  const [saving, setSaving] = useState(false);
-  const [bulk, setBulk] = useState<string[]>([]);
+  const nav = useNavigate()
+  const {
+    identities, sodRules, sodViolations, accessReviews,
+    isLoading, error, refetch, saveIdentity, removeIdentity, isSaving,
+  } = useIdentityGovernanceData()
+  const { models } = useModelOptions()
 
-  const filtered = useMemo(() => items.filter(i => {
-    const q = search.toLowerCase();
-    return (i.name.toLowerCase().includes(q) || i.email.toLowerCase().includes(q) || i.role.toLowerCase().includes(q))
-      && (typeFilter === "all" || i.type === typeFilter)
-      && (reviewFilter === "all" || i.reviewStatus === reviewFilter);
-  }), [items, search, typeFilter, reviewFilter]);
+  const [typeFilter, setTypeFilter] = useState('all')
+  const [reviewFilter, setReviewFilter] = useState('all')
+  const [tab, setTab] = useState<'identities' | 'sod' | 'reviews'>('identities')
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<Identity | null>(null)
+  const [form, setForm] = useState<Partial<Identity>>(EMPTY)
+  const [toDelete, setToDelete] = useState<Identity | null>(null)
 
-  const sp = useSortAndPage(filtered, "name");
-  const setF = (k: string) => (v: any) => setForm((f: any) => ({ ...f, [k]: v }));
+  const set = <K extends keyof Identity>(k: K, v: Identity[K] | undefined) =>
+    setForm((f) => ({ ...f, [k]: v }))
 
-  const save = (draft = false) => {
-    if (!form.name.trim()) { toast.error("Identity name is required"); return; }
-    setSaving(true);
-    setTimeout(() => {
-      if (editId) {
-        setItems(p => p.map(i => i.id === editId ? { ...i, ...form, updatedAt: new Date().toISOString().slice(0,10) } : i));
-        toast.success("Identity updated");
-      } else {
-        const id = `IGA-${String(items.length+1).padStart(3,"0")}`;
-        setItems(p => [...p, { ...form, id, createdAt: new Date().toISOString().slice(0,10), updatedAt: new Date().toISOString().slice(0,10), createdBy:"admin" }]);
-        toast.success("Identity created");
-      }
-      setSaving(false); setModal(null); setForm(EMPTY); setEditId(null);
-    }, 700);
-  };
+  const modelName = (id: string) => models.find((m) => m.id === id)?.name
 
-  const openEdit = (item: any) => { setForm({ ...item }); setEditId(item.id); setModal("edit"); };
-  const doDelete = () => { setItems(p => p.filter(i => i.id !== deleteTarget?.id)); setDeleteTarget(null); toast.success("Identity deleted"); };
-  const toggleBulk = (id: string) => setBulk(p => p.includes(id) ? p.filter(x => x !== id) : [...p, id]);
-  const allSelected = sp.page.length > 0 && sp.page.every(i => bulk.includes(i.id));
+  const rows = useMemo(() => identities.filter((i) =>
+    (typeFilter === 'all' || i.identityType === typeFilter) &&
+    (reviewFilter === 'all' || i.reviewStatus === reviewFilter)), [identities, typeFilter, reviewFilter])
 
-  const privileged = items.filter(i => i.privilegeLevel === "Admin" || i.privilegeLevel === "Operator").length;
-  const pendingReviews = items.filter(i => i.reviewStatus === "Due" || i.reviewStatus === "Overdue").length;
-  const orphaned = items.filter(i => i.riskFlags?.some((f: string) => f.toLowerCase().includes("orphan"))).length;
-  const avgReviewPct = Math.round((items.filter(i => i.reviewStatus === "Current").length / items.length) * 100);
+  const stats = useMemo(() => ({
+    total: identities.length,
+    admins: identities.filter((i) => i.privilegeLevel === 'admin').length,
+    reviewDue: identities.filter((i) => i.reviewStatus === 'due' || i.reviewStatus === 'overdue').length,
+    openViolations: sodViolations.filter((v) => v.status !== 'resolved').length,
+  }), [identities, sodViolations])
 
-  const MOCK_CAMPAIGNS = [
-    { id:"CAM-001", name:"Q1 2026 Access Review", scope:"All AI Systems", reviewer:"Dr. Sarah Chen", dueDate:"2026-03-31", progress:72, status:"In Progress" },
-    { id:"CAM-002", name:"Privileged Account Review", scope:"Admin & Operator privilege", reviewer:"James Wilson", dueDate:"2026-04-30", progress:0, status:"Planned" },
-    { id:"CAM-003", name:"Orphaned Account Cleanup", scope:"Inactive 90+ days", reviewer:"Alex Kumar", dueDate:"2026-04-15", progress:100, status:"Completed" },
-  ];
+  function openCreate() { setEditing(null); setForm(EMPTY); setFormOpen(true) }
+  function openEdit(i: Identity) { setEditing(i); setForm({ ...i }); setFormOpen(true) }
+
+  async function submit() {
+    try {
+      await saveIdentity(editing ? { ...form, id: editing.id } : form)
+      setFormOpen(false)
+    } catch { /* hook surfaces the error; dialog stays open */ }
+  }
+
+  const columns: Column<Identity>[] = [
+    { key: 'displayName', header: 'Identity', render: (i) => (
+      <div>
+        <p className="font-medium text-[hsl(var(--text-1))]">{i.displayName}</p>
+        <p className="text-xs text-[hsl(var(--text-4))]">{i.email ?? '—'}</p>
+      </div>
+    ) },
+    { key: 'identityType', header: 'Type', render: (i) => <span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-2))]">{cap(i.identityType)}</span> },
+    { key: 'role', header: 'Role', render: (i) => <span className="text-xs text-[hsl(var(--text-2))]">{i.role ?? '—'}</span> },
+    { key: 'department', header: 'Department', render: (i) => <span className="text-xs text-[hsl(var(--text-2))]">{i.department ?? '—'}</span> },
+    { key: 'privilegeLevel', header: 'Privilege', render: (i) => i.privilegeLevel ? <span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${PRIV_TONE[i.privilegeLevel] ?? ''}`}>{cap(i.privilegeLevel)}</span> : <span className="text-[hsl(var(--text-4))]">—</span> },
+    {
+      key: 'linkedModelIds', header: 'AI systems reach',
+      render: (i) => (
+        <LinkChips ids={i.linkedModelIds} resolve={modelName}
+          hrefFor={(id) => `/models/inventory/${id}`} onNavigate={nav} />
+      ),
+    },
+    { key: 'reviewStatus', header: 'Access review', render: (i) => i.reviewStatus ? <span className={`inline-flex px-2 py-0.5 rounded-full text-xs ${REVIEW_TONE[i.reviewStatus] ?? ''}`}>{cap(i.reviewStatus)}</span> : <span className="text-[hsl(var(--text-4))]">—</span> },
+  ]
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
-      <Breadcrumbs />
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <UserList size={24} weight="duotone" className="text-[hsl(var(--brand))]" />
-            Identity Governance
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">SOC 2 CC6.1 / ISO 27001 A.5.15 — manage access rights, entitlements, and least-privilege for AI systems</p>
-        </div>
-        <Button onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }} className="gap-2">
-          <Plus weight="bold" size={16} /> Add Identity
-        </Button>
-      </div>
+      <PageHeader
+        icon={<UserList size={24} weight="duotone" />}
+        title="Identity Governance"
+        description="Who — human, service, or agent — can reach which registered AI system, under what privilege, and when that access was last reviewed. Access lists are derived from privilege level (demo seeding rule, not an entitlement scan)."
+        actions={<Button onClick={openCreate} className="gap-2"><Plus weight="bold" size={16} />Add Identity</Button>}
+      />
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {[
-          { label:"Total Identities", value: items.length, color:"hsl(var(--text-1))" },
-          { label:"Privileged Accounts", value: privileged, color:"hsl(var(--s-wn-tx))" },
-          { label:"Pending Access Reviews", value: pendingReviews, color:"hsl(var(--r-hi-tx))" },
-          { label:"Orphaned Accounts", value: orphaned, color: orphaned > 0 ? "hsl(var(--s-er-tx))" : "#22c55e" },
-          { label:"Avg Review Completion", value: `${avgReviewPct}%`, color:"hsl(var(--brand))" },
-        ].map(k => (
+          { label: 'Identities', value: stats.total },
+          { label: 'Admin privilege', value: stats.admins },
+          { label: 'Reviews due / overdue', value: stats.reviewDue },
+          { label: 'Open SoD violations', value: stats.openViolations },
+        ].map((k) => (
           <Card key={k.label}><CardContent className="p-4">
             <p className="text-xs text-[hsl(var(--text-3))] mb-1">{k.label}</p>
-            <p className="text-2xl font-bold" style={{ color: k.color }}>{k.value}</p>
+            <p className="text-2xl font-bold text-[hsl(var(--text-1))]">{k.value}</p>
           </CardContent></Card>
         ))}
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-[hsl(var(--border))]">
-        {(["identities","campaigns"] as const).map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 text-sm font-medium capitalize border-b-2 transition-colors ${activeTab === tab ? "border-[hsl(var(--brand))] text-[hsl(var(--brand))]" : "border-transparent text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-2))]"}`}>{tab === "identities" ? "Identities" : "Review Campaigns"}</button>
+      <div className="flex border-b border-[hsl(var(--border))]">
+        {([['identities', 'Identities'], ['sod', 'Segregation of Duties'], ['reviews', 'Access Reviews']] as const).map(([key, label]) => (
+          <button key={key} onClick={() => setTab(key)}
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${tab === key
+              ? 'border-[hsl(var(--brand))] text-[hsl(var(--brand))]'
+              : 'border-transparent text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-2))]'}`}>
+            {label}
+          </button>
         ))}
       </div>
 
-      {activeTab === "identities" && <>
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-3))]" size={15} />
-            <Input placeholder="Search identities..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-9" />
+      {tab === 'identities' && (
+        <>
+          <div className="flex flex-wrap items-center gap-3">
+            <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <SelectTrigger className="w-40 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All types</SelectItem>
+                {IDENTITY_TYPES.map((t) => <SelectItem key={t} value={t}>{cap(t)}</SelectItem>)}
+              </SelectContent>
+            </Select>
+            <Select value={reviewFilter} onValueChange={setReviewFilter}>
+              <SelectTrigger className="w-44 h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All review states</SelectItem>
+                {REVIEW_STATUSES.map((s) => <SelectItem key={s} value={s}>{cap(s)}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
-          <Select value={typeFilter} onValueChange={setTypeFilter}>
-            <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              <SelectItem value="all">All Types</SelectItem>
-              {IDENTITY_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          <Select value={reviewFilter} onValueChange={setReviewFilter}>
-            <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-            <SelectContent style={{ borderRadius: 0 }}>
-              <SelectItem value="all">All Review Statuses</SelectItem>
-              {REVIEW_STATUSES.map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-            </SelectContent>
-          </Select>
-          {(search || typeFilter !== "all" || reviewFilter !== "all") && (
-            <Button variant="ghost" size="sm" onClick={() => { setSearch(""); setTypeFilter("all"); setReviewFilter("all"); }} className="gap-1 text-[hsl(var(--text-3))]"><X size={14} />Clear all</Button>
+
+          {isLoading ? <TableSkeleton /> : error ? (
+            <ErrorState message={error.message} onRetry={refetch} />
+          ) : rows.length === 0 ? (
+            <EmptyState
+              title="No identities"
+              message={typeFilter !== 'all' || reviewFilter !== 'all'
+                ? 'No identities match the current filters.'
+                : 'Add the first identity to start the register.'}
+              actionLabel="Add Identity"
+              onAction={openCreate}
+            />
+          ) : (
+            <DataTable
+              data={rows}
+              columns={columns}
+              searchKey="displayName"
+              searchPlaceholder="Search identities…"
+              onEdit={openEdit}
+              onDelete={(i) => setToDelete(i)}
+              emptyMessage="No identities match the current filters."
+            />
           )}
-          <Button variant="outline" size="sm" className="ml-auto gap-1"><Export size={14} />Export</Button>
-        </div>
+        </>
+      )}
 
-        {bulk.length > 0 && (
-          <BulkActionToolbar count={bulk.length} onClear={() => setBulk([])}
-            actions={[
-              { label:"Trigger Access Review", onClick: () => { setItems(p => p.map(i => bulk.includes(i.id) ? { ...i, reviewStatus:"Due" } : i)); setBulk([]); toast.success("Access review triggered"); } },
-              { label:"Revoke All Access", variant:"destructive", onClick: () => { setItems(p => p.map(i => bulk.includes(i.id) ? { ...i, status:"Revoked", privilegeLevel:"No Access", aiSystemsAccess:[], reviewStatus:"Revoked" } : i)); setBulk([]); toast.success("Access revoked"); } },
-            ]}
-          />
-        )}
-
-        <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface))] overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[hsl(var(--border))]">
-                <th className="px-4 py-3 w-10"><input type="checkbox" checked={allSelected} onChange={e => setBulk(e.target.checked ? sp.page.map(i => i.id) : [])} className="rounded" /></th>
-                <Th label="Identity" col="name" sp={sp} />
-                <Th label="Type" col="type" sp={sp} />
-                <Th label="Role" col="role" sp={sp} />
-                <Th label="Department" col="department" sp={sp} />
-                <th className="px-4 py-3 text-xs font-semibold text-[hsl(var(--text-3))]">AI Systems Access</th>
-                <Th label="Privilege Level" col="privilegeLevel" sp={sp} />
-                <Th label="Last Login" col="lastLogin" sp={sp} />
-                <Th label="Review Status" col="reviewStatus" sp={sp} />
-                <Th label="Next Review" col="nextReview" sp={sp} />
-                <th className="px-4 py-3 text-xs font-semibold text-[hsl(var(--text-3))] text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sp.page.length === 0 && (
-                <tr><td colSpan={11}><EmptyState icon={<UserList size={32} />} title="No identities found" description="Add an identity to get started" action={<Button onClick={() => { setForm(EMPTY); setEditId(null); setModal("create"); }}>Add Identity</Button>} /></td></tr>
-              )}
-              {sp.page.map(item => (
-                <tr key={item.id} onClick={() => { setViewItem(item); setModal("view"); }} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/.4)] cursor-pointer transition-colors">
-                  <td className="px-4 py-3" onClick={e => e.stopPropagation()}><input type="checkbox" checked={bulk.includes(item.id)} onChange={() => toggleBulk(item.id)} className="rounded" /></td>
-                  <td className="px-4 py-3">
-                    <div className="font-medium text-[hsl(var(--text-1))]">{item.name}{item.riskFlags?.length > 0 && <Warning size={12} className="text-[hsl(var(--s-er-tx))] inline ml-1" weight="fill" />}</div>
-                    <div className="text-xs text-[hsl(var(--text-3))]">{item.email}</div>
-                  </td>
-                  <td className="px-4 py-3"><span className="inline-flex px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--muted))] text-[hsl(var(--text-2))]">{item.type}</span></td>
-                  <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.role}</td>
-                  <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.department}</td>
-                  <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">
-                    <span>{item.aiSystemsAccess?.length} system{item.aiSystemsAccess?.length !== 1 ? "s" : ""}</span>
-                  </td>
-                  <td className="px-4 py-3"><span className={`inline-flex px-2 py-0.5 rounded-full text-xs font-semibold ${PRIV_COLORS[item.privilegeLevel]||""}`}>{item.privilegeLevel}</span></td>
-                  <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.lastLogin || "—"}</td>
-                  <td className="px-4 py-3"><StatusBadge status={item.reviewStatus} /></td>
-                  <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{item.nextReview}</td>
-                  <td className="px-4 py-3 text-right" onClick={e => e.stopPropagation()}>
-                    <div className="flex justify-end gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => { setViewItem(item); setModal("view"); }}><Eye size={14} /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => openEdit(item)}><PencilSimple size={14} /></Button>
-                      <Button variant="ghost" size="sm" onClick={() => setDeleteTarget(item)} className="text-[hsl(var(--s-er-tx))]"><Trash size={14} /></Button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <PaginationBar sp={sp} />
-      </>}
-
-      {activeTab === "campaigns" && (
+      {tab === 'sod' && (
         <div className="space-y-4">
-          <div className="flex justify-end">
-            <Button variant="outline" size="sm" onClick={() => toast.success("Campaign creation coming soon")}>+ New Campaign</Button>
-          </div>
-          <div className="rounded-xl border border-[hsl(var(--border))] bg-[hsl(var(--surface))] overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-[hsl(var(--border))]">
-                  {["Campaign","Scope","Reviewer","Due Date","Progress","Status"].map(h => (
-                    <th key={h} className="px-4 py-3 text-xs font-semibold text-[hsl(var(--text-3))] text-left">{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {MOCK_CAMPAIGNS.map(c => (
-                  <tr key={c.id} className="border-b border-[hsl(var(--border))] hover:bg-[hsl(var(--muted)/.4)]">
-                    <td className="px-4 py-3 font-medium text-[hsl(var(--text-1))]">{c.name}</td>
-                    <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{c.scope}</td>
-                    <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{c.reviewer}</td>
-                    <td className="px-4 py-3 text-xs text-[hsl(var(--text-2))]">{c.dueDate}</td>
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-2">
-                        <div className="w-20 h-1.5 rounded-full bg-[hsl(var(--muted))] overflow-hidden">
-                          <div className="h-full rounded-full bg-[hsl(var(--brand))]" style={{ width:`${c.progress}%` }} />
-                        </div>
-                        <span className="text-xs">{c.progress}%</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
-                  </tr>
+          <Card><CardContent className="p-4">
+            <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">Active rules</h3>
+            {sodRules.length === 0 ? (
+              <p className="text-sm text-[hsl(var(--text-4))]">No segregation rules defined.</p>
+            ) : (
+              <div className="space-y-2">
+                {sodRules.map((r) => (
+                  <div key={r.id} className="flex items-center gap-3 text-sm border-b border-[hsl(var(--border))] pb-2 last:border-0">
+                    <span className="font-medium text-[hsl(var(--text-1))] flex-1">{r.name}</span>
+                    <span className="text-xs text-[hsl(var(--text-3))]">{r.moduleA}:{r.actionA} × {r.moduleB}:{r.actionB}</span>
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs ${r.severity === 'critical' || r.severity === 'high' ? 'bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]' : 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]'}`}>{cap(r.severity)}</span>
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
+            )}
+          </CardContent></Card>
+          <Card><CardContent className="p-4">
+            <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3 flex items-center gap-2">
+              <Warning size={16} className="text-[hsl(var(--s-wn-tx))]" /> Violations
+            </h3>
+            {sodViolations.length === 0 ? (
+              <p className="text-sm text-[hsl(var(--text-4))]">No violations detected.</p>
+            ) : (
+              <div className="space-y-2">
+                {sodViolations.map((v) => (
+                  <div key={v.id} className="flex items-center gap-3 text-sm border-b border-[hsl(var(--border))] pb-2 last:border-0">
+                    <span className="flex-1 text-[hsl(var(--text-2))]">{v.conflictingRoles.join(' + ') || '—'}</span>
+                    <span className="text-xs text-[hsl(var(--text-3))]">{v.detectedAt ? new Date(v.detectedAt).toLocaleDateString() : '—'}</span>
+                    <span className={`inline-flex px-2 py-0.5 rounded-full text-xs ${v.status === 'resolved' ? 'bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]' : 'bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]'}`}>{cap(v.status)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent></Card>
         </div>
       )}
 
-      <CrudModal open={modal === "create" || modal === "edit"} onClose={() => { setModal(null); setForm(EMPTY); setEditId(null); }} title={editId ? "Edit Identity" : "Add Identity"} size="lg">
-        <FormSection title="Identity Profile">
-          <TInput label="Name *" value={form.name} onChange={setF("name")} placeholder="Full name or service account name" />
-          <div className="grid grid-cols-2 gap-3">
-            <TInput label="Email" value={form.email} onChange={setF("email")} placeholder="user@company.com" />
-            <TSelect label="Type" value={form.type} onChange={setF("type")} options={IDENTITY_TYPES} />
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <TInput label="Role" value={form.role} onChange={setF("role")} placeholder="e.g. MLOps Engineer" />
-            <TSelect label="Department" value={form.department} onChange={setF("department")} options={DEPTS} />
-          </div>
-          <TInput label="Manager" value={form.manager} onChange={setF("manager")} placeholder="Manager name" />
-        </FormSection>
-        <FormSection title="Access & Privileges">
-          <div className="grid grid-cols-2 gap-3">
-            <TSelect label="Privilege Level" value={form.privilegeLevel} onChange={setF("privilegeLevel")} options={PRIVILEGE_LEVELS} />
-            <TSelect label="Status" value={form.status} onChange={setF("status")} options={IDENTITY_STATUSES} />
-          </div>
-          <div>
-            <label className="text-xs font-semibold text-[hsl(var(--text-2))] mb-1 block">AI Systems Access</label>
-            <div className="grid grid-cols-2 gap-1">
-              {AI_SYSTEMS_LIST.map(sys => (
-                <label key={sys} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <input type="checkbox" checked={(form.aiSystemsAccess||[]).includes(sys)} onChange={e => {
-                    const cur = form.aiSystemsAccess||[];
-                    setF("aiSystemsAccess")(e.target.checked ? [...cur, sys] : cur.filter((s: string) => s !== sys));
-                  }} className="rounded" />
-                  <span className="text-[hsl(var(--text-2))]">{sys}</span>
-                </label>
-              ))}
-            </div>
-          </div>
-        </FormSection>
-        <FormSection title="Access Review">
-          <div className="grid grid-cols-2 gap-3">
-            <TSelect label="Review Status" value={form.reviewStatus} onChange={setF("reviewStatus")} options={REVIEW_STATUSES} />
-            <TSelect label="Reviewer" value={form.reviewer} onChange={setF("reviewer")} options={REVIEWERS} />
-          </div>
-          <TInput label="Next Review Date" value={form.nextReview} onChange={setF("nextReview")} type="date" />
-        </FormSection>
-        <FormFooter saving={saving} onDraft={() => save(true)} onSubmit={() => save(false)} onCancel={() => { setModal(null); setForm(EMPTY); setEditId(null); }} />
-      </CrudModal>
-
-      <CrudSlideOver open={modal === "view"} onClose={() => { setModal(null); setViewItem(null); }} title={viewItem?.name || ""}>
-        {viewItem && <>
-          <MetaBar items={[
-            { label:"Type", value: viewItem.type },
-            { label:"Role", value: viewItem.role },
-            { label:"Department", value: viewItem.department },
-            { label:"Privilege", value: <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${PRIV_COLORS[viewItem.privilegeLevel]||""}`}>{viewItem.privilegeLevel}</span> },
-            { label:"Review", value: <StatusBadge status={viewItem.reviewStatus} /> },
-            { label:"Status", value: <StatusBadge status={viewItem.status} /> },
-          ]} />
-          {viewItem.riskFlags?.length > 0 && (
-            <div className="rounded-xl border border-[hsl(var(--s-er-br))] bg-[hsl(var(--s-er-bg))] px-4 py-3">
-              <div className="flex items-center gap-2 mb-1"><Warning size={16} className="text-[hsl(var(--s-er-tx))]" weight="fill" /><span className="text-sm font-semibold text-[hsl(var(--s-er-tx))]">Risk Indicators</span></div>
-              {viewItem.riskFlags.map((f: string) => <div key={f} className="text-xs text-[hsl(var(--s-er-tx))] ml-6">• {f}</div>)}
-            </div>
-          )}
-          <FormSection title="Identity Profile">
-            <div className="grid grid-cols-2 gap-2 text-sm">
-              <div><span className="text-[hsl(var(--text-3))]">Email:</span> <span className="text-[hsl(var(--text-1))]">{viewItem.email}</span></div>
-              <div><span className="text-[hsl(var(--text-3))]">Manager:</span> <span className="text-[hsl(var(--text-1))]">{viewItem.manager}</span></div>
-              <div><span className="text-[hsl(var(--text-3))]">Last Login:</span> <span className="text-[hsl(var(--text-1))]">{viewItem.lastLogin || "—"}</span></div>
-              <div><span className="text-[hsl(var(--text-3))]">Next Review:</span> <span className="text-[hsl(var(--text-1))]">{viewItem.nextReview}</span></div>
-            </div>
-          </FormSection>
-          <FormSection title="AI Systems Access">
-            <div className="flex flex-wrap gap-1">
-              {(viewItem.aiSystemsAccess||[]).map((s: string) => (
-                <span key={s} className="inline-flex px-2 py-0.5 rounded-full text-xs bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]">{s}</span>
-              ))}
-            </div>
-          </FormSection>
-          <FormSection title="Entitlements">
-            <div className="space-y-3">
-              {(viewItem.entitlements||[]).map((ent: any, idx: number) => (
-                <div key={idx} className="border border-[hsl(var(--border))] rounded-lg p-3 text-sm">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-medium text-[hsl(var(--text-1))]">{ent.system}</span>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${PRIV_COLORS["Operator"]||""}`}>{ent.role}</span>
-                  </div>
-                  <div className="text-xs text-[hsl(var(--text-3))]">Granted: {ent.granted} by {ent.grantedBy}</div>
-                  <div className="text-xs text-[hsl(var(--text-2))] mt-0.5">{ent.justification}</div>
-                  <div className="flex gap-2 mt-2">
-                    <Button size="sm" variant="outline" className="h-6 text-xs text-[hsl(var(--s-ok-tx))]" onClick={() => toast.success("Access approved")}><CheckCircle size={10} />Approve</Button>
-                    <Button size="sm" variant="outline" className="h-6 text-xs text-[hsl(var(--s-er-tx))]" onClick={() => toast.success("Access revoked")}><XCircle size={10} />Revoke</Button>
-                  </div>
+      {tab === 'reviews' && (
+        <Card><CardContent className="p-4">
+          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] mb-3">Access review campaigns</h3>
+          {accessReviews.length === 0 ? (
+            <p className="text-sm text-[hsl(var(--text-4))]">No review campaigns recorded.</p>
+          ) : (
+            <div className="space-y-2">
+              {accessReviews.map((r) => (
+                <div key={r.id} className="flex items-center gap-3 text-sm border-b border-[hsl(var(--border))] pb-2 last:border-0">
+                  <span className="font-medium text-[hsl(var(--text-1))] flex-1">{r.reviewName}</span>
+                  <span className="text-xs text-[hsl(var(--text-3))]">{r.scope ?? '—'}</span>
+                  <span className="text-xs text-[hsl(var(--text-3))]">due {r.dueDate ? new Date(r.dueDate).toLocaleDateString() : '—'}</span>
+                  <span className="text-xs text-[hsl(var(--text-2))]">
+                    {r.totalEntitlements ?? '—'} entitlements · {r.approved ?? '—'} approved · {r.revoked ?? '—'} revoked
+                  </span>
+                  <span className={`inline-flex px-2 py-0.5 rounded-full text-xs ${r.status === 'completed' ? 'bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]' : 'bg-[hsl(var(--s-in-bg))] text-[hsl(var(--s-in-tx))]'}`}>{cap(r.status)}</span>
                 </div>
               ))}
             </div>
-          </FormSection>
-          <div className="flex gap-2 pt-2">
-            <Button onClick={() => openEdit(viewItem)} variant="outline" size="sm"><PencilSimple size={14} />Edit</Button>
-            <Button onClick={() => { toast.success("Access review triggered"); setItems(p => p.map(i => i.id === viewItem.id ? { ...i, reviewStatus:"Due" } : i)); setModal(null); }} variant="outline" size="sm">Trigger Review</Button>
-            <Button onClick={() => { setModal(null); setDeleteTarget(viewItem); }} variant="destructive" size="sm"><Trash size={14} />Delete</Button>
-          </div>
-        </>}
-      </CrudSlideOver>
+          )}
+        </CardContent></Card>
+      )}
 
-      <ConfirmDialog open={!!deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={doDelete} title="Delete Identity" description={`Delete "${deleteTarget?.name}"? This cannot be undone.`} confirmLabel="Delete" destructive />
+      <FormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        title={editing ? `Edit ${editing.displayName}` : 'Add Identity'}
+        onSubmit={submit}
+        busy={isSaving}
+        disabled={!form.displayName?.trim()}
+      >
+        <Field label="Display name" required>
+          <Input value={form.displayName ?? ''} onChange={(e) => set('displayName', e.target.value)} />
+        </Field>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Email">
+            <Input type="email" value={form.email ?? ''} onChange={(e) => set('email', e.target.value)} />
+          </Field>
+          <Field label="Type">
+            <Select value={form.identityType} onValueChange={(v) => set('identityType', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{IDENTITY_TYPES.map((t) => <SelectItem key={t} value={t}>{cap(t)}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Role">
+            <Input value={form.role ?? ''} onChange={(e) => set('role', e.target.value)} />
+          </Field>
+          <Field label="Department">
+            <Input value={form.department ?? ''} onChange={(e) => set('department', e.target.value)} />
+          </Field>
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Privilege level" hint="Determines derived AI-system reach">
+            <Select value={form.privilegeLevel} onValueChange={(v) => set('privilegeLevel', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{PRIVILEGE_LEVELS.map((p) => <SelectItem key={p} value={p}>{cap(p)}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Review status">
+            <Select value={form.reviewStatus} onValueChange={(v) => set('reviewStatus', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>{REVIEW_STATUSES.map((s) => <SelectItem key={s} value={s}>{cap(s)}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+        </div>
+      </FormDialog>
+
+      <ConfirmDialog
+        open={!!toDelete}
+        onCancel={() => setToDelete(null)}
+        onConfirm={async () => { if (toDelete) { try { await removeIdentity(toDelete.id) } finally { setToDelete(null) } } }}
+        title="Delete identity"
+        description={`Remove "${toDelete?.displayName}" from the register? This does not revoke any real system access.`}
+        confirmLabel="Delete"
+        destructive
+      />
     </div>
-  );
+  )
 }

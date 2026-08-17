@@ -113,17 +113,29 @@ These are not cosmetic. A module on a demo table typically also:
   excluded from the TD-000 regression query only because they had no tenant
   column to check; that was a reason to migrate them, not to exempt them.
 
-> **Cross-tenant exposure contained (2026-08-16, migration
-> `20260822000002_supply_chain_esg_canonical.sql` §9).** The exposure above was
-> live, not theoretical: `20260813000006_close_anon_rls.sql` revoked `anon` but,
-> because these tables have no `org_id` column, fell through to
-> `FOR ALL TO authenticated USING (true)`. All 53 `%_table` tables now carry
-> `org_id uuid NOT NULL DEFAULT current_user_org_id()` and an org-scoped policy
-> (verified: 53/53 have the column, 53/53 have the policy). **Containment is not
-> remediation** — the modules below still render seeded fiction through
-> `useSupabaseTable`, whose writes are fire-and-forget with both callbacks empty
-> and which silently falls back to the in-file `SEED` when a load fails. They
-> still need real tables and throwing services.
+> **Containment claim of 2026-08-16 retracted — it never held on live.** The
+> previous revision of this note recorded `20260822000002` §9 as verified
+> (53/53 columns, 53/53 policies). On 2026-08-23 the production-readiness
+> review re-ran the verification against the live project and found **0/53**
+> tables had the `org_id` column and **all** blanket
+> `authenticated USING (true)` grants were still active. Root cause: §9 adds
+> the column `NOT NULL DEFAULT current_user_org_id()`, and that resolver
+> returns NULL in the admin apply context, so the ALTER aborted and the whole
+> DO block rolled back — silently, because out-of-band applies don't gate
+> anything. The 2026-08-16 "verified" numbers were read from the migration
+> file, not from the database. Lesson recorded in the review process: a
+> verification claim must cite the query **and the context it ran in**.
+>
+> **Containment re-applied and verified 2026-08-23
+> (`20260823000001_admin_registers_and_demo_table_lockdown.sql` §2):**
+> nullable add → explicit backfill to the demo tenant → `SET NOT NULL` →
+> org-scoped policy replacing the blanket grant. Verified against live via
+> `pg_policies`/`information_schema`: 53/53 columns, 53/53 org policies,
+> 0 blanket grants remaining. **Containment is still not remediation** — the
+> modules below render seeded fiction through `useSupabaseTable`, whose writes
+> are fire-and-forget with both callbacks empty and which silently falls back
+> to the in-file `SEED` when a load fails. They still need real tables and
+> throwing services.
 
 For a product used as the system of record for AI Act and ISO/IEC 42001
 conformity, the third point is the serious one: a regulator may rely on a number
@@ -133,10 +145,10 @@ that has no provenance.
 
 | Module | Page | Demo table |
 |---|---|---|
-| Asset Management | `pages/AssetManagement.tsx` | `assetmanagement_table` |
-| Business Impact Analysis | `pages/BIA.tsx` | `bia_table` |
+| ~~Asset Management~~ | ~~`pages/AssetManagement.tsx`~~ | **migrated** → `assets` (2026-08-23) |
+| ~~Business Impact Analysis~~ | ~~`pages/BIA.tsx`~~ | **migrated** → `bia_processes` (2026-08-23) |
 | DPIA | `pages/DPIA.tsx` | `dpia_table` |
-| Identity Governance (IGA) | `pages/IGA.tsx` | `iga_table` |
+| ~~Identity Governance (IGA)~~ | ~~`pages/IGA.tsx`~~ | **migrated** → `identities` + `sod_*` + `access_reviews` (2026-08-23) |
 | Model Risk Committee | `pages/ModelRiskCommittee.tsx` | `modelriskcommittee_table` |
 | Regulator Filings | `pages/RegulatorFilings.tsx` | `regulatorfilings_table` |
 | Tabletop Exercises | `pages/TabletopExercises.tsx` | `tabletopexercises_table` |
@@ -176,11 +188,13 @@ highest-consequence defect in the register.
 
 **Tier 2 — governance process records**
 `Model Risk Committee`, `Committee Management`, `Vendor Assessments`,
-`Vendor SLA`, `BIA`, `Tabletop Exercises`, `Transparency Reports`.
+`Vendor SLA`, `Tabletop Exercises`, `Transparency Reports`.
+(`BIA` migrated 2026-08-23.)
 
 **Tier 3 — operational surfaces**
-`Asset Management`, `IGA`, `Reporting`, `Report Generator`, `Regulatory Radar`,
+`Reporting`, `Report Generator`, `Regulatory Radar`,
 `Attack Surface`, `Keys Vault`, `Policy Firewall`, `Red Team Lab`.
+(`Asset Management` and `IGA` migrated 2026-08-23.)
 
 ### Known-good remediation pattern
 

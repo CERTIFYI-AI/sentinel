@@ -42,7 +42,7 @@ BEGIN
       ADD COLUMN IF NOT EXISTS linked_framework_ids uuid[] DEFAULT '{}',
       ADD COLUMN IF NOT EXISTS linked_control_ids uuid[] DEFAULT '{}',
       ADD COLUMN IF NOT EXISTS linked_asset_ids uuid[] DEFAULT '{}',
-      ADD COLUMN IF NOT EXISTS linked_incident_ids uuid[] DEFAULT '{}';
+      ADD COLUMN IF NOT EXISTS linked_incident_ids text[] DEFAULT '{}';
   END IF;
 END $$;
 
@@ -58,8 +58,8 @@ BEGIN
       ADD COLUMN IF NOT EXISTS linked_control_id uuid REFERENCES controls(id),
       -- frameworks.id is TEXT (catalog slugs like 'iso-42001')
       ADD COLUMN IF NOT EXISTS linked_framework_id text REFERENCES frameworks(id),
-      ADD COLUMN IF NOT EXISTS linked_risk_id uuid REFERENCES risks(id),
-      ADD COLUMN IF NOT EXISTS linked_incident_id uuid REFERENCES incidents(id),
+      ADD COLUMN IF NOT EXISTS linked_risk_id text REFERENCES risks(id),
+      ADD COLUMN IF NOT EXISTS linked_incident_id text REFERENCES incidents(id),
       ADD COLUMN IF NOT EXISTS watchers uuid[] DEFAULT '{}',
       ADD COLUMN IF NOT EXISTS labels text[] DEFAULT '{}',
       ADD COLUMN IF NOT EXISTS sla_hours integer,

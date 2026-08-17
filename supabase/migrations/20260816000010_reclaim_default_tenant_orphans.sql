@@ -30,19 +30,31 @@ update public.consent_records set consent_ref = null where tenant_id = 'default'
 update public.consent_records      set tenant_id = '00000000-0000-0000-0000-000000000001' where tenant_id = 'default';
 update public.carbon_records       set tenant_id = '00000000-0000-0000-0000-000000000001' where tenant_id = 'default';
 update public.remediation_plans    set tenant_id = '00000000-0000-0000-0000-000000000001' where tenant_id = 'default';
-update public.transparency_reports set tenant_id = '00000000-0000-0000-0000-000000000001' where tenant_id = 'default';
-
 -- Remove the trap that produced the orphans. Every one of these tables now
 -- fills tenant_id from the session's org, as ai_models has always done — the
 -- client never chooses a tenant.
 alter table public.consent_records      alter column tenant_id set default (current_user_org_id())::text;
 alter table public.carbon_records       alter column tenant_id set default (current_user_org_id())::text;
 alter table public.remediation_plans    alter column tenant_id set default (current_user_org_id())::text;
-alter table public.transparency_reports alter column tenant_id set default (current_user_org_id())::text;
 alter table public.bias_audits          alter column tenant_id set default (current_user_org_id())::text;
-alter table public.compliance_scores    alter column tenant_id set default (current_user_org_id())::text;
 alter table public.hitl_reviews         alter column tenant_id set default (current_user_org_id())::text;
 alter table public.vendors              alter column tenant_id set default (current_user_org_id())::text;
+
+-- transparency_reports and compliance_scores are created later in the replay
+-- order (20260818000001_security_group_canonical.sql), so a from-zero replay
+-- reaches this file before they exist. Guarded here and re-applied
+-- unconditionally in 20260817000002_replay_repair.sql, which runs after them —
+-- the pattern the migrations README prescribes for a forward reference.
+do $$
+begin
+  if to_regclass('public.transparency_reports') is not null then
+    update public.transparency_reports set tenant_id = '00000000-0000-0000-0000-000000000001' where tenant_id = 'default';
+    alter table public.transparency_reports alter column tenant_id set default (current_user_org_id())::text;
+  end if;
+  if to_regclass('public.compliance_scores') is not null then
+    alter table public.compliance_scores alter column tenant_id set default (current_user_org_id())::text;
+  end if;
+end $$;
 
 -- Renumber the merged consent register as one sequence.
 update public.consent_records c set consent_ref = s.ref from (

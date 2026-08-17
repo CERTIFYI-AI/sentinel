@@ -6,7 +6,9 @@
 
 -- ── Risks ──────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS risks (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  -- TEXT, not UUID: production keys these rows 'risk-002'-style. See the
+  -- drift note in README.md — a uuid column cannot hold the live data.
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   tenant_id TEXT NOT NULL DEFAULT 'default',
   risk_id TEXT,
   title TEXT NOT NULL,
@@ -127,7 +129,7 @@ CREATE INDEX IF NOT EXISTS idx_models_status ON model_inventory(status);
 
 -- ── Incidents ──────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS incidents (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   tenant_id TEXT NOT NULL DEFAULT 'default',
   incident_id TEXT,
   title TEXT NOT NULL,
@@ -471,7 +473,7 @@ CREATE INDEX IF NOT EXISTS idx_bias_tenant ON bias_audits(tenant_id);
 
 -- ── Vendors ────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS vendors (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  id TEXT PRIMARY KEY DEFAULT gen_random_uuid()::text,
   tenant_id TEXT NOT NULL DEFAULT 'default',
   name TEXT NOT NULL,
   category TEXT DEFAULT 'Foundation Model',

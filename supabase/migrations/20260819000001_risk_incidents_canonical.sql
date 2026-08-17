@@ -169,7 +169,7 @@ CREATE TABLE IF NOT EXISTS public.playbook_runs (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL DEFAULT current_user_org_id(),
   playbook_id uuid REFERENCES public.incident_playbooks(id) ON DELETE CASCADE,
-  incident_id uuid REFERENCES public.incidents(id) ON DELETE SET NULL,
+  incident_id text REFERENCES public.incidents(id) ON DELETE SET NULL,
   status text NOT NULL DEFAULT 'active',           -- active | completed | aborted
   current_phase text,
   commander text,

@@ -1,30 +1,73 @@
-# Identity Governance & Administration (IGA)
+# Identity Governance
 
-**Route:** `/iga` · **Service:** `rbacService.ts`, `accessReviewsService.ts` (via rbac domain)
+**Route:** `/iga` · **Tables:** `identities`, `sod_rules`, `sod_violations`, `access_reviews` · **Service:** `dashboard/src/services/resilienceService.ts` · **Hook:** `useIdentityGovernanceData` (`useAdminData.ts`)
 
 ## Purpose
-Centralise user access reviews, entitlement catalog, and Segregation of Duties (SoD) conflict detection for human identities and service accounts that can act on AI systems or regulated data.
 
-## Standards Alignment
-| Control | Requirement |
-|---|---|
-| ISO/IEC 27001:2022 A.5.15–A.5.18 | Access control, rights management, privileged access, access reviews |
-| SOC 2 CC6.1 / CC6.2 / CC6.3 | Logical access, provisioning, periodic review |
-| NIST SP 800-53 AC-2, AC-5, AC-6 | Account management, SoD, least privilege |
-| EU AI Act Art.14 | Human oversight role integrity |
-| SOX ITGC | Access provisioning and quarterly user access reviews |
+Who — human, service account, or AI agent — can reach which registered AI
+system, at what privilege, and when that access was last reviewed. Also the
+segregation-of-duties rules and their violations, and access-review campaigns.
 
-## Core Objects
-- **Entitlement Catalog** — normalized set of roles/permissions across Sentinel + connected systems.
-- **Access Review Campaign** — periodic (quarterly) certification cycles per application/asset.
-- **SoD Rule** — mutually exclusive entitlement pairs (e.g. policy author ↔ policy approver).
-- **Violation** — detected conflict with remediation workflow.
+## Why it exists
 
-## Workflow
-1. Campaign scheduled (ISO 27001 A.5.18 cadence).
-2. Reviewer certifies/revokes each entitlement with justification.
-3. Revocations generate remediation tasks + audit evidence.
-4. SoD engine re-evaluates on every entitlement change.
+ISO 27001 A.5.15–A.5.18 (access control, access review), SOC 2 CC6.1-CC6.3,
+and the EU AI Act's Art. 14 expectation that human oversight roles are
+identifiable. An identity register whose "AI systems: 7" figure cannot name
+one system is unverifiable.
 
-## Evidence Outputs
-Signed review package (reviewer, timestamp, decisions, exceptions) written to `evidence_chain`; exportable for SOC 2 / ISO audit.
+## How it works
+
+The page (`pages/IGA.tsx`) reads the four org-scoped tables through
+`resilienceService`; identity CRUD writes throw and audit via `logAction`.
+Until 2026-08-23 it read the `iga_table` demo table with ten fictional
+identities whose "AI systems access" strings resolved to nothing.
+
+`ai_systems_access` (integer) is now kept in step with `linked_model_ids`
+(uuid[]), which is **derived from privilege level** by
+`20260823000001`: admin → every registered model, operator → production
+models, viewer → none. This is a stated demo-tenant seeding rule — labelled
+as such on the page — not an entitlement scan; what matters is the figure is
+reproducible and every id resolves to a registry record.
+
+Vocabularies are CHECK-constrained lowercase (identity_type: human / service /
+agent; privilege_level: admin / operator / viewer; review_status: current /
+due / overdue / revoked) and pinned to the service constants by
+`dashboard/src/__tests__/adminRegisterVocabularies.test.ts`.
+
+## Fields (`identities`)
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | `gen_random_uuid()` |
+| `tenant_id` | uuid NOT NULL | DB default `current_user_org_id()` |
+| `display_name` | text NOT NULL | |
+| `email`, `role`, `department` | text | |
+| `identity_type` | text | CHECK: human / service / agent |
+| `privilege_level` | text | CHECK: admin / operator / viewer |
+| `review_status` | text | CHECK: current / due / overdue / revoked |
+| `ai_systems_access` | integer | Kept equal to `array_length(linked_model_ids)` |
+| `linked_model_ids` | uuid[] | Derived reach into `ai_models` (GIN indexed) |
+
+Supporting tables: `sod_rules(name, module_a/action_a × module_b/action_b,
+severity, is_active)`, `sod_violations(conflicting_roles[], risk_level,
+status, detected_at)`, `access_reviews(review_name, scope, status, due_date,
+totals)` — read-only on this page today.
+
+## Interlinks
+
+- **Outbound:** `linked_model_ids` → `ai_models.id`, proven 104/104 resolving
+  (2026-08-23); chips navigate to `/models/inventory/:id`.
+- **Inbound:** none yet — an identity is not referenced by other modules.
+  Candidate: HITL review assignments naming a reviewer identity (roadmap).
+
+## Compliance
+
+ISO 27001 A.5.15–A.5.18; SOC 2 CC6; EU AI Act Art. 14 (oversight roles).
+`sod_rules.org_id` previously had no default, which rejected every insert
+(fail-closed but unusable); fixed by `20260823000001` with `get_org_id()`.
+
+## Operations
+
+`identities` is part of the live baseline gap — migration statements touching
+it are guarded with `to_regclass`. Access derivation reruns only when the
+migration is re-applied; a real entitlement sync is roadmap.

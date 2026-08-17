@@ -1,38 +1,69 @@
-# Asset Management Module
+# Asset Registry
 
-**Route:** `/asset-management` · **Service:** `assetService.ts` · **Agent:** n/a
+**Route:** `/asset-management` · **Table:** `assets` · **Service:** `dashboard/src/services/assetService.ts` · **Hook:** `useAssetsData` (`useAdminData.ts`)
 
 ## Purpose
-Maintain an authoritative inventory of all information and AI assets (models, datasets, endpoints, infrastructure, data stores, applications) with ownership, classification, and lifecycle state. The asset inventory is the **anchor object** for risk, control, vulnerability, and evidence linkage across Sentinel.
 
-## Standards Alignment
-| Control | Requirement |
-|---|---|
-| ISO/IEC 27001:2022 A.5.9 | Inventory of information and associated assets |
-| ISO/IEC 27001:2022 A.5.10 | Acceptable use |
-| ISO/IEC 27001:2022 A.5.12 | Classification of information |
-| ISO/IEC 42001:2023 6.1.2 / A.4.3 | AI system assets and resources |
-| NIST SP 800-53 CM-8 | System component inventory |
-| NIST AI RMF MAP 1.1 | AI system context and components cataloged |
-| SOC 2 CC6.1 | Logical access over protected assets |
-| EU AI Act Art.11 + Annex IV §1(a) | Technical documentation of the AI system |
+The authoritative inventory of the AI estate — models, datasets, infrastructure,
+applications, APIs, devices — with ownership, classification, criticality and
+lifecycle state. The register's distinguishing capability is that an asset can
+say **which governed record it represents**: an `ai_model` asset resolves to a
+row in `ai_models`, a `dataset` asset to `datasets`. That link is what lets an
+impact question ("what breaks?") land on a real registry entity.
 
-## Data Model (logical)
-- `assets(id, org_id, name, type, classification, owner_id, environment, criticality, tags[], status, created_at, updated_at)`
-- `asset_relationships(parent_id, child_id, relationship_type)` — e.g. model → dataset, model → endpoint, service → infra
-- `asset_owners(asset_id, user_id, role)` — Business Owner, Technical Owner, DPO liaison
+## Why it exists
 
-RLS: `org_id` scoped. Immutable change history written to `audit_log`.
+ISO/IEC 27001 A.5.9 requires an inventory of information and associated assets;
+ISO/IEC 42001 6.1.2/A.4.3 extends that to AI system resources; EU AI Act
+Annex IV §1(a) wants the system's components documented. An inventory that
+cannot connect an entry to the model registry is a list, not a control.
 
-## Functional Capabilities
-- CRUD with required ownership and classification.
-- Bulk import via CSV and API.
-- Relationship graph (model ↔ dataset ↔ infra ↔ vendor).
-- Cross-module linkage: Risk Register, Control Testing, Vulnerability/Patch, Evidence, Vendor.
-- Criticality-driven SLA inheritance for HITL, patching, and incident response.
+## How it works
 
-## Evidence & Audit
-Every create/update/delete emits an `audit_log` entry and an `evidence_chain` hash so inventory completeness can be attested at a point in time.
+The page (`pages/AssetManagement.tsx`) reads and writes the org-scoped
+`assets` table through `assetService` (writes throw; `logAction` on every
+mutation). Until 2026-08-23 it read the `assetmanagement_table` demo table and
+faked all persistence (TD-001); the rewrite removed the fabricated seed data,
+the setTimeout fake-success saves, and a decorative "Import Assets" dialog.
 
-## V2 Roadmap
-Auto-discovery connectors (cloud posture, CMDB, registry sync), drift detection, and end-of-life automation.
+`criticality` is **derived from `risk_level`** at write time (service) and was
+backfilled by `20260817000001`; the two columns cannot disagree again.
+`tenant_id` is filled by the DB default `current_user_org_id()`
+(`20260823000001`) — the client never sends it.
+
+## Fields
+
+| Column | Type | Notes |
+|---|---|---|
+| `id` | uuid PK | `gen_random_uuid()` |
+| `org_id` / `tenant_id` | uuid | DB default `current_user_org_id()`; never client-supplied |
+| `asset_ref` | text | Citable reference (`AST-NNN`); the uuid is never shown |
+| `name`, `type` | text | `type` ∈ ai_model, dataset, infrastructure, application, api, device |
+| `criticality` | text | Derived from `risk_level`; lowercase vocabulary |
+| `risk_level`, `data_classification`, `lifecycle_stage` | text | |
+| `department`, `location`, `hostname`, `version`, `tags[]` | | |
+| `entity_type`, `entity_id` | text, uuid | The registry record this asset represents; null for infrastructure (honest state, not an omission) |
+| `bia_rto_hours`, `bia_rpo_hours` | numeric | Sourced from `bia_processes` by department; edited in the BIA, displayed here |
+| `auto_discovered`, `last_scanned_at` | | |
+
+## Interlinks
+
+- **Outbound:** `entity_id` → `ai_models.id` / `datasets.id` (chip navigates to
+  `/models/inventory/:id` or the dataset record). Proven 6/6 resolving
+  (2026-08-23).
+- **Inbound:** `risks.linked_asset_ids` references `assets.id` (proven 6/6);
+  `bia_processes.linked_asset_ids` references `assets.id` (proven 8/8).
+  Deep link: `/asset-management?model=<uuid>` filters to assets representing
+  that model, with a dismissible chip.
+
+## Compliance
+
+ISO 27001 A.5.9/A.5.12; ISO 42001 6.1.2, A.4.3; NIST AI RMF MAP 1.1; EU AI Act
+Annex IV §1(a). Mapped in `docs/compliance/iso-42001-mapping.md` and
+`eu-ai-act-mapping.md`. Mutations write to the audit log via `logAction`
+(module `asset-registry`).
+
+## Operations
+
+No scheduled jobs. Auto-discovery connectors remain roadmap (see
+`docs/reference/technical-debt.md` for the registry's open items).

@@ -23,6 +23,6 @@ BEGIN
       ADD COLUMN IF NOT EXISTS linked_framework_ids uuid[] DEFAULT '{}',
       ADD COLUMN IF NOT EXISTS linked_control_ids uuid[] DEFAULT '{}',
       ADD COLUMN IF NOT EXISTS linked_asset_ids uuid[] DEFAULT '{}',
-      ADD COLUMN IF NOT EXISTS linked_incident_ids uuid[] DEFAULT '{}';
+      ADD COLUMN IF NOT EXISTS linked_incident_ids text[] DEFAULT '{}';
   END IF;
 END $$;

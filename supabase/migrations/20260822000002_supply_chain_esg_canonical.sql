@@ -33,7 +33,7 @@ CREATE TABLE IF NOT EXISTS public.aibom_records (
   aibom_ref text,
   model_id uuid REFERENCES public.ai_models(id) ON DELETE CASCADE,
   model_version text,
-  vendor_id uuid REFERENCES public.vendors(id) ON DELETE SET NULL,
+  vendor_id text REFERENCES public.vendors(id) ON DELETE SET NULL,
   format text NOT NULL DEFAULT 'CycloneDX',      -- CycloneDX | SPDX
   spec_version text,
   serial_number text,                            -- urn:uuid:... for CycloneDX
@@ -87,7 +87,7 @@ CREATE TABLE IF NOT EXISTS public.aibom_components (
   purl text,                                     -- pkg:pypi/torch@2.2.0 — required for CVE matching
   cpe text,
   supplier text,
-  vendor_id uuid REFERENCES public.vendors(id) ON DELETE SET NULL,
+  vendor_id text REFERENCES public.vendors(id) ON DELETE SET NULL,
   dataset_id uuid,                               -- → dataset_catalog_entries.id
   license_spdx text,                             -- SPDX identifier, not free text
   license_risk text,                             -- permissive|weak_copyleft|strong_copyleft|commercial|unknown
@@ -129,7 +129,7 @@ ALTER TABLE public.supply_chain_attestations
   ADD COLUMN IF NOT EXISTS subject_type text,          -- model | dataset | vendor | pipeline
   ADD COLUMN IF NOT EXISTS subject_id uuid,
   ADD COLUMN IF NOT EXISTS model_id uuid REFERENCES public.ai_models(id) ON DELETE SET NULL,
-  ADD COLUMN IF NOT EXISTS vendor_id uuid REFERENCES public.vendors(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS vendor_id text REFERENCES public.vendors(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS scope text,
   ADD COLUMN IF NOT EXISTS findings text,
   ADD COLUMN IF NOT EXISTS attested_by text,
@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS public.provenance_nodes (
   label text NOT NULL,
   -- Link to the canonical entity when the node represents one.
   model_id uuid REFERENCES public.ai_models(id) ON DELETE CASCADE,
-  vendor_id uuid REFERENCES public.vendors(id) ON DELETE SET NULL,
+  vendor_id text REFERENCES public.vendors(id) ON DELETE SET NULL,
   dataset_id uuid,
   use_case_id uuid,
   version text,
