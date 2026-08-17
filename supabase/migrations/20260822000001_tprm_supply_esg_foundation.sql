@@ -117,7 +117,7 @@ CREATE TABLE IF NOT EXISTS public.vendor_assessments (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL DEFAULT current_user_org_id(),
   assessment_ref text,
-  vendor_id uuid REFERENCES public.vendors(id) ON DELETE CASCADE,
+  vendor_id text REFERENCES public.vendors(id) ON DELETE CASCADE,
   assessment_type text,                       -- initial | periodic | targeted | incident_driven
   framework text,                             -- SIG Lite | CAIQ | ISO 42001 addendum | custom
   scope text,
@@ -158,7 +158,7 @@ CREATE TABLE IF NOT EXISTS public.vendor_slas (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL DEFAULT current_user_org_id(),
   sla_ref text,
-  vendor_id uuid REFERENCES public.vendors(id) ON DELETE CASCADE,
+  vendor_id text REFERENCES public.vendors(id) ON DELETE CASCADE,
   metric text NOT NULL,                       -- uptime | response_time | resolution_time | accuracy
   unit text NOT NULL DEFAULT 'percent',       -- percent | hours | minutes | ms
   target_value numeric,
@@ -208,7 +208,7 @@ CREATE TABLE IF NOT EXISTS public.vendor_documents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL DEFAULT current_user_org_id(),
   document_ref text,
-  vendor_id uuid REFERENCES public.vendors(id) ON DELETE CASCADE,
+  vendor_id text REFERENCES public.vendors(id) ON DELETE CASCADE,
   doc_type text,                              -- SOC2 | ISO Certificate | DPA | Pentest | Insurance | Other
   title text,
   file_name text,
@@ -243,7 +243,7 @@ CREATE INDEX IF NOT EXISTS vendor_documents_vendor_idx ON public.vendor_document
 -- ---------------------------------------------------------------------------
 ALTER TABLE public.vendor_questionnaires
   ADD COLUMN IF NOT EXISTS org_id uuid,
-  ADD COLUMN IF NOT EXISTS vendor_uuid uuid REFERENCES public.vendors(id) ON DELETE CASCADE,
+  ADD COLUMN IF NOT EXISTS vendor_uuid text REFERENCES public.vendors(id) ON DELETE CASCADE,
   ADD COLUMN IF NOT EXISTS questionnaire_ref text,
   ADD COLUMN IF NOT EXISTS template_version text,
   ADD COLUMN IF NOT EXISTS max_score numeric,

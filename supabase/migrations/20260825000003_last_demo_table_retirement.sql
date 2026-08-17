@@ -42,8 +42,9 @@
 -- resolvable in both directions; the legacy text column is left in place so no
 -- existing row loses its value.
 -- ---------------------------------------------------------------------------
+-- vendors.id is TEXT (gen_random_uuid()::text), so the FK column is TEXT to match.
 ALTER TABLE public.assets
-  ADD COLUMN IF NOT EXISTS vendor_id uuid REFERENCES public.vendors(id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS vendor_id text REFERENCES public.vendors(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS assets_vendor_idx ON public.assets(vendor_id);
 CREATE INDEX IF NOT EXISTS assets_entity_idx ON public.assets(entity_type, entity_id);

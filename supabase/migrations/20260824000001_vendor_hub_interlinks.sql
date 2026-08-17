@@ -21,14 +21,14 @@
 
 -- 1. Vendor references on the risk/incident/security spine (one id-space).
 ALTER TABLE public.risks
-  ADD COLUMN IF NOT EXISTS linked_vendor_ids uuid[] NOT NULL DEFAULT '{}';
+  ADD COLUMN IF NOT EXISTS linked_vendor_ids text[] NOT NULL DEFAULT '{}';
 ALTER TABLE public.incidents
-  ADD COLUMN IF NOT EXISTS vendor_id uuid REFERENCES public.vendors(id) ON DELETE SET NULL,
+  ADD COLUMN IF NOT EXISTS vendor_id text REFERENCES public.vendors(id) ON DELETE SET NULL,
   ADD COLUMN IF NOT EXISTS vendor_sla_id uuid REFERENCES public.vendor_slas(id) ON DELETE SET NULL;
 ALTER TABLE public.security_threats
-  ADD COLUMN IF NOT EXISTS vendor_id uuid REFERENCES public.vendors(id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS vendor_id text REFERENCES public.vendors(id) ON DELETE SET NULL;
 ALTER TABLE public.security_vulnerabilities
-  ADD COLUMN IF NOT EXISTS vendor_id uuid REFERENCES public.vendors(id) ON DELETE SET NULL;
+  ADD COLUMN IF NOT EXISTS vendor_id text REFERENCES public.vendors(id) ON DELETE SET NULL;
 
 CREATE INDEX IF NOT EXISTS incidents_vendor_idx ON public.incidents (vendor_id);
 CREATE INDEX IF NOT EXISTS security_threats_vendor_idx ON public.security_threats (vendor_id);
@@ -40,7 +40,7 @@ CREATE INDEX IF NOT EXISTS security_vulns_vendor_idx ON public.security_vulnerab
 DO $seed$
 DECLARE
   v_org uuid := '00000000-0000-0000-0000-000000000001';
-  v_openai uuid; v_azure uuid; sla_latency uuid;
+  v_openai text; v_azure text; sla_latency uuid;
 BEGIN
   SELECT id INTO v_openai FROM public.vendors WHERE org_id = v_org AND name = 'OpenAI' LIMIT 1;
   SELECT id INTO v_azure  FROM public.vendors WHERE org_id = v_org AND name = 'Microsoft Azure AI' LIMIT 1;
@@ -64,7 +64,7 @@ BEGIN
     -- conversational provider.
     UPDATE public.risks
     SET linked_vendor_ids = ARRAY[v_openai]
-    WHERE org_id = v_org AND linked_vendor_ids = '{}'::uuid[]
+    WHERE org_id = v_org AND linked_vendor_ids = '{}'::text[]
       AND (risk_id = 'RSK-2026-003' OR title ILIKE '%conversational%');
   END IF;
 
@@ -78,7 +78,7 @@ BEGIN
 
     UPDATE public.risks
     SET linked_vendor_ids = ARRAY[v_azure]
-    WHERE org_id = v_org AND linked_vendor_ids = '{}'::uuid[]
+    WHERE org_id = v_org AND linked_vendor_ids = '{}'::text[]
       AND risk_id IN ('RSK-2026-001', 'RSK-2026-002');
 
     -- security_threats has no `title` in every era; match on whatever

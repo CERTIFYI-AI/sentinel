@@ -113,30 +113,35 @@ These are not cosmetic. A module on a demo table typically also:
   excluded from the TD-000 regression query only because they had no tenant
   column to check; that was a reason to migrate them, not to exempt them.
 
-> **Cross-tenant exposure contained (2026-08-16, migration
-> `20260822000002_supply_chain_esg_canonical.sql` §9).** The exposure above was
-> live, not theoretical: `20260813000006_close_anon_rls.sql` revoked `anon` but,
-> because these tables have no `org_id` column, fell through to
-> `FOR ALL TO authenticated USING (true)`.
+> **Containment claim of 2026-08-16 retracted — it never held on live.** The
+> first attempt (`20260822000002_supply_chain_esg_canonical.sql` §9) added
+> `org_id uuid NOT NULL DEFAULT current_user_org_id()` in one statement. Under
+> a migration/admin role that resolver returns NULL, and adding a NOT NULL
+> column with a NULL default to a populated table aborts with *"column
+> contains null values"* — so on the live database the whole DO block rolled
+> back and every blanket `authenticated USING (true)` grant survived,
+> `keysvault_table` included. A from-zero replay has no rows, so CI passed,
+> and the "verified 53/53" numbers previously recorded here were read from a
+> fresh replay / the migration file — not from the database that matters.
+> Two independent re-audits (2026-08-17 and the 2026-08-23
+> production-readiness review) each re-ran the verification against live and
+> found 0/53 columns present with all blanket grants active. Lesson bound
+> into the review process: a verification claim must cite the query **and the
+> context it ran in**.
 >
-> **CORRECTION (2026-08-17).** The first attempt
-> (`20260822000002` §9) added `org_id uuid NOT NULL DEFAULT
-> current_user_org_id()` in one statement. Under a migration role `auth.uid()`
-> is NULL, so the default evaluates to NULL — and adding a NOT NULL column with
-> a NULL default to a table **that has rows** aborts with *"column contains null
-> values"*. A from-zero replay has no rows, so CI passed and this entry was
-> marked closed; but the demo tables are populated **at runtime** by the demo
-> hook, so on the live database the ALTER failed and the permissive policies
-> survived. The 53/53 verification was run against a fresh replay and therefore
-> proved nothing about the database that matters.
-> `20260823000002_reaudit_critical_fixes.sql` re-applies containment in a form
-> that works on a populated table (add nullable → backfill → constrain), wraps
-> each table so one failure cannot abort the sweep, and leaves genuinely
-> unattributable rows NULL — excluded by the policy rather than assigned to an
-> arbitrary tenant. **Containment is not remediation** — the modules below still render seeded fiction through
-> `useSupabaseTable`, whose writes are fire-and-forget with both callbacks empty
-> and which silently falls back to the in-file `SEED` when a load fails. They
-> still need real tables and throwing services.
+> **Containment re-applied and verified against live, 2026-08-23.** Two
+> convergent migrations now carry it — `20260823000005` §2 (nullable add →
+> explicit backfill to the demo tenant → `SET NOT NULL` → org-scoped policy)
+> and `20260823000002_reaudit_critical_fixes.sql` (same shape, per-table
+> error isolation, leaves genuinely unattributable rows NULL so the policy
+> excludes rather than misassigns them). Both are idempotent; the later file
+> is the durable form. Verified live via `pg_policies` /
+> `information_schema`: 53/53 columns, 53/53 org policies, 0 blanket grants
+> remaining. **Containment is still not remediation** — the modules below
+> render seeded fiction through `useSupabaseTable`, whose writes are
+> fire-and-forget with both callbacks empty and which silently falls back to
+> the in-file `SEED` when a load fails. They still need real tables and
+> throwing services.
 
 For a product used as the system of record for AI Act and ISO/IEC 42001
 conformity, the third point is the serious one: a regulator may rely on a number
@@ -146,10 +151,10 @@ that has no provenance.
 
 | Module | Page | Demo table |
 |---|---|---|
-| ~~Asset Management~~ | ~~`pages/AssetManagement.tsx`~~ | **migrated** → `assets` (2026-08-25) |
-| ~~Business Impact Analysis~~ | ~~`pages/BIA.tsx`~~ | **migrated** → `bia_records` (2026-08-25) |
+| ~~Asset Management~~ | ~~`pages/AssetManagement.tsx`~~ | **migrated** → `assets` (2026-08-23) |
+| ~~Business Impact Analysis~~ | ~~`pages/BIA.tsx`~~ | **migrated** → `bia_processes` (2026-08-23) |
 | DPIA | `pages/DPIA.tsx` | `dpia_table` |
-| ~~Identity Governance (IGA)~~ | ~~`pages/IGA.tsx`~~ | **migrated** → `access_reviews` (2026-08-25) |
+| ~~Identity Governance (IGA)~~ | ~~`pages/IGA.tsx`~~ | **migrated** → `identities` + `sod_*` + `access_reviews` (2026-08-23) |
 | ~~Model Risk Committee~~ | ~~`pages/ModelRiskCommittee.tsx`~~ | **migrated** → `mrc_meetings` / `mrc_agenda_items` / `mrc_votes` / `mrc_committee_members` (2026-08-25) |
 | Regulator Filings | `pages/RegulatorFilings.tsx` | `regulatorfilings_table` |
 | Tabletop Exercises | `pages/TabletopExercises.tsx` | `tabletopexercises_table` |
@@ -168,7 +173,7 @@ that has no provenance.
 | ~~AIBOM Registry~~ | ~~`pages/AibomRegistry.tsx`~~ | **migrated** → `aibom_records` (2026-08-16) |
 | ~~Supply Chain Attestations~~ | ~~`pages/SupplyChainAttestations.tsx`~~ | **migrated** → `supply_chain_attestations` (2026-08-16) |
 
-> **Final-wave migration (2026-08-25, `20260825000001_last_demo_table_retirement.sql`).**
+> **Final-wave migration (2026-08-25, `20260825000003_last_demo_table_retirement.sql`).**
 > Asset Registry, BIA, Identity Governance (Access Reviews), Model Risk
 > Committee and Reporting migrated off their demo tables onto the real
 > org-scoped tables that already existed. No table was created for their core
@@ -215,23 +220,23 @@ highest-consequence defect in the register.
 
 **Tier 2 — governance process records**
 Remaining: `Committee Management`, `Tabletop Exercises`, `Transparency Reports`.
-(`Model Risk Committee` and `BIA` migrated 2026-08-25; `Vendor Assessments` and
-`Vendor SLA` migrated 2026-08-16.)
+(`Model Risk Committee` migrated 2026-08-25; `BIA` migrated 2026-08-23;
+`Vendor Assessments` and `Vendor SLA` migrated 2026-08-16.)
 
 **Tier 3 — operational surfaces**
 Remaining: `Report Generator`, `Regulatory Radar`, `Attack Surface`,
 `Keys Vault`, `Policy Firewall`, `Red Team Lab`.
-(`Asset Management`, `IGA` and `Reporting` migrated 2026-08-25.)
+(`Asset Management` and `IGA` migrated 2026-08-23; `Reporting` migrated 2026-08-25.)
 
-> **Remaining after the 2026-08-25 wave (9 modules):** `DPIA`,
+> **Remaining after the 2026-08-23/25 waves (12 modules):** `DPIA`,
 > `Regulator Filings`, `HITL Review Center` (Tier 1); `Committee Management`,
 > `Tabletop Exercises`, `Transparency Reports` (Tier 2); `Report Generator`,
 > `Regulatory Radar`, `Attack Surface`, `Keys Vault`, `Policy Firewall`,
 > `Red Team Lab` (Tier 3). TD-001 is **not** closed — these still render seeded
-> fiction through `useSupabaseTable`. The five migrated in this wave were the
-> last ones whose real tables already existed and sat unread; the remainder are
-> a mix of already-migrated-service surfaces (the four security pages read real
-> services but a couple still fall back) and genuine new builds.
+> fiction through `useSupabaseTable`. Asset Management, BIA and IGA were
+> migrated on main (2026-08-23, ADMIN registers wave); Model Risk Committee and
+> Reporting in the 2026-08-25 wave — the last ones whose real tables already
+> existed and sat unread.
 
 ### Known-good remediation pattern
 
@@ -480,8 +485,8 @@ let the shadow space grow straight back.
 
 ### Addressed
 
-`20260825000002_unify_model_id_space.sql` (and, for MRC specifically,
-`20260825000001`) remaps each reference to the real id by its name label,
+`20260825000004_unify_model_id_space.sql` (and, for MRC specifically,
+`20260825000003`) remaps each reference to the real id by its name label,
 **NULLs** whatever still does not resolve (a null renders "Unavailable" — a
 dangling pointer renders a lie; no model is invented to point at), converts the
 columns `text → uuid`, and adds `REFERENCES ai_models(id)` / `vendors(id)` /
@@ -497,6 +502,60 @@ holds no name or app label to bridge from, so those rows were NULLed and the
 column constrained. Authoring meaningful demo linkage for TIA vendors (which
 supplier each cross-border transfer assessment covers) is deferred — the column
 and FK exist and are enforced; only the demo attribution is absent.
+
+---
+
+## TD-014 — From-zero replay is red on the `incidents.id` type split
+
+**Owner:** Risk & Incidents team · **Raised:** 2026-08-26 · **Severity:** P1 ·
+**Status:** Open. **Not caused by the framework-catalog change** — surfaced by
+it, because that branch runs a full replay locally that CI cannot currently run.
+
+### What
+
+`incidents.id` is **TEXT** (`gen_random_uuid()::text`, created in
+`20260418000002_core_grc_tables.sql`), but several columns that reference it —
+and several PL/pgSQL seed variables that compare against it — are **uuid**. On
+the live database these statements are no-ops (the constraints already exist
+from an earlier era), so nothing fails. On a **from-zero replay** they abort:
+
+| Site | Failure |
+|---|---|
+| `20260817000000_replay_repair.sql` §040 | `regulator_filings.linked_incident_id` is `uuid`, `incidents.id` is `text` → *"foreign key constraint … cannot be implemented"* |
+| `20260819000002_seed_risk_incidents.sql` | `i_pii`/`i_drift` declared `uuid`, compared to `playbook_runs.incident_id` → *"operator does not exist: text = uuid"* |
+
+Both files predate this branch and are owned by the Risk & Incidents work; a
+third-party patch risks colliding with that team's in-flight changes, so they
+are **deliberately left untouched here** and recorded instead.
+
+### Why it was not caught
+
+Two blind spots compounding:
+
+1. **CI cannot run the expensive replay.** The `drift` job (full Postgres via
+   the Supabase CLI) is PR-only and the account's Actions minutes are
+   exhausted, so only the cheap `static-replay` job runs.
+2. **The static checker cannot see it.** `check_migration_replay.py` parses
+   `CREATE`/`ALTER` at the top level; both failures are inside `DO $$ … $$`
+   blocks, and the second is a PL/pgSQL variable comparison, not DDL. The
+   static check reports **clean** on exactly the migrations that abort.
+
+### To close
+
+Decide the canonical type for `incidents.id` (TEXT is entrenched — every
+`tenant_id = v_org::text` seed assumes it) and align the referencing columns and
+seed variables to it, then prove with a from-zero replay rather than the static
+check. Consider teaching the static checker to flag FK type mismatches inside
+`DO` blocks — it already flags them at the top level, which is how the
+`assets.vendor_id uuid → vendors.id text` mismatch in this branch was caught and
+fixed before merge.
+
+> **Scope note.** The framework-catalog migrations (`20260826000001`–`000020`)
+> and this branch's own migrations replay cleanly; they run *after* the failing
+> files, so a from-zero replay stops before reaching them. Their correctness was
+> verified by applying them to a database replayed to that point — 936 catalog
+> controls across 15 frameworks, `count(*) = count(distinct control_ref)` per
+> framework.
 
 ---
 

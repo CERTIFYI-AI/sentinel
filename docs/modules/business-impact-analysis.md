@@ -1,79 +1,65 @@
-# Business Impact Analysis (BIA)
+# Business Impact Analysis
 
-**Route:** `/bia` ·
-**Backing:** `bia_records` (org-scoped RLS) ·
-**Code:** `dashboard/src/pages/BIA.tsx`,
-`dashboard/src/services/biaService.ts`, `dashboard/src/hooks/useBiaData.ts`
+**Route:** `/bia` · **Table:** `bia_processes` · **Service:** `dashboard/src/services/resilienceService.ts` · **Hook:** `useBiaData` (`useAdminData.ts`)
 
 ## Purpose
 
-The recovery objectives (RTO / RPO / MTD) and disruption impact of each business
-process, linked to the assets the process depends on — so an outage can answer
-what it costs and what it breaks.
+The recovery objectives the business has agreed per process: RTO (how long it
+can be down), RPO (how much data loss is tolerable), MTPD (maximum tolerable
+period of disruption), plus the criticality that justifies them. This register
+is the **source** of recovery objectives — the Asset Registry displays
+RTO/RPO copied from here by department and does not edit them.
 
 ## Why it exists
 
-ISO 22301 8.2.2 requires a Business Impact Analysis. Before the 2026-08-25
-rebuild the page read `bia_table (id, doc jsonb)` — a demo table with no tenant
-column — and rendered an eight-row hardcoded `SEED`. Every seeded process
-carried a fabricated `financialImpact24h` (e.g. `$5,200,000`), and the "Avg
-RTO" KPI was derived from that fiction. AI-system dependencies were free-text
-blocks ("model: GPT-4o Risk Scorer v2, fallback: Manual underwriting") that
-reached no real model, and the impact-matrix likelihood scoring had no measured
-source. All of it was removed, not relabelled.
+ISO 22301 / ISO 27001 A.5.29-A.5.30 continuity planning, and ISO/IEC 42001's
+expectation that the availability impact of AI systems is understood. A BIA
+that cannot name what actually stops working is prose, not analysis.
 
 ## How it works
 
-- **Real table, org-scoped.** `biaService` reads/writes `public.bia_records`;
-  `org_id` filled by the DB default `get_org_id()`. Writes throw; reads throw
-  (a failed query renders an `ErrorState`, not "no work to do").
-- **Recovery objectives are entered as hours, and `null` renders `—`.** A
-  process whose RTO has not been agreed shows an em-dash, never `0h` and never a
-  green figure. Financial impact per hour is only ever a real, entered number.
-- **Asset dependencies are the real interlink.** `linked_asset_ids` (uuid[]) is
-  a checklist of `assets` in the register; a process is reachable from each
-  asset, and each asset is resolvable to its name.
-- **Every mutation is audited** via `logAction` (Art. 12).
-- `?asset=<assets.id>` filters to the processes depending on that asset with a
-  dismissible chip; `?open=<bia_records.id>` opens a record.
+The page (`pages/BIA.tsx`) reads and writes the org-scoped `bia_processes`
+table through `resilienceService` (writes throw; `logAction` on every
+mutation). Until 2026-08-23 it read the `bia_table` demo table with eight
+fictional processes and invented "financial impact / 24h" dollar figures;
+those fabricated metrics were removed entirely rather than relabelled —
+the platform does not display invented numbers as measured.
 
-## Fields (`bia_records`)
+`criticality` uses the lowercase vocabulary enforced by CHECK constraint
+(`20260823000005`). `tenant_id` is filled by the DB default
+`current_user_org_id()`.
+
+## Fields
 
 | Column | Type | Notes |
-| --- | --- | --- |
-| `id` | uuid, default `gen_random_uuid()` | Primary key |
-| `org_id` | uuid, default `get_org_id()` | Tenant scope (DB-filled) |
-| `bia_ref` | text | Human-readable ref (`BIA-001`) |
-| `process_name` | text NOT NULL | |
-| `department` | text | |
-| `owner_id` | uuid → `user_profiles(id)` | Resolved to a name |
-| `criticality` | text | `critical` / `high` / `medium` / `low` |
-| `rto_hours` / `rpo_hours` / `mtd_hours` | numeric | `—` when null |
-| `financial_impact_per_hour` | numeric | Real figure only; `—` when null |
-| `reputational_impact` / `regulatory_impact` | text | |
-| `dependencies` | text[] | Free-text upstream/downstream notes |
-| `linked_asset_ids` | uuid[] → `assets(id)` | **The** dependency interlink |
-| `linked_bcp_id` | uuid | Optional BCP plan |
-| `last_reviewed_at` | date | |
-| `created_at` / `updated_at` | timestamptz | |
+|---|---|---|
+| `id` | uuid PK | `gen_random_uuid()` |
+| `tenant_id` | uuid NOT NULL | DB default `current_user_org_id()` |
+| `ref_code` | text | Citable reference (`BIA-NNN`) |
+| `business_process` | text NOT NULL | |
+| `department` | text | Join key used to source assets' RTO/RPO |
+| `criticality` | text | CHECK: critical / high / medium / low |
+| `rto_hours`, `rpo_hours`, `mtpd_hours` | numeric | |
+| `linked_asset_ids` | uuid[] | Assets this process runs on (GIN indexed) |
+| `linked_model_ids` | uuid[] | Registry models reached through those assets |
 
-## Interlinks (both directions)
+## Interlinks
 
-- **Outbound:** each `linked_asset_ids` element deep-links to the asset
-  (`/assets?open=<id>`).
-- **Inbound:** the Asset Registry links here for a given asset
-  (`/bia?asset=<id>`); an asset's `bia_rto_hours`/`bia_rpo_hours` are inherited
-  from the BIA of its department (`20260817000001_admin_group_asset_bia_
-  interlinks.sql`). `?open=<id>` opens a record.
+- **Outbound:** `linked_asset_ids` → `assets.id` (proven 8/8, 2026-08-23);
+  `linked_model_ids` → `ai_models.id` (proven 3/3). Chips navigate to the
+  Asset Registry and `/models/inventory/:id`.
+- **Inbound:** `assets.bia_rto_hours`/`bia_rpo_hours` are copied from this
+  table by department (`20260817000001`), so every asset displaying a recovery
+  objective traces back here.
 
 ## Compliance
 
-- ISO 22301:2019 8.2.2 (BIA), ISO/IEC 27031 (ICT readiness).
-- NIST SP 800-34 (contingency planning); DORA Art. 11–12 (recovery objectives).
-- EU AI Act Art. 12 audit logging via `logAction`.
+ISO 27001 A.5.29–A.5.30; ISO/IEC 42001 6.1 (impact of AI system unavailability).
+Mutations audit via `logAction` (module `bia`).
 
 ## Operations
 
-CSV export includes the resolved asset names. Impact figures are only present
-when entered — the module deliberately shows an em-dash rather than a plausible
-default, so a regulator never reads a number that has no provenance.
+No scheduled jobs. Note for reviewers: `bia_processes` is part of the live
+baseline gap (created on the live project before the repo's migration
+discipline); statements touching it in migrations are guarded with
+`to_regclass` per `supabase/migrations/README.md`.

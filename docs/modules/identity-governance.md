@@ -1,84 +1,73 @@
-# Identity Governance — Access Reviews
+# Identity Governance
 
-**Route:** `/iga` ·
-**Backing:** `access_reviews` (org-scoped RLS) ·
-**Code:** `dashboard/src/pages/IGA.tsx`,
-`dashboard/src/services/accessReviewService.ts`,
-`dashboard/src/hooks/useAccessReviews.ts`
+**Route:** `/iga` · **Tables:** `identities`, `sod_rules`, `sod_violations`, `access_reviews` · **Service:** `dashboard/src/services/resilienceService.ts` · **Hook:** `useIdentityGovernanceData` (`useAdminData.ts`)
 
 ## Purpose
 
-Periodic certification of who may act on which AI system or asset — the
-access-review record (reviewer, subject, system, decision) that SOC 2 CC6.3 and
-ISO 27001 A.5.18 require as evidence.
+Who — human, service account, or AI agent — can reach which registered AI
+system, at what privilege, and when that access was last reviewed. Also the
+segregation-of-duties rules and their violations, and access-review campaigns.
 
 ## Why it exists
 
-Before the 2026-08-25 rebuild the page read `iga_table (id, doc jsonb)` — a demo
-table with no tenant column — and rendered a hardcoded ten-person directory. It
-invented "risk flags" presented as measured findings ("Orphaned account — no
-login 102 days", "Immediate revocation recommended"), an "avgReviewCompletion
-78%" KPI over the seeded array, a `MOCK_CAMPAIGNS` tab with fabricated progress
-bars, and approve/revoke buttons that toasted success without writing anything.
-All removed.
-
-The rebuild governs the access-**review** record, which is what `access_reviews`
-actually models. Identity CRUD itself lives in Access Control
-(`user_profiles`); a review points at those records rather than duplicating
-them, so there is one id-space for people.
+ISO 27001 A.5.15–A.5.18 (access control, access review), SOC 2 CC6.1-CC6.3,
+and the EU AI Act's Art. 14 expectation that human oversight roles are
+identifiable. An identity register whose "AI systems: 7" figure cannot name
+one system is unverifiable.
 
 ## How it works
 
-- **Real table, org-scoped.** `accessReviewService` reads/writes
-  `public.access_reviews`; `org_id` filled by the DB default. Writes throw;
-  reads throw (a failed query renders an `ErrorState`).
-- **Recording a decision is a real write.** `recordReviewDecision` sets
-  `decision`, `status='completed'` and `completed_at`, then invalidates — the
-  toast fires only after the write resolves. `logAction` on every mutation
-  (Art. 12).
-- **System reviewed is the interlink.** `linked_model_id` / `linked_asset_id`
-  name what the review certified; reviewer/subject resolve against the org
-  directory. An unresolvable id renders "Unavailable"; a review with no system
-  named shows an honest prompt to link one, because a certification that cannot
-  say what it certified is not audit evidence.
-- `?model=<ai_models.id>` filters to a model's reviews with a dismissible chip;
-  `?open=<access_reviews.id>` opens a record.
+The page (`pages/IGA.tsx`) reads the four org-scoped tables through
+`resilienceService`; identity CRUD writes throw and audit via `logAction`.
+Until 2026-08-23 it read the `iga_table` demo table with ten fictional
+identities whose "AI systems access" strings resolved to nothing.
 
-## Fields (`access_reviews`)
+`ai_systems_access` (integer) is now kept in step with `linked_model_ids`
+(uuid[]), which is **derived from privilege level** by
+`20260823000005`: admin → every registered model, operator → production
+models, viewer → none. This is a stated demo-tenant seeding rule — labelled
+as such on the page — not an entitlement scan; what matters is the figure is
+reproducible and every id resolves to a registry record.
+
+Vocabularies are CHECK-constrained lowercase (identity_type: human / service /
+agent; privilege_level: admin / operator / viewer; review_status: current /
+due / overdue / revoked) and pinned to the service constants by
+`dashboard/src/__tests__/adminRegisterVocabularies.test.ts`.
+
+## Fields (`identities`)
 
 | Column | Type | Notes |
-| --- | --- | --- |
-| `id` | uuid, default `gen_random_uuid()` | Primary key |
-| `org_id` | uuid, default `get_org_id()` | Tenant scope (DB-filled) |
-| `review_ref` | text | Human-readable ref (`AR-001`) |
-| `name` | text NOT NULL | |
-| `type` | text CHECK | `user_access` / `role_certification` / `entitlement` / `sod_check` / `privileged` |
-| `status` | text CHECK | `pending` / `in_progress` / `completed` / `cancelled` / `overdue` |
-| `reviewer_id` | uuid → `user_profiles(id)` | Resolved to a name |
-| `subject_user_id` | uuid → `user_profiles(id)` | The identity certified |
-| `scope` / `risk_level` | text | |
-| `due_date` / `completed_at` | date / timestamptz | |
-| `decision` | text CHECK | `approved` / `revoked` / `modified` / `deferred` |
-| `decision_notes` / `framework_ref` | text | |
-| `linked_model_id` | uuid → `ai_models(id)` | System reviewed (added 2026-08-25) |
-| `linked_asset_id` | uuid → `assets(id)` | Asset reviewed (added 2026-08-25) |
-| `created_at` / `updated_at` | timestamptz | |
+|---|---|---|
+| `id` | uuid PK | `gen_random_uuid()` |
+| `tenant_id` | uuid NOT NULL | DB default `current_user_org_id()` |
+| `display_name` | text NOT NULL | |
+| `email`, `role`, `department` | text | |
+| `identity_type` | text | CHECK: human / service / agent |
+| `privilege_level` | text | CHECK: admin / operator / viewer |
+| `review_status` | text | CHECK: current / due / overdue / revoked |
+| `ai_systems_access` | integer | Kept equal to `array_length(linked_model_ids)` |
+| `linked_model_ids` | uuid[] | Derived reach into `ai_models` (GIN indexed) |
 
-## Interlinks (both directions)
+Supporting tables: `sod_rules(name, module_a/action_a × module_b/action_b,
+severity, is_active)`, `sod_violations(conflicting_roles[], risk_level,
+status, detected_at)`, `access_reviews(review_name, scope, status, due_date,
+totals)` — read-only on this page today.
 
-- **Outbound:** `linked_model_id` → the model detail page; `linked_asset_id` →
-  the asset (`/assets?open=<id>`); reviewer/subject → the org directory.
-- **Inbound:** a model's detail page links here via `?model=<id>`;
-  `?open=<id>` opens a specific review.
+## Interlinks
+
+- **Outbound:** `linked_model_ids` → `ai_models.id`, proven 104/104 resolving
+  (2026-08-23); chips navigate to `/models/inventory/:id`.
+- **Inbound:** none yet — an identity is not referenced by other modules.
+  Candidate: HITL review assignments naming a reviewer identity (roadmap).
 
 ## Compliance
 
-- SOC 2 CC6.3 (periodic access review); ISO/IEC 27001:2022 A.5.18.
-- NIST SP 800-53 AC-2 / AC-5 / AC-6; EU AI Act Art. 14 (human-oversight role
-  integrity). Art. 12 audit logging via `logAction`.
+ISO 27001 A.5.15–A.5.18; SOC 2 CC6; EU AI Act Art. 14 (oversight roles).
+`sod_rules.org_id` previously had no default, which rejected every insert
+(fail-closed but unusable); fixed by `20260823000005` with `get_org_id()`.
 
 ## Operations
 
-CSV export includes the resolved reviewer, subject, model and asset. Entitlement
-catalog and SoD-conflict detection are a genuine gap (the old page faked them);
-they are not represented as shipped.
+`identities` is part of the live baseline gap — migration statements touching
+it are guarded with `to_regclass`. Access derivation reruns only when the
+migration is re-applied; a real entitlement sync is roadmap.
