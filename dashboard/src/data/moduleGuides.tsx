@@ -66,7 +66,6 @@ export const ROUTE_TO_COLLECTION_MAP: Record<string, string> = {
   '/vendors': 'vendors-privacy',
   '/dsr': 'vendors-privacy',
   '/supply-chain': 'vendors-privacy',
-  '/marketplace': 'vendors-privacy',
 
   '/datasets': 'data-sustainability',
   '/esg-reports': 'data-sustainability',
