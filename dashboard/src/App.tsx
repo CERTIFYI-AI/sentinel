@@ -145,9 +145,7 @@ const KnowledgeGraph = lazy(() => import('./pages/KnowledgeGraph'));
 const RegulatoryVelocity = lazy(() => import('./pages/RegulatoryVelocity'));
 
 const RiskIntelligence = lazy(() => import('./pages/RiskIntelligence'));
-const Marketplace = lazy(() => import('./pages/Marketplace'));
 const SupplyChainGraph = lazy(() => import('./pages/SupplyChainGraph'));
-const Licensing = lazy(() => import('./pages/admin/Licensing'));
 const GovernanceMesh = lazy(() => import('./pages/GovernanceMesh'));
 const EvidenceCustodyExplorer = lazy(() => import('./pages/EvidenceCustodyExplorer'));
 const AutomationStudio = lazy(() => import('./pages/AutomationStudio'));
@@ -176,7 +174,6 @@ const ExaminationManager = lazy(() => import('./pages/ExaminationManager'));
 const ControlTesting = lazy(() => import('./pages/ControlTesting'));
 
 // ── New GRC Modules ─────────────────────────────────────────────────────────
-const CommitteeManagement = lazy(() => import('./pages/committee/CommitteeManagement'));
 const ModelValidationLab = lazy(() => import('./pages/validation/ValidationRunList'));
 const PerformanceMonitoring = lazy(() => import('./pages/performance/PerformanceMonitoring'));
 const IncidentPlaybooks = lazy(() => import('./pages/incidents/IncidentPlaybooks'));
@@ -555,7 +552,10 @@ export default function App() {
           <Route path="/control-testing" element={<Suspense fallback={<Loading />}><ControlTesting /></Suspense>} />
 
           {/* New GRC Modules */}
-          <Route path="/committee" element={<Suspense fallback={<Loading />}><CommitteeManagement /></Suspense>} />
+          {/* Committee Management merged into the Model Risk Committee, which is the
+              real committee module (mrc_meetings / mrc_agenda_items / mrc_votes).
+              The old path redirects so existing links and bookmarks keep working. */}
+          <Route path="/committee" element={<Navigate to="/mrc" replace />} />
           <Route path="/model-validation" element={<Suspense fallback={<Loading />}><ModelValidationLab /></Suspense>} />
           <Route path="/model-validation/:id" element={<Suspense fallback={<Loading />}><ValidationRunDetail /></Suspense>} />
           <Route path="/performance-monitoring" element={<Suspense fallback={<Loading />}><PerformanceMonitoring /></Suspense>} />
@@ -580,9 +580,7 @@ export default function App() {
           <Route path="/reg-velocity" element={<Suspense fallback={<Loading />}><RegulatoryVelocity /></Suspense>} />
 
           <Route path="/risk-intelligence" element={<Suspense fallback={<Loading />}><RiskIntelligence /></Suspense>} />
-          <Route path="/marketplace" element={<Suspense fallback={<Loading />}><Marketplace /></Suspense>} />
           <Route path="/supply-chain/graph" element={<Suspense fallback={<Loading />}><SupplyChainGraph /></Suspense>} />
-          <Route path="/admin/licensing" element={<Suspense fallback={<Loading />}><Licensing /></Suspense>} />
           <Route path="/governance-framework" element={<Navigate to="/conformity" replace />} />
           <Route path="/governance-mesh" element={<Suspense fallback={<Loading />}><GovernanceMesh /></Suspense>} />
           <Route path="/evidence-chain" element={<Navigate to="/evidence-vault?tab=chain" replace />} />
