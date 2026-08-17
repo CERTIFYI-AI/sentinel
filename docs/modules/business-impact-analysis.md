@@ -26,7 +26,7 @@ those fabricated metrics were removed entirely rather than relabelled —
 the platform does not display invented numbers as measured.
 
 `criticality` uses the lowercase vocabulary enforced by CHECK constraint
-(`20260823000001`). `tenant_id` is filled by the DB default
+(`20260823000005`). `tenant_id` is filled by the DB default
 `current_user_org_id()`.
 
 ## Fields

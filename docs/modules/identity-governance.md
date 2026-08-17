@@ -24,7 +24,7 @@ identities whose "AI systems access" strings resolved to nothing.
 
 `ai_systems_access` (integer) is now kept in step with `linked_model_ids`
 (uuid[]), which is **derived from privilege level** by
-`20260823000001`: admin → every registered model, operator → production
+`20260823000005`: admin → every registered model, operator → production
 models, viewer → none. This is a stated demo-tenant seeding rule — labelled
 as such on the page — not an entitlement scan; what matters is the figure is
 reproducible and every id resolves to a registry record.
@@ -64,7 +64,7 @@ totals)` — read-only on this page today.
 
 ISO 27001 A.5.15–A.5.18; SOC 2 CC6; EU AI Act Art. 14 (oversight roles).
 `sod_rules.org_id` previously had no default, which rejected every insert
-(fail-closed but unusable); fixed by `20260823000001` with `get_org_id()`.
+(fail-closed but unusable); fixed by `20260823000005` with `get_org_id()`.
 
 ## Operations
 
