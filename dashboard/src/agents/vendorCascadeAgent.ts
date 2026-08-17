@@ -6,12 +6,15 @@ import { safeUpdate, safeInsert } from '../lib/governance/agentHelpers'
 
 export async function vendorCascadeAgent(ctx: AgentContext): Promise<AgentResult> {
   const p = ctx.event.payload as { incidentId?: string; vendorId?: string; vendor?: string }
-  if (!p.vendorId && !p.vendor) return { status: 'skipped' }
+  // Matching by name is an id-space violation and mis-targets renamed vendors.
+  if (!p.vendorId) return { status: 'skipped', error: 'no-vendor-id' }
+  // Re-audit (2026-08-17): this previously also wrote `risk_score: 85` — an
+  // invented literal stamped onto a governed vendor record on every cascade.
+  // A breach is a fact worth recording; a score nobody computed is not.
   await safeUpdate('vendors', {
     sla_breach_flag: true,
     last_breach_at: new Date().toISOString(),
-    risk_score: 85,
-  }, { org_id: ctx.orgId, ...(p.vendorId ? { id: p.vendorId } : { name: p.vendor }) })
+  }, { org_id: ctx.orgId, id: p.vendorId })
   await safeUpdate('bcp_plans', {
     status: 'ACTIVATED',
     activated_by_incident: p.incidentId,

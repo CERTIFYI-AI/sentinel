@@ -117,10 +117,23 @@ These are not cosmetic. A module on a demo table typically also:
 > `20260822000002_supply_chain_esg_canonical.sql` §9).** The exposure above was
 > live, not theoretical: `20260813000006_close_anon_rls.sql` revoked `anon` but,
 > because these tables have no `org_id` column, fell through to
-> `FOR ALL TO authenticated USING (true)`. All 53 `%_table` tables now carry
-> `org_id uuid NOT NULL DEFAULT current_user_org_id()` and an org-scoped policy
-> (verified: 53/53 have the column, 53/53 have the policy). **Containment is not
-> remediation** — the modules below still render seeded fiction through
+> `FOR ALL TO authenticated USING (true)`.
+>
+> **CORRECTION (2026-08-17).** The first attempt
+> (`20260822000002` §9) added `org_id uuid NOT NULL DEFAULT
+> current_user_org_id()` in one statement. Under a migration role `auth.uid()`
+> is NULL, so the default evaluates to NULL — and adding a NOT NULL column with
+> a NULL default to a table **that has rows** aborts with *"column contains null
+> values"*. A from-zero replay has no rows, so CI passed and this entry was
+> marked closed; but the demo tables are populated **at runtime** by the demo
+> hook, so on the live database the ALTER failed and the permissive policies
+> survived. The 53/53 verification was run against a fresh replay and therefore
+> proved nothing about the database that matters.
+> `20260823000002_reaudit_critical_fixes.sql` re-applies containment in a form
+> that works on a populated table (add nullable → backfill → constrain), wraps
+> each table so one failure cannot abort the sweep, and leaves genuinely
+> unattributable rows NULL — excluded by the policy rather than assigned to an
+> arbitrary tenant. **Containment is not remediation** — the modules below still render seeded fiction through
 > `useSupabaseTable`, whose writes are fire-and-forget with both callbacks empty
 > and which silently falls back to the in-file `SEED` when a load fails. They
 > still need real tables and throwing services.
@@ -371,7 +384,7 @@ present an unverified record as verified.
 | ID | Item | Closed |
 |---|---|---|
 | — | AIBOM Registry / Supply Chain Attestations absent from the TD-001 register | 2026-08-16 |
-| — | 53 `%_table` demo tables cross-tenant readable/writable by any authenticated user | 2026-08-16 |
+| — | 53 `%_table` demo tables cross-tenant readable/writable — *first fix did not apply to populated databases; re-applied* | 2026-08-17 |
 | — | `vendors.org_id` NOT NULL with no DB default — every client insert failed (23502) | 2026-08-16 |
 | — | `carbon_records` missing all 13 domain columns — Carbon Ledger persisted nothing | 2026-08-16 |
 | — | `esgService` served 3 fabricated *published* disclosures when a tenant's table was empty | 2026-08-16 |

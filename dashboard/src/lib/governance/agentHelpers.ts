@@ -94,6 +94,24 @@ export async function safeUpdate<T>(
   } catch (e) { console.warn(`[safeUpdate:${table}]`, e); return null }
 }
 
+// ---- Strict update helper ----------------------------------------
+// For updates whose outcome the agent REPORTS. safeUpdate swallows the error
+// and returns null, which let vendorRiskAgent return `succeeded` and emit a
+// concentration figure that was never stored. Use this wherever the agent's
+// result or emitted event asserts that the write landed.
+export async function strictUpdate<T>(
+  table: string,
+  patch: Record<string, unknown>,
+  matcher: Record<string, unknown>,
+): Promise<T> {
+  if (!isSupabaseConfigured()) throw new Error(`Supabase not configured — cannot update ${table}`)
+  let q = supabase.from(table).update(patch)
+  for (const [k, v] of Object.entries(matcher)) q = q.eq(k, v)
+  const { data, error } = await q.select().single()
+  if (error) throw new Error(`[strictUpdate:${table}] ${error.message}`)
+  return data as T
+}
+
 // ---- Strict insert helper ----------------------------------------
 // For writes whose success the agent REPORTS (statutory filing drafts,
 // narrative records): unlike safeInsert this throws on any failure, so the
