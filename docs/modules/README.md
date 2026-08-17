@@ -49,7 +49,9 @@ Per-module reference for the Sentinel AI GRC platform. Each page covers purpose,
 - [Records of Processing Activities (RoPA)](ropa.md)
 - [Transfer Impact Assessment (TIA)](transfer-impact-assessment.md)
 - [DSR & Consent Management](dsr-consent.md)
-- [Vendor / Third-Party Risk (TPRM)](vendor-risk.md)
+- [Vendor / Third-Party Risk (TPRM)](vendor-risk.md) — cluster overview; the
+  per-module docs are listed under
+  [Vendors, AI Supply Chain & Sustainability](#vendors-ai-supply-chain--sustainability-modules)
 - [Asset Management](asset-management.md)
 - [Identity Governance (IGA)](identity-governance.md)
 
@@ -62,7 +64,10 @@ Per-module reference for the Sentinel AI GRC platform. Each page covers purpose,
 - [Security Intelligence](security-intelligence.md)
 
 ## Sustainability & Finance
-- [ESG & Sustainability (Carbon, Energy, Financial)](esg-sustainability.md)
+- [ESG & Sustainability (Carbon, Energy, Financial)](esg-sustainability.md) —
+  cluster overview; the per-module docs are listed under
+  [Vendors, AI Supply Chain & Sustainability](#vendors-ai-supply-chain--sustainability-modules)
+- [Financial Risk](financial-risk.md)
 
 ## Enterprise & Platform
 - [Executive Intelligence (Executive Center, ROI, CISO, Peer Intel)](executive-intelligence.md)
@@ -106,6 +111,54 @@ directions, compliance mapping and operations.
 - [AI Literacy](ai-literacy.md) — Art. 4 training programmes and completion evidence
 - [Trust Center](trust-center.md) — outward transparency and subprocessor disclosure
 - [Playground](playground.md) — guardrail rehearsal (simulated, explicitly labelled)
+
+## Vendors, AI Supply Chain & Sustainability Modules
+
+Rebuilt 2026-08-16 after four adversarial audits found these twelve modules
+rendering from in-file mocks, sitting on cross-tenant demo tables, and asserting
+assurance nothing performed. Each doc below covers purpose, why it exists, how
+it works, field-level schema, interlinks in both directions, compliance mapping
+and operations. Cluster overviews: [TPRM](vendor-risk.md) and
+[ESG & Sustainability](esg-sustainability.md).
+
+**Vendors / TPRM**
+
+- [Vendor Registry](vendor-registry.md) — `/vendors`, `/vendors/:id`; the
+  `vendors` record every other vendor module hangs off
+- [Vendor Assessments](vendor-assessments.md) — `/vendors/assessments`; due
+  diligence with an approver distinct from the owner and real `evidence_ids`
+- [Vendor SLA](vendor-sla.md) — `/vendors/sla`; numeric thresholds with breach
+  **derived** by `vendor_sla_status` (unmeasured is never reported as healthy)
+- [TPRM Workspace](tprm-workspace.md) — `/vendors/tprm`; the programme view over
+  the four vendor tables
+- [Vendor Questionnaire](vendor-questionnaire.md) — `/vendors/:id/questionnaire`;
+  persisted VSQ responses with respondent, reviewer and decision
+- [Vendor Upload](vendor-upload.md) — `/vendor-upload`; vendor documents in
+  Storage with a digest, a version chain and a recorded review
+
+**AI Supply Chain**
+
+- [AIBOM](aibom.md) — `/aibom`; components, licences and CVE rows per model
+- [Provenance](provenance.md) — `/provenance`; the typed lineage DAG with
+  temporal validity and cross-border transfer facts
+- [Supply Chain Graph](supply-chain-graph.md) — `/supply-chain/graph`; the
+  interactive canvas over the same provenance rows
+- [Supply Chain Attestations](supply-chain-attestations.md) — `/supply-chain`;
+  attestations with validity **derived** by `supply_chain_attestation_status`
+
+**Sustainability & ESG**
+
+- [Carbon Ledger](carbon-ledger.md) — `/carbon-ledger`; per-model GHG accounting
+  with a cited emission factor and a declared measurement method
+- [Energy Efficiency](energy-efficiency.md) — `/energy-efficiency`; kWh, PUE,
+  grid intensity and water with the provenance of each reading
+- [ESG Reports](esg-reports.md) — `/esg-reports`; disclosures citing the carbon
+  records, energy readings and models they report on
+
+Cross-cutting: `org_id` is filled by the DB default `current_user_org_id()` on
+every table; all twelve modules call `logAction` (EU AI Act Art. 12); no
+verification is performed, so every `verification_status` reads `unverified`
+(see TD-011 in [`../reference/technical-debt.md`](../reference/technical-debt.md)).
 
 ## See Also
 - Framework mappings: [`../compliance/`](../compliance/README.md)

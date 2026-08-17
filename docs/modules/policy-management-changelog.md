@@ -1,5 +1,18 @@
 # Changelog - Policy Templates Module
 
+## [Unreleased] - 2026-08-16
+
+### Fixed
+- Policy save failing with `Could not find the 'framework' column of 'policies'
+  in the schema cache`. The `policies` table's `CREATE TABLE` lists `framework`,
+  `linked_frameworks` and `linked_control_ids`, but on live databases that
+  predate that statement `CREATE TABLE IF NOT EXISTS` never added the columns,
+  and the earlier drift-heal (`20260419_core_grc_live_columns.sql`) omitted them.
+  Migration `20260821000005_policies_framework_drift_heal.sql` re-asserts every
+  column `policyService.upsertPolicy` writes with `ADD COLUMN IF NOT EXISTS`
+  (no-op on from-zero replay, heal on drifted live) and reloads the PostgREST
+  schema cache.
+
 ## [1.0.0] - 2025-01-15
 
 ### Added

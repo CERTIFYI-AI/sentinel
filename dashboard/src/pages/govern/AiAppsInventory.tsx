@@ -128,7 +128,7 @@ export default function AiAppsInventory() {
       const name = vendorName(a.vendorId)
       return name ? (
         <button className="inline-flex items-center gap-1 text-xs text-[hsl(var(--brand))] hover:underline"
-          onClick={(e) => { e.stopPropagation(); nav('/vendors') }}>{name} <ArrowSquareOut size={11} /></button>
+          onClick={(e) => { e.stopPropagation(); nav(`/vendors/${a.vendorId}`) }}>{name} <ArrowSquareOut size={11} /></button>
       ) : <span className="text-xs text-[hsl(var(--text-4))]">{a.vendorId ? 'Unavailable' : '—'}</span>
     } },
     { key: 'discoveredVia', header: 'Discovered', render: (a) => (

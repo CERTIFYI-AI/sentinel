@@ -107,11 +107,23 @@ These are not cosmetic. A module on a demo table typically also:
   isolation policy, so tenancy is not enforced by the schema;
 - **displays seeded values as real** — a compliance figure that was never
   measured is indistinguishable from one that was.
-- **has no tenant column at all** — every `*_table` demo table carries an
-  `_authenticated_all` policy with predicate `true`, so all ~45 of them are
-  readable and writable by any authenticated user in any organisation. They are
-  excluded from the TD-000 regression query only because they have no tenant
-  column to check; that is a reason to migrate them, not to exempt them.
+- **has no tenant column at all** — every `*_table` demo table carried an
+  `_authenticated_all` policy with predicate `true`, so all of them were
+  readable and writable by any authenticated user in any organisation. They were
+  excluded from the TD-000 regression query only because they had no tenant
+  column to check; that was a reason to migrate them, not to exempt them.
+
+> **Cross-tenant exposure contained (2026-08-16, migration
+> `20260822000002_supply_chain_esg_canonical.sql` §9).** The exposure above was
+> live, not theoretical: `20260813000006_close_anon_rls.sql` revoked `anon` but,
+> because these tables have no `org_id` column, fell through to
+> `FOR ALL TO authenticated USING (true)`. All 53 `%_table` tables now carry
+> `org_id uuid NOT NULL DEFAULT current_user_org_id()` and an org-scoped policy
+> (verified: 53/53 have the column, 53/53 have the policy). **Containment is not
+> remediation** — the modules below still render seeded fiction through
+> `useSupabaseTable`, whose writes are fire-and-forget with both callbacks empty
+> and which silently falls back to the in-file `SEED` when a load fails. They
+> still need real tables and throwing services.
 
 For a product used as the system of record for AI Act and ISO/IEC 42001
 conformity, the third point is the serious one: a regulator may rely on a number
@@ -138,8 +150,18 @@ that has no provenance.
 | Policy Firewall | `pages/security/PolicyFirewall.tsx` | `policyfirewall_table` |
 | Red Team Lab | `pages/security/RedTeamLab.tsx` | `redteamlab_table` |
 | Report Generator | `pages/security/ReportGenerator.tsx` | `reportgenerator_table` |
-| Vendor Assessments | `pages/vendors/VendorAssessments.tsx` | `vendorassessments_table` |
-| Vendor SLA | `pages/vendors/VendorSLA.tsx` | `vendorsla_table` |
+| ~~Vendor Assessments~~ | ~~`pages/vendors/VendorAssessments.tsx`~~ | **migrated** → `vendor_assessments` (2026-08-16) |
+| ~~Vendor SLA~~ | ~~`pages/vendors/VendorSLA.tsx`~~ | **migrated** → `vendor_slas` (2026-08-16) |
+| ~~AIBOM Registry~~ | ~~`pages/AibomRegistry.tsx`~~ | **migrated** → `aibom_records` (2026-08-16) |
+| ~~Supply Chain Attestations~~ | ~~`pages/SupplyChainAttestations.tsx`~~ | **migrated** → `supply_chain_attestations` (2026-08-16) |
+
+> **Register correction (2026-08-16).** `aibomregistry_table` and
+> `supplychainattestations_table` were **absent from this table** until the
+> supply-chain audit found them, despite being created by the same batch as the
+> listed entries (`20260711000002_wire_unwired_crud_doc_tables_batch2.sql`).
+> Per CLAUDE.md, *"undocumented debt does not exist and will be found by an
+> auditor instead of by us"* — they were, and both are now migrated. When adding
+> a demo table, add its row here in the same change.
 
 ### Remediation priority
 
@@ -295,10 +317,64 @@ honest empty state — the same treatment the removed sections received.
 
 ---
 
+## TD-010 — Tables created after the one-time `GRANT ... ON ALL TABLES` sweep
+
+**Owner:** platform / DB · **Raised:** 2026-08-16 (TPRM rollout)
+
+`20260420160001_functional_integration.sql:303` runs
+`grant select, insert, update, delete on all tables in schema public to
+authenticated` **once**. It cannot reach a table created by a later migration.
+Live Supabase projects paper over this with ambient
+`ALTER DEFAULT PRIVILEGES ... GRANT ALL ON TABLES TO authenticated`, so the gap
+is invisible in production — but on a from-zero replay in a bare Postgres, every
+table created after that sweep is unwritable (`permission denied`), which is
+exactly what a self-hosted or air-gapped deployment gets.
+
+Confirmed unwritable on a bare from-zero replay (Postgres 16.13):
+`financial_risks` (Risk & Incidents rollout), `policy_templates`,
+`policy_acknowledgments`, `post_market_plans` (Compliance rollout).
+
+The tables added by this change grant explicitly and are unaffected. The fix for
+the rest is either a repeat sweep in a new migration or, better, an
+`ALTER DEFAULT PRIVILEGES` statement committed to the repo so the guarantee is
+in version control rather than in a hosting provider's bootstrap.
+
+---
+
+## TD-011 — Supply-chain and TPRM modules assert unperformed verification
+
+**Owner:** supply chain · **Raised:** 2026-08-16 · **Partially addressed**
+
+The audits found four modules claiming assurance nothing had performed: an AIBOM
+"SHA-256" generated by `Math.random()` that fed an integrity PASS; a
+"Signature Valid" check implemented as `sigHash !== 'PENDING'` against a
+free-text field, under a heading reading *Cryptographic Verification*; a
+hardcoded signer (`'James Liu'`); and `verified` booleans that were seed
+literals.
+
+**Addressed in this change:** every one of those claims is removed. The schema
+now separates `declared_digest` (self-declared, evidence of nothing) from
+`verification_status` / `verified_at` / `verified_by` / `verification_method`,
+and carries the fields real signing needs (`signature` DSSE envelope,
+`signer_identity`, `rekor_log_index`).
+
+**Remaining debt:** no verification is actually performed —
+`verification_status` stays `'unverified'` for every record. Closing this means
+server-side digest computation over the canonical BOM document and DSSE/Sigstore
+signing with key custody, which is its own change. Until then the UI must never
+present an unverified record as verified.
+
+---
+
 ## Closed
 
 | ID | Item | Closed |
 |---|---|---|
+| — | AIBOM Registry / Supply Chain Attestations absent from the TD-001 register | 2026-08-16 |
+| — | 53 `%_table` demo tables cross-tenant readable/writable by any authenticated user | 2026-08-16 |
+| — | `vendors.org_id` NOT NULL with no DB default — every client insert failed (23502) | 2026-08-16 |
+| — | `carbon_records` missing all 13 domain columns — Carbon Ledger persisted nothing | 2026-08-16 |
+| — | `esgService` served 3 fabricated *published* disclosures when a tenant's table was empty | 2026-08-16 |
 | — | Integrations on `integrations_table` demo table | 2026-08-16 |
 | — | Tasks on `tasks_table` with local-only writes and fake success | 2026-08-16 |
 | — | Eval Techniques on `evaltechniques_table` demo table | 2026-08-16 |

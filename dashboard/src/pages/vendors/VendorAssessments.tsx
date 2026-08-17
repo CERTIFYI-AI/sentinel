@@ -1,552 +1,571 @@
-import { useState, useCallback } from 'react';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
-import { useNavigate } from 'react-router-dom';
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// VendorAssessments — due-diligence assessments against `vendor_assessments`.
+//
+// This page previously sat on `vendorassessments_table (id, doc jsonb)`, a
+// demo table whose RLS policy was `FOR ALL TO anon, authenticated USING(true)`
+// with no org_id — i.e. every tenant could read and write every other
+// tenant's vendor assessments, and the page seeded mock rows INTO that shared
+// table on first load. It now uses the real org-scoped table.
+//
+// The other change that matters: an approval used to be one click that walked
+// draft → approved with no approver, no audit entry and no human-oversight
+// record. A decision now requires a named approver (and, for
+// "approved with conditions", the conditions themselves) before it can be
+// recorded, and it is written to the audit log.
+
+import { useMemo, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { ClipboardText, Plus, Export, CheckCircle, Warning, Clock } from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow'
+import { DataTable, type Column } from '@/components/ui/DataTable'
+import { FilterBar } from '@/components/ui/FilterBar'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { FormDialog, Field } from '@/components/evals/FormDialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useVendorAssessments } from '@/hooks/useVendorAssessments'
+import { useVendorOptions } from '@/hooks/useVendorsData'
+import { useVendorQuestionnaires } from '@/hooks/useVendorQuestionnaires'
 import {
-  ClipboardText, Plus, MagnifyingGlass, Funnel, Eye, Export,
-  CheckCircle, Warning, Clock, XCircle, ArrowsClockwise, Buildings,
-  CaretDown, Trash,
-} from '@phosphor-icons/react';
-import { Card, CardContent } from '../../components/ui/card';
-import { Badge } from '../../components/ui/badge';
-import { Button } from '../../components/ui/button';
-import { Input } from '../../components/ui/input';
+  ASSESSMENT_STATUSES, ASSESSMENT_TYPES, ASSESSMENT_FRAMEWORKS,
+  type VendorAssessmentRecord,
+} from '@/services/vendorAssessmentService'
 import {
-  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
-} from '../../components/ui/select';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '../../components/ui/dialog';
-import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import {
-  VENDOR_ASSESSMENTS, VENDORS, VendorAssessment, AssessmentStatus, formatDate,
-} from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+  Pill, LinkPill, FilterChip, Fact, assessmentTone, dash, fmtDate, daysUntil,
+} from './vendorUi'
 
-
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
-
-function statusStyle(status: AssessmentStatus): { bg: string; color: string; label: string; icon: React.ElementType } {
-  const map: Record<AssessmentStatus, { bg: string; color: string; label: string; icon: React.ElementType }> = {
-    draft: { bg: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-3))', label: 'Draft', icon: ClipboardText },
-    in_progress: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', label: 'In Progress', icon: ArrowsClockwise },
-    submitted: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Submitted', icon: Clock },
-    under_review: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Under Review', icon: Eye },
-    approved: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', label: 'Approved', icon: CheckCircle },
-    approved_with_conditions: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', label: 'Approved w/ Conditions', icon: Warning },
-    rejected: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', label: 'Rejected', icon: XCircle },
-    expired: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--text-4))', label: 'Expired', icon: Clock },
-  };
-  return map[status] ?? map.draft;
+type FormState = {
+  vendorId: string
+  assessmentType: string
+  framework: string
+  scope: string
+  owner: string
+  dueAt: string
+  nextReviewAt: string
+  notes: string
 }
 
-function recommendationBadge(rec: VendorAssessment['recommendation']) {
-  if (!rec) return null;
-  const map: Record<string, { bg: string; color: string }> = {
-    'Approve': { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-    'Approve with Conditions': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    'Reject': { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-    'Reassess': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-  };
-  const s = map[rec] ?? map['Reassess'];
-  return <Badge style={{ background: s.bg, color: s.color, borderRadius: 0, fontSize: 10 }}>{rec}</Badge>;
+const BLANK: FormState = {
+  vendorId: '', assessmentType: 'initial', framework: 'SIG Lite',
+  scope: '', owner: '', dueAt: '', nextReviewAt: '', notes: '',
 }
 
-function scoreColor(score: number | null): string {
-  if (score === null) return 'hsl(var(--text-4))';
-  if (score >= 80) return 'hsl(var(--s-ok-tx))';
-  if (score >= 60) return 'hsl(var(--s-wn-tx))';
-  return 'hsl(var(--destructive))';
+type DecisionState = {
+  decision: 'approved' | 'approved_with_conditions' | 'rejected'
+  approver: string
+  conditions: string
+  residualRisk: string
+  notes: string
 }
 
-const ASSESSMENT_TYPES = ['Security', 'Privacy', 'AI Governance', 'DPA Review', 'Financial', 'Operational Resilience', 'Business Continuity', 'Custom'] as const;
-const FRAMEWORKS = ['SIG Lite', 'CAIQ', 'ISO 27001', 'ISO 42001', 'GDPR', 'SOC 2', 'Internal'];
-
-interface CreateForm {
-  vendorId: string;
-  assessmentType: VendorAssessment['assessmentType'];
-  frameworkBasis: string;
-  owner: string;
-  dueDate: string;
-  summary: string;
+const BLANK_DECISION: DecisionState = {
+  decision: 'approved', approver: '', conditions: '', residualRisk: '', notes: '',
 }
-
-const BLANK_FORM: CreateForm = {
-  vendorId: '',
-  assessmentType: 'Security',
-  frameworkBasis: 'SIG Lite',
-  owner: '',
-  dueDate: '',
-  summary: '',
-};
 
 export default function VendorAssessments() {
-  const { orgName } = useSettingsStore();
-  const navigate = useNavigate();
-  const { data: assessments, setData: setAssessments } = useSupabaseTable('vendorassessments_table', VENDOR_ASSESSMENTS);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [vendorFilter, setVendorFilter] = useState('all');
-  const [selected, setSelected] = useState<VendorAssessment | null>(null);
-  const [createOpen, setCreateOpen] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState<VendorAssessment | null>(null);
-  const [form, setForm] = useState<CreateForm>(BLANK_FORM);
-  const [formError, setFormError] = useState('');
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const vendorParam = params.get('vendor')
+  const openParam = params.get('open')
 
-  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(p => [...p, { id, text, type }]);
-    setTimeout(() => setToasts(p => p.filter(t => t.id !== id)), 4000);
-  }, []);
+  const { assessments, isLoading, isError, error, refetch, create, update, decide, remove } =
+    useVendorAssessments(vendorParam ?? undefined)
+  const { options: vendorOptions, resolveName } = useVendorOptions()
+  const { questionnaires } = useVendorQuestionnaires(vendorParam ?? undefined)
 
-  const total = assessments.length;
-  const pending = assessments.filter(a => ['draft', 'in_progress', 'submitted', 'under_review'].includes(a.status)).length;
-  const approved = assessments.filter(a => ['approved', 'approved_with_conditions'].includes(a.status)).length;
-  const critical = assessments.filter(a => a.criticalFindingsCount > 0).length;
-  const expiringSoon = assessments.filter(a => {
-    const d = new Date(a.nextReviewDate).getTime() - Date.now();
-    return d > 0 && d < 60 * 24 * 60 * 60 * 1000;
-  }).length;
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [formOpen, setFormOpen] = useState(false)
+  const [editing, setEditing] = useState<VendorAssessmentRecord | null>(null)
+  const [form, setForm] = useState<FormState>(BLANK)
+  const [deleteTarget, setDeleteTarget] = useState<VendorAssessmentRecord | null>(null)
+  const [decisionFor, setDecisionFor] = useState<VendorAssessmentRecord | null>(null)
+  const [decision, setDecision] = useState<DecisionState>(BLANK_DECISION)
 
-  const filtered = assessments.filter(a => {
-    const q = search.toLowerCase();
-    const matchSearch = a.id.toLowerCase().includes(q) || a.vendorName.toLowerCase().includes(q) || a.assessmentType.toLowerCase().includes(q) || a.owner.toLowerCase().includes(q);
-    const matchStatus = statusFilter === 'all' || a.status === statusFilter;
-    const matchType = typeFilter === 'all' || a.assessmentType === typeFilter;
-    const matchVendor = vendorFilter === 'all' || a.vendorId === vendorFilter;
-    return matchSearch && matchStatus && matchType && matchVendor;
-  });
+  const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }))
+  const setD = <K extends keyof DecisionState>(k: K, v: DecisionState[K]) =>
+    setDecision((d) => ({ ...d, [k]: v }))
 
-  const activeFilters = [statusFilter !== 'all', typeFilter !== 'all', vendorFilter !== 'all', search !== ''].filter(Boolean).length;
+  const selected = openParam ? assessments.find((a) => a.id === openParam) ?? null : null
 
-  function clearFilters() {
-    setSearch('');
-    setStatusFilter('all');
-    setTypeFilter('all');
-    setVendorFilter('all');
-  }
+  // ── KPIs. Only computed over records that carry the underlying date. ──────
+  const pending = assessments.filter((a) =>
+    ['draft', 'in_progress', 'submitted', 'under_review'].includes(a.status)).length
+  const approved = assessments.filter((a) =>
+    ['approved', 'approved_with_conditions'].includes(a.status)).length
+  const withCriticalFindings = assessments.filter((a) => a.findingsCritical > 0).length
+  const withReviewDate = assessments.filter((a) => !!a.nextReviewAt)
+  const dueSoon = withReviewDate.filter((a) => {
+    const d = daysUntil(a.nextReviewAt)
+    return d !== null && d >= 0 && d <= 60
+  }).length
 
-  function handleCreate() {
-    if (!form.vendorId || !form.owner || !form.dueDate) {
-      setFormError('Vendor, Owner, and Due Date are required.');
-      return;
+  const kpis: StatCardRowItem[] = [
+    { label: 'Assessments', value: assessments.length, icon: <ClipboardText size={18} /> },
+    { label: 'In flight', value: pending || '—', icon: <Clock size={18} />, description: `${pending} not yet decided` },
+    { label: 'Decided', value: approved || '—', icon: <CheckCircle size={18} />, description: `${approved} approved or approved with conditions` },
+    {
+      label: 'Review due < 60d',
+      value: withReviewDate.length ? dueSoon : '—',
+      icon: <Warning size={18} />,
+      description: withReviewDate.length
+        ? `${dueSoon} of ${withReviewDate.length} assessments with a review date`
+        : 'No assessment carries a next-review date',
+    },
+  ]
+
+  const filtered = useMemo(() => assessments.filter((a) => {
+    if (statusFilter && a.status !== statusFilter) return false
+    if (typeFilter && a.assessmentType !== typeFilter) return false
+    if (search) {
+      const q = search.toLowerCase()
+      const hay = `${resolveName(a.vendorId)} ${a.assessmentType ?? ''} ${a.framework ?? ''} ${a.owner ?? ''} ${a.scope ?? ''}`.toLowerCase()
+      if (!hay.includes(q)) return false
     }
-    const vendor = VENDORS.find(v => v.id === form.vendorId);
-    if (!vendor) { setFormError('Select a valid vendor.'); return; }
-    const newA: VendorAssessment = {
-      id: `VA-${String(assessments.length + 1).padStart(3, '0')}`,
-      vendorId: form.vendorId,
-      vendorName: vendor.name,
-      assessmentType: form.assessmentType,
-      version: 'v1.0',
-      status: 'draft',
-      frameworkBasis: form.frameworkBasis,
-      owner: form.owner,
-      dueDate: form.dueDate,
-      submittedAt: null,
-      reviewedAt: null,
-      approvedAt: null,
-      score: null,
-      riskFindingsCount: 0,
-      criticalFindingsCount: 0,
-      evidenceCount: 0,
-      summary: form.summary || 'Assessment created — pending vendor questionnaire.',
-      recommendation: null,
-      nextReviewDate: '',
-    };
-    setAssessments(p => [newA, ...p]);
-    setCreateOpen(false);
-    setForm(BLANK_FORM);
-    setFormError('');
-    toast(`Assessment ${newA.id} created for ${vendor.name}`);
+    return true
+  }), [assessments, statusFilter, typeFilter, search, resolveName])
+
+  function clearVendorFilter() {
+    const next = new URLSearchParams(params)
+    next.delete('vendor')
+    setParams(next, { replace: true })
+  }
+  function openRecord(a: VendorAssessmentRecord) {
+    const next = new URLSearchParams(params)
+    next.set('open', a.id)
+    setParams(next, { replace: true })
+  }
+  function closeRecord() {
+    const next = new URLSearchParams(params)
+    next.delete('open')
+    setParams(next, { replace: true })
   }
 
-  function handleDelete() {
-    if (!deleteTarget) return;
-    setAssessments(p => p.filter(a => a.id !== deleteTarget.id));
-    toast(`${deleteTarget.id} deleted`, 'error');
-    setDeleteTarget(null);
-    if (selected?.id === deleteTarget.id) setSelected(null);
+  function openCreate() {
+    setEditing(null)
+    setForm({ ...BLANK, vendorId: vendorParam ?? '' })
+    setFormOpen(true)
+  }
+  function openEdit(a: VendorAssessmentRecord) {
+    setEditing(a)
+    setForm({
+      vendorId: a.vendorId ?? '',
+      assessmentType: a.assessmentType ?? 'initial',
+      framework: a.framework ?? 'SIG Lite',
+      scope: a.scope ?? '',
+      owner: a.owner ?? '',
+      dueAt: a.dueAt ?? '',
+      nextReviewAt: a.nextReviewAt ?? '',
+      notes: a.notes ?? '',
+    })
+    setFormOpen(true)
+  }
+
+  function submit() {
+    const patch: Partial<VendorAssessmentRecord> = {
+      vendorId: form.vendorId,
+      assessmentType: form.assessmentType,
+      framework: form.framework,
+      scope: form.scope || null,
+      owner: form.owner || null,
+      // Empty date inputs become NULL, never '' — an empty string parsed to
+      // NaN and made new records invisible to the "due for review" filter.
+      dueAt: form.dueAt || null,
+      nextReviewAt: form.nextReviewAt || null,
+      notes: form.notes || null,
+    }
+    if (editing) {
+      update.mutate({ id: editing.id, patch }, { onSuccess: () => setFormOpen(false) })
+    } else {
+      create.mutate({ ...patch, status: 'draft' }, { onSuccess: () => setFormOpen(false) })
+    }
+  }
+
+  function submitDecision() {
+    if (!decisionFor) return
+    decide.mutate(
+      {
+        id: decisionFor.id,
+        decision: decision.decision,
+        approver: decision.approver,
+        conditions: decision.conditions || undefined,
+        residualRisk: decision.residualRisk || undefined,
+        notes: decision.notes || undefined,
+      },
+      { onSuccess: () => { setDecisionFor(null); setDecision(BLANK_DECISION) } },
+    )
   }
 
   function handleExport() {
+    const header = ['id', 'vendor', 'type', 'framework', 'status', 'approver', 'score', 'due_at', 'next_review_at']
     const csv = [
-      ['ID', 'Vendor', 'Type', 'Status', 'Score', 'Owner', 'Due Date', 'Recommendation'].join(','),
-      ...assessments.map(a => [a.id, a.vendorName, a.assessmentType, a.status, a.score ?? '', a.owner, a.dueDate, a.recommendation ?? ''].join(',')),
-    ].join('\n');
-    const el = document.createElement('a');
-    el.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }));
-    el.download = `vendor-assessments-${new Date().toISOString().split('T')[0]}.csv`;
-    el.click();
-    toast('Assessments exported as CSV');
+      header.join(','),
+      ...filtered.map((a) => [
+        a.id, JSON.stringify(resolveName(a.vendorId)), a.assessmentType ?? '', a.framework ?? '',
+        a.status, JSON.stringify(a.approver ?? ''), a.score ?? '', a.dueAt ?? '', a.nextReviewAt ?? '',
+      ].join(',')),
+    ].join('\n')
+    const el = document.createElement('a')
+    el.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    el.download = `vendor-assessments-${new Date().toISOString().slice(0, 10)}.csv`
+    el.click()
   }
 
-  function advanceStatus(a: VendorAssessment) {
-    const flow: AssessmentStatus[] = ['draft', 'in_progress', 'submitted', 'under_review', 'approved'];
-    const idx = flow.indexOf(a.status as AssessmentStatus);
-    if (idx < 0 || idx >= flow.length - 1) return;
-    const next = flow[idx + 1];
-    setAssessments(p => p.map(x => x.id === a.id ? { ...x, status: next, submittedAt: next === 'submitted' ? new Date().toISOString() : x.submittedAt, reviewedAt: next === 'under_review' ? new Date().toISOString() : x.reviewedAt, approvedAt: next === 'approved' ? new Date().toISOString() : x.approvedAt } : x));
-    if (selected?.id === a.id) setSelected(p => p ? { ...p, status: next } : null);
-    toast(`Assessment ${a.id} advanced to ${next.replace('_', ' ')}`);
-  }
+  const columns: Column<VendorAssessmentRecord>[] = [
+    {
+      key: 'vendor', header: 'Vendor', sortable: true,
+      render: (a) => {
+        const name = a.vendorId ? resolveName(a.vendorId) : 'Unavailable'
+        return a.vendorId && name !== 'Unavailable'
+          ? <LinkPill to={`/vendors/${a.vendorId}`}>{name}</LinkPill>
+          : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Unavailable</span>
+      },
+    },
+    { key: 'assessmentType', header: 'Type', sortable: true, render: (a) => (
+      <span className="text-xs capitalize" style={{ color: 'hsl(var(--text-2))' }}>
+        {(a.assessmentType ?? '—').replace(/_/g, ' ')}
+      </span>
+    ) },
+    { key: 'framework', header: 'Framework', sortable: true, render: (a) => (
+      <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.framework || '—'}</span>
+    ) },
+    { key: 'status', header: 'Status', sortable: true, render: (a) => (
+      <Pill tone={assessmentTone(a.status)}>{a.status.replace(/_/g, ' ')}</Pill>
+    ) },
+    { key: 'score', header: 'Score', sortable: true, render: (a) => (
+      <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{dash(a.score)}</span>
+    ) },
+    { key: 'findings', header: 'Findings (C/H)', render: (a) => (
+      <span className="text-xs" style={{ color: a.findingsCritical > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-2))' }}>
+        {a.findingsCritical} / {a.findingsHigh}
+      </span>
+    ) },
+    { key: 'owner', header: 'Owner', sortable: true, render: (a) => (
+      <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.owner || '—'}</span>
+    ) },
+    { key: 'approver', header: 'Approver', sortable: true, render: (a) => (
+      <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.approver || '—'}</span>
+    ) },
+    { key: 'dueAt', header: 'Due', sortable: true, render: (a) => (
+      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{fmtDate(a.dueAt)}</span>
+    ) },
+  ]
+
+  if (isLoading) return <PageSkeleton title="Vendor Assessments" rows={8} />
+
+  const decisionValid = decision.approver.trim().length > 0
+    && (decision.decision !== 'approved_with_conditions' || decision.conditions.trim().length > 0)
 
   return (
     <div className="space-y-6">
-      {/* Toast */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-        {toasts.map(t => (
-          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto" style={{
-            background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))',
-            color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300,
-          }}>{t.text}</div>
-        ))}
-      </div>
+      <PageHeader
+        title="Vendor Assessments"
+        subtitle="Third-party due diligence, decisions and evidence"
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: 'Vendors', href: '/vendors' },
+          { label: 'Assessments' },
+        ]}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/vendors')}>Registry</Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/vendors/tprm')}>TPRM Workspace</Button>
+            <Button variant="outline" size="sm" onClick={handleExport}><Export size={14} /> Export CSV</Button>
+            <Button size="sm" onClick={openCreate} disabled={vendorOptions.length === 0}>
+              <Plus size={14} /> New assessment
+            </Button>
+          </div>
+        }
+      />
 
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Vendor Assessments</h1>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>{orgName} · Third-party risk assessments across all vendors</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-            <Export className="h-4 w-4" />Export CSV
-          </Button>
-          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus className="h-4 w-4" />New Assessment
-          </Button>
-        </div>
-      </div>
+      {isError ? (
+        <ErrorState title="Could not load assessments" error={error} onRetry={() => refetch()} />
+      ) : (
+        <>
+          <StatCardRow cards={kpis} />
 
-      {/* KPI Tiles */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        {[
-          { label: 'Total Assessments', value: total, color: 'hsl(var(--text-1))', icon: ClipboardText },
-          { label: 'Pending / In Progress', value: pending, color: 'hsl(var(--s-wn-tx))', icon: Clock },
-          { label: 'Approved', value: approved, color: 'hsl(var(--s-ok-tx))', icon: CheckCircle },
-          { label: 'Critical Findings', value: critical, color: 'hsl(var(--destructive))', icon: Warning },
-          { label: 'Due for Review (<60d)', value: expiringSoon, color: 'hsl(var(--s-wn-tx))', icon: ArrowsClockwise },
-        ].map(s => (
-          <Card key={s.label} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-            <CardContent className="pt-4 pb-4">
-              <div className="flex items-center justify-between mb-2">
-                <s.icon size={18} style={{ color: s.color }} />
-              </div>
-              <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{s.label}</p>
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-3 flex-wrap">
-        <div className="relative min-w-52 max-w-xs">
-          <MagnifyingGlass className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4" style={{ color: 'hsl(var(--text-4))' }} />
-          <Input placeholder="Search assessments..." value={search} onChange={e => setSearch(e.target.value)}
-            className="pl-9 h-9" style={{ borderRadius: 0 }} />
-        </div>
-        <Select value={vendorFilter} onValueChange={setVendorFilter}>
-          <SelectTrigger className="w-40 h-9" style={{ borderRadius: 0 }}>
-            <Buildings className="h-3 w-3 mr-1" /><SelectValue placeholder="Vendor" />
-          </SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Vendors</SelectItem>
-            {VENDORS.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={typeFilter} onValueChange={setTypeFilter}>
-          <SelectTrigger className="w-40 h-9" style={{ borderRadius: 0 }}>
-            <Funnel className="h-3 w-3 mr-1" /><SelectValue placeholder="Type" />
-          </SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Types</SelectItem>
-            {ASSESSMENT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-44 h-9" style={{ borderRadius: 0 }}>
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {(['draft', 'in_progress', 'submitted', 'under_review', 'approved', 'approved_with_conditions', 'rejected', 'expired'] as AssessmentStatus[]).map(s => (
-              <SelectItem key={s} value={s}>{statusStyle(s).label}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {activeFilters > 0 && (
-          <Button variant="ghost" size="sm" onClick={clearFilters} className="h-9 text-xs" style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }}>
-            Clear filters ({activeFilters})
-          </Button>
-        )}
-        <span className="text-xs ml-auto" style={{ color: 'hsl(var(--text-4))' }}>{filtered.length} assessments</span>
-      </div>
-
-      {/* Table */}
-      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardContent className="p-0">
-          {filtered.length === 0 ? (
-            <div className="flex flex-col items-center justify-center py-16" style={{ color: 'hsl(var(--text-4))' }}>
-              <ClipboardText size={36} className="mb-2 opacity-40" />
-              <p className="text-sm">No assessments found</p>
-            </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                    {['Assessment ID', 'Vendor', 'Type', 'Framework', 'Status', 'Score', 'Findings', 'Owner', 'Due Date', 'Recommendation', 'Actions'].map(h => (
-                      <th key={h} className="px-4 py-3 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                    ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {filtered.map(a => {
-                    const ss = statusStyle(a.status);
-                    return (
-                      <tr key={a.id} className="hover:bg-muted/30 transition-colors cursor-pointer"
-                        style={{ borderBottom: '1px solid hsl(var(--border))' }}
-                        onClick={() => setSelected(a)}>
-                        <td className="px-4 py-3">
-                          <p className="text-xs font-mono font-medium" style={{ color: 'hsl(var(--text-1))' }}>{a.id}</p>
-                          <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>v{a.version.replace('v', '')}</p>
-                        </td>
-                        <td className="px-4 py-3">
-                          <button className="text-xs font-medium hover:underline" style={{ color: 'hsl(var(--brand))' }}
-                            onClick={e => { e.stopPropagation(); navigate(`/vendors/${a.vendorId}`); }}>
-                            {a.vendorName}
-                          </button>
-                        </td>
-                        <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.assessmentType}</td>
-                        <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{a.frameworkBasis}</td>
-                        <td className="px-4 py-3">
-                          <Badge style={{ background: ss.bg, color: ss.color, borderRadius: 0, fontSize: 10 }}>
-                            {ss.label}
-                          </Badge>
-                        </td>
-                        <td className="px-4 py-3">
-                          {a.score !== null ? (
-                            <span className="text-sm font-bold" style={{ color: scoreColor(a.score) }}>{a.score}</span>
-                          ) : (
-                            <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1">
-                            <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.riskFindingsCount}</span>
-                            {a.criticalFindingsCount > 0 && (
-                              <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 9 }}>
-                                {a.criticalFindingsCount} crit
-                              </Badge>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.owner}</td>
-                        <td className="px-4 py-3 text-xs" style={{ color: new Date(a.dueDate) < new Date() && !['approved', 'rejected'].includes(a.status) ? 'hsl(var(--destructive))' : 'hsl(var(--text-4))' }}>
-                          {formatDate(a.dueDate)}
-                        </td>
-                        <td className="px-4 py-3">{recommendationBadge(a.recommendation)}</td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setSelected(a)} aria-label="View assessment">
-                              <Eye size={14} />
-                            </Button>
-                            {['draft', 'in_progress', 'submitted', 'under_review'].includes(a.status) && (
-                              <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => advanceStatus(a)} aria-label="Advance status">
-                                <CaretDown size={14} style={{ transform: 'rotate(-90deg)' }} />
-                              </Button>
-                            )}
-                            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setDeleteTarget(a)} aria-label="Delete assessment">
-                              <Trash size={14} />
-                            </Button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+          {vendorParam && (
+            <FilterChip label="Vendor" value={resolveName(vendorParam)} onClear={clearVendorFilter} />
           )}
-        </CardContent>
-      </Card>
 
-      {/* Assessment Detail Sheet */}
-      <Sheet open={!!selected} onOpenChange={() => setSelected(null)}>
-        <SheetContent style={{ borderRadius: 0, width: 580, maxWidth: '100vw' }} className="overflow-y-auto">
+          <FilterBar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search by vendor, framework, owner…"
+            filters={[
+              {
+                key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter,
+                options: ASSESSMENT_STATUSES.map((s) => ({ label: s.replace(/_/g, ' '), value: s })),
+              },
+              {
+                key: 'type', label: 'Type', value: typeFilter, onChange: setTypeFilter,
+                options: ASSESSMENT_TYPES.map((t) => ({ label: t.replace(/_/g, ' '), value: t })),
+              },
+            ]}
+            activeFilterCount={[statusFilter, typeFilter].filter(Boolean).length}
+            onClearAll={() => { setSearch(''); setStatusFilter(''); setTypeFilter('') }}
+            trailing={
+              <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                {filtered.length} of {assessments.length}
+              </span>
+            }
+          />
+
+          {vendorOptions.length === 0 ? (
+            <EmptyState
+              icon={<ClipboardText size={32} weight="duotone" />}
+              title="Register a vendor first"
+              description="An assessment must reference a vendor by id. Add a vendor to the registry and the assessment can hang off it."
+              action={<Button size="sm" onClick={() => navigate('/vendors')}>Open the vendor registry</Button>}
+            />
+          ) : assessments.length === 0 ? (
+            <EmptyState
+              icon={<ClipboardText size={32} weight="duotone" />}
+              title="No assessments yet"
+              description="Record the due-diligence you perform on third parties: scope, findings, the decision and who made it."
+              action={<Button size="sm" onClick={openCreate}><Plus size={14} /> New assessment</Button>}
+            />
+          ) : (
+            <DataTable
+              data={filtered}
+              columns={columns}
+              searchKey="assessmentType"
+              onRowClick={openRecord}
+              onView={openRecord}
+              onEdit={openEdit}
+              onDelete={setDeleteTarget}
+              emptyMessage="No assessments match the current filters."
+            />
+          )}
+        </>
+      )}
+
+      {/* ── Detail sheet ──────────────────────────────────────────────────── */}
+      <Sheet open={!!selected} onOpenChange={(o) => { if (!o) closeRecord() }}>
+        <SheetContent style={{ borderRadius: 0, width: 620, maxWidth: '100vw' }}>
           <SheetHeader>
-            <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>
-              {selected?.id} — {selected?.assessmentType}
-              <span className="ml-2 text-xs font-mono font-normal" style={{ color: 'hsl(var(--text-4))' }}>{selected?.version}</span>
+            <SheetTitle>
+              {selected?.assessmentType ? selected.assessmentType.replace(/_/g, ' ') : 'Assessment'}
+              {selected?.framework ? ` · ${selected.framework}` : ''}
             </SheetTitle>
           </SheetHeader>
-          {selected && (() => {
-            const ss = statusStyle(selected.status);
-            return (
-              <div className="mt-6 space-y-5">
-                {/* Status + Recommendation */}
-                <div className="flex items-center gap-2 flex-wrap">
-                  <Badge style={{ background: ss.bg, color: ss.color, borderRadius: 0, fontSize: 11 }}>{ss.label}</Badge>
-                  {recommendationBadge(selected.recommendation)}
-                  {selected.criticalFindingsCount > 0 && (
-                    <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))', borderRadius: 0, fontSize: 11 }}>
-                      <Warning size={10} className="mr-1" />{selected.criticalFindingsCount} Critical Finding{selected.criticalFindingsCount > 1 ? 's' : ''}
-                    </Badge>
-                  )}
-                </div>
-
-                {/* Score */}
-                {selected.score !== null && (
-                  <div className="p-4" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
-                    <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>ASSESSMENT SCORE</p>
-                    <div className="flex items-end gap-3">
-                      <span className="text-4xl font-bold" style={{ color: scoreColor(selected.score) }}>{selected.score}</span>
-                      <span className="text-lg mb-1" style={{ color: 'hsl(var(--text-4))' }}>/100</span>
-                      <div className="flex-1 mb-2">
-                        <div className="h-2" style={{ background: 'hsl(var(--border))' }}>
-                          <div className="h-full" style={{ width: `${selected.score}%`, background: scoreColor(selected.score) }} />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+          {selected && (
+            <div className="mt-4 h-[calc(100vh-140px)] space-y-5 overflow-y-auto pr-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill tone={assessmentTone(selected.status)}>{selected.status.replace(/_/g, ' ')}</Pill>
+                {selected.vendorId && resolveName(selected.vendorId) !== 'Unavailable' && (
+                  <LinkPill to={`/vendors/${selected.vendorId}`}>{resolveName(selected.vendorId)}</LinkPill>
                 )}
+              </div>
 
-                {/* Summary */}
-                {selected.summary && (
-                  <div className="p-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
-                    <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-4))' }}>SUMMARY</p>
-                    <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{selected.summary}</p>
-                  </div>
-                )}
+              <div className="grid grid-cols-2 gap-4">
+                <Fact label="Owner" value={selected.owner} />
+                <Fact label="Approver" value={selected.approver} hint="who signed the decision" />
+                <Fact label="Score" value={dash(selected.score)} />
+                <Fact label="Residual risk" value={selected.residualRisk} />
+                <Fact label="Due" value={fmtDate(selected.dueAt)} />
+                <Fact label="Next review" value={fmtDate(selected.nextReviewAt)} />
+                <Fact label="Submitted" value={fmtDate(selected.submittedAt)} />
+                <Fact label="Decided" value={fmtDate(selected.reviewedAt)} />
+              </div>
 
-                {/* Meta grid */}
-                <div className="grid grid-cols-2 gap-x-6 gap-y-3">
-                  {[
-                    { label: 'Vendor', value: selected.vendorName },
-                    { label: 'Framework', value: selected.frameworkBasis },
-                    { label: 'Owner', value: selected.owner },
-                    { label: 'Due Date', value: formatDate(selected.dueDate) },
-                    { label: 'Submitted', value: selected.submittedAt ? formatDate(selected.submittedAt) : '—' },
-                    { label: 'Reviewed', value: selected.reviewedAt ? formatDate(selected.reviewedAt) : '—' },
-                    { label: 'Approved', value: selected.approvedAt ? formatDate(selected.approvedAt) : '—' },
-                    { label: 'Next Review', value: selected.nextReviewDate ? formatDate(selected.nextReviewDate) : '—' },
-                    { label: 'Risk Findings', value: String(selected.riskFindingsCount) },
-                    { label: 'Evidence Items', value: String(selected.evidenceCount) },
-                  ].map(r => (
-                    <div key={r.label}>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{r.label}</p>
-                      <p className="text-sm font-medium mt-0.5" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</p>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Actions */}
-                <div className="flex gap-2 pt-2 flex-wrap">
-                  <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => navigate(`/vendors/${selected.vendorId}`)}>
-                    <Buildings size={13} />View Vendor
-                  </Button>
-                  {['draft', 'in_progress', 'submitted', 'under_review'].includes(selected.status) && (
-                    <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => advanceStatus(selected)}>
-                      Advance Status
-                    </Button>
-                  )}
-                  <Button size="sm" variant="outline" style={{ borderRadius: 0, color: 'hsl(var(--destructive))' }} onClick={() => setDeleteTarget(selected)}>
-                    <Trash size={13} />Delete
-                  </Button>
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>
+                  Findings
+                </p>
+                <div className="mt-1 flex gap-4 text-sm" style={{ color: 'hsl(var(--text-1))' }}>
+                  <span>Critical {selected.findingsCritical}</span>
+                  <span>High {selected.findingsHigh}</span>
+                  <span>Medium {selected.findingsMedium}</span>
+                  <span>Low {selected.findingsLow}</span>
                 </div>
               </div>
-            );
-          })()}
+
+              {selected.scope && <Fact label="Scope" value={selected.scope} />}
+              {selected.conditions && <Fact label="Conditions" value={selected.conditions} />}
+              {selected.notes && <Fact label="Notes" value={selected.notes} />}
+
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>
+                  Evidence
+                </p>
+                {selected.evidenceIds.length === 0 ? (
+                  <p className="mt-1 text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+                    No evidence is attached to this assessment.
+                  </p>
+                ) : (
+                  <div className="mt-1 flex flex-wrap gap-2">
+                    {selected.evidenceIds.map((eid) => (
+                      <LinkPill key={eid} to={`/evidence?open=${eid}`}>Evidence record</LinkPill>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>
+                  Questionnaire
+                </p>
+                {(() => {
+                  const q = questionnaires.find((x) => x.id === selected.questionnaireId)
+                    ?? questionnaires.find((x) => x.assessmentId === selected.id)
+                  if (!q) {
+                    return (
+                      <p className="mt-1 text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+                        No questionnaire is linked to this assessment.
+                      </p>
+                    )
+                  }
+                  return (
+                    <div className="mt-1">
+                      <LinkPill to={`/vendors/${q.vendorUuid}/questionnaire?open=${q.id}`}>
+                        {q.template ?? 'Questionnaire'} {q.templateVersion ?? ''}
+                      </LinkPill>
+                    </div>
+                  )
+                })()}
+              </div>
+
+              {!['approved', 'approved_with_conditions', 'rejected'].includes(selected.status) && (
+                <div className="pt-2">
+                  <Button
+                    size="sm"
+                    onClick={() => { setDecision(BLANK_DECISION); setDecisionFor(selected) }}
+                  >
+                    Record a decision
+                  </Button>
+                  <p className="mt-1 text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>
+                    A decision requires a named approver and is written to the audit log.
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
         </SheetContent>
       </Sheet>
 
-      {/* Create Dialog */}
-      <Dialog open={createOpen} onOpenChange={o => { setCreateOpen(o); if (!o) { setForm(BLANK_FORM); setFormError(''); } }}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 520 }}>
-          <DialogHeader>
-            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>New Vendor Assessment</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-2">
-            {formError && <p className="text-xs text-destructive">{formError}</p>}
-            <div className="space-y-1">
-              <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Vendor *</label>
-              <Select value={form.vendorId} onValueChange={v => setForm(p => ({ ...p, vendorId: v }))}>
-                <SelectTrigger style={{ borderRadius: 0 }}>
-                  <SelectValue placeholder="Select vendor..." />
-                </SelectTrigger>
-                <SelectContent style={{ borderRadius: 0 }}>
-                  {VENDORS.map(v => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Assessment Type *</label>
-                <Select value={form.assessmentType} onValueChange={v => setForm(p => ({ ...p, assessmentType: v as VendorAssessment['assessmentType'] }))}>
-                  <SelectTrigger style={{ borderRadius: 0 }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {ASSESSMENT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Framework</label>
-                <Select value={form.frameworkBasis} onValueChange={v => setForm(p => ({ ...p, frameworkBasis: v }))}>
-                  <SelectTrigger style={{ borderRadius: 0 }}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {FRAMEWORKS.map(f => <SelectItem key={f} value={f}>{f}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Owner *</label>
-                <Input value={form.owner} onChange={e => setForm(p => ({ ...p, owner: e.target.value }))} placeholder="Assigned reviewer" style={{ borderRadius: 0 }} />
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Due Date *</label>
-                <Input type="date" value={form.dueDate} onChange={e => setForm(p => ({ ...p, dueDate: e.target.value }))} style={{ borderRadius: 0 }} />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Summary / Scope</label>
-              <textarea
-                value={form.summary}
-                onChange={e => setForm(p => ({ ...p, summary: e.target.value }))}
-                placeholder="Describe the scope and objective of this assessment..."
-                rows={3}
-                style={{
-                  width: '100%', borderRadius: 0, padding: '8px 12px', fontSize: 13,
-                  background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))',
-                  color: 'hsl(var(--text-1))', fontFamily: 'inherit', resize: 'vertical',
-                }}
-              />
-            </div>
-            <div className="flex justify-end gap-2 pt-2">
-              <Button variant="outline" onClick={() => { setCreateOpen(false); setForm(BLANK_FORM); setFormError(''); }} style={{ borderRadius: 0 }}>Cancel</Button>
-              <Button onClick={handleCreate} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>Create Assessment</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+      {/* ── Create / edit ─────────────────────────────────────────────────── */}
+      <FormDialog
+        open={formOpen}
+        onOpenChange={setFormOpen}
+        title={editing ? 'Edit assessment' : 'New vendor assessment'}
+        submitLabel={editing ? 'Save changes' : 'Create assessment'}
+        busy={create.isPending || update.isPending}
+        disabled={!form.vendorId}
+        onSubmit={submit}
+      >
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Vendor" required hint="Stored as the vendor's id, not its name.">
+            <Select value={form.vendorId} onValueChange={(v) => set('vendorId', v)}>
+              <SelectTrigger className="h-9"><SelectValue placeholder="Select a vendor" /></SelectTrigger>
+              <SelectContent>
+                {vendorOptions.map((v) => <SelectItem key={v.id} value={v.id}>{v.name || 'Unnamed vendor'}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Type">
+            <Select value={form.assessmentType} onValueChange={(v) => set('assessmentType', v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ASSESSMENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t.replace(/_/g, ' ')}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Framework">
+            <Select value={form.framework} onValueChange={(v) => set('framework', v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {ASSESSMENT_FRAMEWORKS.map((f) => <SelectItem key={f} value={f}>{f}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Owner">
+            <Input value={form.owner} onChange={(e) => set('owner', e.target.value)} />
+          </Field>
+          <Field label="Due date">
+            <Input type="date" value={form.dueAt} onChange={(e) => set('dueAt', e.target.value)} />
+          </Field>
+          <Field label="Next review" hint="Drives the review-due KPI. Left blank, the record is excluded rather than counted.">
+            <Input type="date" value={form.nextReviewAt} onChange={(e) => set('nextReviewAt', e.target.value)} />
+          </Field>
+        </div>
+        <Field label="Scope" hint="Which services and data flows this assessment covers.">
+          <Input value={form.scope} onChange={(e) => set('scope', e.target.value)} />
+        </Field>
+        <Field label="Notes">
+          <textarea
+            value={form.notes}
+            onChange={(e) => set('notes', e.target.value)}
+            className="h-20 w-full resize-none p-2 text-xs"
+            style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}
+          />
+        </Field>
+      </FormDialog>
 
-      {/* Delete Confirm */}
+      {/* ── Decision (human oversight, EU AI Act Art. 14) ─────────────────── */}
+      <FormDialog
+        open={!!decisionFor}
+        onOpenChange={(o) => { if (!o) setDecisionFor(null) }}
+        title="Record assessment decision"
+        description="The approver is recorded on the assessment and in the audit log. A decision cannot be saved anonymously."
+        submitLabel="Record decision"
+        busy={decide.isPending}
+        disabled={!decisionValid}
+        onSubmit={submitDecision}
+      >
+        <Field label="Decision" required>
+          <Select value={decision.decision} onValueChange={(v) => setD('decision', v as DecisionState['decision'])}>
+            <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="approved">Approve</SelectItem>
+              <SelectItem value="approved_with_conditions">Approve with conditions</SelectItem>
+              <SelectItem value="rejected">Reject</SelectItem>
+            </SelectContent>
+          </Select>
+        </Field>
+        <Field label="Approver" required hint="The person accountable for this decision.">
+          <Input value={decision.approver} onChange={(e) => setD('approver', e.target.value)} placeholder="Full name" />
+        </Field>
+        {decision.decision === 'approved_with_conditions' && (
+          <Field label="Conditions" required hint="An unstated condition is unenforceable.">
+            <textarea
+              value={decision.conditions}
+              onChange={(e) => setD('conditions', e.target.value)}
+              className="h-20 w-full resize-none p-2 text-xs"
+              style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}
+            />
+          </Field>
+        )}
+        <Field label="Residual risk" hint="Risk remaining after agreed remediation.">
+          <Input value={decision.residualRisk} onChange={(e) => setD('residualRisk', e.target.value)} />
+        </Field>
+        <Field label="Notes">
+          <Input value={decision.notes} onChange={(e) => setD('notes', e.target.value)} />
+        </Field>
+      </FormDialog>
+
       <ConfirmDialog
         open={!!deleteTarget}
-        onOpenChange={() => setDeleteTarget(null)}
-        title={`Delete ${deleteTarget?.id}?`}
-        description={`This will permanently delete the ${deleteTarget?.assessmentType} assessment for ${deleteTarget?.vendorName}. This action cannot be undone.`}
-        confirmLabel="Delete Assessment"
-        variant="destructive"
-        onConfirm={handleDelete}
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}
+        title="Delete this assessment?"
+        description="The assessment and its recorded decision are removed. This cannot be undone."
+        confirmLabel="Delete assessment"
+        type="danger"
+        onConfirm={async () => {
+          if (!deleteTarget) return false
+          await remove.mutateAsync(deleteTarget.id)
+          setDeleteTarget(null)
+        }}
       />
     </div>
-  );
+  )
 }

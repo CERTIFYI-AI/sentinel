@@ -92,3 +92,42 @@ Added 2026-08-16 with the PRIVACY group and TD-001 Tier 1 migrations.
 - Control effectiveness (`score`) and evidence counts are **nullable**: never
   scored renders `—`, distinguishable from scored-and-zero. This matters when a
   figure is cited as conformity evidence.
+
+---
+
+## Module Coverage — Vendors/TPRM, AI Supply Chain & Sustainability
+
+Added 2026-08-16 with the TPRM / supply-chain / ESG rollout. Clause A.10.2
+(third parties and suppliers) previously pointed only at AI Apps and the Trust
+Center, because the vendor modules themselves held no persisted third-party
+risk data.
+
+| Control | Control description | Module & backing | Status |
+|---|---|---|---|
+| A.10.2 | Third parties and suppliers | [Vendor Registry](../modules/vendor-registry.md) — `vendors` carrying inherent vs residual risk, criticality, DPA state with dates, certification expiries, sub-processor count and fourth-party exposure | Implemented |
+| A.10.3 | Supplier agreements and obligations | [Vendor SLA](../modules/vendor-sla.md) — `vendor_slas` with contract clause reference, service credits and claim status | Implemented |
+| A.10.4 | Supplier performance monitoring | `vendor_sla_status` derives breach from numeric thresholds; `consecutive_breaches` and `last_breach_at` are recorded rather than asserted | Implemented |
+| A.7.2 | Data for AI systems — provenance | [Provenance](../modules/provenance.md) — `provenance_nodes`/`_edges` as a typed DAG with artifact digests, build/source refs and SLSA level fields | Implemented |
+| A.7.3 | Acquisition of AI components | [AIBOM](../modules/aibom.md) — `aibom_components` with PURL/CPE, SPDX licence identifier and licence-risk classification | Implemented |
+| A.6.2.4 | AI system verification and validation | [Attestations](../modules/supply-chain-attestations.md) — attestor identity, independence flag, accreditation, revocation and supersession | Partial — records the attestation; cryptographic verification not yet performed (TD-011) |
+| A.5.2 | AI risk assessment — third-party contribution | [Vendor Assessments](../modules/vendor-assessments.md) — `vendor_assessments` with approver distinct from owner, residual risk and real `evidence_ids` | Implemented |
+| A.9.3 | Reporting concerns | [Vendor Questionnaire](../modules/vendor-questionnaire.md) — persisted responses with respondent, reviewer and decision | Implemented |
+| A.4.6 | Environmental impact of AI systems | [Carbon](../modules/carbon-ledger.md) / [Energy](../modules/energy-efficiency.md) — GHG scope classification, emission factor with source, measurement method, PUE, accelerator type and water usage | Implemented |
+| A.2.4 | Objectives and reporting | [ESG Reports](../modules/esg-reports.md) — framework **version**, reporting boundary, consolidation basis, assurance status/provider, approver, restatement flag, and `carbon_record_ids`/`energy_metric_ids` citing the records reported on | Implemented |
+
+### Audit evidence for these modules
+
+- **Org isolation.** Every table added by this rollout is org-scoped with RLS
+  where the scoping column is filled by the DB default
+  (`current_user_org_id()`), never by the client. Verified by rolled-back
+  inserts as role `authenticated` with no scoping column supplied.
+- **Interlink integrity.** Each relation was proven with a `total` vs `resolves`
+  query; all nine were equal (aibom→models 2/2, attestation→subject 3/3,
+  vendor_assessments→vendors 2/2, vendor_slas→vendors 3/3,
+  vendor_documents→vendors 2/2, carbon→models 2/2, energy→models 4/4,
+  aibom_components→aibom 4/4, provenance_edges→nodes 3/3).
+- **Demo data.** All seeded content is fictional and belongs to the demo tenant.
+  Owners, reviewers and attestors are **role labels** ("Head of Sustainability",
+  "Third-Party Risk Analyst"), never named individuals — the previous mocks
+  attributed signed attestations and accepted SOC 2 reports to invented people,
+  which is an audit-integrity problem rather than a cosmetic one.
