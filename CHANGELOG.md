@@ -1,3 +1,12 @@
+## 1.66.0 (2026-08-17)
+
+* Merge remote-tracking branch 'origin/main' into claude/modules-audit-akm64k ([0428705](https://github.com/CERTIFYI-AI/sentinel/commit/0428705))
+* docs(privacy): module doc, compliance mapping, four-role review record ([32f5c83](https://github.com/CERTIFYI-AI/sentinel/commit/32f5c83))
+* feat(privacy): autonomous GRC — agents that create real linked records ([2b55da8](https://github.com/CERTIFYI-AI/sentinel/commit/2b55da8))
+* feat(privacy): rebuild DSR and Consent on platform primitives ([0e1ccee](https://github.com/CERTIFYI-AI/sentinel/commit/0e1ccee))
+* feat(privacy): surface RoPA/TIA/DPIA interlinks in the UI ([0741448](https://github.com/CERTIFYI-AI/sentinel/commit/0741448))
+* fix(privacy): canonical vocabularies, tenant orphans, full interlink graph ([d91afd6](https://github.com/CERTIFYI-AI/sentinel/commit/d91afd6))
+
 ## 1.65.0 (2026-08-17)
 
 * feat: rebuild Vendors/TPRM, AI Supply Chain & Sustainability on the platform contract (#75) ([16f6a8c](https://github.com/CERTIFYI-AI/sentinel/commit/16f6a8c)), closes [#75](https://github.com/CERTIFYI-AI/sentinel/issues/75)
