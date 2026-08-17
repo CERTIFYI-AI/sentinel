@@ -556,17 +556,17 @@ export default function Sidebar() {
               <button
                 onClick={toggleCollapse}
                 className={cn(
-                  'flex flex-col items-center justify-center w-full h-full gap-1',
-                  'text-[hsl(var(--text-3))] hover:text-[hsl(var(--brand))]',
+                  'flex items-center justify-center w-full h-full',
                   'hover:bg-raised transition-colors group',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--brand))]',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[hsl(var(--brand))]',
                 )}
                 aria-label='Expand sidebar'
               >
-                <List size={18} aria-hidden='true' className='group-hover:text-[hsl(var(--brand))]' />
-                <span className='text-[9px] font-semibold uppercase tracking-wider opacity-60 group-hover:opacity-100'>
-                  Menu
-                </span>
+                <img
+                  src='/sentinel-icon.svg'
+                  alt='Sentinel'
+                  className='w-7 h-7 transition-transform duration-150 group-hover:scale-105'
+                />
               </button>
             </NavTooltip>
           ) : (
@@ -649,13 +649,17 @@ export default function Sidebar() {
                   <button
                     onClick={() => toggleSection(section.title)}
                     aria-expanded={isExpanded}
-                    className='flex items-center justify-between w-full px-1.5 py-1 group'
+                    className={cn(
+                      'flex items-center justify-between w-full px-1.5 py-1.5 mt-1 group transition-colors',
+                      'hover:bg-[hsl(var(--bg-raised))]',
+                      'focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-inset focus-visible:ring-[hsl(var(--brand))]',
+                    )}
                   >
                     <span className={cn(
-                      'text-[10px] font-semibold tracking-wider uppercase',
+                      'text-[10px] font-semibold tracking-[0.08em] uppercase transition-colors',
                       sectionActive
                         ? 'text-[hsl(var(--brand))]'
-                        : 'text-[hsl(var(--text-4))]'
+                        : 'text-[hsl(var(--text-4))] group-hover:text-[hsl(var(--text-2))]'
                     )}>
                       {section.title}
                     </span>
@@ -663,7 +667,7 @@ export default function Sidebar() {
                       size={9}
                       aria-hidden='true'
                       className={cn(
-                        'text-[hsl(var(--text-4))] transition-transform duration-150',
+                        'text-[hsl(var(--text-4))] transition-transform duration-150 group-hover:text-[hsl(var(--text-2))]',
                         isExpanded ? 'rotate-0' : '-rotate-90'
                       )}
                     />

@@ -15,6 +15,19 @@ const config: Config = {
         sm: '0px',
         DEFAULT: '0px',
       },
+      // Unify every `shadow-*` utility onto the design-system elevation tokens
+      // so shadcn overlays (dialog/sheet/dropdown/select/tooltip) and the
+      // hand-built components share one layered, restrained elevation ramp.
+      boxShadow: {
+        sm: 'var(--shadow-sm)',
+        DEFAULT: 'var(--shadow-md)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+      },
+      letterSpacing: {
+        // Optical tightening for display-scale headings — a premium tell.
+        tightest: '-0.03em',
+      },
       colors: {
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',

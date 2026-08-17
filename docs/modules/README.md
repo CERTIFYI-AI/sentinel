@@ -169,6 +169,9 @@ verification is performed, so every `verification_status` reads `unverified`
 - [Demo Data Import](demo-import.md) — Settings → Demo data; one-button,
   clearly-fictional, marker-tagged demo dataset written through the real
   service layer (replaces the retired `/import-data` raw-upsert page)
+- [Guided Setup](guided-setup.md) — the "Get started" checklist; every step's
+  done-state is DERIVED from the real tables (never stored), surfaced in the
+  RightSidebar and as a dismissible card on `/overview`
 
 ## See Also
 - Framework mappings: [`../compliance/`](../compliance/README.md)

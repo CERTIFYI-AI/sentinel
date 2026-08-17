@@ -7,7 +7,7 @@
 // Sentinel, from /frameworks/*.yaml) · Mapping (static reference crosswalk;
 // org-specific cross-framework mappings are not wired to a backend yet).
 // Consolidates the former Framework Catalog and Framework Mapping pages.
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent } from '../components/ui/card';
@@ -28,6 +28,8 @@ import {
   ArrowsLeftRight, Books, MagnifyingGlass, ShieldCheck,
 } from '@phosphor-icons/react';
 import { useFrameworksData } from '@/hooks/useFrameworksData';
+import { useFrameworkCatalog } from '@/hooks/useFrameworkCatalog';
+import { InterlinkChip } from '../components/ui/InterlinkChip';
 import type { FrameworkRecord } from '@/services/frameworkService';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { listFrameworks, FRAMEWORK_COUNT, TOTAL_CONTROL_COUNT, type FrameworkSummary } from '@/lib/frameworks';
@@ -171,10 +173,119 @@ function controlStatusStyle(status?: string | null) {
   return { color: 'hsl(var(--text-3))', label: status || 'Unknown' };
 }
 
+// The framework's PUBLISHED catalog (`framework_controls`) grouped by domain —
+// what the framework requires. Distinct from the org's implemented controls
+// (the "Controls" tab, from the `controls` register): this is reference
+// material. Each catalog control surfaces the org controls that implement it
+// (pill links), or an honest "Not yet implemented" when none resolve. Renders
+// all three of skeleton / empty / error.
+function FrameworkRequirements({
+  fw,
+}: {
+  fw: FrameworkRecord;
+}) {
+  const catalog = useFrameworkCatalog({ id: fw.id, name: fw.name, code: fw.code ?? null });
+
+  if (catalog.isLoading) {
+    return (
+      <div className="space-y-2 animate-pulse" aria-busy="true">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="h-16" style={{ background: 'hsl(var(--bg-sunken))' }} />
+        ))}
+      </div>
+    );
+  }
+
+  if (catalog.error) {
+    return (
+      <div className="p-3 text-sm" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', color: 'hsl(var(--s-er-tx))' }}>
+        Failed to load the published catalog for this framework: {(catalog.error as Error).message}
+      </div>
+    );
+  }
+
+  const data = catalog.data;
+  if (!data || data.catalogCount === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center" style={{ border: '1px dashed hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+        <Books size={30} style={{ color: 'hsl(var(--text-4))' }} />
+        <p className="mt-3 text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>No published catalog for this framework yet</p>
+        <p className="text-xs mt-1 max-w-xs" style={{ color: 'hsl(var(--text-3))' }}>
+          The authoritative control catalog (framework_controls) has not been seeded for this
+          framework in your organization.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+        <span>
+          <span className="font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{data.catalogCount}</span> published control{data.catalogCount !== 1 ? 's' : ''}
+        </span>
+        <span title="Catalog controls with at least one implementing control in your register">
+          {data.orgControlsAvailable
+            ? <><span className="font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{data.implementedCatalogCount}</span> implemented in your register</>
+            : 'Implementation status unavailable'}
+        </span>
+      </div>
+
+      {data.groups.map((group) => (
+        <section key={group.domain} aria-label={group.domain === '—' ? 'Uncategorised' : group.domain}>
+          <h3 className="text-xs font-semibold uppercase tracking-wide mb-2 flex items-center justify-between" style={{ color: 'hsl(var(--text-4))' }}>
+            <span>{group.domain === '—' ? 'Uncategorised' : group.domain}</span>
+            <span style={{ color: 'hsl(var(--text-4))' }}>{group.controls.length}</span>
+          </h3>
+          <div className="space-y-2">
+            {group.controls.map((cc) => (
+              <div key={cc.id} className="p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-wrap min-w-0">
+                    <span className="font-mono text-[11px] font-semibold" style={{ color: 'hsl(var(--brand))' }}>{cc.controlRef || '—'}</span>
+                    <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{cc.title || '—'}</span>
+                  </div>
+                  {cc.controlType && (
+                    <Badge variant="outline" style={{ borderRadius: 0, fontSize: 9, flexShrink: 0 }}>{cc.controlType}</Badge>
+                  )}
+                </div>
+                {cc.description && (
+                  <p className="text-[11px] mt-1.5" style={{ color: 'hsl(var(--text-3))' }}>{cc.description}</p>
+                )}
+                <div className="mt-2 flex items-center gap-2 flex-wrap">
+                  {!data.orgControlsAvailable ? (
+                    <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Implementation status unavailable</span>
+                  ) : cc.implementedBy.length > 0 ? (
+                    <>
+                      <span className="text-[10px] font-medium" style={{ color: 'hsl(var(--s-ok-tx))' }}>Implemented by</span>
+                      {cc.implementedBy.map((impl) => {
+                        const st = controlStatusStyle(impl.status);
+                        return (
+                          <InterlinkChip
+                            key={impl.id}
+                            label={`${impl.controlRef ?? ''}${impl.controlRef ? ' — ' : ''}${st.label}`}
+                            to={`/compliance/controls?open=${impl.id}`}
+                          />
+                        );
+                      })}
+                    </>
+                  ) : (
+                    <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>Not yet implemented</span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
+}
+
 export default function Frameworks() {
   const { frameworks, isLoading, error, save, remove } = useFrameworksData();
   const nav = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   // ?tab=portfolio|catalog|mapping selects the initial tab (used by legacy-route redirects).
   const initialTab = ['portfolio', 'catalog', 'mapping'].includes(searchParams.get('tab') || '')
@@ -200,6 +311,28 @@ export default function Frameworks() {
     orgControls.filter(c => controlMatchesFramework(c, fw));
   const controls = viewItem ? controlsForFramework(viewItem) : [];
   const implementedControls = controls.filter(c => IMPLEMENTED_STATUSES.has(norm(c.status))).length;
+
+  // Published catalog for the open framework (`framework_controls`). Shares the
+  // cache with the detail's Requirements tab; drives the "Published controls"
+  // row in Overview, keeping the catalog count distinct from the implemented
+  // count derived from the org register above.
+  const openCatalog = useFrameworkCatalog(
+    viewItem ? { id: viewItem.id, name: viewItem.name, code: viewItem.code ?? null } : null,
+  );
+
+  // ?open=<framework_id> opens that framework's detail (repo `?open=` deep-link
+  // convention), so an org control can link back to the catalog entry it
+  // satisfies. The param is consumed once the framework resolves.
+  const openParam = searchParams.get('open');
+  useEffect(() => {
+    if (!openParam || isLoading) return; // wait until the portfolio has loaded
+    const match = frameworks.find((fw: FrameworkRecord) => fw.id === openParam);
+    if (match) setViewItem(match);
+    // Consume the param once resolved (or if it matches nothing) so closing the
+    // sheet does not immediately reopen it.
+    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('open'); return next; }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openParam, isLoading, frameworks]);
 
   const catalog = useMemo(() => listFrameworks(), []);
   const catalogGrouped = useMemo(() => {
@@ -516,8 +649,11 @@ export default function Frameworks() {
               <Tabs defaultValue="overview">
                 <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
                   <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
+                  <TabsTrigger value="requirements" style={{ borderRadius: 0 }}>
+                    Requirements{openCatalog.data && openCatalog.data.catalogCount > 0 ? ` (${openCatalog.data.catalogCount})` : ''}
+                  </TabsTrigger>
                   <TabsTrigger value="controls" style={{ borderRadius: 0 }}>
-                    Controls{controls.length > 0 ? ` (${controls.length})` : ''}
+                    Implemented{controls.length > 0 ? ` (${controls.length})` : ''}
                   </TabsTrigger>
                 </TabsList>
 
@@ -528,6 +664,9 @@ export default function Frameworks() {
                   {[
                     { label: 'Compliance Score', value: frameworkScore(viewItem) == null ? 'No score recorded yet' : `${frameworkScore(viewItem)}%` },
                     { label: 'Target Score', value: viewItem.target_score != null ? `${Number(viewItem.target_score)}%` : '—' },
+                    // Authoritative catalog size (framework_controls) — reference
+                    // material, kept distinct from the implemented count below.
+                    { label: 'Published Controls (catalog)', value: openCatalog.isLoading ? '…' : openCatalog.error ? 'Unavailable' : openCatalog.data ? String(openCatalog.data.catalogCount) : '—' },
                     // Live derivation from the controls register — see matcher.
                     { label: 'Controls Implemented', value: controls.length > 0 ? `${implementedControls}/${controls.length}` : '— no controls linked yet' },
                     { label: 'Next Audit', value: formatDate(viewItem.next_audit_at) },
@@ -559,6 +698,17 @@ export default function Frameworks() {
                       bar appears once one is measured.
                     </p>
                   )}
+                </TabsContent>
+
+                <TabsContent value="requirements" className="mt-4">
+                  <p className="text-xs mb-3" style={{ color: 'hsl(var(--text-3))' }}>
+                    The framework's published control catalog — what it requires. Each entry links to
+                    the control(s) in your register that implement it, or shows an honest
+                    "Not yet implemented".
+                  </p>
+                  <div className="max-h-[60vh] overflow-y-auto pr-1">
+                    <FrameworkRequirements fw={viewItem} />
+                  </div>
                 </TabsContent>
 
                 <TabsContent value="controls" className="mt-4">

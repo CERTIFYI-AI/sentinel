@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { useLocation } from 'react-router-dom'
-import { BookOpen, Sparkle, Question, CaretLeft, CaretRight, House, MagnifyingGlass, ArrowSquareOut, FileText, ArrowRight } from '@phosphor-icons/react'
+import { BookOpen, Sparkle, Question, CaretLeft, CaretRight, House, MagnifyingGlass, ArrowSquareOut, FileText, ArrowRight, Rocket } from '@phosphor-icons/react'
 import { COLLECTIONS, ROUTE_TO_COLLECTION_MAP, Collection, Article } from '../../data/moduleGuides'
+import { SetupChecklist } from '../setup/SetupChecklist'
+import { groupForRoute } from '../../data/setupChecklists'
 
-type Tab = 'userGuide' | 'whatsNew' | 'help' | null
+type Tab = 'getStarted' | 'userGuide' | 'whatsNew' | 'help' | null
 
 type NavState =
   | { type: 'home' }
@@ -57,6 +59,9 @@ export function RightSidebar() {
   }
 
   const renderBreadcrumbs = () => {
+    if (activeTab === 'getStarted') {
+      return <span className="text-[12px] font-medium text-[hsl(var(--text-1))]">Get started</span>
+    }
     if (navState.type === 'home') {
       return <span className="text-[12px] font-medium text-[hsl(var(--text-1))]">Browse by topic</span>
     }
@@ -122,7 +127,24 @@ export function RightSidebar() {
           
           {/* Content Area */}
           <div className="flex-1 overflow-y-auto bg-[hsl(var(--bg-page))]">
-            
+
+            {/* GET STARTED — data-driven setup checklist. Scoped to the current
+                route's group, falling back to the whole-platform view. */}
+            {activeTab === 'getStarted' && (
+              <div className="p-5">
+                <div className="mb-4">
+                  <h2 className="text-[18px] font-bold text-[hsl(var(--text-1))]">Get started</h2>
+                  <p className="text-[12px] text-[hsl(var(--text-3))] mt-1 leading-relaxed">
+                    A live setup checklist. Each step checks the real data, so it shows what is actually configured — not just what you have been shown.
+                  </p>
+                </div>
+                <SetupChecklist
+                  groupId={groupForRoute(location.pathname)?.id}
+                  onNavigate={() => setActiveTab(null)}
+                />
+              </div>
+            )}
+
             {/* HOME VIEW (Browse by Topic) */}
             {activeTab === 'userGuide' && navState.type === 'home' && (
               <div className="p-5">
@@ -320,8 +342,24 @@ export function RightSidebar() {
       {/* The Rail */}
       <div className="w-[40px] bg-surface border-l border-[hsl(var(--border))] flex flex-col items-center py-2 z-50 h-full relative">
         
+        {/* Get Started Tab */}
+        <button
+          onClick={() => handleTabClick('getStarted')}
+          className={`w-full py-4 flex flex-col items-center justify-center gap-3 transition-colors border-l-2 ${activeTab === 'getStarted' ? 'border-[hsl(var(--brand))] text-[hsl(var(--brand))] bg-raised' : 'border-transparent text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))] hover:bg-raised'}`}
+        >
+          <Rocket size={16} />
+          <span
+            className="text-[11px] font-medium tracking-wide whitespace-nowrap"
+            style={{ writingMode: 'vertical-rl', transform: 'rotate(180deg)' }}
+          >
+            Get started
+          </span>
+        </button>
+
+        <div className="w-[20px] border-b border-[hsl(var(--border))] my-1"></div>
+
         {/* User Guide Tab */}
-        <button 
+        <button
           onClick={() => handleTabClick('userGuide')}
           className={`w-full py-4 flex flex-col items-center justify-center gap-3 transition-colors border-l-2 ${activeTab === 'userGuide' ? 'border-[hsl(var(--brand))] text-[hsl(var(--brand))] bg-raised' : 'border-transparent text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))] hover:bg-raised'}`}
         >

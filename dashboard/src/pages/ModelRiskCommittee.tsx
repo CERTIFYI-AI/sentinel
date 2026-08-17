@@ -1,6 +1,5 @@
 import { Fragment, useMemo, useState, useEffect, useRef } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -24,23 +23,10 @@ import { useChartTheme } from '../hooks/useChartTheme';
 import { useAuthStore } from '../store/authStore';
 import { StatCardRow } from '../components/ui/StatCardRow';
 import { PageHeader } from '../components/ui/PageHeader';
-import { USERS } from '../data/seed';
+import { ErrorState } from '../components/evals/states';
+import { useUserOptions } from '@/hooks/useUserOptions';
 import { useMrc, useModelOptions } from '@/hooks/useAiiaData';
 import { tallyVotes, type MrcAgendaItem, type MrcVote, type Decision } from '@/services/mrcService';
-
-// ── MRC Members ────────────────────────────────────────────────────────────────
-// Seed defaults for the committee-members table. The LIVE `members` value returned
-// by useSupabaseTable is the single source of truth for quorum everywhere below —
-// this const is only the initial payload, never read directly for quorum math.
-const MRC_MEMBERS = [
-  { id: 'M1', name: 'Sarah Chen', role: 'CISO', department: 'Security', chair: true, quorum: true },
-  { id: 'M2', name: 'James Patel', role: 'VP Compliance', department: 'Compliance', chair: false, quorum: true },
-  { id: 'M3', name: 'Raj Gupta', role: 'Model Risk Manager', department: 'AI/ML', chair: false, quorum: true },
-  { id: 'M4', name: 'David Kim', role: 'Risk Analyst', department: 'Risk', chair: false, quorum: true },
-  { id: 'M5', name: 'Emma Wilson', role: 'Internal Auditor', department: 'Audit', chair: false, quorum: false },
-  { id: 'M6', name: 'Oliver Tran', role: 'Chief Data Officer', department: 'Data', chair: false, quorum: true },
-  { id: 'M7', name: 'Priya Nair', role: 'General Counsel', department: 'Legal', chair: false, quorum: false },
-];
 
 const DECISION_META: Record<Decision, { bg: string; tx: string; label: string }> = {
   approved: { bg: 'hsl(var(--s-ok-bg))', tx: 'hsl(var(--s-ok-tx))', label: 'APPROVED' },
@@ -83,8 +69,22 @@ export default function ModelRiskCommittee() {
   const voterId = authUser?.id || 'anonymous';
   const voterName = authUser?.name || authUser?.email || 'Committee Member';
 
-  const { meetings, agenda, votes, isLoading, vote, addMeeting, addAgenda, decide } = useMrc();
+  const {
+    meetings, agenda, votes, members: rosterRows, isLoading, error,
+    vote, addMeeting, addAgenda, decide, addMember: addMemberMut, removeMember: removeMemberMut,
+  } = useMrc();
   const { models } = useModelOptions();
+  const { options: orgUsers } = useUserOptions();
+
+  // Real committee roster (mrc_committee_members) mapped to the view shape the
+  // JSX below uses. Quorum is counted from this, not a hardcoded list.
+  const members = useMemo(
+    () => rosterRows.map(m => ({
+      id: m.id, name: m.memberName, role: m.committeeRole,
+      department: m.department ?? '—', chair: m.isChair, quorum: m.countsTowardQuorum,
+    })),
+    [rosterRows],
+  );
 
   const [tab, setTab] = useState('agenda');
   const [voteDialog, setVoteDialog] = useState<MrcAgendaItem | null>(null);
@@ -110,23 +110,35 @@ export default function ModelRiskCommittee() {
   const [agSummary, setAgSummary] = useState('');
   const [agMeetingId, setAgMeetingId] = useState('');
 
-  // Committee members (kept exactly as before)
-  const { data: members, setData: setMembers } = useSupabaseTable('modelriskcommittee_table', MRC_MEMBERS);
+  // Committee members — on the real mrc_committee_members table. Writes throw;
+  // the toast fires only after the mutation resolves.
   const [showAddMember, setShowAddMember] = useState(false);
   const [newMemberId, setNewMemberId] = useState('');
   const [newMemberRole, setNewMemberRole] = useState('Committee Member');
   const [newMemberQuorum, setNewMemberQuorum] = useState(true);
 
   const addMember = () => {
-    const user = USERS.find(u => u.id === newMemberId);
+    const user = orgUsers.find(u => u.id === newMemberId);
     if (!user) { toast.error('Select a user from the organization'); return; }
-    if (members.some(m => m.name === user.name)) { toast.error(`${user.name} is already on the committee`); return; }
-    setMembers(prev => [...prev, { id: `M${prev.length + 1}`, name: user.name, role: newMemberRole, department: user.department ?? '—', chair: false, quorum: newMemberQuorum }]);
-    toast.success(`${user.name} added to the committee`);
-    setNewMemberId(''); setNewMemberRole('Committee Member'); setNewMemberQuorum(true); setShowAddMember(false);
+    if (rosterRows.some(m => m.userId === user.id || m.memberName === user.name)) { toast.error(`${user.name} is already on the committee`); return; }
+    addMemberMut.mutate(
+      { userId: user.id, memberName: user.name, committeeRole: newMemberRole, department: user.department ?? null, countsTowardQuorum: newMemberQuorum },
+      {
+        onSuccess: () => {
+          toast.success(`${user.name} added to the committee`);
+          setNewMemberId(''); setNewMemberRole('Committee Member'); setNewMemberQuorum(true); setShowAddMember(false);
+        },
+        onError: (err) => toast.error((err as Error).message),
+      },
+    );
   };
-  const removeMember = (mid: string, name: string) => { setMembers(prev => prev.filter(m => m.id !== mid)); toast.success(`${name} removed from the committee`); };
-  const availableUsers = USERS.filter(u => !members.some(m => m.name === u.name));
+  const removeMember = (mid: string, name: string) => {
+    removeMemberMut.mutate(mid, {
+      onSuccess: () => toast.success(`${name} removed from the committee`),
+      onError: (err) => toast.error((err as Error).message),
+    });
+  };
+  const availableUsers = orgUsers.filter(u => !rosterRows.some(m => m.userId === u.id || m.memberName === u.name));
 
   // ── Derived data (all from real tables) ───────────────────────────────────
   const votesByItem = useMemo(() => {
@@ -290,6 +302,9 @@ export default function ModelRiskCommittee() {
           }
         />
 
+        {/* A thrown query renders a real error state, never an empty agenda. */}
+        {error && <ErrorState message={error.message} />}
+
         {/* Status Strip */}
         <StatCardRow cards={[
           {
@@ -411,10 +426,19 @@ export default function ModelRiskCommittee() {
                         <p className="text-lg font-bold text-[hsl(var(--text-1))]">{item.title}</p>
                         {item.modelId && (
                           <div className="mt-1">
-                            <PillLink
-                              label={mo?.name ?? item.modelName ?? 'Unavailable'}
-                              onClick={() => navigate(`/models/${item.modelId}`)}
-                            />
+                            {mo ? (
+                              <PillLink
+                                label={mo.name}
+                                onClick={() => navigate(`/models/inventory/${item.modelId}`)}
+                              />
+                            ) : (
+                              // The id does not resolve to a registry model. Never
+                              // fall back to the stale denormalised model_name — an
+                              // unresolvable id renders "Unavailable".
+                              <span className="inline-flex items-center px-2 py-0.5 text-xs font-medium border border-[hsl(var(--border))] bg-sunken text-[hsl(var(--text-4))]">
+                                Unavailable
+                              </span>
+                            )}
                           </div>
                         )}
                         <p className="text-xs text-[hsl(var(--text-3))] mt-1">
@@ -710,7 +734,7 @@ export default function ModelRiskCommittee() {
             <div className="p-4 text-sm bg-raised border border-[hsl(var(--border))] rounded-none">
               <p className="text-[hsl(var(--text-1))] font-bold mb-1">{voteDialog?.reviewType}</p>
               <p className="text-[hsl(var(--text-3))]">
-                {voteDialog?.modelName ? <>Model: {voteDialog.modelName} · </> : null}
+                {voteDialog?.modelId ? <>Model: {modelById.get(voteDialog.modelId)?.name ?? 'Unavailable'} · </> : null}
                 Voting as <strong className="text-[hsl(var(--text-2))]">{voterName}</strong>
               </p>
             </div>

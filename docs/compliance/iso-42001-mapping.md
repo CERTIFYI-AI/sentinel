@@ -173,3 +173,31 @@ ISO/IEC 42001. What matters to an auditor:
 | 7.5.3 | Control of documented information — demo records must be identifiable and removable | Every imported row carries `metadata.demo_seed = true` and a "(Demo)" label; `removeDemoData()` deletes exactly the marked rows in reverse dependency order | Implemented |
 | 9.1 | Monitoring inputs must not be contaminated by fabricated measurements | Carbon/energy figures are recorded as `estimated` citing an `emission_factors` row (or skipped); SLA status is derived from a recorded value; attestations stay `pending`; the ESG report stays `draft` with no scores or approver | Implemented |
 | — | AIMS operation | The importer performs no AI operation and asserts no assurance; the imported entities are governed by the modules that own them | N/A — utility |
+
+## Guided Setup ("Get started")
+
+The guided-setup checklist ([module doc](../modules/guided-setup.md)) is a
+read-only onboarding surface, not an AIMS process. Its relevance is that it
+drives adoption of the AIMS controls the other modules implement, and that it
+does so without fabricating state.
+
+| Clause | Requirement | Module & backing | Status |
+|---|---|---|---|
+| 4.4 / 5.x | Establish and operate the AIMS — get the governed entities in place | Steps point the user at model registration, ownership, risk records, controls, evidence, vendor and supply-chain records — the artefacts the AIMS clauses require | Supporting surface |
+| 9.1 | Monitoring must reflect reality | Step done-state is **derived from real queries**, never stored; a source that cannot be checked renders "Unknown" (never done, never not-done), so the completeness signal never fabricates progress | Implemented |
+| 7.5.3 | Control of documented information | The module writes no documented information of its own — it reads existing rows read-only and cannot weaken any evidence chain; the only persisted state is a UI dismissal preference in `onboardingStore` | N/A — read-only |
+| — | AIMS operation | The checklist performs no AI operation and takes no autonomous action; every step is advisory and skippable | N/A — utility, enforced in `useSetupProgress.ts` |
+
+## Module Coverage — Framework Catalog (`framework_controls`)
+
+The Frameworks Requirements tab surfaces each framework's **published control
+catalog** (`framework_controls`), grouped by domain, and interlinks it both ways
+to the org `controls` register (see
+[`docs/modules/frameworks.md`](../modules/frameworks.md)).
+
+| Clause | Requirement | Module & backing | Status |
+|---|---|---|---|
+| 6.1.3 / Annex A | Statement of Applicability — which controls apply and whether they are implemented | The ISO/IEC 42001 catalog (Annex A refs `A.2.2`–`A.10.4`) is shown per framework; each published control links to the org control implementing it, or reads "Not yet implemented" — the SoA is now auditable per requirement, not a single rolled-up count | Implemented |
+| 7.5.3 | Control of documented information | The catalog interlink is **read-only** — `framework_controls` is seeded by migration and never written here; it derives implementation status from existing rows and cannot weaken any evidence chain | N/A — read-only |
+| 9.1 | Monitoring reflects reality | Implementation status is derived from real clause-reference matches, never stored; an unreadable register renders "Implementation status unavailable", never a fabricated zero | Implemented |
+| A.6.2.6 | AI system impact/requirements addressed | Published requirements and their implementing controls are linked bidirectionally, so an assessor can trace a requirement to its control and back | Supporting |

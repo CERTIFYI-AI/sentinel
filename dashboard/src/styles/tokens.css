@@ -51,9 +51,12 @@
   --r-md-bg: 38 92% 96%;  --r-md-tx: 32 90% 33%;  --r-md-br: 38 92% 78%;
   --r-lo-bg: 142 69% 96%; --r-lo-tx: 142 69% 28%; --r-lo-br: 142 69% 82%;
 
-  --shadow-sm: 0 1px 3px rgb(0 0 0/8%);
-  --shadow-md: 0 4px 8px rgb(0 0 0/8%);
-  --shadow-lg: 0 10px 20px rgb(0 0 0/8%);
+  /* Layered elevation ramp — a soft ambient layer plus a tighter key layer,
+     tinted toward the neutral hue (not pure black) for a premium, restrained
+     depth rather than a flat drop shadow. */
+  --shadow-sm: 0 1px 2px -1px rgb(16 24 40/10%), 0 1px 2px rgb(16 24 40/6%);
+  --shadow-md: 0 2px 4px -2px rgb(16 24 40/8%), 0 4px 12px -2px rgb(16 24 40/10%);
+  --shadow-lg: 0 4px 8px -4px rgb(16 24 40/8%), 0 12px 28px -6px rgb(16 24 40/14%);
 
   --destructive: 0 72% 51%;
 
@@ -159,9 +162,12 @@
   --r-md-bg: 38 30% 12%;  --r-md-tx: 38 80% 65%;  --r-md-br: 38 30% 22%;
   --r-lo-bg: 142 30% 12%; --r-lo-tx: 142 60% 65%; --r-lo-br: 142 30% 22%;
 
-  --shadow-sm: 0 1px 3px rgb(0 0 0/40%);
-  --shadow-md: 0 4px 8px rgb(0 0 0/40%);
-  --shadow-lg: 0 10px 20px rgb(0 0 0/40%);
+  /* Dark elevation ramp — deeper, layered shadows plus a hairline top
+     highlight is impractical on arbitrary surfaces, so we lean on stronger
+     opacity to read against the near-black page. */
+  --shadow-sm: 0 1px 2px -1px rgb(0 0 0/50%), 0 1px 3px rgb(0 0 0/40%);
+  --shadow-md: 0 2px 6px -2px rgb(0 0 0/45%), 0 8px 20px -4px rgb(0 0 0/55%);
+  --shadow-lg: 0 8px 16px -6px rgb(0 0 0/50%), 0 18px 40px -8px rgb(0 0 0/65%);
 
   --destructive: 0 62% 60%;
 }
