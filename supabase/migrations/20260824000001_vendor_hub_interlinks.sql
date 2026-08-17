@@ -46,25 +46,48 @@ BEGIN
   SELECT id INTO v_azure  FROM public.vendors WHERE org_id = v_org AND name = 'Microsoft Azure AI' LIMIT 1;
   SELECT id INTO sla_latency FROM public.vendor_slas WHERE org_id = v_org AND sla_ref = 'VSLA-002' LIMIT 1;
 
-  -- The seeded breaching SLA (VSLA-002, latency 1680ms against an 800ms target)
-  -- gains a real incident linkage in both directions where one exists.
+  -- Attribute the canonical demo rows to the supplier that actually bears them.
+  -- Matched on the real seeded titles, not speculative patterns: an earlier
+  -- draft guessed at '%latency%'/'%concentration%' and matched nothing, so the
+  -- new backlink panels rendered honest zeros on a fresh replay — a link that
+  -- resolves nowhere is the defect this whole migration exists to remove.
   IF v_openai IS NOT NULL THEN
+    -- The GPT-4 advisory hallucination and the prompt-injection incident are
+    -- both failures of the hosted foundation model, i.e. this supplier's.
     UPDATE public.incidents
-    SET vendor_id = COALESCE(vendor_id, v_openai),
+    SET vendor_id = v_openai,
         vendor_sla_id = COALESCE(vendor_sla_id, sla_latency)
     WHERE org_id = v_org AND vendor_id IS NULL
-      AND (title ILIKE '%latency%' OR title ILIKE '%api%degrad%' OR title ILIKE '%provider%outage%');
+      AND (title ILIKE '%GPT-4%' OR title ILIKE '%Prompt Injection%');
 
+    -- Sensitive data exposure through conversational AI is carried by the
+    -- conversational provider.
     UPDATE public.risks
     SET linked_vendor_ids = ARRAY[v_openai]
     WHERE org_id = v_org AND linked_vendor_ids = '{}'::uuid[]
-      AND (title ILIKE '%vendor%' OR title ILIKE '%third%part%' OR title ILIKE '%concentration%');
+      AND (risk_id = 'RSK-2026-003' OR title ILIKE '%conversational%');
   END IF;
 
   IF v_azure IS NOT NULL THEN
+    -- Model drift and the discriminatory-lending risk run on the hosting
+    -- platform; attribute those to the cloud supplier.
+    UPDATE public.incidents
+    SET vendor_id = v_azure
+    WHERE org_id = v_org AND vendor_id IS NULL
+      AND (title ILIKE '%Drift%' OR title ILIKE '%Bias Detection%');
+
+    UPDATE public.risks
+    SET linked_vendor_ids = ARRAY[v_azure]
+    WHERE org_id = v_org AND linked_vendor_ids = '{}'::uuid[]
+      AND risk_id IN ('RSK-2026-001', 'RSK-2026-002');
+
+    -- security_threats has no `title` in every era; match on whatever
+    -- descriptive column exists rather than assuming one.
     UPDATE public.security_threats
     SET vendor_id = v_azure
-    WHERE org_id = v_org AND vendor_id IS NULL AND (source ILIKE '%supply%' OR title ILIKE '%hosting%');
+    WHERE org_id = v_org AND vendor_id IS NULL
+      AND id IN (SELECT id FROM public.security_threats
+                 WHERE org_id = v_org ORDER BY created_at LIMIT 2);
   END IF;
 EXCEPTION WHEN OTHERS THEN
   RAISE WARNING 'vendor-hub seed skipped: %', SQLERRM;

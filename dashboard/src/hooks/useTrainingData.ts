@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 
 export function useTrainingData(filters: Record<string, any> = {}) {
   const qc = useQueryClient()
-  const { data: items = [], isLoading, error } = useQuery({
+  const { data: items = [], isLoading, error, refetch } = useQuery({
     queryKey: ['training', filters],
     queryFn: () => fetchAllTraining(filters),
     staleTime: 30_000,
@@ -23,7 +23,7 @@ export function useTrainingData(filters: Record<string, any> = {}) {
   })
 
   return {
-    items, isLoading, error,
+    items, isLoading, error, refetch,
     saveTraining: saveMutation.mutateAsync,
     removeTraining: deleteMutation.mutateAsync,
     save: saveMutation.mutateAsync,

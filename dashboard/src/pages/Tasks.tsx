@@ -1,10 +1,16 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { useTaskData } from '../hooks/useTaskData';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { PageHeader } from '../components/ui/PageHeader';
 import { EmptyState } from '../components/ui/EmptyState';
 import { ErrorState } from '../components/ui/ErrorState';
-import { Link } from 'react-router-dom';
+import { InterlinkChip } from '../components/ui/InterlinkChip';
+import { Link, useSearchParams } from 'react-router-dom';
+import { useModelOptions } from '../hooks/useAiiaData';
+import { useRisksData } from '../hooks/useRisksData';
+import { useIncidentData } from '../hooks/useIncidentData';
+import { useVendorOptions } from '../hooks/useVendorsData';
+import { useControls } from '../hooks/queries/useControls';
 import { Card, CardContent } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { toast } from 'sonner';
@@ -40,6 +46,31 @@ export interface Task {
   source: string;
   sourceType: 'gap' | 'risk';
   sourceLink: string;
+  /** Canonical interlink: tasks.linked_entity_type / linked_entity_id. */
+  linkedEntityType?: string | null;
+  linkedEntityId?: string | null;
+}
+
+// ── canonical linked-entity types ──────────────────────────────────────────
+// The stored value is always the entity's uuid on the one id-space; the
+// display name is resolved at render time and the route carries the id.
+const LINKED_ENTITY_TYPES = [
+  { value: 'model', label: 'Model' },
+  { value: 'risk', label: 'Risk' },
+  { value: 'incident', label: 'Incident' },
+  { value: 'vendor', label: 'Vendor' },
+  { value: 'control', label: 'Control' },
+] as const;
+
+function linkedEntityRoute(type: string, id: string): string | null {
+  switch (type) {
+    case 'model': return `/models/inventory/${id}`;
+    case 'risk': return `/risks?open=${id}`;
+    case 'incident': return `/risk/incidents?open=${id}`;
+    case 'vendor': return `/vendors/${id}`;
+    case 'control': return `/compliance/controls?open=${id}`;
+    default: return null;
+  }
 }
 
 // SLA badge calculation
@@ -197,6 +228,8 @@ const emptyForm = {
   source: '',
   sourceType: 'risk' as 'gap' | 'risk',
   sourceLink: '/risks',
+  linkedEntityType: '' as string,
+  linkedEntityId: '' as string,
 };
 
 // ── main component ─────────────────────────────────────────────────────────
@@ -207,6 +240,35 @@ export default function Tasks() {
   // make a failed write look like a success.
   const { tasks: liveTasks, isLoading, error, save, remove } = useTaskData();
   const tasks = liveTasks as Task[];
+  const [searchParams] = useSearchParams();
+  const openParam = searchParams.get('open');
+
+  // Linked-entity option lists — real registry rows, uuid values, names
+  // resolved at render time (never a raw uuid; "Unavailable" when a stored id
+  // no longer resolves).
+  const { models } = useModelOptions();
+  const { risks } = useRisksData();
+  const { incidents } = useIncidentData();
+  const { options: vendorOptions } = useVendorOptions();
+  const controlsQuery = useControls();
+
+  const entityOptions = useMemo((): Record<string, { id: string; name: string }[]> => ({
+    model: models.map((m: any) => ({ id: m.id, name: m.name })),
+    risk: risks.map((r: any) => ({ id: r.id, name: r.risk_id ? `${r.risk_id} — ${r.title}` : r.title })),
+    incident: (incidents as any[]).map((i) => {
+      const ref = i.incident_id ?? i.incidentId;
+      return { id: i.id, name: ref ? `${ref} — ${i.title}` : (i.title ?? 'Untitled incident') };
+    }),
+    vendor: vendorOptions.map((v: any) => ({ id: v.id, name: v.name || 'Unnamed vendor' })),
+    control: (controlsQuery.data ?? []).map((c: any) => ({ id: c.id, name: c.controlRef ? `${c.controlRef} — ${c.name}` : c.name })),
+  }), [models, risks, incidents, vendorOptions, controlsQuery.data]);
+
+  /** Resolved display name for a stored linked-entity id, or null. */
+  const linkedEntityName = useCallback((type?: string | null, id?: string | null): string | null => {
+    if (!type || !id) return null;
+    return entityOptions[type]?.find((o) => o.id === id)?.name ?? null;
+  }, [entityOptions]);
+
   const [view, setView] = useState<'table' | 'kanban'>('table');
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -220,6 +282,17 @@ export default function Tasks() {
   const [activeId, setActiveId] = useState<string | null>(null);
 
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 8 } }));
+
+  // Deep link ?open=<id> — applied once on data arrival, so a refetch does not
+  // reopen a drawer the user has closed (pattern shared with AibomRegistry).
+  const appliedOpen = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openParam || isLoading || appliedOpen.current === openParam) return;
+    appliedOpen.current = openParam;
+    const match = tasks.find(t => t.id === openParam);
+    if (match) setDetailTask(match);
+    else toast.error('Task not found or not visible to you.');
+  }, [openParam, isLoading, tasks]);
 
   if (isLoading) return <PageSkeleton title="Tasks" />;
   // A thrown query must never render as an empty state: the read path used to
@@ -560,10 +633,27 @@ export default function Tasks() {
                         <span style={{ fontSize: 12 }}>{formatDate(t.dueDate)}</span>
                       </div>
                     </td>
-                    <td style={{ padding: '10px 14px' }}>
-                      <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10, fontFamily: 'monospace' }}>
-                        {t.source}
-                      </Badge>
+                    <td style={{ padding: '10px 14px' }} onClick={e => e.stopPropagation()}>
+                      {t.linkedEntityType && t.linkedEntityId ? (() => {
+                        const name = linkedEntityName(t.linkedEntityType, t.linkedEntityId);
+                        const route = linkedEntityRoute(t.linkedEntityType, t.linkedEntityId);
+                        return name && route ? (
+                          <InterlinkChip label={name} to={route} />
+                        ) : (
+                          <span
+                            style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}
+                            title="This link points to a record that no longer exists or is not visible to you"
+                          >
+                            Unavailable
+                          </span>
+                        );
+                      })() : t.source ? (
+                        <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10, fontFamily: 'monospace' }}>
+                          {t.source}
+                        </Badge>
+                      ) : (
+                        <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>—</span>
+                      )}
                     </td>
                     <td style={{ padding: '10px 14px' }}>
                       <div style={{ display: 'flex', gap: 4 }} onClick={e => e.stopPropagation()}>
@@ -735,6 +825,28 @@ export default function Tasks() {
                     <span style={{ fontSize: 12, fontWeight: 500, color: 'hsl(var(--text-1))' }}>{r.value}</span>
                   </div>
                 ))}
+                {/* Linked entity — canonical interlink, resolved to a name. */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderTop: '1px solid hsl(var(--border))' }}>
+                  <span style={{ fontSize: 12, color: 'hsl(var(--text-3))' }}>Linked Entity</span>
+                  {detailTask.linkedEntityType && detailTask.linkedEntityId ? (() => {
+                    const name = linkedEntityName(detailTask.linkedEntityType, detailTask.linkedEntityId);
+                    const route = linkedEntityRoute(detailTask.linkedEntityType, detailTask.linkedEntityId);
+                    const typeLabel = LINKED_ENTITY_TYPES.find(t => t.value === detailTask.linkedEntityType)?.label
+                      ?? detailTask.linkedEntityType;
+                    return name && route ? (
+                      <InterlinkChip label={`${typeLabel}: ${name}`} to={route} />
+                    ) : (
+                      <span
+                        style={{ fontSize: 12, color: 'hsl(var(--text-4))' }}
+                        title="This link points to a record that no longer exists or is not visible to you"
+                      >
+                        Unavailable
+                      </span>
+                    );
+                  })() : (
+                    <span style={{ fontSize: 12, color: 'hsl(var(--text-4))' }}>—</span>
+                  )}
+                </div>
               </div>
 
               {/* Mock comments */}
@@ -852,6 +964,41 @@ export default function Tasks() {
                 <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-3))', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Source ID (e.g. GAP-001)</label>
                 <input value={form.source} onChange={e => setForm({ ...form, source: e.target.value })}
                   style={{ width: '100%', padding: '7px 10px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 13 }} />
+              </div>
+
+              {/* Linked entity — the canonical interlink. Stored as
+                  linked_entity_type + linked_entity_id (uuid); the name shown
+                  here and on the card is resolved from the registry. */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-3))', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Linked Entity Type</label>
+                  <select
+                    value={form.linkedEntityType ?? ''}
+                    onChange={e => setForm({ ...form, linkedEntityType: e.target.value, linkedEntityId: '' })}
+                    style={{ width: '100%', padding: '7px 10px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 13 }}
+                  >
+                    <option value="">None</option>
+                    {LINKED_ENTITY_TYPES.map(t => <option key={t.value} value={t.value}>{t.label}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 600, color: 'hsl(var(--text-3))', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Linked Record</label>
+                  <select
+                    value={form.linkedEntityId ?? ''}
+                    onChange={e => setForm({ ...form, linkedEntityId: e.target.value })}
+                    disabled={!form.linkedEntityType}
+                    style={{ width: '100%', padding: '7px 10px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 13 }}
+                  >
+                    <option value="">
+                      {!form.linkedEntityType
+                        ? 'Pick a type first'
+                        : (entityOptions[form.linkedEntityType]?.length ? 'Select…' : 'Nothing available to link')}
+                    </option>
+                    {(form.linkedEntityType ? entityOptions[form.linkedEntityType] ?? [] : []).map(o => (
+                      <option key={o.id} value={o.id}>{o.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
             </div>
 

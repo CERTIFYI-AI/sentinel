@@ -27,7 +27,7 @@ import {
   Robot, Plugs, Lock, ArrowSquareOut, Export, Cube, ShieldCheck,
 } from '@phosphor-icons/react';
 import { toast } from 'sonner';
-import { useEvidenceData, useEvidenceChain } from '../hooks/useEvidenceData';
+import { useEvidenceData, useEvidenceChain, useEvidenceArtifacts } from '../hooks/useEvidenceData';
 import { useModelsData } from '../hooks/useModelsData';
 import { useControls } from '../hooks/queries/useControls';
 import { useIncidents } from '@/hooks/useRiskIncidents';
@@ -121,6 +121,7 @@ export default function EvidenceVault() {
   const [searchParams, setSearchParams] = useSearchParams();
   const { evidence, isLoading, error, save, remove, isSaving } = useEvidenceData();
   const { chain, isLoading: chainLoading, error: chainError } = useEvidenceChain();
+  const { artifacts, isLoading: artifactsLoading, error: artifactsError } = useEvidenceArtifacts();
   const { models } = useModelsData();
   const controlsQuery = useControls();
   const controls = controlsQuery.data ?? [];
@@ -544,6 +545,79 @@ export default function EvidenceVault() {
                           <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{entry.actor || '—'}</td>
                           <td className="p-3 text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{truncateHash(entry.prev_hash)}</td>
                           <td className="p-3 text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{truncateHash(entry.hash)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ── Stored artifacts — per-file custody forensics ── */}
+          <div className="flex items-center justify-between pt-2">
+            <div>
+              <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Stored Artifacts</p>
+              <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
+                Hashed files in the artifact index — open one for its full append-only custody timeline and re-hash verification
+              </p>
+            </div>
+          </div>
+
+          {artifactsError && (
+            <div className="p-3 text-sm" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', color: 'hsl(var(--s-er-tx))' }}>
+              Failed to load stored artifacts: {(artifactsError as Error).message}
+            </div>
+          )}
+
+          {!artifactsLoading && !artifactsError && artifacts.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-10 text-center" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+              <FileText size={32} />
+              <p className="mt-3 text-sm font-medium" style={{ color: 'hsl(var(--text-2))' }}>No stored artifacts yet</p>
+              <p className="text-xs mt-1 max-w-md">
+                Files ingested into the <span className="font-mono">evidence_artifacts</span> index appear here with
+                their digest and custody status.
+              </p>
+            </div>
+          )}
+
+          {artifacts.length > 0 && (
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', borderRadius: 0 }}>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                      <tr>
+                        {['File', 'SHA-256', 'Classification', 'Verified', 'Custody'].map(h => (
+                          <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {artifacts.map(a => (
+                        <tr key={a.id} style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-1))' }}>
+                            {a.file_name}
+                            {a.legal_hold && (
+                              <Badge className="ml-2" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', borderRadius: 0, fontSize: 9 }}>
+                                LEGAL HOLD
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="p-3 text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{truncateHash(a.sha256_hex)}</td>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{a.classification ?? '—'}</td>
+                          <td className="p-3 text-xs">
+                            {a.last_verified_at == null ? (
+                              <span style={{ color: 'hsl(var(--text-4))' }}>Never verified</span>
+                            ) : a.last_verified_ok ? (
+                              <span style={{ color: 'hsl(var(--s-ok-tx))' }}>OK · {new Date(a.last_verified_at).toLocaleDateString()}</span>
+                            ) : (
+                              <span style={{ color: 'hsl(var(--s-er-tx))' }}>FAILED · {new Date(a.last_verified_at).toLocaleDateString()}</span>
+                            )}
+                          </td>
+                          <td className="p-3">
+                            <InterlinkChip label="Custody" to={`/evidence/custody/${a.id}`} />
+                          </td>
                         </tr>
                       ))}
                     </tbody>

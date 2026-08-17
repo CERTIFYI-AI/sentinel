@@ -56,6 +56,8 @@ export interface ModelBacklinks {
   aibomRecords: BacklinkSource;
   attestations: BacklinkSource;
   provenanceNodes: BacklinkSource;
+  /** Open governance tasks (tasks.linked_entity_type='model'). */
+  openTasks: BacklinkSource;
 }
 
 const UNAVAILABLE: BacklinkSource = { count: null, items: [] };
@@ -139,6 +141,7 @@ async function fetchModelBacklinks(modelId: string): Promise<ModelBacklinks> {
     controls, transparencyReports, aiTrainings,
     carbonRecords, energyMetrics, esgReports,
     aibomRecords, attestations, provenanceNodes,
+    openTasks,
   ] = await Promise.all([
     // linked_model_ids is text[] — the uuid is matched as a string.
     safeSource(
@@ -389,6 +392,27 @@ async function fetchModelBacklinks(modelId: string): Promise<ModelBacklinks> {
         note: str(r.node_type),
       }),
     ),
+
+    // Open governance tasks raised against this model — the inbound half of
+    // the Tasks entity picker (tasks.linked_entity_type/linked_entity_id).
+    safeSource(
+      () => supabase.from('tasks')
+        .select('id,title,priority,status,due_date', { count: 'exact' })
+        .eq('linked_entity_type', 'model')
+        .eq('linked_entity_id', modelId)
+        .eq('is_deleted', false)
+        .neq('status', 'done')
+        .order('created_at', { ascending: false })
+        .limit(3),
+      (r: Row): BacklinkItem => ({
+        id: String(r.id),
+        ref: null,
+        title: str(r.title) ?? 'Untitled task',
+        severity: str(r.priority),
+        status: str(r.status),
+        note: typeof r.due_date === 'string' && r.due_date ? `Due ${r.due_date.slice(0, 10)}` : null,
+      }),
+    ),
   ]);
 
   return {
@@ -397,6 +421,7 @@ async function fetchModelBacklinks(modelId: string): Promise<ModelBacklinks> {
     controls, transparencyReports, aiTrainings,
     carbonRecords, energyMetrics, esgReports,
     aibomRecords, attestations, provenanceNodes,
+    openTasks,
   };
 }
 

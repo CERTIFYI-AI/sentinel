@@ -403,7 +403,10 @@ present an unverified record as verified.
 
 | ID | Item | Closed |
 |---|---|---|
-| — | AIBOM Registry / Supply Chain Attestations absent from the TD-001 register | 2026-08-16 |
+| — | `bcpPlansService` / `securityScansService` / `trainingService` returned SEED_* mock arrays on empty table **and on query failure** (fabricated MDL-00x records presented as real); BCP and Training pages carried their own hardcoded fallback catalogues | 2026-08-17 |
+| — | 28 of 36 vendor TPRM columns had no write path — mapped by `toRow` but sent by no form; reassessment programme read `—` forever on a real tenant (fixed by VendorEditSheet) | 2026-08-17 |
+| — | `vendors.linked_models` read by concentration analysis but written by nothing (fixed by the edit sheet's model picker) | 2026-08-17 |
+| — | CarbonAgent multiplied by bare constants, invented 7B-param/10k-req defaults, annualised inference into a quarterly record, and its factor lookup could never match; RemediationPlannerAgent wrote nonexistent columns (`due_at`, `sla_hours`, `affected_models`) and emitted REMEDIATION_CREATED for rows that never persisted | 2026-08-17 |
 | — | 53 `%_table` demo tables cross-tenant readable/writable — *first fix did not apply to populated databases; re-applied* | 2026-08-17 |
 | — | `vendors.org_id` NOT NULL with no DB default — every client insert failed (23502) | 2026-08-16 |
 | — | `carbon_records` missing all 13 domain columns — Carbon Ledger persisted nothing | 2026-08-16 |

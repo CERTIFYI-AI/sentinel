@@ -20,6 +20,7 @@ import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { useControls } from '../../hooks/queries/useControls';
 import { useControlTests } from '../../hooks/useComplianceGroup';
+import { useControlAssurance, type AssuranceSource } from '../../hooks/useControlAssurance';
 import { useModelsData } from '../../hooks/useModelsData';
 import { useRisksData } from '../../hooks/useRisksData';
 import { usePolicies } from '../../hooks/queries/usePolicies';
@@ -40,6 +41,70 @@ const prettyStatus = (s?: string | null) => {
 
 const displayRef = (c: ControlRecord) => c.controlRef || (c.id ? `${c.id.slice(0, 8)}…` : '—');
 
+/**
+ * One assurance source card: the count of records citing this control, up to
+ * 3 of them with resolved titles deep-linking into their module. A failed
+ * query shows "Unavailable" (never a fake 0); an empty source says honestly
+ * that nothing cites the control yet.
+ */
+function AssuranceSourceCard({
+  title, source, loading, linkTo, emptyText,
+}: {
+  title: string;
+  source: AssuranceSource | undefined;
+  loading: boolean;
+  /** Builds the deep link for one item; null renders the item unlinked. */
+  linkTo: ((id: string) => string) | null;
+  emptyText: string;
+}) {
+  const count = source?.count ?? null;
+  return (
+    <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-semibold flex items-center justify-between" style={{ color: 'hsl(var(--text-1))' }}>
+          <span>{title}</span>
+          <span className="text-xs font-normal" style={{ color: 'hsl(var(--text-3))' }}>
+            {loading ? '…' : count == null ? 'Unavailable' : count}
+          </span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        {loading ? (
+          <div className="animate-pulse space-y-2" aria-busy="true">
+            {Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-5 bg-[hsl(var(--bg-sunken))]" />)}
+          </div>
+        ) : count == null ? (
+          <p className="text-xs py-2" style={{ color: 'hsl(var(--text-4))' }}>
+            This source could not be queried — its records may exist but are not visible right now.
+          </p>
+        ) : count === 0 ? (
+          <p className="text-xs py-2" style={{ color: 'hsl(var(--text-4))' }}>{emptyText}</p>
+        ) : (
+          <div className="space-y-1.5">
+            {(source?.items ?? []).map((item) => {
+              const label = item.ref ? `${item.ref} — ${item.title}` : item.title;
+              const meta = [item.note, item.status].filter(Boolean).join(' · ');
+              return (
+                <div key={item.id} className="flex items-center gap-2 min-w-0">
+                  {linkTo
+                    ? <InterlinkChip label={label} to={linkTo(item.id)} />
+                    : <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>{label}</span>}
+                  {meta && <span className="text-[10px] truncate" style={{ color: 'hsl(var(--text-4))' }}>{meta}</span>}
+                </div>
+              );
+            })}
+            {count > (source?.items.length ?? 0) && (
+              <p className="text-[10px] pt-1" style={{ color: 'hsl(var(--text-4))' }}>
+                Showing {source?.items.length} of {count}.
+              </p>
+            )}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 function ScoreCircle({ score, size = 100 }: { score: number; size?: number }) {
   const color = score >= 85 ? 'hsl(var(--s-ok-tx))' : score >= 65 ? 'hsl(var(--r-hi-tx))' : 'hsl(var(--s-er-tx))';
   return (
@@ -57,6 +122,7 @@ export default function ControlDetail() {
 
   const controlsQuery = useControls();
   const testsQuery = useControlTests(id);
+  const assuranceQuery = useControlAssurance(id);
   const { models } = useModelsData();
   const { risks } = useRisksData();
   const policiesQuery = usePolicies();
@@ -202,6 +268,48 @@ export default function ControlDetail() {
                 </div>
               </CardContent>
             </Card>
+          </div>
+
+          {/* Assurance — every record across the platform that cites this
+              control as the thing it evidences: Evidence Vault entries,
+              supply-chain attestations, vendor documents and legacy
+              control_evidence rows. This is the inbound half of the
+              evidence→control edge the Evidence Vault already draws. */}
+          <div className="mt-4">
+            <h2 className="text-sm font-semibold mb-2" style={{ color: 'hsl(var(--text-1))' }}>Assurance</h2>
+            <p className="text-xs mb-3" style={{ color: 'hsl(var(--text-3))' }}>
+              Records elsewhere in the platform that cite this control. Each source is counted independently — a source that cannot be queried says so rather than showing zero.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <AssuranceSourceCard
+                title="Evidence Vault"
+                source={assuranceQuery.data?.evidence}
+                loading={assuranceQuery.isLoading}
+                linkTo={(eid) => `/evidence-vault?open=${eid}`}
+                emptyText="No evidence cites this control."
+              />
+              <AssuranceSourceCard
+                title="Supply Chain Attestations"
+                source={assuranceQuery.data?.attestations}
+                loading={assuranceQuery.isLoading}
+                linkTo={(aid) => `/supply-chain?open=${aid}`}
+                emptyText="No attestation cites this control."
+              />
+              <AssuranceSourceCard
+                title="Vendor Documents"
+                source={assuranceQuery.data?.vendorDocuments}
+                loading={assuranceQuery.isLoading}
+                linkTo={(did) => `/vendor-upload?open=${did}`}
+                emptyText="No vendor document cites this control."
+              />
+              <AssuranceSourceCard
+                title="Legacy Control Evidence"
+                source={assuranceQuery.data?.controlEvidence}
+                loading={assuranceQuery.isLoading}
+                linkTo={null}
+                emptyText="No legacy control_evidence rows cite this control."
+              />
+            </div>
           </div>
         </TabsContent>
 

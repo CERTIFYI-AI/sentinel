@@ -65,7 +65,8 @@ was free text with no foreign key, and "Renew" was a toast that closed a drawer.
 - `org_id` is filled by the DB default `current_user_org_id()`.
 - Create, update, revoke, renew and delete all call `logAction`
   (EU AI Act Art. 12).
-- `?model=<ai_models.id>` filters with a dismissible chip;
+- `?model=<ai_models.id>` and `?vendor=<vendors.id>` filter with dismissible
+  chips (the vendor filter matches `vendor_id` or a `vendor` subject);
   `?open=<supply_chain_attestations.id>` opens the record.
 
 ## Fields (`supply_chain_attestations`)
@@ -142,6 +143,8 @@ Inbound:
 - `?model=<ai_models.id>` with a dismissible chip, from [AIBOM](aibom.md),
   [Provenance](provenance.md) and the
   [Supply Chain Graph](supply-chain-graph.md).
+- `?vendor=<vendors.id>` with a dismissible chip, from the vendor detail's
+  Linked tab ([Vendor Registry](vendor-registry.md)).
 - `?open=<supply_chain_attestations.id>` for a specific record.
 - Because `subject_id`/`model_id`/`vendor_id` are real foreign keys, the model
   and vendor records can query their own attestations rather than relying on a

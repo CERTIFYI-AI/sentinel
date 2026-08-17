@@ -44,16 +44,29 @@ export function classifyEuAiAct(purpose: string, deploymentScope: string): 'UNAC
 }
 
 // ---- Carbon estimation -------------------------------------------
-export function estimateCarbon(p: { modelType: string; estimatedParams?: number; expectedRequestsPerDay?: number }):
-  { trainingCO2Kg: number; inferenceCO2KgPerDay: number; annualCO2Kg: number } {
-  const params = p.estimatedParams ?? (p.modelType === 'GENERATIVE' ? 7_000_000_000 : 100_000_000)
-  // ML CO2 Impact paper heuristic: ~0.2 kWh per GPU-hour * carbon intensity
-  const trainingCO2Kg = (params / 1e9) * 320   // ~320 kg CO2 per billion params (rough)
-  const perInference  = p.modelType === 'GENERATIVE' ? 0.00085 : 0.00005 // kg CO2
-  const rps = p.expectedRequestsPerDay ?? 10_000
-  const inferenceCO2KgPerDay = rps * perInference
-  const annualCO2Kg = trainingCO2Kg + inferenceCO2KgPerDay * 365
-  return { trainingCO2Kg, inferenceCO2KgPerDay, annualCO2Kg }
+// A derivation is only performed from a CITED emission factor (the caller
+// passes the catalog's stored factor_value — never a local constant) and from
+// RECORDED inputs. No default parameter count or request volume is invented:
+// a missing input yields a null component and the caller skips that estimate,
+// because a figure derived from an invented input is not an estimate, it is a
+// fabrication.
+export function estimateCarbonFromFactors(p: {
+  estimatedParams?: number
+  expectedRequestsPerDay?: number
+  /** emission_factors.factor_value for EF-TRAIN-PARAMS (kgCO2e per 1B params). */
+  trainingKgPerBillionParams: number
+  /** emission_factors.factor_value for EF-INFER-REQ (kgCO2e per inference). */
+  inferenceKgPerRequest: number
+}): { trainingCO2Kg: number | null; inferenceCO2KgPerDay: number | null } {
+  const trainingCO2Kg =
+    typeof p.estimatedParams === 'number' && Number.isFinite(p.estimatedParams) && p.estimatedParams > 0
+      ? (p.estimatedParams / 1e9) * p.trainingKgPerBillionParams
+      : null
+  const inferenceCO2KgPerDay =
+    typeof p.expectedRequestsPerDay === 'number' && Number.isFinite(p.expectedRequestsPerDay) && p.expectedRequestsPerDay > 0
+      ? p.expectedRequestsPerDay * p.inferenceKgPerRequest
+      : null
+  return { trainingCO2Kg, inferenceCO2KgPerDay }
 }
 
 // ---- Severity-tier SLA -------------------------------------------

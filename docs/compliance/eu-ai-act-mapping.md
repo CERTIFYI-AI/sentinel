@@ -212,3 +212,14 @@ figures that no query produced.
   pipeline, so the module shows no peer figures and says why. Claims about an
   anonymised peer network were removed rather than relabelled — see the module
   doc for what was asserted and why it could not stand.
+
+## Demo Data Import (Settings)
+
+The one-button demo import ([module doc](../modules/demo-import.md)) is a
+platform utility, not an AI system, so most obligations are N/A. Two points are
+in scope:
+
+| Article | Obligation | Module & backing | Status |
+|---|---|---|---|
+| Art. 12 | Record-keeping — state changes are attributable | Every underlying service write logs itself, and the overall `import` / `remove` outcome (including failures) writes a `settings`/`demo_import` audit entry via `logAction` | Implemented |
+| — | Demo data must never masquerade as real records or measurements | Every row carries `metadata.demo_seed = true`, names are "(Demo)"-labelled with role-label owners and `.example` domains; estimates cite `emission_factors` rows or are skipped; attestations stay `pending`, AIBOMs `draft`, ESG reports `draft` with no approver; no audit events are ever seeded | N/A — utility, honesty constraints enforced in `demoImportService.ts` |

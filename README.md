@@ -268,6 +268,15 @@ demo organisation:
 > institutions (e.g. Nepal Rastra Bank) appear only as narrative context and
 > do not represent real data or relationships.
 
+4. Optional: **Settings → Demo data → Import demo data** seeds your org with a
+   small, clearly-fictional, fully interlinked dataset (models → vendors →
+   risks → incidents → assessments/SLAs → AIBOM/attestations/provenance →
+   cited carbon/energy estimates → draft ESG report → tasks) written through
+   the real service layer. Every record carries a `demo_seed` marker and can be
+   removed with one click. See
+   [`docs/modules/demo-import.md`](docs/modules/demo-import.md). The old
+   `/import-data` page is retired; its route redirects to Settings.
+
 ---
 
 ## Project Structure

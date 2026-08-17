@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import {
   fetchAllEvidences, upsertEvidence, deleteEvidence, fetchEvidenceChain,
+  fetchEvidenceArtifacts,
   type EvidenceRecord,
 } from '../services/evidenceService'
 
@@ -34,6 +35,17 @@ export function useEvidenceData(filters: Record<string, any> = {}) {
     isSaving: saveMutation.isPending,
     isDeleting: deleteMutation.isPending,
   }
+}
+
+// Stored-file index (`evidence_artifacts`) — links the vault to the per-file
+// Custody Explorer at /evidence/custody/:artifactId.
+export function useEvidenceArtifacts(limit = 200) {
+  const query = useQuery({
+    queryKey: ['evidence-artifacts', limit],
+    queryFn: () => fetchEvidenceArtifacts(limit),
+    staleTime: 30_000,
+  })
+  return { artifacts: query.data ?? [], isLoading: query.isLoading, error: query.error }
 }
 
 // Read-only view over the append-only evidence_chain custody ledger.

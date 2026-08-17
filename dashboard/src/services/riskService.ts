@@ -38,6 +38,8 @@ export type RiskRecord = {
   linked_model_ids?: string[]
   linked_control_ids?: string[]
   linked_incident_ids?: string[]
+  /** → vendors.id uuids (20260824000001 vendor-hub interlink column). */
+  linked_vendor_ids?: string[]
   residual_likelihood?: number | null
   residual_impact?: number | null
   deadline?: string | null
@@ -91,6 +93,7 @@ function mapRow(row: any): RiskRecord {
     linked_model_ids: Array.isArray(row.linked_model_ids) ? row.linked_model_ids : [],
     linked_control_ids: Array.isArray(row.linked_control_ids) ? row.linked_control_ids : [],
     linked_incident_ids: Array.isArray(row.linked_incident_ids) ? row.linked_incident_ids : [],
+    linked_vendor_ids: Array.isArray(row.linked_vendor_ids) ? row.linked_vendor_ids : [],
     residual_likelihood: row.residual_likelihood ?? null,
     residual_impact: row.residual_impact ?? null,
     deadline: row.deadline ?? null,
@@ -139,6 +142,11 @@ function mapToRow(record: Partial<RiskRecord>): Record<string, any> {
   if (record.linked_model_ids != null) row.linked_model_ids = record.linked_model_ids
   if (record.linked_control_ids != null) row.linked_control_ids = record.linked_control_ids
   if (record.linked_incident_ids != null) row.linked_incident_ids = record.linked_incident_ids
+  if (record.linked_vendor_ids != null) row.linked_vendor_ids = record.linked_vendor_ids
+  // metadata (jsonb) — used e.g. by the demo importer to carry the
+  // { demo_seed: true } marker. Only written when the caller set it, so a
+  // partial update never blanks existing metadata.
+  if (record.metadata != null) row.metadata = record.metadata
   if (record.residual_likelihood !== undefined) row.residual_likelihood = record.residual_likelihood
   if (record.residual_impact !== undefined) row.residual_impact = record.residual_impact
   if (record.deadline !== undefined) row.deadline = record.deadline

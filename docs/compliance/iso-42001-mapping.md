@@ -161,3 +161,15 @@ fed by real measurement.
   any of these surfaces is a literal. Where a source does not exist the section
   is removed and an empty state names what is missing; where a query fails the
   page reports the failure rather than rendering a zero.
+
+## Demo Data Import (Settings)
+
+The one-button demo import ([module doc](../modules/demo-import.md)) is a
+platform utility rather than an AIMS process, so it is largely out of scope for
+ISO/IEC 42001. What matters to an auditor:
+
+| Clause | Requirement | Module & backing | Status |
+|---|---|---|---|
+| 7.5.3 | Control of documented information — demo records must be identifiable and removable | Every imported row carries `metadata.demo_seed = true` and a "(Demo)" label; `removeDemoData()` deletes exactly the marked rows in reverse dependency order | Implemented |
+| 9.1 | Monitoring inputs must not be contaminated by fabricated measurements | Carbon/energy figures are recorded as `estimated` citing an `emission_factors` row (or skipped); SLA status is derived from a recorded value; attestations stay `pending`; the ESG report stays `draft` with no scores or approver | Implemented |
+| — | AIMS operation | The importer performs no AI operation and asserts no assurance; the imported entities are governed by the modules that own them | N/A — utility |

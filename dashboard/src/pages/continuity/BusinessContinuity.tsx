@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useBcpPlansData } from '../../hooks/useBcpPlansData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { ErrorState } from '../../components/ui/ErrorState';
+import { EmptyState } from '../../components/ui/EmptyState';
 import {
   Lifebuoy, MagnifyingGlass, Export, Eye, CheckCircle,
   Warning, Clock, ShieldCheck, ArrowsClockwise, Users,
@@ -50,190 +52,6 @@ interface BCPPlan {
 
 // ── Seed Data ────────────────────────────────────────────────────────────────
 
-const BCP_PLANS: BCPPlan[] = [
-  {
-    id: 'BCP-001',
-    name: 'AI Pipeline Failover',
-    scope: 'AI Model Serving Infrastructure',
-    rto: '4h',
-    rpo: '1h',
-    lastTested: '2026-03-15',
-    testResult: 'Pass',
-    owner: 'Priya Sharma',
-    status: 'Active',
-    nextTest: '2026-06-15',
-    description: 'Comprehensive failover plan for the AI model serving pipeline including training infrastructure, inference endpoints, feature stores, and model artifact repositories. Ensures continuous availability of production ML models during infrastructure failures.',
-    recoverySteps: [
-      { step: 1, action: 'Activate secondary inference cluster in us-west-2', responsible: 'Platform Engineering', timeframe: '15 min', status: 'Complete' },
-      { step: 2, action: 'Redirect API gateway traffic to failover endpoints', responsible: 'SRE Team', timeframe: '10 min', status: 'Complete' },
-      { step: 3, action: 'Validate model serving health checks and latency SLOs', responsible: 'ML Ops', timeframe: '20 min', status: 'Complete' },
-      { step: 4, action: 'Restore feature store replication from S3 snapshots', responsible: 'Data Engineering', timeframe: '45 min', status: 'In Progress' },
-      { step: 5, action: 'Re-enable model training pipelines on backup compute', responsible: 'ML Engineering', timeframe: '2h', status: 'Pending' },
-      { step: 6, action: 'Run end-to-end integration tests on failover stack', responsible: 'QA Team', timeframe: '1h', status: 'Pending' },
-    ],
-    dependencies: [
-      { system: 'AWS us-west-2 Region', type: 'Cloud Infrastructure', criticality: 'Critical', failoverAvailable: true },
-      { system: 'Feature Store (Redis)', type: 'Data Store', criticality: 'Critical', failoverAvailable: true },
-      { system: 'Model Registry (MLflow)', type: 'ML Platform', criticality: 'High', failoverAvailable: true },
-      { system: 'Monitoring (Datadog)', type: 'Observability', criticality: 'Medium', failoverAvailable: false },
-    ],
-    testResults: [
-      { date: '2026-03-15', type: 'Full DR Drill', result: 'Pass', duration: '3h 42m', findings: 'All systems recovered within RTO. Feature store failover took 38 minutes, within acceptable range.', participants: 12 },
-      { date: '2025-12-10', type: 'Tabletop Exercise', result: 'Pass', duration: '2h', findings: 'Identified gap in runbook for feature store replication. Updated documentation.', participants: 8 },
-      { date: '2025-09-20', type: 'Full DR Drill', result: 'Pass with Issues', duration: '4h 15m', findings: 'Model registry sync exceeded expected window by 33 minutes. Root cause: large artifact cache.', participants: 14 },
-    ],
-    contacts: [
-      { name: 'Priya Sharma', role: 'BCP Plan Owner', phone: '+1 (555) 234-5678', email: 'priya.sharma@acmefinancial.com', primary: true },
-      { name: 'Alex Rodriguez', role: 'SRE Lead', phone: '+1 (555) 345-6789', email: 'alex.rodriguez@acmefinancial.com', primary: false },
-      { name: 'Jordan Lee', role: 'ML Ops Manager', phone: '+1 (555) 456-7890', email: 'jordan.lee@acmefinancial.com', primary: false },
-    ],
-  },
-  {
-    id: 'BCP-002',
-    name: 'Data Center DR',
-    scope: 'Primary Cloud Infrastructure (AWS us-east-1)',
-    rto: '2h',
-    rpo: '15min',
-    lastTested: '2026-02-28',
-    testResult: 'Pass',
-    owner: 'David Kim',
-    status: 'Active',
-    nextTest: '2026-05-28',
-    description: 'Disaster recovery plan for the primary AWS us-east-1 region covering all production workloads including databases, application servers, network configurations, and data replication to the secondary us-west-2 region.',
-    recoverySteps: [
-      { step: 1, action: 'Declare disaster and activate incident command', responsible: 'Incident Commander', timeframe: '5 min', status: 'Complete' },
-      { step: 2, action: 'Initiate Route 53 DNS failover to us-west-2', responsible: 'Network Engineering', timeframe: '5 min', status: 'Complete' },
-      { step: 3, action: 'Promote RDS read replicas to primary in us-west-2', responsible: 'DBA Team', timeframe: '15 min', status: 'Complete' },
-      { step: 4, action: 'Scale up ECS/EKS compute in failover region', responsible: 'Platform Engineering', timeframe: '20 min', status: 'Complete' },
-      { step: 5, action: 'Validate all application health endpoints', responsible: 'SRE Team', timeframe: '30 min', status: 'In Progress' },
-      { step: 6, action: 'Notify customers and regulators per communication plan', responsible: 'Communications Team', timeframe: '1h', status: 'Pending' },
-    ],
-    dependencies: [
-      { system: 'AWS us-west-2 Region', type: 'Cloud Infrastructure', criticality: 'Critical', failoverAvailable: true },
-      { system: 'Route 53 DNS', type: 'Network', criticality: 'Critical', failoverAvailable: true },
-      { system: 'RDS Multi-AZ', type: 'Database', criticality: 'Critical', failoverAvailable: true },
-      { system: 'S3 Cross-Region Replication', type: 'Storage', criticality: 'High', failoverAvailable: true },
-      { system: 'CloudFront CDN', type: 'Content Delivery', criticality: 'Medium', failoverAvailable: true },
-    ],
-    testResults: [
-      { date: '2026-02-28', type: 'Full DR Drill', result: 'Pass', duration: '1h 48m', findings: 'Successful regional failover. RDS promotion completed in 12 minutes. All services operational within RTO.', participants: 18 },
-      { date: '2025-11-15', type: 'Full DR Drill', result: 'Pass', duration: '1h 55m', findings: 'Minor delay in ECS task scaling. Adjusted auto-scaling policies.', participants: 15 },
-    ],
-    contacts: [
-      { name: 'David Kim', role: 'BCP Plan Owner', phone: '+1 (555) 567-8901', email: 'david.kim@acmefinancial.com', primary: true },
-      { name: 'Michelle Park', role: 'Infrastructure Lead', phone: '+1 (555) 678-9012', email: 'michelle.park@acmefinancial.com', primary: false },
-      { name: 'Carlos Mendez', role: 'DBA Lead', phone: '+1 (555) 789-0123', email: 'carlos.mendez@acmefinancial.com', primary: false },
-    ],
-  },
-  {
-    id: 'BCP-003',
-    name: 'Model Serving HA',
-    scope: 'Real-time Model Inference Endpoints',
-    rto: '30min',
-    rpo: '0',
-    lastTested: '2026-03-10',
-    testResult: 'Pass with Issues',
-    owner: 'James Wilson',
-    status: 'Under Review',
-    nextTest: '2026-04-10',
-    description: 'High availability plan for real-time model inference endpoints ensuring zero data loss and sub-30-minute recovery. Covers load balancing, auto-scaling, circuit breakers, and graceful degradation strategies for all production model APIs.',
-    recoverySteps: [
-      { step: 1, action: 'Circuit breaker triggers automatic traffic rerouting', responsible: 'Automated (Istio)', timeframe: 'Instant', status: 'Complete' },
-      { step: 2, action: 'Auto-scaler provisions replacement inference pods', responsible: 'Kubernetes HPA', timeframe: '3 min', status: 'Complete' },
-      { step: 3, action: 'Enable graceful degradation with cached predictions', responsible: 'ML Ops', timeframe: '5 min', status: 'In Progress' },
-      { step: 4, action: 'Validate prediction accuracy on failover instances', responsible: 'ML Engineering', timeframe: '10 min', status: 'Pending' },
-      { step: 5, action: 'Restore full capacity and disable degradation mode', responsible: 'SRE Team', timeframe: '15 min', status: 'Pending' },
-    ],
-    dependencies: [
-      { system: 'Kubernetes Cluster', type: 'Container Orchestration', criticality: 'Critical', failoverAvailable: true },
-      { system: 'Istio Service Mesh', type: 'Network', criticality: 'Critical', failoverAvailable: true },
-      { system: 'Redis Cache Layer', type: 'Cache', criticality: 'High', failoverAvailable: true },
-      { system: 'GPU Compute Pool', type: 'Compute', criticality: 'Critical', failoverAvailable: false },
-    ],
-    testResults: [
-      { date: '2026-03-10', type: 'Chaos Engineering', result: 'Pass with Issues', duration: '45m', findings: 'Circuit breaker activated correctly but cached prediction fallback had stale data for 2 models. Remediation required for cache TTL configuration.', participants: 6 },
-      { date: '2025-12-20', type: 'Full DR Drill', result: 'Pass', duration: '28m', findings: 'All endpoints recovered within RTO. Graceful degradation worked as expected.', participants: 10 },
-    ],
-    contacts: [
-      { name: 'James Wilson', role: 'BCP Plan Owner', phone: '+1 (555) 890-1234', email: 'james.wilson@acmefinancial.com', primary: true },
-      { name: 'Aisha Patel', role: 'ML Platform Lead', phone: '+1 (555) 901-2345', email: 'aisha.patel@acmefinancial.com', primary: false },
-    ],
-  },
-  {
-    id: 'BCP-004',
-    name: 'Vendor Failure Response',
-    scope: 'Critical AI Vendor Failover (OpenAI/Anthropic)',
-    rto: '8h',
-    rpo: '4h',
-    lastTested: '2026-01-20',
-    testResult: 'Fail',
-    owner: 'Michael Torres',
-    status: 'Active',
-    nextTest: '2026-04-20',
-    description: 'Response plan for critical AI vendor service disruptions covering OpenAI and Anthropic API outages. Includes model substitution strategies, local model fallback deployment, prompt adaptation workflows, and customer communication procedures.',
-    recoverySteps: [
-      { step: 1, action: 'Detect vendor API degradation via monitoring alerts', responsible: 'SRE Team', timeframe: '5 min', status: 'Complete' },
-      { step: 2, action: 'Activate vendor incident response protocol', responsible: 'Vendor Management', timeframe: '15 min', status: 'Complete' },
-      { step: 3, action: 'Switch to alternate vendor API (Anthropic <-> OpenAI)', responsible: 'ML Ops', timeframe: '30 min', status: 'In Progress' },
-      { step: 4, action: 'Deploy local fallback models (Llama/Mistral) on reserved GPU', responsible: 'ML Engineering', timeframe: '2h', status: 'Pending' },
-      { step: 5, action: 'Adapt prompts and validate output quality for fallback models', responsible: 'Prompt Engineering', timeframe: '3h', status: 'Pending' },
-      { step: 6, action: 'Notify affected customers and provide ETA', responsible: 'Customer Success', timeframe: '1h', status: 'Pending' },
-      { step: 7, action: 'Document lessons learned and update vendor scorecards', responsible: 'Vendor Management', timeframe: '24h', status: 'Pending' },
-    ],
-    dependencies: [
-      { system: 'OpenAI API', type: 'AI Vendor', criticality: 'Critical', failoverAvailable: true },
-      { system: 'Anthropic API', type: 'AI Vendor', criticality: 'Critical', failoverAvailable: true },
-      { system: 'Local GPU Cluster', type: 'Compute', criticality: 'High', failoverAvailable: false },
-      { system: 'Prompt Management Platform', type: 'ML Platform', criticality: 'High', failoverAvailable: true },
-      { system: 'Model Quality Monitoring', type: 'Observability', criticality: 'Medium', failoverAvailable: true },
-    ],
-    testResults: [
-      { date: '2026-01-20', type: 'Full DR Drill', result: 'Fail', duration: '10h 30m', findings: 'Local model fallback deployment exceeded 8h RTO. Root causes: insufficient GPU capacity, untested prompt adaptations for Llama-3, and missing runbook for quality validation steps.', participants: 11 },
-      { date: '2025-10-15', type: 'Tabletop Exercise', result: 'Pass with Issues', duration: '3h', findings: 'Identified gaps in prompt adaptation workflow. No automated quality gates for fallback model outputs.', participants: 9 },
-    ],
-    contacts: [
-      { name: 'Michael Torres', role: 'BCP Plan Owner', phone: '+1 (555) 012-3456', email: 'michael.torres@acmefinancial.com', primary: true },
-      { name: 'Lisa Chang', role: 'Vendor Management Lead', phone: '+1 (555) 123-4567', email: 'lisa.chang@acmefinancial.com', primary: false },
-      { name: 'Ryan O\'Brien', role: 'ML Engineering Lead', phone: '+1 (555) 234-5679', email: 'ryan.obrien@acmefinancial.com', primary: false },
-    ],
-  },
-  {
-    id: 'BCP-005',
-    name: 'Communication Plan',
-    scope: 'Stakeholder & Regulatory Notification',
-    rto: '1h',
-    rpo: 'N/A',
-    lastTested: '2026-03-01',
-    testResult: 'Pass',
-    owner: 'Sarah Chen',
-    status: 'Active',
-    nextTest: '2026-06-01',
-    description: 'Communication and notification plan for all business continuity events covering internal stakeholder alerts, regulatory body notifications (GDPR Art. 33, EU AI Act Art. 73), customer communications, and media response protocols.',
-    recoverySteps: [
-      { step: 1, action: 'Activate emergency communication tree via PagerDuty', responsible: 'Incident Commander', timeframe: '2 min', status: 'Complete' },
-      { step: 2, action: 'Send initial stakeholder notification via secure channel', responsible: 'Communications Team', timeframe: '15 min', status: 'Complete' },
-      { step: 3, action: 'Prepare regulatory notification drafts (GDPR/EU AI Act)', responsible: 'Legal & Compliance', timeframe: '30 min', status: 'Complete' },
-      { step: 4, action: 'Brief executive leadership and board if severity warrants', responsible: 'CISO', timeframe: '45 min', status: 'In Progress' },
-      { step: 5, action: 'Issue customer-facing status page update', responsible: 'Customer Success', timeframe: '30 min', status: 'Pending' },
-      { step: 6, action: 'Prepare media statement if public disclosure required', responsible: 'PR Team', timeframe: '1h', status: 'Pending' },
-    ],
-    dependencies: [
-      { system: 'PagerDuty', type: 'Alerting', criticality: 'Critical', failoverAvailable: true },
-      { system: 'Secure Email Gateway', type: 'Communication', criticality: 'Critical', failoverAvailable: true },
-      { system: 'Status Page (Statuspage.io)', type: 'Communication', criticality: 'High', failoverAvailable: true },
-      { system: 'Regulatory Filing Portal', type: 'Compliance', criticality: 'High', failoverAvailable: false },
-    ],
-    testResults: [
-      { date: '2026-03-01', type: 'Full Communication Drill', result: 'Pass', duration: '52m', findings: 'All notification channels activated within SLA. PagerDuty response rate 100%. Regulatory draft generation completed in 28 minutes.', participants: 22 },
-      { date: '2025-12-01', type: 'Tabletop Exercise', result: 'Pass', duration: '1h 30m', findings: 'Updated contact lists and added backup communication channels for critical regulatory contacts.', participants: 16 },
-    ],
-    contacts: [
-      { name: 'Sarah Chen', role: 'BCP Plan Owner', phone: '+1 (555) 345-6780', email: 'sarah.chen@acmefinancial.com', primary: true },
-      { name: 'Thomas Wright', role: 'Legal Counsel', phone: '+1 (555) 456-7891', email: 'thomas.wright@acmefinancial.com', primary: false },
-      { name: 'Emily Davis', role: 'PR Director', phone: '+1 (555) 567-8902', email: 'emily.davis@acmefinancial.com', primary: false },
-    ],
-  },
-];
 
 // ── MetricTile ───────────────────────────────────────────────────────────────
 
@@ -437,15 +255,14 @@ function daysUntil(dateStr: string): number {
 
 export default function BusinessContinuity() {
   const { orgName } = useSettingsStore();
-  const { items: liveItems, isLoading, save, remove } = useBcpPlansData();
-  const [plans, setPlans] = useState<BCPPlan[]>(BCP_PLANS);
+  const { items: liveItems, isLoading, error, refetch, save, remove } = useBcpPlansData();
+  // V8 re-audit: the page previously fell back to the hardcoded BCP_PLANS
+  // array whenever the table was empty — fabricated plans presented as the
+  // tenant's own. An empty table now renders an honest empty state.
+  const [plans, setPlans] = useState<BCPPlan[]>([]);
 
   useEffect(() => {
-    if (liveItems && liveItems.length > 0) {
-      setPlans(liveItems.map(normalizeBcpPlan));
-    } else {
-      setPlans(BCP_PLANS);
-    }
+    setPlans((liveItems ?? []).map(normalizeBcpPlan));
   }, [liveItems]);
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('all');
@@ -480,13 +297,18 @@ export default function BusinessContinuity() {
     });
   }, [plans, search, filterStatus]);
 
-  // ── KPIs ──────────────────────────────────────────────────────────────────
+  // ── KPIs — a metric with no underlying data renders '—', never 0/NaN. ─────
   const activePlans = plans.filter(p => p.status === 'Active' || p.status === 'Under Review').length;
   const rtoMetCount = plans.filter(p => p.testResult === 'Pass' || p.testResult === 'Pass with Issues').length;
-  const rtoMetPct = Math.round((rtoMetCount / plans.length) * 100);
+  const rtoMetPct = plans.length ? `${Math.round((rtoMetCount / plans.length) * 100)}%` : '—';
   const rpoMetCount = plans.filter(p => p.testResult === 'Pass').length;
-  const rpoMetPct = Math.round((rpoMetCount / plans.length) * 100);
-  const lastTestDate = 'Mar 15, 2026';
+  const rpoMetPct = plans.length ? `${Math.round((rpoMetCount / plans.length) * 100)}%` : '—';
+  // Derived from the stored records — previously a hardcoded literal date.
+  const testedDates = plans.map(p => p.lastTested).filter(Boolean).sort();
+  const lastTested = testedDates.length ? testedDates[testedDates.length - 1] : null;
+  const lastTestDate = lastTested
+    ? new Date(lastTested).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    : '—';
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const openDetail = (plan: BCPPlan) => { setSelectedPlan(plan); setSheetOpen(true); };
@@ -542,6 +364,18 @@ export default function BusinessContinuity() {
 
   if (isLoading) return <PageSkeleton title="Business Continuity" />;
 
+  // A failed load is a real error — never silently replaced with sample plans.
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
+          Business Continuity &amp; DR
+        </h1>
+        <ErrorState title="Could not load BCP plans" error={error} onRetry={() => refetch()} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -567,8 +401,8 @@ export default function BusinessContinuity() {
       {/* KPI Metrics */}
       <div className="grid grid-cols-4 gap-4">
         <MetricTile label="Active BCP Plans" value={activePlans} variant="default" />
-        <MetricTile label="RTO Met %" value={`${rtoMetPct}%`} variant="warn" />
-        <MetricTile label="RPO Met %" value={`${rpoMetPct}%`} variant="ok" />
+        <MetricTile label="RTO Met %" value={rtoMetPct} variant="warn" />
+        <MetricTile label="RPO Met %" value={rpoMetPct} variant="ok" />
         <MetricTile label="Last Test Date" value={lastTestDate} variant="info" />
       </div>
 
@@ -599,7 +433,15 @@ export default function BusinessContinuity() {
         </Select>
       </div>
 
-      {/* BCP Plans Table */}
+      {/* BCP Plans Table — an empty org shows an honest empty state, never sample plans. */}
+      {plans.length === 0 ? (
+        <EmptyState
+          icon={<Lifebuoy size={32} weight="duotone" />}
+          title="No BCP plans yet"
+          description="Record the disaster-recovery plans that cover your AI estate — RTO/RPO targets, recovery steps and test results all hang off a plan."
+          action={<Button size="sm" onClick={() => setCreateOpen(true)}><Plus size={14} /> New BCP Plan</Button>}
+        />
+      ) : (
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -690,6 +532,7 @@ export default function BusinessContinuity() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Plan count */}
       <div className="flex items-center justify-between">

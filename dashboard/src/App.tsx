@@ -113,7 +113,6 @@ const DocumentManagement = lazy(() => import('./pages/documents/DocumentManageme
 const BusinessContinuity = lazy(() => import('./pages/continuity/BusinessContinuity'));
 const ComplianceCalendar = lazy(() => import('./pages/calendar/ComplianceCalendar'));
 const BenchmarkingMaturity = lazy(() => import('./pages/maturity/BenchmarkingMaturity'));
-const ImportSampleData = lazy(() => import('./pages/ImportSampleData'));
 const Tasks = lazy(() => import('./pages/Tasks'));
 const PromptRegistryPage = lazy(() => import('./pages/PromptRegistry'));
 
@@ -503,7 +502,10 @@ export default function App() {
           <Route path="/continuity" element={<BusinessContinuity />} />
           <Route path="/calendar" element={<ComplianceCalendar />} />
           <Route path="/maturity" element={<BenchmarkingMaturity />} />
-          <Route path="/import-data" element={<ImportSampleData />} />
+          {/* Retired: the raw-upsert demo import moved to Settings -> Demo data
+              (services/demoImportService.ts). Redirect so old links still land
+              somewhere useful, and the old path is no longer callable. */}
+          <Route path="/import-data" element={<Navigate to="/settings" replace />} />
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/prompt-registry" element={<PromptRegistryPage />} />
 

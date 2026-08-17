@@ -24,7 +24,7 @@
 // The overall score is the mean of three hand-entered dimension scores. It is
 // labelled self-assessed everywhere it appears; it is not a framework score.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -105,6 +105,7 @@ function StatusBadge({ status }: { status: EsgStatus }) {
 export default function EsgReports() {
   const [searchParams, setSearchParams] = useSearchParams()
   const modelParam = searchParams.get('model')
+  const openParam = searchParams.get('open')
 
   const { reports, isLoading, isError, error, refetch, save, remove, transition, isSaving, isTransitioning } = useEsgData()
   const { items: carbonRecords } = useCarbonRecordsData()
@@ -117,6 +118,18 @@ export default function EsgReports() {
   const [formOpen, setFormOpen] = useState(false)
   const [form, setForm] = useState(BLANK)
   const [toDelete, setToDelete] = useState<EsgReport | null>(null)
+  const [openMissing, setOpenMissing] = useState(false)
+
+  // Deep link ?open=<id> — applied once on data arrival, so a refetch does not
+  // reopen a drawer the user has closed (pattern shared with AibomRegistry).
+  const appliedOpen = useRef<string | null>(null)
+  useEffect(() => {
+    if (!openParam || isLoading || isError || appliedOpen.current === openParam) return
+    appliedOpen.current = openParam
+    const match = reports.find(r => r.id === openParam)
+    if (match) setSelected(match)
+    else setOpenMissing(true)
+  }, [openParam, isLoading, isError, reports])
 
   const modelName = (id: string): string => models.find(m => m.id === id)?.name ?? 'Unavailable'
   const carbonLabel = (id: string) => {
@@ -404,6 +417,17 @@ export default function EsgReports() {
           </span>
           <InterlinkChip label="Carbon records for this model" to={`/carbon-ledger?model=${modelParam}`} />
           <InterlinkChip label="Energy readings" to={`/energy-efficiency?model=${modelParam}`} />
+        </div>
+      )}
+
+      {openMissing && (
+        <div className="flex items-center gap-2 px-3 py-2 text-xs border"
+          style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderColor: 'hsl(var(--border))' }}>
+          <span>Record not found or not visible to you.</span>
+          <button aria-label="Dismiss notice" onClick={() => setOpenMissing(false)}
+            className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer">
+            <X size={12} />
+          </button>
         </div>
       )}
 

@@ -124,6 +124,9 @@ function toRow(rec: Record<string, any>): Record<string, any> {
       sourceLink: rec.sourceLink ?? '',
     }
   }
+  // tasks.metadata (jsonb) — carries e.g. the demo importer's
+  // { demo_seed: true } marker. Only written when the caller set it.
+  if (rec.metadata !== undefined) row.metadata = rec.metadata
   return row
 }
 

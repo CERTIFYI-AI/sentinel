@@ -107,6 +107,8 @@ export default function SupplyChainAttestations() {
   const nav = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const modelParam = searchParams.get('model')
+  // Deep link from a vendor record: /supply-chain?vendor=<vendors.id>.
+  const vendorParam = searchParams.get('vendor')
   const openParam = searchParams.get('open')
 
   const { attestations, isLoading, error, refetch, create, update, remove, revoke, renew } = useAttestations()
@@ -151,10 +153,11 @@ export default function SupplyChainAttestations() {
 
   const filtered = useMemo(() => attestations.filter(a => {
     if (modelParam && a.modelId !== modelParam && !(a.subjectType === 'model' && a.subjectId === modelParam)) return false
+    if (vendorParam && a.vendorId !== vendorParam && !(a.subjectType === 'vendor' && a.subjectId === vendorParam)) return false
     if (validityFilter !== 'All' && a.derivedValidity !== validityFilter) return false
     if (typeFilter !== 'All' && a.attestationType !== typeFilter) return false
     return true
-  }), [attestations, modelParam, validityFilter, typeFilter])
+  }), [attestations, modelParam, vendorParam, validityFilter, typeFilter])
 
   const rows = useMemo(() => filtered.map(a => ({
     ...a,
@@ -174,6 +177,12 @@ export default function SupplyChainAttestations() {
   function clearModelFilter() {
     const next = new URLSearchParams(searchParams)
     next.delete('model')
+    setSearchParams(next, { replace: true })
+  }
+
+  function clearVendorFilter() {
+    const next = new URLSearchParams(searchParams)
+    next.delete('vendor')
     setSearchParams(next, { replace: true })
   }
 
@@ -381,14 +390,24 @@ export default function SupplyChainAttestations() {
         }
       />
 
-      {modelParam && (
-        <div className="mb-3 flex items-center gap-2">
-          <span className="inline-flex items-center gap-2 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-3 py-1.5 text-sm text-[hsl(var(--brand))]">
-            <span>Filtered to <strong>{entities.resolve('model', modelParam) ?? 'Unavailable'}</strong></span>
-            <button aria-label="Clear model filter" onClick={clearModelFilter} className="inline-flex cursor-pointer items-center hover:text-[hsl(var(--text-1))]">
-              <X size={14} />
-            </button>
-          </span>
+      {(modelParam || vendorParam) && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {modelParam && (
+            <span className="inline-flex items-center gap-2 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-3 py-1.5 text-sm text-[hsl(var(--brand))]">
+              <span>Filtered to <strong>{entities.resolve('model', modelParam) ?? 'Unavailable'}</strong></span>
+              <button aria-label="Clear model filter" onClick={clearModelFilter} className="inline-flex cursor-pointer items-center hover:text-[hsl(var(--text-1))]">
+                <X size={14} />
+              </button>
+            </span>
+          )}
+          {vendorParam && (
+            <span className="inline-flex items-center gap-2 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-3 py-1.5 text-sm text-[hsl(var(--brand))]">
+              <span>Vendor <strong>{entities.resolve('vendor', vendorParam) ?? 'Unavailable'}</strong></span>
+              <button aria-label="Clear vendor filter" onClick={clearVendorFilter} className="inline-flex cursor-pointer items-center hover:text-[hsl(var(--text-1))]">
+                <X size={14} />
+              </button>
+            </span>
+          )}
         </div>
       )}
 
@@ -424,10 +443,14 @@ export default function SupplyChainAttestations() {
         : error ? <ErrorState message={error.message} onRetry={() => refetch()} />
         : rows.length === 0 ? (
           <EmptyState
-            title={modelParam ? 'No attestations for this model' : 'No attestations recorded'}
+            title={modelParam ? 'No attestations for this model'
+              : vendorParam ? 'No attestations for this vendor'
+              : 'No attestations recorded'}
             message={modelParam
               ? 'Clear the model filter to see every attestation, or record one for this model.'
-              : 'Record the bias audits, DPIAs, security reviews and AIBOM verifications that back your supply-chain claims, with links to the evidence behind them.'}
+              : vendorParam
+                ? 'Clear the vendor filter to see every attestation, or record one covering this vendor.'
+                : 'Record the bias audits, DPIAs, security reviews and AIBOM verifications that back your supply-chain claims, with links to the evidence behind them.'}
             actionLabel="New attestation"
             onAction={openCreate}
           />

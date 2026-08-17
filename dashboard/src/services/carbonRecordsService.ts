@@ -61,6 +61,8 @@ export interface CarbonRecord {
   assuranceDate: string | null
   methodology: string | null
   notes: string | null
+  /** carbon_records.metadata (jsonb) — e.g. the demo importer's marker. */
+  metadata?: Record<string, unknown>
   createdAt?: string
   updatedAt?: string
 }
@@ -105,6 +107,7 @@ export function fromRow(r: Record<string, any>): CarbonRecord {
     assuranceDate: r.assurance_date ?? null,
     methodology: txt(r.methodology),
     notes: txt(r.description),
+    metadata: (r.metadata && typeof r.metadata === 'object' ? r.metadata : {}) as Record<string, unknown>,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }
@@ -149,6 +152,7 @@ function toRow(c: Partial<CarbonRecord>): Record<string, any> {
   if (c.assuranceDate !== undefined) set('assurance_date', c.assuranceDate || null)
   if (c.methodology !== undefined) set('methodology', c.methodology || null)
   if (c.notes !== undefined) set('description', c.notes || null)
+  if (c.metadata !== undefined) set('metadata', c.metadata)
   return row
 }
 
