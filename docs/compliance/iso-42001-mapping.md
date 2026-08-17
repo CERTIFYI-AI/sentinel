@@ -187,3 +187,17 @@ does so without fabricating state.
 | 9.1 | Monitoring must reflect reality | Step done-state is **derived from real queries**, never stored; a source that cannot be checked renders "Unknown" (never done, never not-done), so the completeness signal never fabricates progress | Implemented |
 | 7.5.3 | Control of documented information | The module writes no documented information of its own — it reads existing rows read-only and cannot weaken any evidence chain; the only persisted state is a UI dismissal preference in `onboardingStore` | N/A — read-only |
 | — | AIMS operation | The checklist performs no AI operation and takes no autonomous action; every step is advisory and skippable | N/A — utility, enforced in `useSetupProgress.ts` |
+
+## Module Coverage — Framework Catalog (`framework_controls`)
+
+The Frameworks Requirements tab surfaces each framework's **published control
+catalog** (`framework_controls`), grouped by domain, and interlinks it both ways
+to the org `controls` register (see
+[`docs/modules/frameworks.md`](../modules/frameworks.md)).
+
+| Clause | Requirement | Module & backing | Status |
+|---|---|---|---|
+| 6.1.3 / Annex A | Statement of Applicability — which controls apply and whether they are implemented | The ISO/IEC 42001 catalog (Annex A refs `A.2.2`–`A.10.4`) is shown per framework; each published control links to the org control implementing it, or reads "Not yet implemented" — the SoA is now auditable per requirement, not a single rolled-up count | Implemented |
+| 7.5.3 | Control of documented information | The catalog interlink is **read-only** — `framework_controls` is seeded by migration and never written here; it derives implementation status from existing rows and cannot weaken any evidence chain | N/A — read-only |
+| 9.1 | Monitoring reflects reality | Implementation status is derived from real clause-reference matches, never stored; an unreadable register renders "Implementation status unavailable", never a fabricated zero | Implemented |
+| A.6.2.6 | AI system impact/requirements addressed | Published requirements and their implementing controls are linked bidirectionally, so an assessor can trace a requirement to its control and back | Supporting |

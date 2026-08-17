@@ -21,6 +21,7 @@ import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { useControls } from '../../hooks/queries/useControls';
 import { useControlTests } from '../../hooks/useComplianceGroup';
 import { useControlAssurance, type AssuranceSource } from '../../hooks/useControlAssurance';
+import { useControlCatalogEntry } from '../../hooks/useFrameworkCatalog';
 import { useModelsData } from '../../hooks/useModelsData';
 import { useRisksData } from '../../hooks/useRisksData';
 import { usePolicies } from '../../hooks/queries/usePolicies';
@@ -127,6 +128,15 @@ export default function ControlDetail() {
   const { risks } = useRisksData();
   const policiesQuery = usePolicies();
 
+  // Resolve the control up front (undefined while loading) so the catalog
+  // backlink hook is called unconditionally, in stable order.
+  const control = (controlsQuery.data ?? []).find((c) => c.id === id);
+  // Reverse interlink: the published catalog entry (framework_controls) this
+  // org control satisfies, and its owning framework — for the deep link back.
+  const catalogEntry = useControlCatalogEntry(
+    control ? { framework: control.framework, frameworkId: control.frameworkId, clauseRef: control.clauseRef } : null,
+  );
+
   // Interlink labels resolve to display names at render time — never a raw
   // uuid; an unresolvable id shows "Unavailable".
   const modelName = (mid: string) => models.find((m) => m.id === mid)?.name ?? 'Unavailable';
@@ -149,8 +159,6 @@ export default function ControlDetail() {
       </div>
     );
   }
-
-  const control = (controlsQuery.data ?? []).find((c) => c.id === id);
 
   if (!control) {
     return (
@@ -406,6 +414,53 @@ export default function ControlDetail() {
                   </div>
                 ) : (
                   <p className="text-xs py-2" style={{ color: 'hsl(var(--text-4))' }}>No policies linked to this control yet.</p>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Reverse link into the framework catalog: which published control
+                (framework_controls) this org control satisfies, and a deep link
+                to that framework's detail (/frameworks?open=<framework_id>). */}
+            <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Framework Catalog</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {catalogEntry.isLoading ? (
+                  <div className="animate-pulse space-y-2" aria-busy="true">
+                    {Array.from({ length: 2 }).map((_, i) => <div key={i} className="h-5" style={{ background: 'hsl(var(--bg-sunken))' }} />)}
+                  </div>
+                ) : catalogEntry.isError || catalogEntry.data?.available === false ? (
+                  <p className="text-xs py-2" style={{ color: 'hsl(var(--text-4))' }}>
+                    Catalog could not be queried — the published requirement may exist but is not visible right now.
+                  </p>
+                ) : !catalogEntry.data?.frameworkId ? (
+                  <p className="text-xs py-2" style={{ color: 'hsl(var(--text-4))' }}>
+                    This control is not resolvable to a catalogued framework yet.
+                  </p>
+                ) : catalogEntry.data.matches.length > 0 ? (
+                  <div className="space-y-1.5">
+                    {catalogEntry.data.matches.map((m) => (
+                      <InterlinkChip
+                        key={m.id}
+                        label={`${m.controlRef} — ${m.title}`}
+                        to={`/frameworks?open=${catalogEntry.data!.frameworkId}`}
+                      />
+                    ))}
+                    <p className="text-[10px] pt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
+                      Published requirement in {catalogEntry.data.frameworkName || 'the framework'}.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-1.5">
+                    <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                      No catalogued requirement resolves to this control's clause yet.
+                    </p>
+                    <InterlinkChip
+                      label={`Open ${catalogEntry.data.frameworkName || 'framework'} catalog`}
+                      to={`/frameworks?open=${catalogEntry.data.frameworkId}`}
+                    />
+                  </div>
                 )}
               </CardContent>
             </Card>

@@ -237,3 +237,16 @@ the obligations, and it must not itself weaken any control.
 | Art. 12 (audit) | State-changing actions are attributable | **N/A — read-only.** The module writes to no table; it derives display state from existing rows and takes no state-changing action, so there is nothing to audit-log | N/A — read-only |
 | Art. 14 (human oversight) | Human control over autonomous action | **N/A — non-autonomous.** Every step is advisory and skippable; the module never acts on the user's behalf | N/A — non-autonomous |
 | — | Onboarding must not fake progress | Step done-state is **derived from real queries**, never stored — a step is "done" only when the table proves it; a source that cannot be checked renders "Unknown", never done and never not-done; the Overview card persists only a dismissal preference, never step state | N/A — utility, enforced in `useSetupProgress.ts` |
+
+## Module Coverage — Framework Catalog (`framework_controls`)
+
+The Frameworks Requirements tab surfaces each framework's **published control
+catalog** (`framework_controls`) and interlinks it, both ways, to the org
+`controls` register (see [`docs/modules/frameworks.md`](../modules/frameworks.md)).
+
+| Article | Obligation | How the catalog interlink relates | Status |
+|---|---|---|---|
+| Art. 11 / Annex IV | Technical documentation — demonstrate each applicable requirement is addressed | The EU AI Act catalog (Art. 5–73) is now visible per framework, and each published article links to the org control(s) implementing it, or is shown explicitly "Not yet implemented" — traceable coverage, not a claimed count | Implemented |
+| Art. 12 | Record-keeping / traceability | The interlink is **derived read-only** from `framework_controls` + `controls` clause references (boundary-token match); the catalog table is seeded by migration and not written by this module, so there is no state-changing action to audit-log here. State changes on the org controls it links are logged by the controls module | N/A — read-only surface |
+| Art. 14 | Human oversight | **N/A — non-autonomous.** The Requirements view is advisory display; it takes no action on the user's behalf | N/A — non-autonomous |
+| — | Never fabricate coverage | Unimplemented published controls read "Not yet implemented"; an unreadable register reads "Implementation status unavailable" (never a fake 0/green); unmatched clauses are left unlinked rather than guessed | N/A — honesty rule, enforced in `frameworkCatalogService.ts` |
