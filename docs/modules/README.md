@@ -37,6 +37,10 @@ Per-module reference for the Sentinel AI GRC platform. Each page covers purpose,
 - [Business Impact Analysis (BIA)](business-impact-analysis.md)
 
 ## Data, Privacy & Vendors
+- [**Privacy — DSR, Consent, RoPA, DPIA, TIA**](privacy.md) — group-level view:
+  the interlink graph across all five registers, the agents that write records,
+  and the field tables. Start here; the per-module docs below carry the detail
+  and the history of what was fixed.
 - [Data Governance (Datasets, Quality, Lineage)](data-governance.md)
 - [Records of Processing Activities (RoPA)](ropa.md)
 - [Transfer Impact Assessment (TIA)](transfer-impact-assessment.md)

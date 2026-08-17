@@ -23,6 +23,51 @@
 * **Docs** — 13 module guides, EU AI Act and ISO/IEC 42001 mappings extended,
   new `docs/architecture/interlink-map.md` and `docs/reference/technical-debt.md`.
 
+### Privacy group — vocabularies, orphans, interlinks, autonomy
+
+* **Data integrity** — 15 rows across `consent_records`, `carbon_records`,
+  `remediation_plans` and `transparency_reports` carried the literal
+  `tenant_id = 'default'` left by an old column default. Every RLS policy on
+  those tables reads `tenant_id = current_user_org_id()`, so the rows were
+  invisible to every user: the consent register displayed 6 of its 10 records
+  and nothing in the UI could reveal the gap. Reclaimed, and the literal
+  defaults removed from all eight affected tables.
+* **Vocabularies** — `dsar_requests` and `consent_records` had no CHECK
+  constraint on status, type or priority, so successive writers left mixed
+  casing and spellings in the same column and every page filtered on values
+  that never occurred. All four DSR stat cards read 0, both filters returned
+  nothing, all ten rows rendered a LOW priority badge including the five stored
+  as high, and "Active Consents" read 0 against six granted consents.
+  Normalised and constrained; the services now export the same vocabularies.
+* **Statutory references** — `DSR-YYYY-NNN`, `CNS-YYYY-NNN`, `ROPA-NNN`,
+  `TIA-YYYY-NNN` added and backfilled. An authority cites a record by
+  reference; both pages had been printing the raw uuid.
+* **Interlinks** — DSR → RoPA/consent/incident/risk, consent → RoPA,
+  RoPA → model/dataset/use-case/vendor, TIA → RoPA/model, DPIA → risk/use-case.
+  All 17 verified with `total = resolves`. Two use cases processing personal
+  data had no Art. 30 record at all; ROPA-006 and ROPA-007 close that.
+* **One id-space** — dropped `dsar_requests.ai_systems_affected` and
+  `consent_records.ai_systems`. Both duplicated `linked_model_ids`, 9 of 20
+  stored names had drifted from the model registry, and both pages paired the
+  arrays by index so an edit on one side mislabelled a different system's link.
+* **Fake success removed** — DSR and Consent rebuilt on the platform
+  primitives; consent withdrawal writes to the database and shows what came
+  back, rather than writing a hardcoded date into local state and claiming the
+  linked AI systems had been notified. Both export buttons now produce real
+  CSVs. DSR delete is a soft delete, and reads filter `is_deleted`.
+* **Autonomous GRC** — `DSRImpactAgent` wrote five wrong field names and two
+  values outside the CHECK vocabularies, and `safeInsert` swallowed every
+  rejection, so it reported a completed Art. 34 breach-notification step while
+  the register stayed empty. Fixed and made idempotent. Added
+  `ConsentWithdrawalAgent` (Art. 7(3) cessation task plus risk) and
+  `PrivacyPostureAgent` (sweeps for unlawful transfers, untracked DPIA residual
+  risk, lapsed consent and overdue rights requests, opening one risk per
+  finding). Agents open risks and never close them — accepting a risk stays a
+  human decision under Art. 14.
+* **Audit Trail** — `ENTITY_ROUTES` had no entry for any privacy entity type,
+  so every DSR, consent, RoPA, DPIA and transfer entry dead-ended on exactly
+  the records an auditor follows. Added, along with dataset and vendor.
+
 ## 1.62.0 (2026-08-16)
 
 * Merge main ([51ce891](https://github.com/CERTIFYI-AI/sentinel/commit/51ce891))

@@ -93,7 +93,7 @@ because the processing they document is performed *by* the governed AI systems.
 | Art. 9 | Risk management for high-risk processing | [DPIA](../modules/dpia.md) — inherent vs residual risk, mitigations | Implemented |
 | Art. 12 | Record-keeping | All privacy modules audit-logged via `logAction`; DPIA soft-deleted so superseded assessments survive | Implemented |
 | Art. 14 | Human oversight over automated decisions | [DPIA](../modules/dpia.md) — DPIA-2026-001 records mandatory human review of every decline as the mitigation that makes residual risk acceptable | Implemented |
-| Art. 26 | Deployer obligations — knowing what the system does with personal data | [DSR](../modules/dsr-consent.md) — `ai_systems_affected` makes a rights request actionable against real systems | Implemented |
+| Art. 26 | Deployer obligations — knowing what the system does with personal data | [DSR](../modules/dsr-consent.md) — `linked_model_ids` makes a rights request actionable against real systems | Implemented |
 | Art. 9 / 15 | Control effectiveness and testing currency | [Compliance Controls](../modules/controls-control-testing.md) — status, test currency, evidence counts | Implemented |
 
 ### GDPR articles carried by these modules
@@ -117,6 +117,17 @@ because the processing they document is performed *by* the governed AI systems.
 - **A missing transfer mechanism is represented by absence, not by a "none"
   option.** The vocabulary has no `none` member, so an unlawful transfer cannot
   be recorded as a deliberate choice — it shows as unset and is counted.
-- **Rights requests resolve to real systems.** `ai_systems_affected` and
-  `linked_model_ids` mean an erasure request names the models that hold the
-  data, rather than a free-text note.
+- **Rights requests resolve to real systems.** `dsar_requests.linked_model_ids`
+  and `consent_records.linked_model_ids` mean an erasure request names the
+  models that hold the data, rather than a free-text note. The parallel
+  name-array columns that once sat beside them were dropped in
+  `20260816_privacy_retire_denormalised_system_names.sql` — they had drifted
+  from the model registry and were mislabelling links.
+
+### Autonomous privacy agents (added 2026-08-16)
+
+| Article | Requirement | Where it is met |
+|---|---|---|
+| Art. 12 | Record-keeping over automated action | Every agent write carries `source`, `auto_generated`, `created_by_agent` and `source_event_id`, so an auditor can trace a record back to the event that caused it |
+| Art. 14 | Human oversight | `PrivacyPostureAgent` and `ConsentWithdrawalAgent` open risks and tasks; neither closes a risk, accepts a residual risk, nor edits a statutory record. Judging a transfer lawful or a residual risk acceptable stays a human decision — the agent only ensures it is asked for |
+| Art. 12 | Honest reporting of automated steps | Agents return `failed` when a write does not land. `DSRImpactAgent` previously reported `succeeded` over a rejected insert, so the mesh recorded a completed Art. 34 notification step that had produced no record |

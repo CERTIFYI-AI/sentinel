@@ -50,15 +50,25 @@ failure.
 Both pages displayed fields absent from their tables, so those values could
 never persist. They are now real columns:
 
-- `dsar_requests`: `regulation`, `ai_systems_affected`, `assignee`,
-  `submitted_date`, `linked_model_ids`, `is_deleted`
-- `consent_records`: `subject_name`, `subject_email`, `ai_systems`,
-  `data_categories`, `consent_version`, `source_ip`, `channel`,
-  `withdrawal_reason`, `linked_model_ids`
+- `dsar_requests`: `regulation`, `assignee`, `submitted_date`,
+  `linked_model_ids`, `is_deleted`
+- `consent_records`: `subject_name`, `subject_email`, `data_categories`,
+  `consent_version`, `source_ip`, `channel`, `withdrawal_reason`,
+  `linked_model_ids`
 
-`ai_systems_affected` / `ai_systems` are the governance-relevant additions: an
-erasure request is only actionable if the systems holding the subject's data are
-recorded, and a consent is only meaningful if the AI systems it covers are known.
+`linked_model_ids` is the governance-relevant addition: an erasure request is
+only actionable if the systems holding the subject's data are recorded, and a
+consent is only meaningful if the AI systems it covers are known.
+
+> **Superseded 2026-08-16.** This pass also added text columns
+> `dsar_requests.ai_systems_affected` and `consent_records.ai_systems` holding
+> the *names* of those systems. Both were dropped by
+> `20260816_privacy_retire_denormalised_system_names.sql`: they duplicated what
+> `linked_model_ids` already held, 9 of 20 stored names had drifted from the
+> model registry, and both pages paired the two arrays by index — so an edit on
+> one side silently mislabelled a different system's link. Names now resolve
+> from `linked_model_ids` at render time, per the one-id-space rule in
+> `CLAUDE.md`.
 
 ### Derived, not stored
 
@@ -70,4 +80,18 @@ deadline set" — never as 0, which would read as "due today".
 
 Both pages used title-case status values (`'Active'`, `'Pending'`) that never
 matched the stored lower-case values, so status filters and counts silently
-matched nothing. Vocabularies now derive from the stored values.
+matched nothing.
+
+**Updated 2026-08-16.** Deriving the vocabulary from whatever happened to be
+stored was not enough — nothing stopped the next writer adding a fresh spelling,
+and the tables had already accumulated `in_review` beside `In Review` and
+`medium` beside `normal`. The values are now fixed by CHECK constraints and
+mirrored by exported constants in the service layer
+(`DSR_STATUSES`, `DSR_REQUEST_TYPES`, `DSR_PRIORITIES`, `CONSENT_STATUSES`,
+`CONSENT_TYPES`, `CONSENT_LEGAL_BASES`). A page can no longer write a value the
+column will reject, and `consent_records.status` `'active'` was migrated to
+`'granted'`.
+
+See [`privacy.md`](privacy.md) for the group-level view: the full interlink
+graph, the agents that write records, and the field tables for all five
+registers.
