@@ -164,6 +164,12 @@ every table; all twelve modules call `logAction` (EU AI Act Art. 12); no
 verification is performed, so every `verification_status` reads `unverified`
 (see TD-011 in [`../reference/technical-debt.md`](../reference/technical-debt.md)).
 
+## Platform Utilities
+
+- [Demo Data Import](demo-import.md) — Settings → Demo data; one-button,
+  clearly-fictional, marker-tagged demo dataset written through the real
+  service layer (replaces the retired `/import-data` raw-upsert page)
+
 ## See Also
 - Framework mappings: [`../compliance/`](../compliance/README.md)
 - Operational guides: [`../guides/`](../guides/README.md)

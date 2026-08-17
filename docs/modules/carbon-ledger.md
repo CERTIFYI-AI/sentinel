@@ -59,6 +59,19 @@ billion parameters, 0.00085 kg per inference) had no source, region or version.
   record detail panel.
 - Loading renders a skeleton, failure a real error state, an empty org an honest
   empty state.
+- **CarbonAgent** (`dashboard/src/agents/carbonAgent.ts`) stages a registration
+  estimate under the same rules as a human recorder. It resolves
+  `EF-TRAIN-PARAMS` and `EF-INFER-REQ` from `emission_factors` by `factor_ref`
+  (seeded by `20260824000001`) and multiplies with the catalog's stored
+  `factor_value` — never a local constant — writing the factor's id into
+  `emission_factor_id`. If the factor rows are absent it returns
+  `failed: emission factor not in catalog` rather than persisting an uncitable
+  figure. It invents no inputs: a model without a recorded parameter count gets
+  no training estimate and a model without an expected request volume gets no
+  inference estimate (both missing → the agent skips, writing nothing).
+  Inference emissions are scaled to the days actually in the quarterly period
+  (not annualised into a quarter), and `net_emissions` stays NULL because no
+  offset is known at registration.
 
 ## Fields (`carbon_records`)
 

@@ -117,10 +117,23 @@ These are not cosmetic. A module on a demo table typically also:
 > `20260822000002_supply_chain_esg_canonical.sql` §9).** The exposure above was
 > live, not theoretical: `20260813000006_close_anon_rls.sql` revoked `anon` but,
 > because these tables have no `org_id` column, fell through to
-> `FOR ALL TO authenticated USING (true)`. All 53 `%_table` tables now carry
-> `org_id uuid NOT NULL DEFAULT current_user_org_id()` and an org-scoped policy
-> (verified: 53/53 have the column, 53/53 have the policy). **Containment is not
-> remediation** — the modules below still render seeded fiction through
+> `FOR ALL TO authenticated USING (true)`.
+>
+> **CORRECTION (2026-08-17).** The first attempt
+> (`20260822000002` §9) added `org_id uuid NOT NULL DEFAULT
+> current_user_org_id()` in one statement. Under a migration role `auth.uid()`
+> is NULL, so the default evaluates to NULL — and adding a NOT NULL column with
+> a NULL default to a table **that has rows** aborts with *"column contains null
+> values"*. A from-zero replay has no rows, so CI passed and this entry was
+> marked closed; but the demo tables are populated **at runtime** by the demo
+> hook, so on the live database the ALTER failed and the permissive policies
+> survived. The 53/53 verification was run against a fresh replay and therefore
+> proved nothing about the database that matters.
+> `20260823000002_reaudit_critical_fixes.sql` re-applies containment in a form
+> that works on a populated table (add nullable → backfill → constrain), wraps
+> each table so one failure cannot abort the sweep, and leaves genuinely
+> unattributable rows NULL — excluded by the policy rather than assigned to an
+> arbitrary tenant. **Containment is not remediation** — the modules below still render seeded fiction through
 > `useSupabaseTable`, whose writes are fire-and-forget with both callbacks empty
 > and which silently falls back to the in-file `SEED` when a load fails. They
 > still need real tables and throwing services.
@@ -299,9 +312,29 @@ extend `trg_audit` to `conformity_assessments` and `frameworks`.
 
 ---
 
-## TD-009 — Main Overview still carries fabricated dashboard sections
+## TD-009 — Main Overview fabricated dashboard sections (CLOSED 2026-08-17)
 
-**Status:** Open · **Severity:** P2 · **Owner:** Platform team
+**Status:** Closed · **Severity:** was P2 — should have been P0 · **Owner:** Platform team
+
+> **Closed 2026-08-17.** All eight listed sections are resolved: deleted where
+> nothing could back them (SLA countdown, cross-module dependency SVG, trust
+> score, governance coverage matrix) or derived from a real org-scoped query
+> (supply-chain provenance from `supply_chain_attestation_status` × `ai_models`,
+> shadow AI and kill-switch gates from `agent_gov_registry`, the heat map from
+> `ai_models.risk_tier × lifecycle_stage`, the calendar from
+> `compliance_calendar`). "System Operational" is now computed from the page's
+> own eleven queries and can report "N of 11 data sources unavailable".
+>
+> **The severity was wrong, and that is the lesson worth keeping.** This was
+> filed as P2 "display-only invented data". Two of the entries were not
+> cosmetic: `94.2% — 48 of 51 production models carry verified cryptographic
+> AIBOM attestations` was a fabricated *attestation* claim — the first thing an
+> auditor would test — sitting directly above a working link to the real AIBOM
+> register that would have shown a different number; and the hardcoded trust
+> score of `86` collided with the genuine 0.0–1.0 verifier composite documented
+> in `trust-score.md`, so the same term meant two different things in one
+> product. Invented data on the page every customer and auditor opens first is
+> not P2, whatever its render path.
 
 The 2026-08-16 audit-consolidation wave removed the fabricated Recent Activity
 feed, regulatory scorecard, alert items and synthesized trend arrays from
@@ -370,8 +403,11 @@ present an unverified record as verified.
 
 | ID | Item | Closed |
 |---|---|---|
-| — | AIBOM Registry / Supply Chain Attestations absent from the TD-001 register | 2026-08-16 |
-| — | 53 `%_table` demo tables cross-tenant readable/writable by any authenticated user | 2026-08-16 |
+| — | `bcpPlansService` / `securityScansService` / `trainingService` returned SEED_* mock arrays on empty table **and on query failure** (fabricated MDL-00x records presented as real); BCP and Training pages carried their own hardcoded fallback catalogues | 2026-08-17 |
+| — | 28 of 36 vendor TPRM columns had no write path — mapped by `toRow` but sent by no form; reassessment programme read `—` forever on a real tenant (fixed by VendorEditSheet) | 2026-08-17 |
+| — | `vendors.linked_models` read by concentration analysis but written by nothing (fixed by the edit sheet's model picker) | 2026-08-17 |
+| — | CarbonAgent multiplied by bare constants, invented 7B-param/10k-req defaults, annualised inference into a quarterly record, and its factor lookup could never match; RemediationPlannerAgent wrote nonexistent columns (`due_at`, `sla_hours`, `affected_models`) and emitted REMEDIATION_CREATED for rows that never persisted | 2026-08-17 |
+| — | 53 `%_table` demo tables cross-tenant readable/writable — *first fix did not apply to populated databases; re-applied* | 2026-08-17 |
 | — | `vendors.org_id` NOT NULL with no DB default — every client insert failed (23502) | 2026-08-16 |
 | — | `carbon_records` missing all 13 domain columns — Carbon Ledger persisted nothing | 2026-08-16 |
 | — | `esgService` served 3 fabricated *published* disclosures when a tenant's table was empty | 2026-08-16 |

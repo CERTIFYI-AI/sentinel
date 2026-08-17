@@ -62,6 +62,8 @@ export interface EnergyMetric {
   waterUsageM3: number | null
   notes: string | null
   recordedAt: string | null
+  /** energy_metrics.metadata (jsonb) — e.g. the demo importer's marker. */
+  metadata?: Record<string, unknown>
   createdAt?: string
   updatedAt?: string
 }
@@ -97,6 +99,7 @@ export function fromRow(r: Record<string, any>): EnergyMetric {
     waterUsageM3: num(r.water_usage_m3),
     notes: txt(r.notes),
     recordedAt: r.recorded_at ?? null,
+    metadata: (r.metadata && typeof r.metadata === 'object' ? r.metadata : {}) as Record<string, unknown>,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }
@@ -127,6 +130,7 @@ function toRow(m: Partial<EnergyMetric>): Record<string, any> {
   if (m.waterUsageM3 !== undefined) row.water_usage_m3 = m.waterUsageM3
   if (m.notes !== undefined) row.notes = m.notes || null
   if (m.recordedAt !== undefined) row.recorded_at = m.recordedAt || null
+  if (m.metadata !== undefined) row.metadata = m.metadata
   return row
 }
 

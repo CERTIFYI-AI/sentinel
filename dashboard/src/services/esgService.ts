@@ -90,6 +90,9 @@ export interface EsgReport {
   documentId: string | null
   methodology: string | null
   publishedAt: string | null
+  /** esg_reports.metadata (jsonb) — e.g. the demo importer's marker. Written
+   *  as-set by toRow; the authorUserId merge in upsertEsgReport layers on top. */
+  metadata?: Record<string, unknown>
   createdAt?: string
   updatedAt?: string
 }
@@ -145,7 +148,13 @@ export function fromRow(r: Record<string, any>): EsgReport {
     // code hiding this real column.
     aiMetrics: toMetricsObject(r.ai_metrics),
     assuranceStatus: (txt(r.assurance_status) as AssuranceStatus | null),
-    assuranceProvider: txt(r.assurance_provider) ?? txt(metadata.assurance_provider),
+    // Read the COLUMN only. The `metadata.assurance_provider` fallback that used
+    // to sit here surfaced seeded values (real audit firms — 'PwC', 'Deloitte')
+    // on rows whose assurance_status is 'none', so the UI rendered the
+    // self-contradicting "No assurance · PwC". An assurance provider is a claim
+    // about who signed off; it may only come from the governed column that the
+    // approval path writes.
+    assuranceProvider: txt(r.assurance_provider),
     assuranceDate: r.assurance_date ?? null,
     approver: txt(r.approver),
     approvedBy: r.approved_by ?? null,
@@ -166,6 +175,7 @@ export function fromRow(r: Record<string, any>): EsgReport {
     // The page read `publishedDate` / `published_date`; the column is
     // `published_at`, so the drawer always said "TBD".
     publishedAt: r.published_at ?? null,
+    metadata,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }
@@ -208,8 +218,10 @@ function toRow(e: Partial<EsgReport>): Record<string, any> {
   if (e.documentId !== undefined) row.document_id = e.documentId || null
   if (e.methodology !== undefined) row.methodology = e.methodology || null
   if (e.publishedAt !== undefined) row.published_at = e.publishedAt || null
-  // `metadata` is written by upsertEsgReport, which merges rather than
-  // replaces — seeded metadata (e.g. assurance_provider) must not be lost.
+  // `metadata` is only written when the caller set it (e.g. the demo importer's
+  // { demo_seed: true } marker). upsertEsgReport's authorUserId path merges on
+  // top of this rather than replacing it.
+  if (e.metadata !== undefined) row.metadata = e.metadata
   return row
 }
 
@@ -239,7 +251,7 @@ export async function upsertEsgReport(record: Partial<EsgReport>): Promise<EsgRe
       const { data: existing } = await supabase.from('esg_reports').select('metadata').eq('id', record.id).single()
       base = (existing?.metadata ?? {}) as Record<string, any>
     }
-    row.metadata = { ...base, author_user_id: record.authorUserId || null }
+    row.metadata = { ...base, ...(row.metadata ?? {}), author_user_id: record.authorUserId || null }
   }
   const { data, error } = await supabase.from('esg_reports').upsert(row).select().single()
   if (error) { console.warn('[esgService] upsert:', error.message); throw new Error(error.message) }

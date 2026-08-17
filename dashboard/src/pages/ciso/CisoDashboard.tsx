@@ -41,7 +41,9 @@ import { agentRecordHooks } from '../../hooks/queries/useAgentGovCrud';
 import type { RiskRecord } from '../../services/riskService';
 import type { IncidentRecord } from '../../services/incidentService';
 import type { FrameworkRecord } from '../../services/frameworkService';
-import BoardReport from './BoardReport';
+// The report BODY only — the standalone /ciso/report page adds its own
+// PageHeader, which would duplicate this page's chrome inside the tab.
+import { BoardReportBody } from './BoardReport';
 
 // The live `frameworks` table stores `score`/`target_score`; the service type
 // still carries legacy `compliance_score`. Read whichever is present.
@@ -112,7 +114,7 @@ export default function CisoDashboard() {
         </TabsList>
 
         <TabsContent value="overview" className="mt-4"><OverviewTab /></TabsContent>
-        <TabsContent value="report" className="mt-4"><BoardReport /></TabsContent>
+        <TabsContent value="report" className="mt-4"><BoardReportBody /></TabsContent>
         <TabsContent value="metrics" className="mt-4"><ExecutiveMetricsTab /></TabsContent>
         <TabsContent value="roi" className="mt-4"><RoiValueTab onNavigate={navigate} /></TabsContent>
       </Tabs>

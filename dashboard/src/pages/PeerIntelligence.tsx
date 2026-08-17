@@ -11,8 +11,8 @@ import {
   ResponsiveContainer, Cell, LineChart, Line, Legend,
 } from 'recharts';
 import {
-  Users, ShieldCheck, TrendUp, Warning, Brain, Lock,
-  Globe, ChartBar, Info, Trophy, ArrowUp, ArrowDown, Minus,
+  Users, ShieldCheck, TrendUp, Warning, Brain,
+  Globe, ChartBar, Trophy, ArrowUp, ArrowDown, Minus,
 } from '@phosphor-icons/react';
 import { useSettingsStore } from '../stores/settingsStore';
 import { useChartTheme } from '../hooks/useChartTheme';
@@ -83,41 +83,90 @@ export default function PeerIntelligence() {
   const { orgName } = useSettingsStore();
   const ct = useChartTheme();
   const [tab, setTab] = useState('overview');
+  // The illustrative layout is opt-in and watermarked; never the default.
+  const [showPreview, setShowPreview] = useState(false);
 
   return (
     <TooltipProvider>
       <div className="space-y-6">
         <PageHeader
-          title="Peer Intelligence Benchmarking"
-          subtitle={`${orgName} · Anonymous cross-sector AI risk benchmarking powered by 47 financial services peers`}
-          actions={
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 text-xs px-2 py-1" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-4))' }}>
-                <Lock size={11} />
-                <span>All peer data fully anonymized · Zero PII shared</span>
-              </div>
-              <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-                Export Benchmarks
-              </Button>
-            </div>
-          }
+          title="Peer Benchmarking"
+          subtitle={`${orgName} · Cross-sector AI risk benchmarking`}
         />
 
+        {/*
+          Peer benchmarking compares your posture against data contributed by
+          other organisations. No such pipeline exists: there is no opt-in
+          mechanism, no contribution table, no anonymisation step and no peer
+          cohort anywhere in the codebase. So the module says so, rather than
+          showing figures.
+
+          What stood here asserted the opposite, in writing, to paying
+          customers -- "powered by 47 financial services peers", "All peer data
+          fully anonymized - Zero PII shared", and "This proprietary dataset,
+          built exclusively from Sentinel clients, cannot be replicated by any
+          alternative platform" -- all of it backed by four hardcoded arrays.
+          That is a fabricated product claim rather than a fabricated metric,
+          so it is removed, not relabelled.
+        */}
+        <Card style={{ borderRadius: 0 }}>
+          <CardContent className="p-8 text-center">
+            <Users size={28} style={{ color: 'hsl(var(--text-4))' }} className="mx-auto mb-3" />
+            <h2 className="text-base font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Peer benchmarking is not active for this organisation
+            </h2>
+            <p className="mx-auto mt-2 max-w-xl text-sm" style={{ color: 'hsl(var(--text-3))' }}>
+              Benchmarking requires an opt-in contribution pipeline across
+              organisations, which is not yet available. No peer figures,
+              percentiles or rankings are shown here, and nothing on this page is
+              derived from real peer data.
+            </p>
+            <p className="mx-auto mt-3 max-w-xl text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+              Your own posture is available today on the CISO Dashboard and on
+              Benchmarking &amp; Maturity, both computed from your governed inventory.
+            </p>
+            <Button
+              size="sm"
+              variant="outline"
+              className="mt-5"
+              style={{ borderRadius: 0 }}
+              onClick={() => setShowPreview((v) => !v)}
+            >
+              {showPreview ? 'Hide illustrative preview' : 'Show illustrative preview'}
+            </Button>
+          </CardContent>
+        </Card>
+
+        {showPreview && (
+          <div
+            className="flex items-start gap-2 px-3 py-2 text-xs"
+            style={{
+              border: '1px solid hsl(var(--s-wn-tx))',
+              background: 'hsl(var(--s-wn-bg))',
+              color: 'hsl(var(--s-wn-tx))',
+            }}
+          >
+            <Warning size={14} className="mt-0.5 shrink-0" />
+            <span>
+              <strong>Illustrative only &mdash; not real peer data.</strong> Every
+              number, chart, ranking and percentile below is a hardcoded example
+              showing the intended layout. It describes no organisation, and must
+              not be exported, quoted or reported.
+            </span>
+          </div>
+        )}
+
+        {showPreview && (
         <div className="grid grid-cols-4 gap-3">
           {NET_STATS.map(s => <MetricTile key={s.label} label={s.label} value={s.value} icon={s.icon} highlight={s.label.includes('Percentile')} />)}
         </div>
+        )}
 
-        <div className="p-3 flex items-start gap-3" style={{ border: '1px solid hsl(var(--brand) / 0.3)', background: 'hsl(var(--brand) / 0.04)' }}>
-          <Info size={16} style={{ color: 'hsl(var(--brand))', flexShrink: 0, marginTop: 2 }} />
-          <div>
-            <p className="text-xs font-semibold" style={{ color: 'hsl(var(--brand))' }}>Network Intelligence Advantage</p>
-            <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
-              Your participation contributes anonymized metadata to the Sentinel Intelligence Network. As more peers join, your benchmarks become more precise and industry-specific.
-              This proprietary dataset — built exclusively from Sentinel clients — cannot be replicated by any alternative platform.
-            </p>
-          </div>
-        </div>
+        {/* The "Network Intelligence Advantage" panel is deliberately gone: it
+            asserted a proprietary peer dataset and an intelligence network that
+            have no implementation anywhere in the product. */}
 
+        {showPreview && (
         <Tabs value={tab} onValueChange={setTab}>
           <TabsList style={{ borderRadius: 0 }}>
             <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Performance Radar</TabsTrigger>
@@ -279,6 +328,7 @@ export default function PeerIntelligence() {
             </Card>
           </TabsContent>
         </Tabs>
+        )}
       </div>
     </TooltipProvider>
   );

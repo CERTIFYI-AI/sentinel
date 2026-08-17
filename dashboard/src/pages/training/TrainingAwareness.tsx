@@ -1,6 +1,8 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTrainingData } from '../../hooks/useTrainingData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { ErrorState } from '../../components/ui/ErrorState';
+import { EmptyState } from '../../components/ui/EmptyState';
 import { toast } from 'sonner';
 import {
   MagnifyingGlass, Export, GraduationCap, ChartBar, Warning,
@@ -32,235 +34,51 @@ interface Course {
   id: string;
   title: string;
   category: string;
-  format: 'Interactive' | 'Video' | 'Document';
+  format: string;
   duration: string;
   assignedTo: string;
-  completionPct: number;
-  dueDate: string;
-  status: 'Completed' | 'Active';
+  /** NULL when completion has never been measured — renders '—', never 0. */
+  completionPct: number | null;
+  dueDate: string | null;
+  status: string;
   description: string;
   modules: { name: string; duration: string; type: string }[];
   assignments: { name: string; role: string; assigned: string; completed: boolean; score: number | null }[];
   certificates: { holder: string; issued: string; expiry: string; credentialId: string }[];
 }
 
-// ── Mock Data ────────────────────────────────────────────────────────────────
-const COURSES: Course[] = [
-  {
-    id: 'TRN-001',
-    title: 'AI Ethics for Engineers',
-    category: 'AI Ethics',
-    format: 'Interactive',
-    duration: '4h',
-    assignedTo: 'Engineering Team',
-    completionPct: 92,
-    dueDate: '2026-03-31',
-    status: 'Completed',
-    description: 'Comprehensive training on ethical AI development principles, covering bias mitigation, fairness metrics, transparency requirements, and responsible deployment practices for engineering teams building AI-powered products.',
-    modules: [
-      { name: 'Foundations of AI Ethics', duration: '45 min', type: 'Interactive' },
-      { name: 'Bias Detection & Mitigation', duration: '60 min', type: 'Lab' },
-      { name: 'Fairness Metrics in Practice', duration: '45 min', type: 'Interactive' },
-      { name: 'Transparency & Explainability', duration: '40 min', type: 'Video' },
-      { name: 'Case Studies & Assessment', duration: '50 min', type: 'Quiz' },
-    ],
-    assignments: [
-      { name: 'Sarah Chen', role: 'ML Engineer', assigned: '2026-02-15', completed: true, score: 95 },
-      { name: 'James Wilson', role: 'Senior Engineer', assigned: '2026-02-15', completed: true, score: 88 },
-      { name: 'Maria Lopez', role: 'Data Scientist', assigned: '2026-02-15', completed: true, score: 92 },
-      { name: 'Alex Kim', role: 'ML Engineer', assigned: '2026-02-15', completed: false, score: null },
-    ],
-    certificates: [
-      { holder: 'Sarah Chen', issued: '2026-03-20', expiry: '2027-03-20', credentialId: 'CERT-ETH-001' },
-      { holder: 'James Wilson', issued: '2026-03-22', expiry: '2027-03-22', credentialId: 'CERT-ETH-002' },
-      { holder: 'Maria Lopez', issued: '2026-03-25', expiry: '2027-03-25', credentialId: 'CERT-ETH-003' },
-    ],
-  },
-  {
-    id: 'TRN-002',
-    title: 'GDPR Essentials for AI Teams',
-    category: 'Data Privacy',
-    format: 'Video',
-    duration: '2h',
-    assignedTo: 'All Staff',
-    completionPct: 85,
-    dueDate: '2026-04-15',
-    status: 'Active',
-    description: 'Essential training on General Data Protection Regulation requirements as they apply to AI systems, including data processing principles, lawful basis for automated decision-making, data subject rights, and privacy-by-design implementation.',
-    modules: [
-      { name: 'GDPR Fundamentals for AI', duration: '30 min', type: 'Video' },
-      { name: 'Lawful Basis for AI Processing', duration: '25 min', type: 'Video' },
-      { name: 'Data Subject Rights & AI', duration: '30 min', type: 'Video' },
-      { name: 'Privacy by Design in AI', duration: '20 min', type: 'Interactive' },
-      { name: 'Assessment', duration: '15 min', type: 'Quiz' },
-    ],
-    assignments: [
-      { name: 'All Engineering', role: 'Department', assigned: '2026-03-01', completed: true, score: 87 },
-      { name: 'All Operations', role: 'Department', assigned: '2026-03-01', completed: true, score: 82 },
-      { name: 'All Compliance', role: 'Department', assigned: '2026-03-01', completed: true, score: 94 },
-      { name: 'All Sales', role: 'Department', assigned: '2026-03-01', completed: false, score: null },
-    ],
-    certificates: [
-      { holder: 'Engineering Dept', issued: '2026-03-28', expiry: '2027-03-28', credentialId: 'CERT-GDPR-001' },
-      { holder: 'Compliance Dept', issued: '2026-03-25', expiry: '2027-03-25', credentialId: 'CERT-GDPR-002' },
-    ],
-  },
-  {
-    id: 'TRN-003',
-    title: 'SOC 2 Awareness Training',
-    category: 'Compliance',
-    format: 'Document',
-    duration: '1.5h',
-    assignedTo: 'Engineering + Ops',
-    completionPct: 68,
-    dueDate: '2026-04-30',
-    status: 'Active',
-    description: 'SOC 2 compliance awareness covering trust service criteria, security controls, availability requirements, and audit preparation procedures for teams operating cloud-based AI infrastructure.',
-    modules: [
-      { name: 'SOC 2 Trust Service Criteria', duration: '25 min', type: 'Document' },
-      { name: 'Security Controls Overview', duration: '25 min', type: 'Document' },
-      { name: 'Availability & Processing Integrity', duration: '20 min', type: 'Document' },
-      { name: 'Audit Readiness Checklist', duration: '20 min', type: 'Interactive' },
-    ],
-    assignments: [
-      { name: 'David Park', role: 'DevOps Lead', assigned: '2026-03-10', completed: true, score: 90 },
-      { name: 'Lisa Wang', role: 'SRE', assigned: '2026-03-10', completed: true, score: 85 },
-      { name: 'Tom Harris', role: 'Backend Engineer', assigned: '2026-03-10', completed: false, score: null },
-      { name: 'Nina Patel', role: 'Cloud Architect', assigned: '2026-03-10', completed: false, score: null },
-    ],
-    certificates: [
-      { holder: 'David Park', issued: '2026-04-02', expiry: '2027-04-02', credentialId: 'CERT-SOC2-001' },
-    ],
-  },
-  {
-    id: 'TRN-004',
-    title: 'EU AI Act Compliance',
-    category: 'Compliance',
-    format: 'Interactive',
-    duration: '3h',
-    assignedTo: 'Compliance + Legal',
-    completionPct: 45,
-    dueDate: '2026-05-15',
-    status: 'Active',
-    description: 'In-depth training on the European Union Artificial Intelligence Act, covering risk classification, conformity assessment requirements, documentation obligations, and post-market monitoring for high-risk AI systems.',
-    modules: [
-      { name: 'EU AI Act Overview & Scope', duration: '30 min', type: 'Interactive' },
-      { name: 'Risk Classification Framework', duration: '40 min', type: 'Interactive' },
-      { name: 'Conformity Assessment', duration: '35 min', type: 'Lab' },
-      { name: 'Documentation Requirements', duration: '30 min', type: 'Document' },
-      { name: 'Post-Market Monitoring', duration: '25 min', type: 'Interactive' },
-      { name: 'Final Assessment', duration: '20 min', type: 'Quiz' },
-    ],
-    assignments: [
-      { name: 'Rebecca Torres', role: 'Compliance Officer', assigned: '2026-03-20', completed: true, score: 91 },
-      { name: 'Mark Johnson', role: 'Legal Counsel', assigned: '2026-03-20', completed: false, score: null },
-      { name: 'Emily Brooks', role: 'GRC Analyst', assigned: '2026-03-20', completed: false, score: null },
-    ],
-    certificates: [],
-  },
-  {
-    id: 'TRN-005',
-    title: 'Responsible AI Development',
-    category: 'AI Ethics',
-    format: 'Video',
-    duration: '2.5h',
-    assignedTo: 'ML Engineers',
-    completionPct: 78,
-    dueDate: '2026-04-01',
-    status: 'Active',
-    description: 'Practical training on responsible AI development methodologies, model cards, impact assessments, stakeholder engagement, and continuous monitoring practices for machine learning engineering teams.',
-    modules: [
-      { name: 'Responsible AI Principles', duration: '30 min', type: 'Video' },
-      { name: 'Model Cards & Documentation', duration: '30 min', type: 'Video' },
-      { name: 'Impact Assessments', duration: '35 min', type: 'Interactive' },
-      { name: 'Stakeholder Engagement', duration: '25 min', type: 'Video' },
-      { name: 'Continuous Monitoring', duration: '30 min', type: 'Video' },
-    ],
-    assignments: [
-      { name: 'Sarah Chen', role: 'ML Engineer', assigned: '2026-02-20', completed: true, score: 94 },
-      { name: 'Maria Lopez', role: 'Data Scientist', assigned: '2026-02-20', completed: true, score: 89 },
-      { name: 'Raj Gupta', role: 'ML Engineer', assigned: '2026-02-20', completed: false, score: null },
-    ],
-    certificates: [
-      { holder: 'Sarah Chen', issued: '2026-03-15', expiry: '2027-03-15', credentialId: 'CERT-RAI-001' },
-      { holder: 'Maria Lopez', issued: '2026-03-18', expiry: '2027-03-18', credentialId: 'CERT-RAI-002' },
-    ],
-  },
-  {
-    id: 'TRN-006',
-    title: 'Incident Response Procedures',
-    category: 'Incident Response',
-    format: 'Interactive',
-    duration: '2h',
-    assignedTo: 'Security + Ops',
-    completionPct: 60,
-    dueDate: '2026-05-01',
-    status: 'Active',
-    description: 'Hands-on training for AI incident response procedures including detection, triage, containment, remediation, and post-incident review. Covers regulatory notification requirements and escalation protocols.',
-    modules: [
-      { name: 'Incident Detection & Triage', duration: '25 min', type: 'Interactive' },
-      { name: 'Containment Strategies', duration: '25 min', type: 'Lab' },
-      { name: 'Remediation & Recovery', duration: '25 min', type: 'Interactive' },
-      { name: 'Regulatory Notification', duration: '20 min', type: 'Document' },
-      { name: 'Tabletop Exercise', duration: '25 min', type: 'Lab' },
-    ],
-    assignments: [
-      { name: 'Kevin Wright', role: 'Security Lead', assigned: '2026-03-15', completed: true, score: 88 },
-      { name: 'David Park', role: 'DevOps Lead', assigned: '2026-03-15', completed: true, score: 82 },
-      { name: 'Amy Chen', role: 'Security Analyst', assigned: '2026-03-15', completed: false, score: null },
-      { name: 'Lisa Wang', role: 'SRE', assigned: '2026-03-15', completed: false, score: null },
-    ],
-    certificates: [],
-  },
-  {
-    id: 'TRN-007',
-    title: 'Data Classification Standards',
-    category: 'Data Privacy',
-    format: 'Document',
-    duration: '1h',
-    assignedTo: 'All Staff',
-    completionPct: 55,
-    dueDate: '2026-06-01',
-    status: 'Active',
-    description: 'Foundational training on organizational data classification standards, covering sensitivity levels, handling procedures, labeling requirements, and access control policies for AI training data and model outputs.',
-    modules: [
-      { name: 'Data Classification Levels', duration: '20 min', type: 'Document' },
-      { name: 'Handling & Labeling Procedures', duration: '20 min', type: 'Document' },
-      { name: 'Access Control Policies', duration: '20 min', type: 'Interactive' },
-    ],
-    assignments: [
-      { name: 'All Engineering', role: 'Department', assigned: '2026-04-01', completed: true, score: 80 },
-      { name: 'All Operations', role: 'Department', assigned: '2026-04-01', completed: false, score: null },
-      { name: 'All Compliance', role: 'Department', assigned: '2026-04-01', completed: false, score: null },
-      { name: 'All Sales', role: 'Department', assigned: '2026-04-01', completed: false, score: null },
-    ],
-    certificates: [],
-  },
-  {
-    id: 'TRN-008',
-    title: 'Vendor Risk Management',
-    category: 'Security',
-    format: 'Video',
-    duration: '1.5h',
-    assignedTo: 'Procurement + Legal',
-    completionPct: 40,
-    dueDate: '2026-06-15',
-    status: 'Active',
-    description: 'Training on third-party AI vendor risk management, covering vendor assessment frameworks, contractual safeguards, ongoing monitoring requirements, and exit strategy planning for AI service providers.',
-    modules: [
-      { name: 'Vendor Risk Framework', duration: '25 min', type: 'Video' },
-      { name: 'Assessment & Due Diligence', duration: '25 min', type: 'Video' },
-      { name: 'Contractual Safeguards', duration: '20 min', type: 'Document' },
-      { name: 'Monitoring & Exit Planning', duration: '20 min', type: 'Video' },
-    ],
-    assignments: [
-      { name: 'Mark Johnson', role: 'Legal Counsel', assigned: '2026-04-10', completed: false, score: null },
-      { name: 'Priya Sharma', role: 'Procurement Lead', assigned: '2026-04-10', completed: false, score: null },
-      { name: 'Rebecca Torres', role: 'Compliance Officer', assigned: '2026-04-10', completed: false, score: null },
-    ],
-    certificates: [],
-  },
-];
+/**
+ * V8 re-audit: rows come from the real `training_courses` table only — the
+ * page previously cast DB rows straight to Course (crashing on missing
+ * arrays) and fell back to a hardcoded COURSES mock whenever the table was
+ * empty, presenting fabricated completion percentages as a real programme.
+ * Absent facts normalise to NULL / empty arrays, never to invented values.
+ */
+function normalizeCourse(row: any): Course {
+  const rawStatus = typeof row?.status === 'string' ? row.status : '';
+  const status = rawStatus.toLowerCase() === 'completed' ? 'Completed'
+    : rawStatus ? rawStatus.charAt(0).toUpperCase() + rawStatus.slice(1) : 'Active';
+  const completion = row?.completionPct ?? row?.completion_pct;
+  return {
+    id: String(row?.id ?? ''),
+    title: row?.title ?? 'Untitled course',
+    category: row?.category ?? 'Uncategorised',
+    format: row?.format ?? '—',
+    duration: row?.duration
+      ?? (row?.estimated_minutes ? `${row.estimated_minutes} min`
+        : row?.duration_hours ? `${row.duration_hours}h` : '—'),
+    assignedTo: row?.assignedTo ?? row?.assigned_to
+      ?? (Array.isArray(row?.audience) ? row.audience.join(', ') : row?.audience) ?? '—',
+    completionPct: typeof completion === 'number' && Number.isFinite(completion) ? completion : null,
+    dueDate: row?.dueDate ?? row?.due_date ?? null,
+    status,
+    description: row?.description ?? '',
+    modules: Array.isArray(row?.modules) ? row.modules : [],
+    assignments: Array.isArray(row?.assignments) ? row.assignments : [],
+    certificates: Array.isArray(row?.certificates) ? row.certificates : [],
+  };
+}
+
 
 const CATEGORIES = ['All Categories', 'AI Ethics', 'Data Privacy', 'Compliance', 'Incident Response', 'Security'];
 
@@ -303,7 +121,11 @@ function FormatIcon({ format }: { format: string }) {
 }
 
 // ── Completion Bar ───────────────────────────────────────────────────────────
-function CompletionBar({ pct }: { pct: number }) {
+// NULL means "never measured" and renders an em-dash — never a 0% bar.
+function CompletionBar({ pct }: { pct: number | null }) {
+  if (pct === null) {
+    return <span className="text-xs font-mono" style={{ color: 'hsl(var(--text-4))' }}>—</span>;
+  }
   const color = pct >= 80 ? 'hsl(var(--s-ok-tx))' : pct >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))';
   return (
     <div className="flex items-center gap-2">
@@ -320,13 +142,13 @@ function CompletionBar({ pct }: { pct: number }) {
 // ═════════════════════════════════════════════════════════════════════════════
 export default function TrainingAwareness() {
   const { orgName } = useSettingsStore();
-  const { items: liveItems, isLoading, save, remove } = useTrainingData();
-  const [courses, setCourses] = useState<Course[]>(COURSES);
+  const { items: liveItems, isLoading, error, refetch, save, remove } = useTrainingData();
+  // Real rows only — an empty table renders an honest empty state, never the
+  // old fabricated course catalogue.
+  const [courses, setCourses] = useState<Course[]>([]);
 
   useEffect(() => {
-    if (liveItems.length > 0) {
-      setCourses(liveItems as any[])
-    }
+    setCourses((liveItems ?? []).map(normalizeCourse));
   }, [liveItems]);
 
   const [search, setSearch] = useState('');
@@ -353,8 +175,12 @@ export default function TrainingAwareness() {
 
   // ── Metrics ────────────────────────────────────────────────────────────────
   const totalCourses = courses.length;
-  const avgCompletion = courses.length ? Math.round(courses.reduce((s, c) => s + c.completionPct, 0) / courses.length) : 0;
-  const overdueCount = courses.filter(c => c.status === 'Active' && new Date(c.dueDate) < new Date()).length;
+  // A metric with no underlying measurement renders '—', never 0.
+  const measured = courses.filter((c): c is Course & { completionPct: number } => c.completionPct !== null);
+  const avgCompletion = measured.length
+    ? `${Math.round(measured.reduce((s, c) => s + c.completionPct, 0) / measured.length)}%`
+    : '—';
+  const overdueCount = courses.filter(c => c.status === 'Active' && !!c.dueDate && new Date(c.dueDate) < new Date()).length;
   const certExpiring = courses.reduce((count, c) => {
     return count + c.certificates.filter(cert => {
       const exp = new Date(cert.expiry);
@@ -398,7 +224,7 @@ export default function TrainingAwareness() {
   // ── Export CSV ─────────────────────────────────────────────────────────────
   const exportCSV = () => {
     const headers = ['Course ID', 'Title', 'Category', 'Format', 'Duration', 'Assigned To', 'Completion %', 'Due Date', 'Status'];
-    const rows = filtered.map(c => [c.id, c.title, c.category, c.format, c.duration, c.assignedTo, c.completionPct, c.dueDate, c.status]);
+    const rows = filtered.map(c => [c.id, c.title, c.category, c.format, c.duration, c.assignedTo, c.completionPct ?? '', c.dueDate ?? '', c.status]);
     const csv = [headers.join(','), ...rows.map(r => r.map(v => `"${v}"`).join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
     const url = URL.createObjectURL(blob);
@@ -429,6 +255,18 @@ export default function TrainingAwareness() {
 
   if (isLoading) return <PageSkeleton title="Training & Awareness" />;
 
+  // A failed load is a real error — never silently replaced with sample courses.
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
+          Training &amp; Awareness
+        </h1>
+        <ErrorState title="Could not load training courses" error={error} onRetry={() => refetch()} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -452,7 +290,7 @@ export default function TrainingAwareness() {
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-4">
         <MetricTile label="Total Courses" value={totalCourses} icon={<GraduationCap size={24} />} variant="default" />
-        <MetricTile label="Completion Rate" value={`${avgCompletion}%`} icon={<ChartBar size={24} />} variant="ok" />
+        <MetricTile label="Completion Rate" value={avgCompletion} icon={<ChartBar size={24} />} variant="ok" />
         <MetricTile label="Overdue Assignments" value={overdueCount} icon={<Warning size={24} />} variant="error" />
         <MetricTile label="Certifications Expiring" value={certExpiring} icon={<Certificate size={24} />} variant="warn" />
       </div>
@@ -481,7 +319,15 @@ export default function TrainingAwareness() {
         </Select>
       </div>
 
-      {/* Course Table */}
+      {/* Course Table — an empty org shows an honest empty state, never sample courses. */}
+      {courses.length === 0 ? (
+        <EmptyState
+          icon={<GraduationCap size={32} weight="duotone" />}
+          title="No training courses yet"
+          description="Create the AI literacy and compliance courses your governance programme requires (EU AI Act Art. 4). Assignments and completions hang off a course record."
+          action={<Button size="sm" onClick={() => setCreateOpen(true)}><Plus size={14} /> New Course</Button>}
+        />
+      ) : (
       <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
@@ -497,7 +343,7 @@ export default function TrainingAwareness() {
                 {filtered.map(course => {
                   const sBadge = statusBadge(course.status);
                   const cBadge = categoryBadge(course.category);
-                  const isOverdue = course.status === 'Active' && new Date(course.dueDate) < new Date();
+                  const isOverdue = course.status === 'Active' && !!course.dueDate && new Date(course.dueDate) < new Date();
                   return (
                     <tr
                       key={course.id}
@@ -542,7 +388,7 @@ export default function TrainingAwareness() {
                       </td>
                       <td className="px-3 py-2">
                         <span className="text-xs font-mono" style={{ color: isOverdue ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' }}>
-                          {isOverdue ? 'OVERDUE' : course.dueDate}
+                          {isOverdue ? 'OVERDUE' : course.dueDate ?? '—'}
                         </span>
                       </td>
                       <td className="px-3 py-2">
@@ -575,6 +421,7 @@ export default function TrainingAwareness() {
           </div>
         </CardContent>
       </Card>
+      )}
 
       {/* Summary row */}
       <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--text-4))' }}>
@@ -645,7 +492,7 @@ export default function TrainingAwareness() {
                       <p className="text-[10px] font-semibold uppercase" style={{ color: 'hsl(var(--text-4))' }}>Due Date</p>
                       <div className="flex items-center gap-1">
                         <CalendarBlank size={14} style={{ color: 'hsl(var(--text-4))' }} />
-                        <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{selectedCourse.dueDate}</span>
+                        <span className="text-sm" style={{ color: 'hsl(var(--text-1))' }}>{selectedCourse.dueDate ?? '—'}</span>
                       </div>
                     </div>
                   </div>
@@ -775,14 +622,16 @@ export default function TrainingAwareness() {
                     <div className="flex items-center justify-between mb-3">
                       <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Overall Progress</span>
                       <span className="text-lg font-bold" style={{
-                        color: selectedCourse.completionPct >= 80 ? 'hsl(var(--s-ok-tx))' : selectedCourse.completionPct >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
-                      }}>{selectedCourse.completionPct}%</span>
+                        color: selectedCourse.completionPct === null ? 'hsl(var(--text-4))'
+                          : selectedCourse.completionPct >= 80 ? 'hsl(var(--s-ok-tx))' : selectedCourse.completionPct >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
+                      }}>{selectedCourse.completionPct === null ? '—' : `${selectedCourse.completionPct}%`}</span>
                     </div>
                     <div className="h-3 w-full" style={{ background: 'hsl(var(--bg-surface))', borderRadius: 0 }}>
                       <div style={{
-                        width: `${selectedCourse.completionPct}%`,
+                        width: `${selectedCourse.completionPct ?? 0}%`,
                         height: '100%',
-                        background: selectedCourse.completionPct >= 80 ? 'hsl(var(--s-ok-tx))' : selectedCourse.completionPct >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
+                        background: selectedCourse.completionPct === null ? 'transparent'
+                          : selectedCourse.completionPct >= 80 ? 'hsl(var(--s-ok-tx))' : selectedCourse.completionPct >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))',
                         borderRadius: 0,
                         transition: 'width 0.3s ease',
                       }} />

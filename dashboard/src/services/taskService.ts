@@ -35,10 +35,42 @@ function normalizeStatus(raw: unknown): string {
 }
 
 const KNOWN_PRIORITIES = new Set(['critical', 'high', 'medium', 'low'])
+/**
+ * Agents raise tasks with P0/P1/P2 severities (remediationPlannerAgent,
+ * vendorCascadeAgent). These previously fell through to 'medium', so a P0
+ * critical remediation appeared in the queue as MEDIUM — invented data produced
+ * by a coercion. Map them explicitly, and surface anything genuinely
+ * unrecognised as 'unknown' rather than inventing a middle value, mirroring
+ * normalizeStatus above.
+ */
 function normalizePriority(raw: unknown): string {
-  if (typeof raw !== 'string' || !raw.trim()) return 'medium'
+  if (typeof raw !== 'string' || !raw.trim()) return 'unknown'
   const p = raw.trim().toLowerCase()
-  return KNOWN_PRIORITIES.has(p) ? p : 'medium'
+  if (KNOWN_PRIORITIES.has(p)) return p
+  if (p === 'p0' || p === 'urgent' || p === 'sev1') return 'critical'
+  if (p === 'p1') return 'high'
+  if (p === 'p2') return 'medium'
+  if (p === 'p3' || p === 'p4') return 'low'
+  return 'unknown'
+}
+
+/**
+ * A task counts as open until it is done. Shared so the front page, the Tasks
+ * page and the SLA badge cannot drift apart — they previously carried three
+ * different definitions of "overdue", and Overview compared against the literal
+ * 'completed', which normalizeStatus can never produce (it maps to 'done'), so
+ * every FINISHED task with a past due date was counted as overdue.
+ */
+export function isOpenTaskStatus(status: unknown): boolean {
+  return status !== 'done'
+}
+
+/** Open AND past its due date. The single definition of overdue. */
+export function isOverdueTask(t: { status?: unknown; due_date?: unknown }): boolean {
+  if (!isOpenTaskStatus(t.status)) return false
+  if (typeof t.due_date !== 'string' || !t.due_date) return false
+  const due = new Date(t.due_date)
+  return !Number.isNaN(due.getTime()) && due < new Date()
 }
 
 /** Flatten a task row into the shape the board and table render. */
@@ -92,6 +124,9 @@ function toRow(rec: Record<string, any>): Record<string, any> {
       sourceLink: rec.sourceLink ?? '',
     }
   }
+  // tasks.metadata (jsonb) — carries e.g. the demo importer's
+  // { demo_seed: true } marker. Only written when the caller set it.
+  if (rec.metadata !== undefined) row.metadata = rec.metadata
   return row
 }
 

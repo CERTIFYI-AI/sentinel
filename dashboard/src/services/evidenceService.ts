@@ -120,6 +120,35 @@ export async function deleteEvidence(id: string): Promise<void> {
   void logAction({ module: 'evidence', entityType: 'evidence', entityId: id, action: 'delete' })
 }
 
+/** Stored-file index rows (`evidence_artifacts`) — the per-file forensic
+ *  records the Custody Explorer (/evidence/custody/:artifactId) drills into.
+ *  Read-only here: the vault lists them so custody forensics is reachable
+ *  by link rather than by typing a uuid into the address bar. */
+export interface EvidenceArtifactRow {
+  id: string
+  file_name: string
+  content_type: string | null
+  size_bytes: number | null
+  sha256_hex: string | null
+  classification: string | null
+  legal_hold: boolean
+  last_verified_at: string | null
+  last_verified_ok: boolean | null
+  created_at: string | null
+}
+
+export async function fetchEvidenceArtifacts(limit = 200): Promise<EvidenceArtifactRow[]> {
+  if (!isSupabaseConfigured() || !supabase) return []
+  const { data, error } = await supabase
+    .from('evidence_artifacts')
+    .select('id,file_name,content_type,size_bytes,sha256_hex,classification,legal_hold,last_verified_at,last_verified_ok,created_at')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) { console.warn('[evidenceService] artifacts fetch:', error.message); throw new Error(error.message) }
+  return (data ?? []) as EvidenceArtifactRow[]
+}
+
 export async function fetchEvidenceChain(limit = 200): Promise<EvidenceChainEntry[]> {
   if (!isSupabaseConfigured() || !supabase) return []
   const { data, error } = await supabase

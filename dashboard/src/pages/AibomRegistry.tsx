@@ -153,6 +153,8 @@ export default function AibomRegistry() {
   const nav = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const modelParam = searchParams.get('model')
+  // Deep link from a vendor record: /aibom?vendor=<vendors.id>.
+  const vendorParam = searchParams.get('vendor')
   const openParam = searchParams.get('open')
 
   const { records, isLoading, error, refetch, create, update, remove } = useAibomRecords()
@@ -182,8 +184,10 @@ export default function AibomRegistry() {
   }, [openParam, records])
 
   const filtered = useMemo(
-    () => records.filter(r => !modelParam || r.modelId === modelParam),
-    [records, modelParam],
+    () => records.filter(r =>
+      (!modelParam || r.modelId === modelParam)
+      && (!vendorParam || r.vendorId === vendorParam)),
+    [records, modelParam, vendorParam],
   )
 
   const componentsFor = (id: string) => components.filter(c => c.aibomId === id)
@@ -207,6 +211,12 @@ export default function AibomRegistry() {
   function clearModelFilter() {
     const next = new URLSearchParams(searchParams)
     next.delete('model')
+    setSearchParams(next, { replace: true })
+  }
+
+  function clearVendorFilter() {
+    const next = new URLSearchParams(searchParams)
+    next.delete('vendor')
     setSearchParams(next, { replace: true })
   }
 
@@ -427,14 +437,24 @@ export default function AibomRegistry() {
         }
       />
 
-      {modelParam && (
-        <div className="mb-3 flex items-center gap-2">
-          <span className="inline-flex items-center gap-2 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-3 py-1.5 text-sm text-[hsl(var(--brand))]">
-            <span>Filtered to <strong>{entities.resolve('model', modelParam) ?? 'Unavailable'}</strong></span>
-            <button aria-label="Clear model filter" onClick={clearModelFilter} className="inline-flex cursor-pointer items-center hover:text-[hsl(var(--text-1))]">
-              <X size={14} />
-            </button>
-          </span>
+      {(modelParam || vendorParam) && (
+        <div className="mb-3 flex flex-wrap items-center gap-2">
+          {modelParam && (
+            <span className="inline-flex items-center gap-2 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-3 py-1.5 text-sm text-[hsl(var(--brand))]">
+              <span>Filtered to <strong>{entities.resolve('model', modelParam) ?? 'Unavailable'}</strong></span>
+              <button aria-label="Clear model filter" onClick={clearModelFilter} className="inline-flex cursor-pointer items-center hover:text-[hsl(var(--text-1))]">
+                <X size={14} />
+              </button>
+            </span>
+          )}
+          {vendorParam && (
+            <span className="inline-flex items-center gap-2 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-3 py-1.5 text-sm text-[hsl(var(--brand))]">
+              <span>Vendor <strong>{entities.resolve('vendor', vendorParam) ?? 'Unavailable'}</strong></span>
+              <button aria-label="Clear vendor filter" onClick={clearVendorFilter} className="inline-flex cursor-pointer items-center hover:text-[hsl(var(--text-1))]">
+                <X size={14} />
+              </button>
+            </span>
+          )}
         </div>
       )}
 
@@ -453,10 +473,14 @@ export default function AibomRegistry() {
         : error ? <ErrorState message={error.message} onRetry={() => refetch()} />
         : rows.length === 0 ? (
           <EmptyState
-            title={modelParam ? 'No AIBOM records for this model' : 'No AIBOM records yet'}
+            title={modelParam ? 'No AIBOM records for this model'
+              : vendorParam ? 'No AIBOM records for this vendor'
+              : 'No AIBOM records yet'}
             message={modelParam
               ? 'Clear the model filter to see every record, or generate a bill of materials for this model.'
-              : 'Register a bill of materials to inventory the base models, datasets, frameworks and dependencies behind a model.'}
+              : vendorParam
+                ? 'Clear the vendor filter to see every record, or register a bill of materials naming this vendor as the supplier.'
+                : 'Register a bill of materials to inventory the base models, datasets, frameworks and dependencies behind a model.'}
             actionLabel="New AIBOM"
             onAction={openCreate}
           />

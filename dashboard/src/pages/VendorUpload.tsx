@@ -39,6 +39,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner'
 import { useVendorDocuments } from '@/hooks/useVendorDocuments'
 import { useVendorOptions } from '@/hooks/useVendorsData'
+import { useControls } from '@/hooks/queries/useControls'
+import { ChipMultiSelect } from '@/components/ui/LinkChips'
 import {
   DOCUMENT_TYPES, documentsExpiringWithin, getVendorDocumentUrl,
   type VendorDocumentRecord,
@@ -60,11 +62,13 @@ type UploadState = {
   expiresAt: string
   confidentiality: string
   renewalLeadDays: string
+  /** controls.id (uuid) — resolved to names at render time. */
+  satisfiesControlIds: string[]
 }
 
 const BLANK_UPLOAD: UploadState = {
   vendorId: '', docType: 'SOC2', title: '', validFrom: '', expiresAt: '',
-  confidentiality: 'confidential', renewalLeadDays: '',
+  confidentiality: 'confidential', renewalLeadDays: '', satisfiesControlIds: [],
 }
 
 export default function VendorUpload() {
@@ -73,9 +77,22 @@ export default function VendorUpload() {
   const vendorParam = params.get('vendor')
   const openParam = params.get('open')
 
-  const { documents, isLoading, isError, error, refetch, upload, review, remove } =
+  const { documents, isLoading, isError, error, refetch, upload, review, update, remove } =
     useVendorDocuments(vendorParam ?? undefined)
   const { options: vendorOptions, resolveName } = useVendorOptions()
+  const controlsQuery = useControls()
+  const controls = controlsQuery.data ?? []
+  const controlOptions = useMemo(
+    () => controls
+      .filter((c): c is typeof c & { id: string } => !!c.id)
+      .map((c) => ({ id: c.id, name: c.controlRef ? `${c.controlRef} — ${c.name}` : c.name })),
+    [controls],
+  )
+  /** Resolved display name for a stored control id — never a raw uuid. */
+  const controlName = (id: string): string | null => {
+    const c = controls.find((x) => x.id === id)
+    return c ? (c.controlRef ? `${c.controlRef} — ${c.name}` : c.name) : null
+  }
 
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
@@ -85,6 +102,8 @@ export default function VendorUpload() {
   const [form, setForm] = useState<UploadState>(BLANK_UPLOAD)
   const [rejectTarget, setRejectTarget] = useState<VendorDocumentRecord | null>(null)
   const [rejectNotes, setRejectNotes] = useState('')
+  /** null = viewing; an array = editing the document's linked controls. */
+  const [editControls, setEditControls] = useState<string[] | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<VendorDocumentRecord | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -132,9 +151,11 @@ export default function VendorUpload() {
     const next = new URLSearchParams(params); next.delete('vendor'); setParams(next, { replace: true })
   }
   function openRecord(d: VendorDocumentRecord) {
+    setEditControls(null)
     const next = new URLSearchParams(params); next.set('open', d.id); setParams(next, { replace: true })
   }
   function closeRecord() {
+    setEditControls(null)
     const next = new URLSearchParams(params); next.delete('open'); setParams(next, { replace: true })
   }
 
@@ -154,6 +175,7 @@ export default function VendorUpload() {
       expiresAt: form.expiresAt || undefined,
       confidentiality: form.confidentiality || undefined,
       renewalLeadDays: form.renewalLeadDays ? Number(form.renewalLeadDays) : undefined,
+      satisfiesControlIds: form.satisfiesControlIds,
     }, {
       // The dialog closes only once the object and the row both exist.
       onSuccess: () => { setPendingFile(null); setForm(BLANK_UPLOAD) },
@@ -397,6 +419,67 @@ export default function VendorUpload() {
                 </div>
               )}
 
+              {/* Satisfies controls — the outbound half of the document→control
+                  edge; the control's Assurance panel shows the inbound half. */}
+              <div>
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>
+                    Satisfies controls
+                  </p>
+                  {editControls === null ? (
+                    <Button size="sm" variant="ghost" onClick={() => setEditControls(selected.satisfiesControlIds)}>
+                      Edit
+                    </Button>
+                  ) : (
+                    <div className="flex gap-1">
+                      <Button
+                        size="sm"
+                        loading={update.isPending}
+                        onClick={() => update.mutate(
+                          { id: selected.id, patch: { satisfiesControlIds: editControls } },
+                          { onSuccess: () => setEditControls(null) },
+                        )}
+                      >
+                        Save
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setEditControls(null)}>Cancel</Button>
+                    </div>
+                  )}
+                </div>
+                <div className="mt-1">
+                  {editControls !== null ? (
+                    <ChipMultiSelect
+                      options={controlOptions}
+                      value={editControls}
+                      onChange={setEditControls}
+                      emptyMessage={controlsQuery.isLoading ? 'Loading controls…' : 'No controls in the library yet.'}
+                    />
+                  ) : selected.satisfiesControlIds.length === 0 ? (
+                    <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                      Not linked to any control yet.
+                    </span>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {selected.satisfiesControlIds.map((cid) => {
+                        const name = controlName(cid)
+                        return name ? (
+                          <LinkPill key={cid} to={`/compliance/controls?open=${cid}`}>{name}</LinkPill>
+                        ) : (
+                          <span
+                            key={cid}
+                            className="border px-1.5 py-0.5 text-[10px]"
+                            style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}
+                            title="This link points to a control that no longer exists or is not visible to you"
+                          >
+                            Unavailable
+                          </span>
+                        )
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
               <div className="flex flex-wrap gap-2 pt-2">
                 <Button size="sm" variant="outline" onClick={() => download(selected)} disabled={!selected.storagePath}>
                   Open file
@@ -482,6 +565,17 @@ export default function VendorUpload() {
             <Input inputMode="numeric" value={form.renewalLeadDays} onChange={(e) => set('renewalLeadDays', e.target.value)} />
           </Field>
         </div>
+        <Field
+          label="Satisfies controls"
+          hint="Which framework controls this document evidences — stored as control ids, shown on the control's Assurance panel."
+        >
+          <ChipMultiSelect
+            options={controlOptions}
+            value={form.satisfiesControlIds}
+            onChange={(next) => set('satisfiesControlIds', next)}
+            emptyMessage={controlsQuery.isLoading ? 'Loading controls…' : 'No controls in the library yet.'}
+          />
+        </Field>
       </FormDialog>
 
       {/* ── Reject ────────────────────────────────────────────────────────── */}

@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 
 export function useSecurityScansData(filters: Record<string, any> = {}) {
   const qc = useQueryClient()
-  const { data: items = [], isLoading, error } = useQuery({
+  const { data: items = [], isLoading, error, refetch } = useQuery({
     queryKey: ['securityScans', filters],
     queryFn: () => fetchAllSecurityScans(filters),
     staleTime: 30_000,
@@ -23,7 +23,7 @@ export function useSecurityScansData(filters: Record<string, any> = {}) {
   })
 
   return {
-    items, isLoading, error,
+    items, isLoading, error, refetch,
     saveSecurityScans: saveMutation.mutateAsync,
     removeSecurityScans: deleteMutation.mutateAsync,
     isSaving: saveMutation.isPending,

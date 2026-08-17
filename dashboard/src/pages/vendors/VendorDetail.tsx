@@ -27,7 +27,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import {
   ArrowLeft, Buildings, ClipboardText, Gauge, FileArrowUp, ShieldCheck,
-  Cube, Globe, ClockCounterClockwise, Warning, Certificate,
+  Cube, Globe, ClockCounterClockwise, Warning, Certificate, PencilSimple,
 } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
@@ -45,15 +45,96 @@ import { useAuditLogData } from '@/hooks/useAuditLogData'
 import { useModelsData } from '@/hooks/useModelsData'
 import { useAiApps, useTrustCenter } from '@/hooks/useGovernAddons'
 import { useTiaRecords } from '@/hooks/useComplianceRecords'
+import { useVendorBacklinks } from '@/hooks/useVendorBacklinks'
+import type { BacklinkItem, BacklinkSource } from '@/hooks/useModelBacklinks'
+import { VendorEditSheet } from './VendorEditSheet'
 import {
   Pill, LinkPill, Fact, SectionTitle, tierTone, tierLabel, dpaTone, slaTone,
-  assessmentTone, docTone, dash, fmtDate, fmtMoney, daysUntil,
+  assessmentTone, docTone, dash, fmtDate, fmtMoney, daysUntil, tone, type Tone,
 } from './vendorUi'
+
+/** Severity/derived-status pill tone for backlink rows. */
+function backlinkTone(v: string | null): Tone {
+  const s = (v ?? '').toLowerCase()
+  if (['critical', 'high', 'revoked', 'expired', 'breached', 'failed'].includes(s)) return tone('err')
+  if (['medium', 'expiring_soon', 'at_risk'].includes(s)) return tone('warn')
+  if (['low', 'valid', 'verified', 'resolved', 'closed'].includes(s)) return tone('ok')
+  return tone('neutral')
+}
+
+/**
+ * One inbound-reference panel on the Linked tab. Counts and rows come straight
+ * from the tenant-scoped tables via useVendorBacklinks; a failed source shows
+ * an honest "unavailable" note, an empty source an honest "no records" — a
+ * count is never invented and a raw uuid is never rendered.
+ */
+function BacklinkPanel({ title, source, loading, viewAllTo, viewAllLabel, itemTo }: {
+  title: string
+  source: BacklinkSource | undefined
+  loading: boolean
+  viewAllTo: string
+  viewAllLabel: string
+  /** Per-record deep link; omitted when the target page cannot open a record. */
+  itemTo?: (item: BacklinkItem) => string
+}) {
+  const navigate = useNavigate()
+  const count = source?.count ?? null
+  const items = source?.items ?? []
+  return (
+    <div>
+      <SectionTitle
+        action={
+          <Button variant="ghost" size="sm" onClick={() => navigate(viewAllTo)}>
+            {viewAllLabel}{count !== null && count > items.length ? ` (${count})` : ''}
+          </Button>
+        }
+      >
+        {title}
+        {!loading && count !== null && (
+          <span className="ml-2 text-xs font-normal" style={{ color: 'hsl(var(--text-4))' }}>{count}</span>
+        )}
+      </SectionTitle>
+      {loading ? (
+        <div role="status" aria-label={`Loading ${title}`} className="mt-2 h-10" />
+      ) : count === null ? (
+        <p className="mt-2 text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+          Unavailable — this source could not be queried.
+        </p>
+      ) : count === 0 ? (
+        <p className="mt-2 text-sm" style={{ color: 'hsl(var(--text-4))' }}>
+          No records reference this vendor.
+        </p>
+      ) : (
+        <div className="mt-2 space-y-2">
+          {items.map((item) => (
+            <div key={item.id} className="flex items-center justify-between gap-4 p-3" style={{ border: '1px solid hsl(var(--border))' }}>
+              <div className="min-w-0">
+                <div className="flex flex-wrap items-center gap-2">
+                  {item.ref && (
+                    <span className="font-mono text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>{item.ref}</span>
+                  )}
+                  <span className="truncate text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{item.title}</span>
+                  {item.severity && <Pill tone={backlinkTone(item.severity)}>{item.severity}</Pill>}
+                  {item.status && <Pill tone={backlinkTone(item.status)}>{item.status.replace(/_/g, ' ')}</Pill>}
+                </div>
+                {item.note && (
+                  <p className="mt-0.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{item.note}</p>
+                )}
+              </div>
+              {itemTo && <LinkPill to={itemTo(item)}>Open</LinkPill>}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 export default function VendorDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const [tab, setTab] = useState('overview')
+  const [editOpen, setEditOpen] = useState(false)
 
   const { vendor, isLoading, isError, error, refetch } = useVendor(id)
   const assessments = useVendorAssessments(id)
@@ -66,6 +147,9 @@ export default function VendorDetail() {
   const trust = useTrustCenter()
   // The audit trail is append-only and org-scoped; entity_id is the vendor uuid.
   const audit = useAuditLogData(200, { entityId: id })
+  // Reverse interlinks — AIBOMs, attestations, provenance nodes, risks,
+  // incidents and threats that reference this vendor (Linked tab).
+  const { data: backlinks, isLoading: backlinksLoading } = useVendorBacklinks(id)
 
   const modelNames = useMemo(() => new Map(models.map((m) => [m.id, m.name])), [models])
 
@@ -136,6 +220,9 @@ export default function VendorDetail() {
         }
         actions={
           <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+              <PencilSimple size={14} /> Edit profile
+            </Button>
             <Button variant="ghost" size="sm" onClick={() => navigate(`/vendors/${vendor.id}/questionnaire`)}>
               <ClipboardText size={14} /> Questionnaire
             </Button>
@@ -593,6 +680,63 @@ export default function VendorDetail() {
               </div>
             )}
           </div>
+
+          {/* ── Inbound references — what points at this vendor. ──────────── */}
+          <div className="space-y-1 pt-2" style={{ borderTop: '1px solid hsl(var(--border))' }}>
+            <SectionTitle>Referenced by</SectionTitle>
+            <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+              Records elsewhere on the platform that carry this vendor's id — read live from the
+              org-scoped tables. A source that cannot be queried says so; nothing is invented.
+            </p>
+          </div>
+
+          <BacklinkPanel
+            title="AI bills of materials"
+            source={backlinks?.aibomRecords}
+            loading={backlinksLoading}
+            viewAllTo={`/aibom?vendor=${vendor.id}`}
+            viewAllLabel="Open AIBOM registry"
+            itemTo={(i) => `/aibom?open=${i.id}`}
+          />
+          <BacklinkPanel
+            title="Supply-chain attestations"
+            source={backlinks?.attestations}
+            loading={backlinksLoading}
+            viewAllTo={`/supply-chain?vendor=${vendor.id}`}
+            viewAllLabel="Open attestations"
+            itemTo={(i) => `/supply-chain?open=${i.id}`}
+          />
+          <BacklinkPanel
+            title="Provenance nodes"
+            source={backlinks?.provenanceNodes}
+            loading={backlinksLoading}
+            viewAllTo="/provenance"
+            viewAllLabel="Open provenance graph"
+            itemTo={(i) => `/provenance?open=${i.id}`}
+          />
+          <BacklinkPanel
+            title="Risk register entries"
+            source={backlinks?.risks}
+            loading={backlinksLoading}
+            viewAllTo="/risks"
+            viewAllLabel="Open risk register"
+            itemTo={(i) => `/risks?open=${i.id}`}
+          />
+          <BacklinkPanel
+            title="Incidents"
+            source={backlinks?.incidents}
+            loading={backlinksLoading}
+            viewAllTo="/risk/incidents"
+            viewAllLabel="Open incident log"
+            itemTo={(i) => `/risk/incidents?open=${i.id}`}
+          />
+          <BacklinkPanel
+            title="Security threats"
+            source={backlinks?.securityThreats}
+            loading={backlinksLoading}
+            viewAllTo="/security/threats"
+            viewAllLabel="Open threat feed"
+          />
         </TabsContent>
 
         {/* ── Activity: the real append-only audit_log. ────────────────────── */}
@@ -636,6 +780,14 @@ export default function VendorDetail() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Edit sheet — the write path for the TPRM field model + linked models. */}
+      <VendorEditSheet
+        vendor={vendor}
+        models={models.map((m) => ({ id: m.id, name: m.name }))}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
     </div>
   )
 }

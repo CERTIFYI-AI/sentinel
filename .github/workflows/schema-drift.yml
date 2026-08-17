@@ -1,19 +1,40 @@
 name: schema-drift
-on: [pull_request]
+on:
+  pull_request:
+  # Also run on main. The expensive Docker replay stays PR-only (see the two
+  # jobs below), but the *static* check must run here too: it is seconds long
+  # and it is the only thing that catches a MERGE-ORDER COLLISION, which by
+  # definition cannot appear in either PR that causes it. On 2026-08-17 five
+  # migrations were sitting on main sharing the bare version prefix 20260816 —
+  # two PRs each added one, each passed alone, and together they broke the
+  # replay contract. Nothing re-checked main, so it surfaced days later inside
+  # an unrelated PR.
+  push:
+    branches: [main]
 
-# Supersede in-progress runs on the same PR (spins up a full Postgres replay —
-# the priciest job to leave running against a stale commit).
 concurrency:
   group: drift-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  drift:
+  # Cheap, always. No Docker, no Supabase CLI — just the static parser.
+  static-replay:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
       - name: Static replay check (fast, no docker)
         run: python3 scripts/check_migration_replay.py
+
+  # Expensive: spins up a full Postgres via the Supabase CLI. PR-only, so a
+  # merge to main does not pay for it twice.
+  drift:
+    if: github.event_name == 'pull_request'
+    needs: static-replay
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
       - uses: supabase/setup-cli@v1
       - name: Full from-zero replay
         run: supabase db start

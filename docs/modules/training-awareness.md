@@ -5,6 +5,14 @@
 ## Purpose
 Deliver, track, and evidence mandatory training (security, privacy, AI ethics, role-based) with completion attestations.
 
+## Data honesty (V8, 2026-08)
+The page reads the real org-scoped `training_courses` table only. The service
+previously returned a fabricated seed catalogue whenever the table was empty
+or the query failed; it now returns `[]` on empty (honest empty state) and
+**throws** on failure (real error state with retry). A course with no measured
+completion renders `—`, never a 0% bar, and a missing due date is `—`, never
+"overdue". Writes throw — the save toast fires only after the write resolves.
+
 ## Standards Alignment
 | Control | Requirement |
 |---|---|
