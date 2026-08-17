@@ -1,3 +1,14 @@
+## 1.65.0 (2026-08-17)
+
+* feat: rebuild Vendors/TPRM, AI Supply Chain & Sustainability on the platform contract (#75) ([16f6a8c](https://github.com/CERTIFYI-AI/sentinel/commit/16f6a8c)), closes [#75](https://github.com/CERTIFYI-AI/sentinel/issues/75)
+* feat(interlinks): surface the sustainability footprint on models; deep-link vendor records ([d2bf761](https://github.com/CERTIFYI-AI/sentinel/commit/d2bf761))
+* feat(supply-chain): rebuild AIBOM, Provenance and Attestations; add module docs ([1f0ce05](https://github.com/CERTIFYI-AI/sentinel/commit/1f0ce05))
+* feat(tprm,esg): rebuild Vendors/TPRM and Sustainability clusters on real backends ([1351b95](https://github.com/CERTIFYI-AI/sentinel/commit/1351b95))
+* feat(tprm,supply-chain,esg): canonical schema, org-scoped RLS, and seeds on the one id-space ([053ad49](https://github.com/CERTIFYI-AI/sentinel/commit/053ad49))
+* docs(compliance): map TPRM, supply-chain and ESG modules to EU AI Act and ISO 42001 ([86be49b](https://github.com/CERTIFYI-AI/sentinel/commit/86be49b))
+* docs(technical-debt): register the demo-table exposure, the grant gap, and unperformed verification ([299e3d2](https://github.com/CERTIFYI-AI/sentinel/commit/299e3d2))
+* fix(policies): heal live framework/interlink column drift; supersede stale CI runs ([be50387](https://github.com/CERTIFYI-AI/sentinel/commit/be50387))
+
 ## 1.64.0 (2026-08-16)
 
 * feat: agentic mesh + go-public + Security/Risk/Compliance groups on the platform contract (#74) ([49b15da](https://github.com/CERTIFYI-AI/sentinel/commit/49b15da)), closes [#74](https://github.com/CERTIFYI-AI/sentinel/issues/74)
