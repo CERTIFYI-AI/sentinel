@@ -41,7 +41,7 @@ The dashboard organises ~190 pages into interlinked module groups:
 | **Agent Control** | Shadow AI Discovery · Agent Registry · Agent Permissions (IAM) · Choreography Canvas · Emergency Kill Switch |
 | **Runtime Trust** | Trust engine, guardrail activity, live traces, cost/token dashboards, performance monitoring |
 | **Security** | Threat scans · Red teaming & findings · Policy firewall · Keys vault |
-| **Compliance** | Frameworks catalog (EU AI Act, NIST AI RMF, ISO/IEC 42001, SOC 2, GDPR) · Evidence & audits · Compliance calendar · Policies & documents |
+| **Compliance** | Frameworks catalog (15 frameworks · 936 published controls) · Evidence & audits · Compliance calendar · Policies & documents |
 | **Risk & Response** | Risk register · Incident response & playbooks · Tabletop exercises · Remediation & exceptions |
 | **Vendors & Privacy** | TPRM (vendor registry, assessments, SLA) · DSR/rights management · Transfer impact (TIA) |
 | **Data & Sustainability** | Dataset registry & governance · AIBOM supply chain · ESG & energy efficiency |
@@ -319,12 +319,55 @@ Quality gates: `npm run typecheck`, `npm run test`, `npm run lint` (dashboard) a
 
 ## Supported Compliance Frameworks
 
-| Framework | Coverage |
-|---|---|
-| **EU AI Act** | Annex III / Article 5 risk classification engine, FRIA workflows, Art. 50 transparency obligations |
-| **NIST AI RMF 1.0** | Govern / Map / Measure / Manage mappings across risk & validation modules |
-| **ISO/IEC 42001** | AI management system controls (in progress) |
-| **SOC 2 / GDPR** | Control mappings, DSR & consent tracking, transfer impact assessments |
+Sentinel ships an authoritative control catalog of **15 frameworks — 936
+published controls** in `framework_controls`. Every control carries its real
+published reference and title; the catalog is a global reference readable by
+every tenant, and each framework's card resolves the org's own implemented
+controls (`controls`) against it, both ways. Control refs/titles are the real
+published identifiers — never invented (see [First principles](CLAUDE.md)).
+
+### AI governance, security & ethics
+
+| Framework | Ver. | Controls | Structure |
+|---|---|--:|---|
+| **EU AI Act** (Reg. 2024/1689) | 2024 | 34 | Obligation-bearing Articles (risk mgmt, data governance, record-keeping, transparency, human oversight, conformity, post-market) |
+| **NIST AI RMF** | 1.0 | 72 | All subcategories across Govern · Map · Measure · Manage |
+| **ISO/IEC 42001** | 2023 | 38 | AI Management System — all Annex A controls |
+| **OWASP Top 10 for LLM Applications** | 2025 | 10 | LLM01–LLM10 |
+| **MITRE ATLAS** | 2024 | 30 | Adversarial ML tactics & techniques |
+| **Google Secure AI Framework (SAIF)** | 1.0 | 21 | Core elements + SAIF risk map |
+| **OECD AI Principles** | 2019 (rev. 2024) | 10 | 5 values-based principles + 5 recommendations |
+| **Singapore Model AI Governance Framework** | 2nd ed. | 25 | 4 pillars |
+| **UNESCO Recommendation on the Ethics of AI** | 2021 | 25 | Values, principles & 11 areas of policy action |
+
+### Information security, privacy & payments
+
+| Framework | Ver. | Controls | Structure |
+|---|---|--:|---|
+| **PCI DSS** | v4.0 | 246 | 12 requirements + defined-approach sub-requirements |
+| **HITRUST CSF** | v11 | 156 | 14 control categories · 49 objectives · 156 references |
+| **ISO/IEC 27001** | 2022 | 93 | Annex A — Organizational · People · Physical · Technological |
+| **HIPAA** | 2013 Omnibus | 76 | Security Rule safeguards + Privacy & Breach Notification |
+| **SOC 2** (AICPA TSC) | 2017 (rev. 2022) | 61 | Common Criteria CC1–CC9 + Availability / Confidentiality / Processing Integrity / Privacy |
+| **GDPR** (Reg. 2016/679) | 2016 | 39 | Substantive Articles incl. Art. 22, 25, 30, 32, 33/34, 35, 44–49 |
+
+> The framework catalog is the *reference* of what each standard requires;
+> an organisation's implementation state lives in the org-scoped `controls`
+> register and is mapped onto the catalog per control. A framework card shows
+> its published-control count distinct from the org's implemented count — an
+> unimplemented control renders an honest "Not yet implemented", never a
+> fabricated pass.
+
+### Reference coverage (mapping only, full catalogs not yet authored)
+
+Bundled as reference mappings in [`/frameworks/*.yaml`](frameworks/) with a
+representative sample of controls (not the full 936-control DB catalog above):
+**ISO/IEC 27701:2019** (PIMS) · **NIST CSF 2.0** · **NIST SP 800-53 Rev 5** ·
+**NIST SP 800-171 Rev 3** · **CCPA/CPRA** · **PIPEDA** (Canada) · **LGPD**
+(Brazil) · **CIS Controls v8** · **SOX ITGC** · **CMMC 2.0** · **FedRAMP Rev 5**
+· **DORA** · **FFIEC CAT**. Promoting these to full published catalogs in
+`framework_controls` is tracked in
+[`docs/reference/technical-debt.md`](docs/reference/technical-debt.md).
 
 ---
 
@@ -332,7 +375,7 @@ Quality gates: `npm run typecheck`, `npm run test`, `npm run lint` (dashboard) a
 
 We welcome contributions — see [`CONTRIBUTING.md`](./CONTRIBUTING.md). Commits require DCO sign-off (`git commit -s`).
 
-**Current priorities:** ISO/IEC 42001 coverage · server-enforced RBAC rollout · SSO/SAML flow completion · E2E coverage across high-risk modules.
+**Current priorities:** per-tenant catalog provisioning (copy the reference catalog into a new org on signup) · framework-control ↔ evidence auto-mapping · server-enforced RBAC rollout · SSO/SAML flow completion · E2E coverage across high-risk modules.
 
 ---
 

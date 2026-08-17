@@ -500,6 +500,48 @@ and FK exist and are enforced; only the demo attribution is absent.
 
 ---
 
+## TD-013 — Two parallel framework-catalog systems
+
+**Owner:** Compliance team · **Raised:** 2026-08-26 · **Severity:** P2 ·
+**Status:** Open.
+
+### What
+
+There are now two representations of the compliance-framework catalog:
+
+1. **`framework_controls`** (DB) — the authoritative catalog authored in the
+   20260826000010–14 seeds: **15 frameworks, 936 real published controls**,
+   rendered in the Frameworks *Requirements* tab and interlinked to the org's
+   `controls`.
+2. **`/frameworks/*.yaml` + `manifest.json`** (static bundle, served by a
+   Worker) — a pre-existing reference set of **22 frameworks with 84 sample
+   controls** (3–6 per framework). It drives `FRAMEWORK_COUNT` /
+   `TOTAL_CONTROL_COUNT` in `dashboard/src/lib/frameworks.ts`, shown in the
+   Frameworks page header ("N frameworks bundled · N seed controls").
+
+### Why it matters
+
+The two disagree in the same view: the header reports 22 frameworks / 84
+controls from the static bundle while the detail tab shows a framework's full
+DB catalog (e.g. PCI DSS 246). A user sees two different "counts" for the same
+thing. The static bundle also covers 13 frameworks the DB catalog does not yet
+(ISO 27701, NIST CSF 2.0, NIST 800-53/171, CCPA/CPRA, PIPEDA, LGPD, CIS v8,
+SOX ITGC, CMMC 2.0, FedRAMP, DORA, FFIEC CAT), while the DB catalog covers 6
+AI frameworks the static bundle does not (OWASP LLM, MITRE ATLAS, Google SAIF,
+OECD, Singapore, UNESCO).
+
+### To close
+
+Converge on one source of truth. Preferred: generate the static manifest from
+the DB catalog (or retire the static bundle once the DB catalog covers the same
+frameworks), and either author full DB catalogs for the 13 reference-only
+frameworks or label them explicitly as "reference mapping, sample controls" in
+the UI so the header count and the detail count cannot contradict each other.
+Until then the README's "Supported Compliance Frameworks" is the reconciled
+statement of record (15 full catalogs + 13 reference-coverage frameworks).
+
+---
+
 ## Closed
 
 | ID | Item | Closed |
