@@ -19,7 +19,7 @@ async def run_migration(body: MigrateRequest):
     if not supabase_url:
         raise HTTPException(400, "VITE_SUPABASE_URL not configured")
     
-    sql_file = pathlib.Path("supabase/migrations/20260418_core_grc_tables.sql")
+    sql_file = pathlib.Path("supabase/migrations/20260418000002_core_grc_tables.sql")
     if not sql_file.exists():
         raise HTTPException(404, "Migration SQL file not found")
     

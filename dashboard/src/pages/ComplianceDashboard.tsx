@@ -1,159 +1,340 @@
-import { useState } from "react";
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
-import { Scale, Download, ChevronDown, ExternalLink } from "lucide-react";
-import { PageHeader } from "@/components/ui/PageHeader";
-import { StatCardRow, type StatCardRowItem } from "@/components/ui/StatCardRow";
-import { ShieldCheck, CheckCircle, Warning, ChartBar } from "@phosphor-icons/react";
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI.
+//
+// Compliance overview — a real view over the governed compliance entities:
+// adopted frameworks (org-scoped `frameworks` table), the control library
+// (`controls`) and the mesh-written `compliance_scores` recalculation feed.
+// No seeded scores, no invented sub-metrics: when a value has not been
+// measured it renders as an em dash, and report generation downloads the
+// real derived snapshot as JSON.
+import { useMemo } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Scale, Download } from 'lucide-react';
+import { ShieldCheck, CheckCircle, ChartBar, ArrowsClockwise } from '@phosphor-icons/react';
+import { PageHeader } from '@/components/ui/PageHeader';
+import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { Button } from '@/components/ui/button';
+import { useFrameworksData } from '@/hooks/useFrameworksData';
+import { useControls } from '@/hooks/queries/useControls';
+import { useRisksData } from '@/hooks/useRisksData';
+import type { FrameworkRecord } from '@/services/frameworkService';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
+import { exportJson } from '@/lib/exportUtils';
 
-interface Framework {
-  id: string; name: string; flag: string; score: number; passing: number; total: number;
-  status: "mandatory" | "certifiable" | "voluntary"; enabled: boolean; lastEvidence: string;
+interface MeshRecalcRow {
+  id: string;
+  framework: string | null;
+  score_delta: number | null;
+  recalculated_at: string | null;
+  gaps: unknown;
 }
 
-const FRAMEWORKS: Framework[] = [
-  { id: "eu-ai-act", name: "EU AI Act", flag: "\u{1F1EA}\u{1F1FA}", score: 87, passing: 34, total: 39, status: "mandatory", enabled: true, lastEvidence: "2m ago" },
-  { id: "gdpr", name: "GDPR", flag: "\u{1F1EA}\u{1F1FA}", score: 92, passing: 44, total: 48, status: "mandatory", enabled: true, lastEvidence: "5m ago" },
-  { id: "nist-ai-rmf", name: "NIST AI RMF", flag: "\u{1F1FA}\u{1F1F8}", score: 78, passing: 28, total: 36, status: "certifiable", enabled: true, lastEvidence: "12m ago" },
-  { id: "iso-42001", name: "ISO 42001", flag: "\u{1F310}", score: 71, passing: 22, total: 31, status: "certifiable", enabled: true, lastEvidence: "1h ago" },
-  { id: "soc2", name: "SOC 2 Type II", flag: "\u{1F1FA}\u{1F1F8}", score: 95, passing: 19, total: 20, status: "certifiable", enabled: true, lastEvidence: "3m ago" },
-  { id: "ieee-7000", name: "IEEE 7000", flag: "\u{1F310}", score: 64, passing: 9, total: 14, status: "voluntary", enabled: false, lastEvidence: "45m ago" },
-  { id: "iso-27001", name: "ISO 27001", flag: "\u{1F310}", score: 83, passing: 31, total: 37, status: "certifiable", enabled: true, lastEvidence: "8m ago" },
-];
+// Mesh-written recalculation feed (compliance_scores) — read-only here.
+async function fetchRecentMeshRecalcs(): Promise<MeshRecalcRow[]> {
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error('Supabase is not configured — compliance scores are unavailable');
+  }
+  const { data, error } = await supabase
+    .from('compliance_scores')
+    .select('id, framework, score_delta, recalculated_at, gaps')
+    .order('recalculated_at', { ascending: false })
+    .limit(10);
+  if (error) throw new Error(`Could not load mesh recalculations: ${error.message}`);
+  return (data ?? []) as MeshRecalcRow[];
+}
 
-const statusBadgeStyle: Record<string, { bg: string; tx: string; br: string }> = {
-  mandatory:   { bg: 'hsl(var(--s-er-bg))', tx: 'hsl(var(--s-er-tx))', br: 'hsl(var(--s-er-br))' },
-  certifiable: { bg: 'hsl(var(--s-in-bg))', tx: 'hsl(var(--s-in-tx))', br: 'hsl(var(--s-in-br))' },
-  voluntary:   { bg: 'hsl(var(--s-ok-bg))', tx: 'hsl(var(--s-ok-tx))', br: 'hsl(var(--s-ok-br))' },
-};
-const statusFallback = { bg: 'hsl(var(--s-nt-bg))', tx: 'hsl(var(--s-nt-tx))', br: 'hsl(var(--s-nt-br))' };
+const IMPLEMENTED = new Set(['implemented', 'effective']);
 
-const scoreColor = (s: number) => s >= 85 ? 'hsl(var(--s-ok-tx))' : s >= 70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))';
-const barBg = (s: number) => s >= 85 ? 'hsl(var(--s-ok-tx))' : s >= 70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))';
+function formatDateTime(d?: string | null): string {
+  if (!d) return '—';
+  const date = new Date(d);
+  if (isNaN(date.getTime())) return '—';
+  return date.toLocaleString('en-US', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+const scoreColor = (s: number) => (s >= 85 ? 'hsl(var(--s-ok-tx))' : s >= 70 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-er-tx))');
+
+function SectionError({ label, error }: { label: string; error: unknown }) {
+  return (
+    <div className="border p-3" style={{ background: 'hsl(var(--s-er-bg))', borderColor: 'hsl(var(--s-er-br))' }}>
+      <p className="text-xs font-semibold" style={{ color: 'hsl(var(--s-er-tx))' }}>{label}</p>
+      <p className="text-[11px] mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>{(error as Error)?.message ?? 'Unknown error'}</p>
+    </div>
+  );
+}
 
 export default function ComplianceDashboard() {
-  const { data: frameworks, setData: setFrameworks } = useSupabaseTable<typeof FRAMEWORKS[number]>('compliancedashboard_table', FRAMEWORKS);
-  const [generating, setGenerating] = useState(false);
-  const [reportReady, setReportReady] = useState(false);
-  const [selectedFw, setSelectedFw] = useState<string | null>(null);
+  const nav = useNavigate();
+  const { frameworks, isLoading: fwLoading, error: fwError } = useFrameworksData();
+  const controlsQuery = useControls();
+  const meshQuery = useQuery({
+    queryKey: ['compliance-scores-recent'],
+    queryFn: fetchRecentMeshRecalcs,
+    staleTime: 30_000,
+  });
 
-  const toggle = (id: string) => setFrameworks(prev => prev.map(f => f.id === id ? { ...f, enabled: !f.enabled } : f));
+  const { risks, error: risksError } = useRisksData();
 
-  const generateReport = () => {
-    setGenerating(true);
-    setReportReady(false);
-    setTimeout(() => { setGenerating(false); setReportReady(true); }, 2000);
+  const controls = controlsQuery.data ?? [];
+  const recalcs = meshQuery.data ?? [];
+
+  // Risk posture — derived client-side from the live risk register.
+  const riskPosture = useMemo(() => {
+    const openSet = new Set(['open', 'assessed', 'in_progress', 'investigating']);
+    const isOpen = (s: unknown) => openSet.has(String(s ?? '').toLowerCase().replace(/\s+/g, '_'));
+    const open = risks.filter(r => isOpen(r.status));
+    const now = Date.now();
+    return {
+      open: open.length,
+      critical: risks.filter(r => isOpen(r.status) && Number(r.risk_score ?? r.score ?? 0) >= 20).length,
+      escalated: risks.filter(r => isOpen(r.status) && r.is_escalated).length,
+      overdueReview: open.filter(r => r.next_review_date && new Date(r.next_review_date).getTime() < now).length,
+    };
+  }, [risks]);
+
+  // Controls coverage derived from the real control library rows.
+  const coverage = useMemo(() => {
+    const total = controls.length;
+    const implemented = controls.filter(
+      (c) => IMPLEMENTED.has((c.implementationStatus ?? '').toLowerCase()) || IMPLEMENTED.has((c.status ?? '').toLowerCase()),
+    ).length;
+    return { total, implemented, pct: total > 0 ? Math.round((implemented / total) * 100) : null };
+  }, [controls]);
+
+  // Average framework score over frameworks that actually carry a score.
+  const scored = frameworks.filter((f: FrameworkRecord) => f.score != null);
+  const avgScore = scored.length
+    ? Math.round(scored.reduce((s: number, f: FrameworkRecord) => s + Number(f.score), 0) / scored.length)
+    : null;
+
+  // Real JSON snapshot of what this page derived — nothing invented.
+  const downloadSnapshot = () => {
+    exportJson(
+      [{
+        generatedAt: new Date().toISOString(),
+        frameworks: frameworks.map((f: FrameworkRecord) => ({
+          id: f.id,
+          name: f.name,
+          version: f.version ?? null,
+          score: f.score ?? null,
+          controlsTotal: f.controls_total ?? null,
+          controlsImplemented: f.controls_implemented ?? null,
+          nextAuditAt: f.next_audit_at ?? null,
+        })),
+        controlsCoverage: coverage,
+        recentMeshRecalculations: recalcs,
+      }],
+      `compliance-snapshot-${new Date().toISOString().slice(0, 10)}.json`,
+    );
   };
 
-  const enabled = frameworks.filter(f => f.enabled);
-  const overallScore = enabled.length ? Math.round(enabled.reduce((s, f) => s + f.score, 0) / enabled.length) : 0;
-  const totalControls = enabled.reduce((s, f) => s + f.total, 0);
-  const passingControls = enabled.reduce((s, f) => s + f.passing, 0);
+  if (fwLoading || controlsQuery.isLoading) {
+    return <PageSkeleton title="Compliance" showStats rows={6} />;
+  }
 
   const statCards: StatCardRowItem[] = [
-    { label: 'Overall Score', value: `${overallScore}%`, variant: overallScore >= 85 ? 'success' : overallScore >= 70 ? 'warning' : 'danger', icon: <ChartBar size={14} weight="fill" /> },
-    { label: 'Frameworks Active', value: `${enabled.length}/${frameworks.length}`, icon: <ShieldCheck size={14} weight="fill" /> },
-    { label: 'Controls Passing', value: `${passingControls}/${totalControls}`, variant: 'success', icon: <CheckCircle size={14} weight="fill" /> },
-    { label: 'Mandatory Gaps', value: frameworks.filter(f => f.status === 'mandatory' && f.score < 90).length, variant: 'danger', icon: <Warning size={14} weight="fill" /> },
+    {
+      label: 'Avg Framework Score',
+      value: avgScore == null ? '—' : `${avgScore}%`,
+      variant: avgScore == null ? 'default' : avgScore >= 85 ? 'success' : avgScore >= 70 ? 'warning' : 'danger',
+      icon: <ChartBar size={14} weight="fill" />,
+      description: avgScore == null ? 'No framework has a recorded score yet' : undefined,
+    },
+    { label: 'Frameworks Adopted', value: String(frameworks.length), icon: <ShieldCheck size={14} weight="fill" />, href: '/frameworks' },
+    {
+      label: 'Controls Implemented',
+      value: coverage.total ? `${coverage.implemented}/${coverage.total}` : '—',
+      variant: 'success',
+      icon: <CheckCircle size={14} weight="fill" />,
+      href: '/compliance/controls',
+    },
+    { label: 'Mesh Recalculations', value: String(recalcs.length), icon: <ArrowsClockwise size={14} weight="fill" /> },
   ];
 
   return (
     <div className="space-y-3">
       <PageHeader
         title="Compliance"
-        subtitle={`Real-time evidence accumulation across ${frameworks.length} global AI governance frameworks`}
+        subtitle={`${frameworks.length} adopted framework${frameworks.length !== 1 ? 's' : ''} · ${coverage.total} controls in the library`}
         icon={Scale}
         actions={
-          <button onClick={generateReport} disabled={generating}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-[hsl(var(--brand))] text-[hsl(var(--bg-surface))] text-xs font-medium hover:bg-[hsl(var(--brand-hover))] disabled:opacity-60 transition-colors">
-            <Download size={13} />
-            {generating ? "Generating..." : "Generate Report"}
-          </button>
+          <Button size="sm" leftIcon={<Download size={13} />} onClick={downloadSnapshot}
+            disabled={frameworks.length === 0 && controls.length === 0}>
+            Download JSON Snapshot
+          </Button>
         }
       />
 
-      {reportReady && (
-        <div className="border p-3 flex justify-between items-center" style={{ background: 'hsl(var(--s-ok-bg))', borderColor: 'hsl(var(--s-ok-br))' }}>
-          <div className="flex items-center gap-2">
-            <CheckCircle size={16} weight="fill" style={{ color: 'hsl(var(--s-ok-tx))' }} />
-            <div>
-              <p className="text-xs font-medium" style={{ color: 'hsl(var(--s-ok-tx))' }}>Compliance Report Ready</p>
-              <p className="text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{enabled.length} frameworks | {totalControls} controls | Score: {overallScore}%</p>
-            </div>
-          </div>
-          <button className="text-[10px] font-medium hover:underline" style={{ color: 'hsl(var(--s-ok-tx))' }}>Download JSON</button>
-        </div>
-      )}
+      {fwError && <SectionError label="Failed to load frameworks" error={fwError} />}
+      {controlsQuery.isError && <SectionError label="Failed to load controls" error={controlsQuery.error} />}
 
       <StatCardRow cards={statCards} />
 
-      {/* Overall Governance Score */}
-      <div className="border p-4" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
-        <div className="flex justify-between items-center mb-2">
-          <h3 className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))' }}>AI GOVERNANCE SCORE</h3>
-          <span className="text-2xl font-mono font-bold" style={{ color: scoreColor(overallScore) }}>{overallScore}%</span>
+      {/* Risk posture — compact strip derived live from the risk register */}
+      <div className="border" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
+        <div className="px-4 py-2.5 flex items-center justify-between flex-wrap gap-2">
+          <h3 className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))' }}>RISK POSTURE</h3>
+          <Link to="/risks" className="text-xs font-medium hover:underline" style={{ color: 'hsl(var(--brand))' }}>
+            Open risk register →
+          </Link>
         </div>
-        <div className="w-full h-1.5 mb-3" style={{ background: 'hsl(var(--bg-sunken))' }}>
-          <div className="h-1.5 transition-all duration-700" style={{ width: `${overallScore}%`, background: barBg(overallScore) }} />
-        </div>
-        <div className="grid grid-cols-5 gap-3 text-center">
-          {[{l: "Trust Enforcement", v: 91}, {l: "PII Protection", v: 88}, {l: "Audit Coverage", v: 94}, {l: "HITL Compliance", v: 82}, {l: "Drift Detection", v: 76}].map(c => (
-            <div key={c.l}>
-              <p className="text-[9px] uppercase tracking-wider mb-1" style={{ color: 'hsl(var(--text-4))' }}>{c.l}</p>
-              <div className="w-full h-1" style={{ background: 'hsl(var(--bg-sunken))' }}>
-                <div className="h-1" style={{ width: `${c.v}%`, background: barBg(c.v) }} />
-              </div>
-              <p className="text-[10px] font-mono font-bold mt-0.5" style={{ color: scoreColor(c.v) }}>{c.v}%</p>
-            </div>
-          ))}
-        </div>
+        {risksError ? (
+          <p className="px-4 pb-3 text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>
+            Risk register unavailable: {(risksError as Error).message}
+          </p>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-4 divide-x" style={{ borderTop: '1px solid hsl(var(--border))', borderColor: 'hsl(var(--border))' }}>
+            {[
+              { label: 'Open risks', value: riskPosture.open, tone: riskPosture.open > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' },
+              { label: 'Critical (score ≥ 20)', value: riskPosture.critical, tone: riskPosture.critical > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-1))' },
+              { label: 'Escalated', value: riskPosture.escalated, tone: riskPosture.escalated > 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--text-1))' },
+              { label: 'Review overdue', value: riskPosture.overdueReview, tone: riskPosture.overdueReview > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' },
+            ].map(cell => (
+              <Link key={cell.label} to="/risks" className="px-4 py-3 hover:bg-[hsl(var(--bg-raised))] transition-colors block">
+                <p className="text-xl font-mono font-bold" style={{ color: cell.tone }}>{cell.value}</p>
+                <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{cell.label}</p>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Framework Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
-        {frameworks.map(fw => {
-          const sb = statusBadgeStyle[fw.status] || statusFallback;
-          return (
-          <div key={fw.id} className="transition-all border" style={{
-            background: 'hsl(var(--bg-surface))',
-            borderColor: fw.enabled ? 'hsl(var(--brand) / 0.25)' : 'hsl(var(--border))',
-            opacity: fw.enabled ? 1 : 0.55,
-          }}>
-            <div className="p-3">
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm">{fw.flag}</span>
-                  <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>{fw.name}</span>
-                </div>
-                <button onClick={() => toggle(fw.id)} className="w-8 h-4 relative transition-colors" style={{ background: fw.enabled ? 'hsl(var(--brand))' : 'hsl(var(--border-mid))' }}>
-                  <div className="w-3 h-3 bg-[hsl(var(--bg-surface))] absolute top-0.5 transition-all" style={{ left: fw.enabled ? '17px' : '2px' }} />
-                </button>
-              </div>
-              <span className="text-[9px] font-semibold px-1.5 py-0.5 uppercase tracking-wider border" style={{ background: sb.bg, color: sb.tx, borderColor: sb.br }}>{fw.status}</span>
-              <div className="mt-2">
-                <div className="flex justify-between items-end">
-                  <span className="text-xl font-mono font-bold" style={{ color: scoreColor(fw.score) }}>{fw.score}%</span>
-                  <span className="text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{fw.passing}/{fw.total}</span>
-                </div>
-                <div className="w-full h-1 mt-1.5" style={{ background: 'hsl(var(--bg-sunken))' }}>
-                  <div className="h-1 transition-all" style={{ width: `${fw.score}%`, background: barBg(fw.score) }} />
-                </div>
-                <p className="text-[9px] mt-1.5 font-mono" style={{ color: 'hsl(var(--text-4))' }}>Evidence: {fw.lastEvidence}</p>
-              </div>
-              <button onClick={() => setSelectedFw(fw.id === selectedFw ? null : fw.id)}
-                className="flex items-center gap-1 text-[10px] font-medium mt-1.5 hover:underline" style={{ color: 'hsl(var(--brand))' }}>
-                Evidence <ChevronDown size={9} className={`transition-transform ${selectedFw === fw.id ? "rotate-180" : ""}`} />
-              </button>
-              {selectedFw === fw.id && (
-                <div className="mt-1.5 p-2 text-[10px] space-y-1" style={{ background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-3))' }}>
-                  <p className="flex items-center gap-1.5"><span className="w-1.5 h-1.5" style={{ background: 'hsl(var(--s-ok-tx))' }} /> Trust score monitoring: Active</p>
-                  <p className="flex items-center gap-1.5"><span className="w-1.5 h-1.5" style={{ background: fw.score > 80 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }} /> PII detection: {fw.score > 80 ? "Passing" : "Needs review"}</p>
-                  <p className="flex items-center gap-1.5"><span className="w-1.5 h-1.5" style={{ background: 'hsl(var(--s-ok-tx))' }} /> Audit chain integrity: Verified</p>
-                  <p className="flex items-center gap-1.5"><span className="w-1.5 h-1.5" style={{ background: fw.enabled ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--text-4))' }} /> Evidence auto-collection: {fw.enabled ? "Enabled" : "Disabled"}</p>
-                </div>
-              )}
+      {/* Controls coverage — derived from real control rows */}
+      <div className="border p-4" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
+        <div className="flex justify-between items-center mb-2">
+          <h3 className="text-xs font-semibold" style={{ color: 'hsl(var(--text-3))' }}>CONTROLS COVERAGE</h3>
+          <span className="text-2xl font-mono font-bold" style={{ color: coverage.pct == null ? 'hsl(var(--text-4))' : scoreColor(coverage.pct) }}>
+            {coverage.pct == null ? '—' : `${coverage.pct}%`}
+          </span>
+        </div>
+        {coverage.pct == null ? (
+          <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+            No controls in the library yet — coverage appears once controls are defined in{' '}
+            <Link to="/compliance/controls" className="underline" style={{ color: 'hsl(var(--brand))' }}>Compliance Controls</Link>.
+          </p>
+        ) : (
+          <>
+            <div className="w-full h-1.5" style={{ background: 'hsl(var(--bg-sunken))' }}>
+              <div className="h-1.5 transition-all duration-700" style={{ width: `${coverage.pct}%`, background: scoreColor(coverage.pct) }} />
             </div>
+            <p className="text-[10px] font-mono mt-1.5" style={{ color: 'hsl(var(--text-4))' }}>
+              {coverage.implemented} of {coverage.total} controls implemented or effective
+            </p>
+          </>
+        )}
+      </div>
+
+      {/* Framework cards — real org-scoped rows */}
+      {frameworks.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-14 border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+          <ShieldCheck size={36} />
+          <p className="mt-3 text-sm font-medium">No frameworks adopted yet</p>
+          <p className="text-xs mt-1">Adopt a framework to start tracking compliance against it.</p>
+          <Button size="sm" className="mt-4" onClick={() => nav('/frameworks')}>Go to Frameworks</Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
+          {frameworks.map((fw: FrameworkRecord) => {
+            const score = fw.score != null ? Number(fw.score) : null;
+            const total = fw.controls_total;
+            const implemented = fw.controls_implemented;
+            return (
+              <Link
+                key={fw.id}
+                to="/frameworks"
+                className="block border transition-all hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--brand))]"
+                style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}
+              >
+                <div className="p-3">
+                  <div className="flex justify-between items-start mb-2 gap-2">
+                    <span className="text-xs font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                      {fw.name}{fw.version ? <span className="font-normal ml-1" style={{ color: 'hsl(var(--text-4))' }}>v{fw.version}</span> : null}
+                    </span>
+                    {fw.category && (
+                      <span className="text-[9px] font-semibold px-1.5 py-0.5 uppercase tracking-wider border flex-shrink-0"
+                        style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))', borderColor: 'hsl(var(--brand) / 0.3)' }}>
+                        {fw.category}
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex justify-between items-end">
+                    <span className="text-xl font-mono font-bold" style={{ color: score == null ? 'hsl(var(--text-4))' : scoreColor(score) }}>
+                      {score == null ? '—' : `${score}%`}
+                    </span>
+                    <span className="text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>
+                      {total == null ? '—' : `${implemented ?? 0}/${total} implemented`}
+                    </span>
+                  </div>
+                  <div className="w-full h-1 mt-1.5" style={{ background: 'hsl(var(--bg-sunken))' }}>
+                    {score != null && <div className="h-1 transition-all" style={{ width: `${Math.min(100, Math.max(0, score))}%`, background: scoreColor(score) }} />}
+                  </div>
+                  {score == null && (
+                    <p className="text-[9px] mt-1.5" style={{ color: 'hsl(var(--text-4))' }}>No score recorded yet</p>
+                  )}
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Mesh recalculations — real compliance_scores rows written by the governance mesh */}
+      <div className="border" style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}>
+        <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+          <div>
+            <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Mesh recalculations</p>
+            <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>Most recent framework score recalculations written by the governance mesh</p>
           </div>
-        )})}
+        </div>
+        {meshQuery.isLoading ? (
+          <p className="px-4 py-6 text-xs" style={{ color: 'hsl(var(--text-4))' }}>Loading recalculations…</p>
+        ) : meshQuery.isError ? (
+          <div className="p-3"><SectionError label="Failed to load mesh recalculations" error={meshQuery.error} /></div>
+        ) : recalcs.length === 0 ? (
+          <p className="px-4 py-8 text-center text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+            No mesh recalculations recorded yet — entries appear once the governance mesh recalculates a framework score.
+          </p>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr style={{ borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
+                  {['Framework', 'Score Δ', 'Gaps Flagged', 'Recalculated'].map((h) => (
+                    <th key={h} className="px-4 py-2 text-left text-[10px] uppercase tracking-wider font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {recalcs.map((r) => {
+                  const gapCount = Array.isArray(r.gaps) ? r.gaps.length : 0;
+                  const delta = r.score_delta != null ? Number(r.score_delta) : null;
+                  return (
+                    <tr key={r.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-[hsl(var(--bg-raised))]">
+                      <td className="px-4 py-2.5 text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>
+                        {(r.framework ?? 'Unmapped framework').replace(/_/g, ' ')}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs font-mono" style={{ color: delta == null ? 'hsl(var(--text-4))' : delta < 0 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))' }}>
+                        {delta == null ? '—' : `${delta > 0 ? '+' : ''}${delta}`}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs">
+                        {gapCount > 0 ? (
+                          <Link to="/compliance/gap-analysis" className="underline" style={{ color: 'hsl(var(--brand))' }}>
+                            {gapCount} gap{gapCount !== 1 ? 's' : ''}
+                          </Link>
+                        ) : (
+                          <span style={{ color: 'hsl(var(--text-4))' }}>—</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-2.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDateTime(r.recalculated_at)}</td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

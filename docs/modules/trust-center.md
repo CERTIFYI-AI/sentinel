@@ -22,11 +22,40 @@ public record.
 3. **Consistency** — what is published derives from the same records the
    platform governs, so the public statement cannot drift from reality.
 
+## How it works
+
+- **Editor + live preview**, plus a read-only **"View as visitor"** mode that
+  renders only the persisted *published* document (unsaved editor changes and
+  unpublished drafts are never shown to that view).
+- **Badges** come from a curated catalog (ISO/IEC 42001, EU AI Act Conformity,
+  SOC 2, ISO 27001). A badge renders with a verification seal only when an
+  *active* framework record matches the claim; otherwise the public page
+  labels it **self-declared** — the page never implies attestation it lacks.
+- **Resources** are either plain URLs (link/page/pdf) or bound to a real
+  record — `documents.id` or a *published* `transparency_reports.id` — stored
+  as `{ kind, refId }` and resolved to title/link at render time
+  ("Unavailable" when the record is gone).
+- **Published policies** section (toggle) lists the org's *published* policies
+  live from the policy register (title, category, version, effective date) —
+  the public-visibility leg of the policy lifecycle. Draft/in-review/archived
+  policies never appear.
+- **Stats strip** is computed from the model inventory ("AI systems under
+  governance" / "high-risk systems under governance") — never typed in.
+- `published_at` records the **first** draft→published transition and is
+  preserved across republishes/unpublishes. Saves, publishes and unpublishes
+  are audit-logged (`logAction`, module `trust-center`).
+
 ## Interlinks
 
-- **Trust Center → Vendors** — published subprocessors resolve to vendor records.
-- **Trust Center → Frameworks** — published certifications derive from the
-  compliance programme records rather than being typed in freehand.
+- **Trust Center → Vendors** — published subprocessors resolve to vendor
+  records (`vendors.id`; soft-deleted vendors — `deleted_at` set — are
+  excluded from the picker).
+- **Trust Center → Frameworks** — badge verification derives from active
+  framework records rather than being typed in freehand.
+- **Trust Center → Documents / Transparency Reports** — bound resources
+  resolve from `documents.id` / published `transparency_reports.id`.
+- **Trust Center → Policies** — the policies section reads published
+  `policies` rows live.
 
 ## Compliance
 

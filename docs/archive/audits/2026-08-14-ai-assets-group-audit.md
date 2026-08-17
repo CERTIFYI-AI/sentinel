@@ -75,7 +75,7 @@ dataset (ingestion, transformations, SLA) → downstream models resolved from
 `DataQuality.tsx` used `dataquality_table` seeded with six fabricated
 assessments displayed as measured compliance data.
 **Fix:** new org-scoped `data_quality_assessments` table (migration
-`20260814_datasets_canonical.sql`) with FKs to `datasets.id` and
+`20260814000001_datasets_canonical.sql`) with FKs to `datasets.id` and
 `ai_models.id`, tenant default `current_user_org_id()`, and a real RLS policy.
 Page records real assessments (dataset required, model optional), radar and
 tiles compute from stored rows, derived overall/Art. 10 status is labeled
@@ -94,7 +94,7 @@ upstream_sources, ingestion_method, sla, schema_definition).
 persisted; the asset delete handler and the "Register Data Asset" dialog were
 no-op toasts, and consent-tab actions faked success.
 **Fix:** DSARs persist to `dsar_requests` (migration
-`20260814_dsar_requests_org_default.sql`, applied live, gives the table its
+`20260814000003_dsar_requests_org_default.sql`, applied live, gives the table its
 missing `org_id` DB default and a `dataset_id` FK to `datasets`); the DSAR
 list maps real rows with overdue derived from `due_date`; per-dataset DSAR
 counts are computed from the real link; asset delete soft-deletes the dataset;
@@ -116,7 +116,7 @@ drawn-graph truncation is disclosed; honest empty states throughout.
 Code side: `dataGovernanceAgent.ts` repointed to canonical `datasets`
 (links via `used_in_models`; consent reported UNKNOWN rather than asserted);
 the dead `data_assets` service functions and hooks were removed.
-DB side (migration `20260814_drop_legacy_dataset_tables.sql`, applied live
+DB side (migration `20260814000002_drop_legacy_dataset_tables.sql`, applied live
 after the consolidation plan's verify step — repo-wide reference grep, live
 row counts, inbound-FK check): dropped `"Dataset"`, `dataset_registry`,
 `datasetregistry_table`, `datalineage_table`, `dataquality_table`,
@@ -130,7 +130,7 @@ table) and is unaffected.
 
 ## Changes shipped this phase
 
-- `supabase/migrations/20260814_datasets_canonical.sql` — applied live:
+- `supabase/migrations/20260814000001_datasets_canonical.sql` — applied live:
   `datasets` org-default + governance columns; new `data_quality_assessments`
   (RLS org policy, FKs to `datasets`/`ai_models`).
 - `dashboard/src/services/datasetService.ts` — rewritten for canonical tables;

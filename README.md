@@ -25,7 +25,7 @@ Sentinel AI GRC is an **open-source AI governance, risk, and compliance platform
 
 Its design principle is that Sentinel is **one platform, not a collection of screens**: every module is a view onto the same governed entities. A model registered in the Model Registry is the *same* model that carries a risk classification, an impact assessment, bias audits, validation runs, MRC decisions, agent bindings, prompts, and runtime telemetry — all keyed by one identifier and linked in both directions (see [`CLAUDE.md`](./CLAUDE.md) for the engineering contract).
 
-> **Open-Core Model:** The core governance engine is Apache-2.0 (see [`LICENSE`](./LICENSE)). Advanced enterprise modules (SSO/SAML, custom agent policies, managed SaaS) are available commercially.
+> **Open-Core Model:** Everything in this repository is Apache-2.0 (see [`LICENSE`](./LICENSE) and [`NOTICE`](./NOTICE)) — there is no dual-licensed code here. Advanced enterprise offerings (managed SaaS, premium support, hosted SSO management) are commercial services built *around* this codebase, not gated modules inside it.
 
 ---
 
@@ -249,7 +249,24 @@ cd dashboard && npm run dev      # frontend on :5000
 make serve                       # FastAPI backend (optional for dashboard-only work)
 ```
 
-Demo sign-in credentials are created by the seed — see [`docs/`](./docs/) (getting started) rather than this README; production builds never display credentials.
+### 5 — First sign-in
+
+The seed provisions demo *data*, not demo *logins* — there are no shared
+credentials anywhere in this repo. Create your own user and link it to the
+demo organisation:
+
+1. Supabase Studio → **Authentication → Users → Add user** (email + password).
+2. Link the user to the demo org (SQL editor):
+   ```sql
+   insert into user_profiles (id, org_id, full_name, role)
+   values ('<auth-user-uuid>', '00000000-0000-0000-0000-000000000001', 'Your Name', 'org_admin');
+   ```
+3. Sign in at `http://localhost:5000` with that email and password.
+
+> **All demo data is fictional.** Seeded organisations, people, models,
+> incidents and datasets are invented for the demo scenario. Real
+> institutions (e.g. Nepal Rastra Bank) appear only as narrative context and
+> do not represent real data or relationships.
 
 ---
 

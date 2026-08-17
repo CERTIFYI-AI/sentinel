@@ -66,7 +66,7 @@ export default function AiAppsInventory() {
   const nav = useNavigate()
   const { can } = useRBAC()
   const { data, isLoading, isError, error, refetch, create, update, remove } = useAiApps()
-  const { vendors } = useVendorOptions()
+  const { vendors, error: vendorsError } = useVendorOptions()
   const { policies } = usePolicyOptions()
 
   const [statusFilter, setStatusFilter] = useState<AppApprovalStatus | 'all'>('all')
@@ -128,7 +128,7 @@ export default function AiAppsInventory() {
       const name = vendorName(a.vendorId)
       return name ? (
         <button className="inline-flex items-center gap-1 text-xs text-[hsl(var(--brand))] hover:underline"
-          onClick={(e) => { e.stopPropagation(); nav('/vendors') }}>{name} <ArrowSquareOut size={11} /></button>
+          onClick={(e) => { e.stopPropagation(); nav(`/vendors/${a.vendorId}`) }}>{name} <ArrowSquareOut size={11} /></button>
       ) : <span className="text-xs text-[hsl(var(--text-4))]">{a.vendorId ? 'Unavailable' : '—'}</span>
     } },
     { key: 'discoveredVia', header: 'Discovered', render: (a) => (
@@ -240,6 +240,11 @@ export default function AiAppsInventory() {
                 {vendors.map((v) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
               </SelectContent>
             </Select>
+            {vendorsError && (
+              <p role="alert" className="mt-1 text-[11px] text-[hsl(var(--destructive))]">
+                Vendor options failed to load: {vendorsError.message}
+              </p>
+            )}
           </Field>
           <Field label="Governing policy">
             <Select value={form.linkedPolicyId ?? '__none__'} onValueChange={(v) => set('linkedPolicyId', v === '__none__' ? null : v)}>

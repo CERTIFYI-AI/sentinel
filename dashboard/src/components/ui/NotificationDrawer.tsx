@@ -1,176 +1,130 @@
-import { useState } from 'react'
+// SPDX-License-Identifier: Apache-2.0
+// Notification drawer — reads the REAL org-scoped `notifications` table
+// (mesh broadcasts land here via notificationAgent with user_id='system';
+// the org-broadcast RLS policy makes them readable org-wide). No seeded
+// cards, no fabricated queue counts: what renders is what is stored.
+// Mark-as-read is a checked write — it throws when nothing was updated.
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from './sheet'
 import { Button } from './button'
-import { Badge } from './badge'
 import { useNavigate } from 'react-router-dom'
+import { useState } from 'react'
 import {
-  Warning, ShieldCheck, Robot, FileText, CheckCircle,
-  Bell, X, Eye, ArrowRight, Virus,
-  Gear, ChartBar, Lock, Brain, Scales, ShieldWarning,
-  UserCircleCheck, Buildings,
+  Warning, Robot, Bell, Eye, ArrowRight, Virus, Gear,
 } from '@phosphor-icons/react'
+import { supabase, isSupabaseConfigured } from '../../lib/supabase'
 
-type NotifSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info' | 'system'
-type NotifCategory =
-  | 'model' | 'security' | 'compliance' | 'hitl' | 'risk' | 'bias'
-  | 'incident' | 'vendor' | 'policy' | 'system' | 'guardrail' | 'agent'
+// ── Shared data layer (also used by pages/Notifications.tsx) ─────────────────
 
-interface Notification {
+export interface NotificationRow {
   id: string
   title: string
-  description: string
-  timestamp: string
-  severity: NotifSeverity
-  category: NotifCategory
-  read: boolean
-  link: string
+  message: string | null
+  notificationType: string
+  entityType: string | null
+  entityId: string | null
+  urlPath: string | null
+  isRead: boolean
+  createdAt: string
 }
 
-const SEED_NOTIFICATIONS: Notification[] = [
-  {
-    id: 'N-001',
-    title: 'Critical: Bias threshold exceeded',
-    description: 'MDL-004 Loan Approval Assistant — gender fairness score dropped to 0.62, below 0.85 threshold.',
-    timestamp: '2026-04-10T13:47:00Z',
-    severity: 'critical',
-    category: 'bias',
-    read: false,
-    link: '/bias-audits',
-  },
-  {
-    id: 'N-002',
-    title: 'Shadow AI agent detected',
-    description: 'AGT-010 in Marketing — unauthorized LangChain agent accessing customer PII. Agent quarantined.',
-    timestamp: '2026-04-10T11:22:00Z',
-    severity: 'high',
-    category: 'agent',
-    read: false,
-    link: '/agents',
-  },
-  {
-    id: 'N-003',
-    title: 'Evidence EV-005 GDPR DPA expired',
-    description: 'Data Processing Agreement with OpenAI expired. Renewal required before EU data processing.',
-    timestamp: '2026-04-10T09:15:00Z',
-    severity: 'medium',
-    category: 'compliance',
-    read: false,
-    link: '/evidence-vault',
-  },
-  {
-    id: 'N-004',
-    title: 'HITL queue — 3 pending reviews',
-    description: 'Credit Risk Scorer and Loan Approval Assistant decisions awaiting human review. Avg wait: 4 min.',
-    timestamp: '2026-04-09T16:00:00Z',
-    severity: 'high',
-    category: 'hitl',
-    read: false,
-    link: '/hitl',
-  },
-  {
-    id: 'N-005',
-    title: 'EU AI Act Article 11 gap identified',
-    description: 'Technical documentation missing for 2 high-risk systems (MDL-001, MDL-004).',
-    timestamp: '2026-04-09T14:30:00Z',
-    severity: 'high',
-    category: 'compliance',
-    read: false,
-    link: '/compliance',
-  },
-  {
-    id: 'N-006',
-    title: 'Vendor risk alert: C3.ai',
-    description: 'C3.ai DPA still unsigned. High-risk flag raised. Enhanced due diligence required.',
-    timestamp: '2026-04-09T10:00:00Z',
-    severity: 'high',
-    category: 'vendor',
-    read: true,
-    link: '/vendors',
-  },
-  {
-    id: 'N-007',
-    title: 'Model drift warning: Credit Risk Scorer',
-    description: 'MDL-001 input distribution shifted 18% from baseline. Revalidation recommended.',
-    timestamp: '2026-04-08T15:45:00Z',
-    severity: 'medium',
-    category: 'model',
-    read: true,
-    link: '/models/inventory',
-  },
-  {
-    id: 'N-008',
-    title: 'RSK-006 shadow AI data exfiltration risk elevated',
-    description: 'Risk score updated to Critical (16/25). Immediate containment actions recommended.',
-    timestamp: '2026-04-08T12:00:00Z',
-    severity: 'critical',
-    category: 'risk',
-    read: true,
-    link: '/risks',
-  },
-  {
-    id: 'N-009',
-    title: 'EU AI Act Q1 2026 report ready',
-    description: 'Quarterly compliance report generated and available for download in Export Center.',
-    timestamp: '2026-04-07T09:00:00Z',
-    severity: 'info',
-    category: 'compliance',
-    read: true,
-    link: '/export',
-  },
-  {
-    id: 'N-010',
-    title: 'Guardrail triggered: Loan Assistant hallucination',
-    description: 'Hallucination Guard blocked 3 fabricated loan terms. Review in Trust Engine required.',
-    timestamp: '2026-04-06T17:15:00Z',
-    severity: 'high',
-    category: 'guardrail',
-    read: true,
-    link: '/trust-engine',
-  },
-  {
-    id: 'N-011',
-    title: 'Training course overdue: GDPR Fundamentals',
-    description: '4 users have not completed mandatory GDPR training due 2026-04-01.',
-    timestamp: '2026-04-05T08:00:00Z',
-    severity: 'medium',
-    category: 'system',
-    read: true,
-    link: '/training',
-  },
-  {
-    id: 'N-012',
-    title: 'Audit Trail integrity verified',
-    description: '14,820 entries checked. No tampering detected. Chain hash valid.',
-    timestamp: '2026-04-04T06:00:00Z',
-    severity: 'info',
-    category: 'system',
-    read: true,
-    link: '/audit-trail',
-  },
-]
-
-const CATEGORY_ICON: Record<NotifCategory, any> = {
-  model: Robot,
-  security: ShieldWarning,
-  compliance: ChartBar,
-  hitl: UserCircleCheck,
-  risk: Warning,
-  bias: Scales,
-  incident: Virus,
-  vendor: Buildings,
-  policy: FileText,
-  system: Gear,
-  guardrail: ShieldCheck,
-  agent: Brain,
+function mapRow(r: any): NotificationRow {
+  return {
+    id: r.id,
+    title: r.title ?? '(untitled notification)',
+    message: r.message ?? null,
+    notificationType: r.notification_type ?? 'info',
+    entityType: r.entity_type ?? null,
+    entityId: r.entity_id ?? null,
+    urlPath: r.url_path ?? null,
+    isRead: r.is_read ?? false,
+    createdAt: r.created_at,
+  }
 }
 
-const SEVERITY_COLOR: Record<NotifSeverity, { dot: string; badge: string; badgeText: string }> = {
+async function fetchNotifications(limit: number): Promise<NotificationRow[]> {
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error('Supabase is not configured — notifications are unavailable')
+  }
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('id, title, message, notification_type, entity_type, entity_id, is_read, url_path, created_at')
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw new Error(`Could not load notifications: ${error.message}`)
+  return (data ?? []).map(mapRow)
+}
+
+/** Checked write: throws when the update did not land (e.g. RLS denies
+ *  updating a broadcast row) so no fake "read" state is shown. */
+async function markReadWrite(ids: string[]): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error('Supabase is not configured — notifications are unavailable')
+  }
+  const { data, error } = await supabase
+    .from('notifications')
+    .update({ is_read: true })
+    .in('id', ids)
+    .select('id')
+  if (error) throw new Error(`Mark as read failed: ${error.message}`)
+  if (!data || data.length === 0) {
+    throw new Error('Mark as read did not persist — this notification is not writable for your account')
+  }
+}
+
+export function useNotificationsData(limit = 100) {
+  const qc = useQueryClient()
+  const { data: items = [], isLoading, error } = useQuery({
+    // Key starts with 'notifications' so the global Realtime invalidation
+    // refreshes this list on every insert/update.
+    queryKey: ['notifications', limit],
+    queryFn: () => fetchNotifications(limit),
+    staleTime: 15_000,
+  })
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['notifications'] })
+  const markRead = useMutation({
+    mutationFn: (id: string) => markReadWrite([id]),
+    onSuccess: invalidate,
+    onError: (e: any) => toast.error(e?.message ?? 'Mark as read failed'),
+  })
+  const markAllRead = useMutation({
+    mutationFn: (ids: string[]) => markReadWrite(ids),
+    onSuccess: invalidate,
+    onError: (e: any) => toast.error(e?.message ?? 'Mark all read failed'),
+  })
+  return {
+    items, isLoading, error,
+    markRead: markRead.mutateAsync,
+    markAllRead: markAllRead.mutateAsync,
+    isMarking: markRead.isPending || markAllRead.isPending,
+  }
+}
+
+// ── Presentation helpers ─────────────────────────────────────────────────────
+
+/** Tone derived from the stored notification_type (mesh event types). */
+export function notificationTone(type: string): 'critical' | 'warning' | 'info' {
+  const t = type.toUpperCase()
+  if (/INCIDENT|CONTAINMENT|KILL|REGULATOR/.test(t)) return 'critical'
+  if (/RISK|HITL|EXCEEDED|DRIFT|OVERDUE/.test(t)) return 'warning'
+  return 'info'
+}
+
+const TONE_STYLE: Record<'critical' | 'warning' | 'info', { dot: string; badge: string; badgeText: string }> = {
   critical: { dot: 'bg-[hsl(var(--s-er-tx))]', badge: 'bg-[hsl(var(--s-er-bg))]', badgeText: 'text-[hsl(var(--s-er-tx))]' },
-  high:     { dot: 'bg-[hsl(var(--s-er-tx))]', badge: 'bg-[hsl(var(--s-er-bg))]', badgeText: 'text-[hsl(var(--s-er-tx))]' },
-  medium:   { dot: 'bg-[hsl(var(--s-wn-tx))]', badge: 'bg-[hsl(var(--s-wn-bg))]', badgeText: 'text-[hsl(var(--s-wn-tx))]' },
-  low:      { dot: 'bg-[hsl(var(--s-ok-tx))]', badge: 'bg-[hsl(var(--s-ok-bg))]', badgeText: 'text-[hsl(var(--s-ok-tx))]' },
+  warning:  { dot: 'bg-[hsl(var(--s-wn-tx))]', badge: 'bg-[hsl(var(--s-wn-bg))]', badgeText: 'text-[hsl(var(--s-wn-tx))]' },
   info:     { dot: 'bg-[hsl(var(--brand))]', badge: 'bg-[hsl(var(--brand-subtle))]', badgeText: 'text-[hsl(var(--brand))]' },
-  system:   { dot: 'bg-[hsl(var(--text-4))]', badge: 'bg-raised', badgeText: 'text-[hsl(var(--text-3))]' },
+}
+
+function entityIcon(entityType: string | null) {
+  switch ((entityType ?? '').toLowerCase()) {
+    case 'model': return Robot
+    case 'incident': return Virus
+    case 'risk': return Warning
+    case 'event': return Gear
+    default: return Bell
+  }
 }
 
 function timeAgo(ts: string): string {
@@ -188,30 +142,27 @@ export interface NotificationDrawerProps {
 
 export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerProps) {
   const navigate = useNavigate()
-  const [notifications, setNotifications] = useState<Notification[]>(SEED_NOTIFICATIONS)
+  const { items, isLoading, error, markRead, markAllRead } = useNotificationsData(50)
   const [filter, setFilter] = useState<'all' | 'unread'>('all')
 
-  const unreadCount = notifications.filter(n => !n.read).length
+  const unread = items.filter(n => !n.isRead)
+  const unreadCount = unread.length
 
-  const filtered = filter === 'unread'
-    ? notifications.filter(n => !n.read)
-    : notifications
+  // Unread first, newest first within each group; the drawer shows the top 10.
+  const ordered = [...items].sort((a, b) => {
+    if (a.isRead !== b.isRead) return a.isRead ? 1 : -1
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  })
+  const filtered = (filter === 'unread' ? ordered.filter(n => !n.isRead) : ordered).slice(0, 10)
 
-  const markAllRead = () =>
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
-
-  const markRead = (id: string) =>
-    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
-
-  const dismiss = (id: string, e: React.MouseEvent) => {
-    e.stopPropagation()
-    setNotifications(prev => prev.filter(n => n.id !== id))
-  }
-
-  const handleClick = (n: Notification) => {
-    markRead(n.id)
-    navigate(n.link)
-    onOpenChange(false)
+  const handleClick = async (n: NotificationRow) => {
+    if (!n.isRead) {
+      try { await markRead(n.id) } catch { /* hook toasts the error */ }
+    }
+    if (n.urlPath) {
+      navigate(n.urlPath)
+      onOpenChange(false)
+    }
   }
 
   return (
@@ -240,7 +191,7 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
                   variant='ghost'
                   size='sm'
                   className='h-7 text-[11px] text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))]'
-                  onClick={markAllRead}
+                  onClick={() => markAllRead(unread.map(n => n.id)).catch(() => { /* hook toasts */ })}
                 >
                   Mark all read
                 </Button>
@@ -269,7 +220,7 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
                     : 'text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))] hover:bg-raised'
                 }`}
               >
-                {f === 'all' ? `All (${notifications.length})` : `Unread (${unreadCount})`}
+                {f === 'all' ? `All (${items.length})` : `Unread (${unreadCount})`}
               </button>
             ))}
           </div>
@@ -277,27 +228,44 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
 
         {/* Items */}
         <div className='flex-1 overflow-y-auto divide-y divide-[hsl(var(--border))]'>
-          {filtered.length === 0 ? (
+          {isLoading ? (
+            <div className='px-4 py-6 space-y-3'>
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className='h-14 bg-raised animate-pulse' />
+              ))}
+            </div>
+          ) : error ? (
+            <div className='px-4 py-8 text-center'>
+              <Warning size={24} className='mx-auto mb-2 text-[hsl(var(--destructive))]' />
+              <p className='text-xs text-[hsl(var(--destructive))]'>
+                Failed to load notifications: {(error as Error).message}
+              </p>
+            </div>
+          ) : filtered.length === 0 ? (
             <div className='flex flex-col items-center justify-center py-16 text-[hsl(var(--text-4))]'>
               <Eye size={32} className='mb-3 opacity-30' />
               <p className='text-sm'>No {filter === 'unread' ? 'unread ' : ''}notifications</p>
+              <p className='text-[11px] mt-1 max-w-[260px] text-center'>
+                Governance events (incidents, risks, HITL reviews) appear here as the platform records them.
+              </p>
             </div>
           ) : (
             filtered.map(n => {
-              const Icon = CATEGORY_ICON[n.category]
-              const sc = SEVERITY_COLOR[n.severity]
+              const tone = notificationTone(n.notificationType)
+              const Icon = entityIcon(n.entityType)
+              const sc = TONE_STYLE[tone]
               return (
                 <button
                   key={n.id}
                   onClick={() => handleClick(n)}
                   className={`w-full text-left px-4 py-3 hover:bg-raised transition-colors group relative ${
-                    !n.read ? 'bg-[hsl(var(--bg-raised)/0.4)]' : ''
+                    !n.isRead ? 'bg-[hsl(var(--bg-raised)/0.4)]' : ''
                   }`}
                 >
                   <div className='flex gap-3'>
                     {/* Unread dot + icon */}
                     <div className='flex flex-col items-center gap-1 flex-shrink-0 pt-0.5'>
-                      <span className={`w-1.5 h-1.5 ${n.read ? 'opacity-0' : sc.dot}`} />
+                      <span className={`w-1.5 h-1.5 ${n.isRead ? 'opacity-0' : sc.dot}`} />
                       <span className={`w-7 h-7 flex items-center justify-center ${sc.badge}`}>
                         <Icon size={14} weight='duotone' className={sc.badgeText} />
                       </span>
@@ -305,27 +273,20 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
 
                     {/* Content */}
                     <div className='flex-1 min-w-0'>
-                      <div className='flex items-start justify-between gap-2 mb-0.5'>
-                        <p className={`text-[12.5px] font-semibold leading-snug ${n.read ? 'text-[hsl(var(--text-2))]' : 'text-[hsl(var(--text-1))]'}`}>
-                          {n.title}
-                        </p>
-                        <button
-                          onClick={(e) => dismiss(n.id, e)}
-                          className='opacity-0 group-hover:opacity-100 text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-2))] transition-all flex-shrink-0 mt-0.5'
-                          aria-label='Dismiss notification'
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                      <p className='text-[11.5px] text-[hsl(var(--text-3))] leading-snug line-clamp-2 mb-1.5'>
-                        {n.description}
+                      <p className={`text-[12.5px] font-semibold leading-snug mb-0.5 ${n.isRead ? 'text-[hsl(var(--text-2))]' : 'text-[hsl(var(--text-1))]'}`}>
+                        {n.title}
                       </p>
+                      {n.message && (
+                        <p className='text-[11.5px] text-[hsl(var(--text-3))] leading-snug line-clamp-2 mb-1.5'>
+                          {n.message}
+                        </p>
+                      )}
                       <div className='flex items-center gap-2'>
                         <span className={`text-[10px] font-semibold px-1.5 py-0.5 ${sc.badge} ${sc.badgeText}`}>
-                          {n.severity.toUpperCase()}
+                          {n.notificationType.replace(/_/g, ' ').toUpperCase()}
                         </span>
                         <span className='text-[10px] text-[hsl(var(--text-4))]'>
-                          {timeAgo(n.timestamp)}
+                          {timeAgo(n.createdAt)}
                         </span>
                       </div>
                     </div>
@@ -339,7 +300,7 @@ export function NotificationDrawer({ open, onOpenChange }: NotificationDrawerPro
         {/* Footer */}
         <div className='border-t border-[hsl(var(--border))] px-4 py-2.5 flex-shrink-0 bg-raised'>
           <p className='text-[10px] text-[hsl(var(--text-4))]'>
-            Showing {filtered.length} notification{filtered.length !== 1 ? 's' : ''} • Real-time alerts enabled
+            {isLoading || error ? '—' : `Showing ${filtered.length} of ${items.length} stored notification${items.length !== 1 ? 's' : ''}`} • Live via Realtime
           </p>
         </div>
       </SheetContent>

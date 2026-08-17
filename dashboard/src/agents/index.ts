@@ -101,7 +101,9 @@ if (typeof window !== 'undefined') {
   // 26 distinct agents; several are registered against more than one event
   // (EvidenceCollection, KnowledgeGraph, HITL, Narrative are cross-cutting),
   // so the registration count is higher than the agent count.
-  console.info(`[Sentinel AgentRegistry] ${listRegisteredAgents().length} agent registrations across 26 governance agents`)
+  const reg = listRegisteredAgents()
+  const registrations = Object.values(reg).reduce((n, agents) => n + agents.length, 0)
+  console.info('[Sentinel AgentRegistry] %d agent registrations across %d event types', registrations, Object.keys(reg).length)
 }
 
 // re-export for callers

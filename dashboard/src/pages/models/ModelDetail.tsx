@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -11,7 +11,9 @@ import {
   Export, DownloadSimple, Bell, X, GitBranch, ArrowRight,
   Scales, TestTube, Robot, Gauge, XCircle,
   Sparkle, FileText, ListBullets, CalendarCheck, Copy, Plus,
-  ShieldCheck, CaretRight, Bank,
+  ShieldCheck, CaretRight, Bank, Siren, UsersThree, CurrencyDollar, Crosshair,
+  SealCheck, Vault, Pulse, CheckSquare, Megaphone, GraduationCap,
+  Leaf, Lightning, Recycle, Package,
 } from '@phosphor-icons/react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -26,6 +28,8 @@ import { useModelDetailData } from '@/hooks/useModelDetailData';
 import { useModelAnalytics } from '@/hooks/useModelAnalytics';
 import { useModelGovernance } from '@/hooks/useAiiaData';
 import { useModelRuntimeSummary } from '@/hooks/useModelRuntimeSummary';
+import { useModelBacklinks, type BacklinkItem, type BacklinkSource } from '@/hooks/useModelBacklinks';
+import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import type { AlertConfig } from '@/services/modelDetailService';
 import { useAuthStore } from '../../store/authStore';
 import { recordToModel } from '@/lib/modelMapping';
@@ -62,6 +66,7 @@ function buildAnnexIV(model: Model) {
 
 const TABS = [
   'Model Card',
+  'Risk & Security',
   'Performance',
   'Bias History',
   'Explainability',
@@ -118,6 +123,124 @@ function KpiTile({ label, value, color, icon }: { label: string; value: string |
       </div>
       <p style={{ fontSize: 22, fontWeight: 700, color: color || 'hsl(var(--text-1))', margin: 0 }}>{value}</p>
     </div>
+  );
+}
+
+/* ─── Backlink card (Risk & Security tab) ─────────────────────────────
+   One card per governance module that references this model. Counts and
+   rows come straight from the tenant-scoped tables via useModelBacklinks;
+   a failed source shows an honest "unavailable" note, an empty source an
+   honest "No linked records" — nothing is invented. */
+
+function severityBadgeStyle(severity: string | null): React.CSSProperties {
+  const s = (severity || '').toLowerCase();
+  if (s === 'critical' || s === 'high') {
+    return { background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', border: '1px solid hsl(var(--s-er-br))' };
+  }
+  if (s === 'medium') {
+    return { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', border: '1px solid hsl(var(--s-wn-br))' };
+  }
+  if (s === 'low') {
+    return { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))' };
+  }
+  return { background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))' };
+}
+
+function BacklinkCard({ title, icon, source, loading, viewAllTo, itemTo }: {
+  title: string;
+  icon: React.ReactNode;
+  source: BacklinkSource | undefined;
+  loading: boolean;
+  /** Module list link, filtered to this model where the module supports it. */
+  viewAllTo: string;
+  /** Optional per-record deep link (e.g. /hitl/<uuid>). */
+  itemTo?: (item: BacklinkItem) => string;
+}) {
+  const count = source?.count ?? null;
+  const items = source?.items ?? [];
+  return (
+    <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', display: 'flex', flexDirection: 'column' }}>
+      <CardHeader className="pb-2">
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+          <CardTitle style={{ fontSize: 13, color: 'hsl(var(--text-1))', display: 'flex', alignItems: 'center', gap: 6 }}>
+            {icon}
+            {title}
+          </CardTitle>
+          {loading ? (
+            <span style={{ fontSize: 11, color: 'hsl(var(--text-4))' }}>…</span>
+          ) : count === null ? (
+            <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 9, fontWeight: 700 }}>
+              UNAVAILABLE
+            </Badge>
+          ) : (
+            <Badge style={{
+              background: count > 0 ? 'hsl(var(--brand-subtle))' : 'hsl(var(--bg-muted))',
+              color: count > 0 ? 'hsl(var(--brand))' : 'hsl(var(--text-4))',
+              border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 10, fontWeight: 700,
+            }}>
+              {count}
+            </Badge>
+          )}
+        </div>
+      </CardHeader>
+      <CardContent style={{ display: 'flex', flexDirection: 'column', gap: 8, flex: 1 }}>
+        {loading ? (
+          /* Loading skeleton — real pending state, not a fake zero. */
+          <div aria-hidden style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[0, 1, 2].map(i => (
+              <div key={i} style={{ height: 30, background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))', opacity: 0.6 - i * 0.15 }} />
+            ))}
+          </div>
+        ) : count === null ? (
+          <p style={{ fontSize: 12, color: 'hsl(var(--text-4))', margin: 0 }}>
+            Records unavailable — this source could not be queried.
+          </p>
+        ) : count === 0 ? (
+          <p style={{ fontSize: 12, color: 'hsl(var(--text-4))', margin: 0 }}>No linked records.</p>
+        ) : (
+          items.map(item => {
+            const row = (
+              <>
+                {item.ref && (
+                  <span style={{ fontSize: 10, fontFamily: 'monospace', color: 'hsl(var(--text-4))', flexShrink: 0 }}>{item.ref}</span>
+                )}
+                <span style={{ fontSize: 12, color: 'hsl(var(--text-1))', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {item.title}
+                </span>
+                {item.note && (
+                  <span style={{ fontSize: 10, color: 'hsl(var(--text-4))', flexShrink: 0 }}>{item.note}</span>
+                )}
+                {item.severity && (
+                  <Badge style={{ ...severityBadgeStyle(item.severity), borderRadius: 0, fontSize: 9, fontWeight: 700, textTransform: 'uppercase', flexShrink: 0 }}>
+                    {item.severity}
+                  </Badge>
+                )}
+                {item.status && (
+                  <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))', borderRadius: 0, fontSize: 9, textTransform: 'uppercase', flexShrink: 0 }}>
+                    {item.status}
+                  </Badge>
+                )}
+              </>
+            );
+            const rowStyle: React.CSSProperties = {
+              display: 'flex', alignItems: 'center', gap: 8, padding: '7px 10px',
+              background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))',
+            };
+            return itemTo ? (
+              <Link key={item.id} to={itemTo(item)} style={{ ...rowStyle, textDecoration: 'none' }}>
+                {row}
+                <CaretRight size={12} style={{ color: 'hsl(var(--text-4))', flexShrink: 0 }} />
+              </Link>
+            ) : (
+              <div key={item.id} style={rowStyle}>{row}</div>
+            );
+          })
+        )}
+        <div style={{ marginTop: 'auto', paddingTop: 4 }}>
+          <InterlinkChip label={count && count > 3 ? `View all (${count})` : 'View all'} to={viewAllTo} />
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -220,6 +343,11 @@ function ModelDetailView({ model }: { model: Model }) {
 
   // Reverse interlink — this model's footprint across the Impact & Risk modules.
   const gov = useModelGovernance(model.id);
+
+  // Reverse interlink — risks, incidents, HITL reviews, financial-risk
+  // quantifications, security threats, red-team findings and arena runs
+  // that reference this model (Risk & Security tab).
+  const { data: backlinks, isLoading: backlinksLoading } = useModelBacklinks(model.id);
 
   // Reverse interlink — this model's runtime footprint across the Trust Engine
   // modules (fallbacks, tool calls, cost/tokens) and the prompt registry.
@@ -712,6 +840,170 @@ function ModelDetailView({ model }: { model: Model }) {
                 <Export size={14} /> EU AI Act Annex IV
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ══════════════════════════════════════════════════════════
+          RISK & SECURITY TAB — reverse interlinks: every governance
+          record across the platform that references this model.
+      ══════════════════════════════════════════════════════════ */}
+      {tab === 'Risk & Security' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+          <p style={{ fontSize: 12, color: 'hsl(var(--text-3))', margin: 0 }}>
+            Governance records across Sentinel that reference this model. Counts and items are read live
+            from the risk, incident and security modules — follow a card to work in the source module.
+          </p>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <BacklinkCard
+              title="Risk Register"
+              icon={<Warning size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.risks}
+              loading={backlinksLoading}
+              viewAllTo={`/risks?model=${model.id}`}
+            />
+            <BacklinkCard
+              title="Incidents"
+              icon={<Siren size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.incidents}
+              loading={backlinksLoading}
+              viewAllTo={`/risk/incidents?model=${model.id}`}
+            />
+            <BacklinkCard
+              title="HITL Reviews"
+              icon={<UsersThree size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.hitlReviews}
+              loading={backlinksLoading}
+              viewAllTo="/hitl"
+              itemTo={item => `/hitl/${item.id}`}
+            />
+            <BacklinkCard
+              title="Financial Risk Quantification"
+              icon={<CurrencyDollar size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.financialRisks}
+              loading={backlinksLoading}
+              viewAllTo="/financial-risk"
+            />
+            <BacklinkCard
+              title="Security Threats"
+              icon={<Shield size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.securityThreats}
+              loading={backlinksLoading}
+              viewAllTo={`/security/threats?model=${model.id}`}
+            />
+            <BacklinkCard
+              title="Red Team Findings"
+              icon={<Crosshair size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.redTeamFindings}
+              loading={backlinksLoading}
+              viewAllTo={`/red-team-findings?model=${model.id}`}
+            />
+            <BacklinkCard
+              title="Model Arena"
+              icon={<TestTube size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.arenaRuns}
+              loading={backlinksLoading}
+              viewAllTo={`/security/model-arena?model=${model.id}`}
+            />
+            <BacklinkCard
+              title="Conformity Assessments"
+              icon={<SealCheck size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.conformityAssessments}
+              loading={backlinksLoading}
+              viewAllTo="/conformity"
+              itemTo={item => `/conformity?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="Evidence Vault"
+              icon={<Vault size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.evidence}
+              loading={backlinksLoading}
+              viewAllTo={`/evidence-vault?model=${model.id}`}
+            />
+            <BacklinkCard
+              title="Post-Market Monitoring"
+              icon={<Pulse size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.postMarketPlans}
+              loading={backlinksLoading}
+              viewAllTo={`/post-market?model=${model.id}`}
+            />
+            <BacklinkCard
+              title="Compliance Controls"
+              icon={<CheckSquare size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.controls}
+              loading={backlinksLoading}
+              viewAllTo={`/compliance/controls?model=${model.id}`}
+              itemTo={item => `/compliance/controls?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="Transparency Reports"
+              icon={<Megaphone size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.transparencyReports}
+              loading={backlinksLoading}
+              viewAllTo="/transparency-reports"
+            />
+            <BacklinkCard
+              title="AI Literacy Trainings"
+              icon={<GraduationCap size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.aiTrainings}
+              loading={backlinksLoading}
+              viewAllTo="/ai-literacy"
+            />
+            {/* AI supply chain. These three held no model reference at all, so a
+                model could not surface the bill of materials, attestations or
+                lineage that describe it — the EU AI Act Art. 13/15 traceability
+                story depended on records that pointed nowhere. */}
+            <BacklinkCard
+              title="AI Bill of Materials"
+              icon={<Package size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.aibomRecords}
+              loading={backlinksLoading}
+              viewAllTo={`/aibom?model=${model.id}`}
+              itemTo={item => `/aibom?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="Supply Chain Attestations"
+              icon={<SealCheck size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.attestations}
+              loading={backlinksLoading}
+              viewAllTo={`/supply-chain?model=${model.id}`}
+              itemTo={item => `/supply-chain?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="Provenance"
+              icon={<GitBranch size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.provenanceNodes}
+              loading={backlinksLoading}
+              viewAllTo={`/provenance?model=${model.id}`}
+              itemTo={item => `/provenance?open=${item.id}`}
+            />
+            {/* Sustainability footprint. Carbon/energy/ESG were previously
+                unreachable from the model they describe — the modules held no
+                model_id at all, so a model could not surface its own footprint. */}
+            <BacklinkCard
+              title="Carbon Records"
+              icon={<Leaf size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.carbonRecords}
+              loading={backlinksLoading}
+              viewAllTo={`/carbon-ledger?model=${model.id}`}
+              itemTo={item => `/carbon-ledger?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="Energy Readings"
+              icon={<Lightning size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.energyMetrics}
+              loading={backlinksLoading}
+              viewAllTo={`/energy-efficiency?model=${model.id}`}
+              itemTo={item => `/energy-efficiency?open=${item.id}`}
+            />
+            <BacklinkCard
+              title="ESG Reports"
+              icon={<Recycle size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.esgReports}
+              loading={backlinksLoading}
+              viewAllTo={`/esg-reports?model=${model.id}`}
+              itemTo={item => `/esg-reports?open=${item.id}`}
+            />
           </div>
         </div>
       )}

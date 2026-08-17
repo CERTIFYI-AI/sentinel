@@ -23,10 +23,10 @@ pg_dump "$DATABASE_URL" -Fc -f ws01_pre.dump
 #    (Phase A rewrites 57 tables; lock contention is expected.)
 
 # 3. Apply in a transaction-friendly order.
-supabase db push --file supabase/migrations/20260421_ws01_tenancy_phase_a_unify.sql
-supabase db push --file supabase/migrations/20260421_ws01_tenancy_phase_b_backfill.sql
-supabase db push --file supabase/migrations/20260421_ws01_tenancy_phase_c_rls_template.sql
-supabase db push --file supabase/migrations/20260421_ws01_tenancy_quarantine_pascalcase.sql
+supabase db push --file supabase/migrations/20260421000008_ws01_tenancy_phase_a_unify.sql
+supabase db push --file supabase/migrations/20260421000009_ws01_tenancy_phase_b_backfill.sql
+supabase db push --file supabase/migrations/20260421000010_ws01_tenancy_phase_c_rls_template.sql
+supabase db push --file supabase/migrations/20260421000011_ws01_tenancy_quarantine_pascalcase.sql
 
 # 4. Deploy the edge function.
 supabase functions deploy set-active-org

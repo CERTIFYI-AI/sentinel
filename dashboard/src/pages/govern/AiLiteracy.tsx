@@ -137,7 +137,7 @@ export default function AiLiteracy() {
       const p = policyRef(t.linkedPolicyId)
       return p ? (
         <button className="text-xs text-[hsl(var(--brand))] hover:underline"
-          onClick={(e) => { e.stopPropagation(); nav('/policies') }}>{p.ref}</button>
+          onClick={(e) => { e.stopPropagation(); nav(`/policies?open=${t.linkedPolicyId}`) }}>{p.ref || p.title}</button>
       ) : <span className="text-xs text-[hsl(var(--text-4))]">—</span>
     } },
     { key: 'endsOn', header: 'Window', render: (t) => (
@@ -209,9 +209,9 @@ export default function AiLiteracy() {
                 {(viewing.linkedModelIds.length > 0 || viewing.linkedPolicyId) && (
                   <div className="flex flex-wrap items-center gap-2">
                     {viewing.linkedPolicyId && policyRef(viewing.linkedPolicyId) && (
-                      <button onClick={() => nav('/policies')}
+                      <button onClick={() => nav(`/policies?open=${viewing.linkedPolicyId}`)}
                         className="inline-flex items-center gap-1 border border-[hsl(var(--brand))/30] bg-[hsl(var(--brand-subtle))] px-2 py-0.5 text-xs font-medium text-[hsl(var(--brand))] hover:bg-[hsl(var(--brand))] hover:text-[hsl(var(--bg-surface))]">
-                        {policyRef(viewing.linkedPolicyId)!.ref} <ArrowSquareOut size={12} />
+                        {policyRef(viewing.linkedPolicyId)!.ref || policyRef(viewing.linkedPolicyId)!.title} <ArrowSquareOut size={12} />
                       </button>
                     )}
                     {viewing.linkedModelIds.map((mid) => modelName(mid) ? (
@@ -227,6 +227,15 @@ export default function AiLiteracy() {
 
                 <div>
                   <p className="mb-2 text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Attendees ({viewing.attendees.length})</p>
+                  {viewing.linkedPolicyId && viewing.attendees.length > 0 && (
+                    <p className="mb-2 text-[11px] text-[hsl(var(--text-4))]">
+                      Attendees sync into the governing policy's acknowledgment register — completions count as acknowledged.{' '}
+                      <button className="text-[hsl(var(--brand))] hover:underline"
+                        onClick={() => nav(`/policies?open=${viewing.linkedPolicyId}`)}>
+                        View acknowledgments
+                      </button>
+                    </p>
+                  )}
                   {viewing.attendees.length === 0 ? (
                     <p className="text-xs text-[hsl(var(--text-4))]">No attendees recorded yet — edit the training to add them.</p>
                   ) : (

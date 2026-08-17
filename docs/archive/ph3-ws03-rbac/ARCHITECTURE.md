@@ -4,7 +4,7 @@ _Status: Shipped · Branch `feat/ph3-ws03-rbac` · Depends on WS0.1, WS0.2_
 
 ## Problem
 
-WS0.4 (`20260421_ws04_rbac_depth.sql`) already landed the Postgres RBAC
+WS0.4 (`20260421000018_ws04_rbac_depth.sql`) already landed the Postgres RBAC
 primitives: `org_role_enum`, `user_role_bindings`, `jit_elevations`,
 `rbac_permissions`, `auth.has_role(text)`, `auth.has_permission(text)`,
 and a JIT auto-expiry trigger. What was missing:
@@ -73,7 +73,7 @@ request. Postgres RLS blocks the row even if both are bypassed.
 | `dashboard/src/lib/rbac/index.ts`                                    | Barrel: `usePermissions`, `<Can>`, `<CanAny>`, `<ProtectedRoute>`, `can()`. Re-exports legacy roles matrix from `./roles`. |
 | `dashboard/src/lib/rbac/roles.ts`                                    | Legacy static role→permission matrix (preserved for `JitElevation.tsx` + existing tests). |
 | `workers/middleware/withRBAC.ts`                                     | `withRBAC()` factory + `authorize()` composition helper. 3s timeout, fail-closed. |
-| `supabase/migrations/20260421_ws03_current_user_permissions.sql`     | RPC returning (grants, roles) scoped to caller's org.                 |
+| `supabase/migrations/20260421000016_ws03_current_user_permissions.sql`     | RPC returning (grants, roles) scoped to caller's org.                 |
 
 ## Semantics
 

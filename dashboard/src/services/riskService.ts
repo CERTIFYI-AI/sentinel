@@ -1,5 +1,18 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
+// ── Unified score bands ──────────────────────────────────────────────────────
+// Single source of truth for risk-score banding across the platform (register
+// table, heatmaps, matrix, dialog previews). Bands: Critical >=20, High 12–19,
+// Medium 6–11, Low <6 — each with a DISTINCT semantic token pair so adjacent
+// bands are visually distinguishable (Medium uses the info pair, Low neutral).
+export type ScoreBandLabel = 'Critical' | 'High' | 'Medium' | 'Low'
+export function scoreBand(score: number): { label: ScoreBandLabel; bg: string; text: string } {
+  if (score >= 20) return { label: 'Critical', bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))' }
+  if (score >= 12) return { label: 'High', bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' }
+  if (score >= 6) return { label: 'Medium', bg: 'hsl(var(--s-in-bg))', text: 'hsl(var(--s-in-tx))' }
+  return { label: 'Low', bg: 'hsl(var(--s-nt-bg))', text: 'hsl(var(--s-nt-tx))' }
+}
+
 // Maps production 'risks' table columns to the RiskRecord shape used by the UI.
 // Live table (org-scoped via RLS: tenant_id = current_user_org_id()::text,
 // filled by the DB default — never set tenant_id from the client):
@@ -10,6 +23,8 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase'
 export type RiskRecord = {
   id: string
   org_id?: string
+  /** Business code (e.g. RSK-001) — display identity; the uuid `id` stays the key. */
+  risk_id?: string | null
   title: string
   description?: string
   category: string
@@ -20,9 +35,21 @@ export type RiskRecord = {
   owner?: string
   mitigation?: string
   frameworks?: string[]
+  linked_model_ids?: string[]
   linked_control_ids?: string[]
   linked_incident_ids?: string[]
+  residual_likelihood?: number | null
+  residual_impact?: number | null
   deadline?: string | null
+  /** Treatment strategy: accept | mitigate | transfer | avoid */
+  treatment?: string | null
+  next_review_date?: string | null
+  review_frequency?: string | null
+  is_escalated?: boolean
+  escalation_reason?: string | null
+  kri_metric?: string | null
+  kri_threshold?: number | null
+  kri_current_value?: number | null
   tags?: string[]
   metadata?: Record<string, any>
   created_at: string
@@ -36,27 +63,45 @@ export type RiskRecord = {
 
 // Internal: maps 'risks' table row → RiskRecord UI shape
 function mapRow(row: any): RiskRecord {
+  // Fallback ORDER MATTERS: on the versioned schema both legacy and canonical
+  // columns exist, and the wrong preference lets a column DEFAULT (severity=1,
+  // categories='{}', mitigation_status='not_started') mask the populated
+  // value — the exact bug that rendered all 80 seeded risks as impact-1,
+  // uncategorized, "Not_started". Prefer the column seeds and agents write;
+  // fall back to the legacy alias only when it is genuinely absent/empty.
   const likelihood = row.likelihood ?? 3
-  const impact = row.severity ?? row.impact ?? 3
-  // Several legacy rows carry risk_score = 0; derive from L×I so the UI never
-  // shows a fabricated-looking zero for a scored risk.
+  const sevInt = typeof row.severity === 'number' && row.severity >= 1 ? row.severity : null
+  const impact = row.impact ?? sevInt ?? 3
   const stored = row.risk_score != null ? Number(row.risk_score) : 0
+  const catFromArray = Array.isArray(row.categories) && row.categories.length > 0 ? row.categories[0] : null
   return {
     id: row.id,
     org_id: row.tenant_id,
+    risk_id: row.risk_id ?? null,
     title: row.name ?? row.title ?? '',
     description: row.description ?? '',
-    category: Array.isArray(row.categories) ? row.categories[0] ?? '' : (row.category ?? ''),
+    category: row.category ?? catFromArray ?? '',
     likelihood,
     impact,
     risk_score: stored > 0 ? stored : likelihood * impact,
-    status: row.mitigation_status ?? row.status ?? 'Open',
-    owner: row.action_owner ?? row.owner ?? '',
+    status: row.status ?? row.mitigation_status ?? 'open',
+    owner: row.owner ?? row.owner_name ?? row.action_owner ?? '',
     mitigation: row.mitigation_plan ?? row.mitigation ?? '',
     frameworks: Array.isArray(row.applicable_frameworks) ? row.applicable_frameworks : [],
+    linked_model_ids: Array.isArray(row.linked_model_ids) ? row.linked_model_ids : [],
     linked_control_ids: Array.isArray(row.linked_control_ids) ? row.linked_control_ids : [],
     linked_incident_ids: Array.isArray(row.linked_incident_ids) ? row.linked_incident_ids : [],
+    residual_likelihood: row.residual_likelihood ?? null,
+    residual_impact: row.residual_impact ?? null,
     deadline: row.deadline ?? null,
+    treatment: row.treatment ?? null,
+    next_review_date: row.next_review_date ?? null,
+    review_frequency: row.review_frequency ?? null,
+    is_escalated: row.is_escalated ?? false,
+    escalation_reason: row.escalation_reason ?? null,
+    kri_metric: row.kri_metric ?? null,
+    kri_threshold: row.kri_threshold != null ? Number(row.kri_threshold) : null,
+    kri_current_value: row.kri_current_value != null ? Number(row.kri_current_value) : null,
     tags: Array.isArray(row.categories) ? row.categories : [],
     metadata: row.metadata ?? {},
     created_at: row.created_at,
@@ -69,28 +114,52 @@ function mapRow(row: any): RiskRecord {
 function mapToRow(record: Partial<RiskRecord>): Record<string, any> {
   const row: Record<string, any> = {}
   if (record.id) row.id = record.id
-  if (record.title != null) row.name = record.title
+  // risks.title is NOT NULL with no default — write both columns so inserts
+  // succeed on a from-zero schema and display stays consistent with `name`.
+  if (record.title != null) { row.name = record.title; row.title = record.title }
   if (record.description != null) row.description = record.description
-  if (record.category != null) row.categories = [record.category]
+  // Write BOTH the canonical column and its legacy alias so every reader era
+  // sees the same value (the read path prefers the canonical one).
+  if (record.category != null) { row.category = record.category; row.categories = [record.category] }
   if (record.tags != null) row.categories = record.tags
   if (record.likelihood != null) row.likelihood = record.likelihood
-  if (record.impact != null) row.severity = record.impact
+  if (record.impact != null) { row.impact = record.impact; row.severity = record.impact }
   if (record.risk_score != null) row.risk_score = record.risk_score
   else if (record.likelihood != null && record.impact != null) {
     row.risk_score = record.likelihood * record.impact
   }
-  if (record.status != null) row.mitigation_status = record.status
-  if (record.owner != null) row.action_owner = record.owner
+  if (record.status != null) { row.status = record.status.toLowerCase(); row.mitigation_status = record.status.toLowerCase() }
+  if (record.owner != null) { row.owner = record.owner; row.action_owner = record.owner }
   if (record.mitigation != null) row.mitigation_plan = record.mitigation
+  // Business code: generate one for new records so the register never shows
+  // a truncated uuid as the risk's identity.
+  if (record.risk_id != null) row.risk_id = record.risk_id
+  else if (!record.id) row.risk_id = `RSK-${new Date().getFullYear()}-${String(Date.now()).slice(-5)}`
   if (record.frameworks != null) row.applicable_frameworks = record.frameworks
+  if (record.linked_model_ids != null) row.linked_model_ids = record.linked_model_ids
   if (record.linked_control_ids != null) row.linked_control_ids = record.linked_control_ids
+  if (record.linked_incident_ids != null) row.linked_incident_ids = record.linked_incident_ids
+  if (record.residual_likelihood !== undefined) row.residual_likelihood = record.residual_likelihood
+  if (record.residual_impact !== undefined) row.residual_impact = record.residual_impact
   if (record.deadline !== undefined) row.deadline = record.deadline
+  if (record.treatment !== undefined) row.treatment = record.treatment
+  if (record.next_review_date !== undefined) row.next_review_date = record.next_review_date
+  if (record.review_frequency !== undefined) row.review_frequency = record.review_frequency
+  if (record.is_escalated !== undefined) row.is_escalated = record.is_escalated
+  if (record.escalation_reason !== undefined) row.escalation_reason = record.escalation_reason
+  if (record.kri_metric !== undefined) row.kri_metric = record.kri_metric
+  if (record.kri_threshold !== undefined) row.kri_threshold = record.kri_threshold
+  if (record.kri_current_value !== undefined) row.kri_current_value = record.kri_current_value
   row.updated_at = new Date().toISOString()
   return row
 }
 
 export async function fetchAllRisks(filters: Record<string, any> = {}): Promise<RiskRecord[]> {
-  if (!isSupabaseConfigured() || !supabase) return []
+  // A config failure must surface as an error state, not an honest-looking
+  // empty register (platform contract: never fake success).
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error('Supabase is not configured — risk data is unavailable')
+  }
   let q = supabase
     .from('risks')
     .select('*')

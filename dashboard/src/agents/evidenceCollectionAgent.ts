@@ -47,16 +47,8 @@ export async function evidenceCollectionAgent(ctx: AgentContext): Promise<AgentR
     hash,
     metadata: { captured: payload.length, eventId: ctx.event.id },
   })
-  await safeInsert('evidence', {
-    org_id: ctx.orgId,
-    entity_type: 'incident',
-    entity_id: incidentId,
-    evidence_type: 'AUTO_COLLECTED',
-    captured_at: new Date().toISOString(),
-    hash, prev_hash: prevHash,
-    source_event_id: ctx.event.id,
-    description: `Automated evidence capture for ${ctx.event.event_type}`,
-  })
+  // (The legacy `evidence` table carries none of these columns — the chain
+  // row above is the canonical record of this capture.)
   await ctx.emit('EVIDENCE_COLLECTED', 'evidence-vault', {
     incidentId, evidenceIds: [ctx.event.id], vaultHash: hash,
   })

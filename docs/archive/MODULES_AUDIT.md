@@ -419,7 +419,7 @@ seed-fallback behavior (§3.2): lists come back empty, so the app renders seed d
 **Applied in this branch (safe, additive — DB is empty so no break/leak risk):**
 Added convention-matching RLS policies to the **24 live snake_case tables** that had
 RLS-on/no-policy (`org_id`/`tenant_id`/owner-scoped, matching sibling tables like
-`models`/`risks`). Captured as `supabase/migrations/20260813_add_rls_policies_unpoliced_live_tables.sql`.
+`models`/`risks`). Captured as `supabase/migrations/20260813000001_add_rls_policies_unpoliced_live_tables.sql`.
 The remaining **35** RLS-no-policy tables are the legacy PascalCase duplicates and
 child/reference tables — deferred to review (see below), not blind-patched.
 

@@ -75,7 +75,7 @@ class NotifSettingsBody(BaseModel):
 @router.get('')
 async def list_policies(request: Request, framework: Optional[str]=None, status: Optional[str]=None, page: int=1, db=Depends(get_db)):
     tenant_id = get_tenant(request)
-    q = 'SELECT * FROM v_policy_summary WHERE tenant_id='
+    q = 'SELECT * FROM v_policy_summary WHERE tenant_id=$1'
     params = [tenant_id]
     if framework: q += ' AND framework=$' + str(len(params)+1); params.append(framework)
     if status: q += ' AND status=$' + str(len(params)+1); params.append(status)
@@ -87,7 +87,7 @@ async def list_policies(request: Request, framework: Optional[str]=None, status:
 @router.get('/frameworks')
 async def list_frameworks(request: Request, db=Depends(get_db)):
     tenant_id = get_tenant(request)
-    rows = await db.fetch('SELECT framework, COUNT(*) as count FROM policy_templates WHERE tenant_id= OR tenant_id= GROUP BY framework', tenant_id, 'system')
+    rows = await db.fetch('SELECT framework, COUNT(*) as count FROM policy_templates WHERE tenant_id=$1 OR tenant_id=$2 GROUP BY framework', tenant_id, 'system')
     return [dict(r) for r in rows]
 
 @router.get('/system-templates')
@@ -104,28 +104,41 @@ async def unsigned_policies(request: Request, db=Depends(get_db)):
 @router.get('/due-review')
 async def due_review(request: Request, db=Depends(get_db)):
     tenant_id = get_tenant(request)
-    rows = await db.fetch('SELECT * FROM v_policies_due_review WHERE tenant_id=', tenant_id)
+    rows = await db.fetch('SELECT * FROM v_policies_due_review WHERE tenant_id=$1', tenant_id)
     return [dict(r) for r in rows]
 
 @router.get('/settings/notifications')
 async def get_notif_settings(request: Request, db=Depends(get_db)):
     tenant_id = get_tenant(request)
-    row = await db.fetchrow('SELECT * FROM policy_notification_settings WHERE tenant_id=', tenant_id)
+    row = await db.fetchrow('SELECT * FROM policy_notification_settings WHERE tenant_id=$1', tenant_id)
     if not row:
-        await db.execute('INSERT INTO policy_notification_settings(tenant_id) VALUES() ON CONFLICT DO NOTHING', tenant_id)
-        row = await db.fetchrow('SELECT * FROM policy_notification_settings WHERE tenant_id=', tenant_id)
+        await db.execute('INSERT INTO policy_notification_settings(tenant_id) VALUES($1) ON CONFLICT DO NOTHING', tenant_id)
+        row = await db.fetchrow('SELECT * FROM policy_notification_settings WHERE tenant_id=$1', tenant_id)
     return dict(row)
 
 @router.patch('/settings/notifications')
 async def update_notif_settings(request: Request, body: NotifSettingsBody, db=Depends(get_db)):
     tenant_id = get_tenant(request)
-    await db.execute('INSERT INTO policy_notification_settings(tenant_id) VALUES() ON CONFLICT DO NOTHING', tenant_id)
+    await db.execute('INSERT INTO policy_notification_settings(tenant_id) VALUES($1) ON CONFLICT DO NOTHING', tenant_id)
     updates = {k: v for k, v in body.dict().items() if v is not None}
     if updates:
-        sets = ', '.join(f'{k}=' for i, k in enumerate(updates))
-        vals = list(updates.values())
-        await db.execute(f'UPDATE policy_notification_settings SET {sets}, updated_at=NOW() WHERE tenant_id=', tenant_id, *vals)
-    return await db.fetchrow('SELECT * FROM policy_notification_settings WHERE tenant_id=', tenant_id)
+        # Static SQL: COALESCE keeps the current value where the PATCH body
+        # omitted a field, so no dynamic column list is ever built.
+        await db.execute(
+            'UPDATE policy_notification_settings SET '
+            'review_reminder=COALESCE($2, review_reminder), '
+            'reminder_day_of_week=COALESCE($3, reminder_day_of_week), '
+            'reminder_day_of_month=COALESCE($4, reminder_day_of_month), '
+            'notify_on_approval=COALESCE($5, notify_on_approval), '
+            'notify_on_rejection=COALESCE($6, notify_on_rejection), '
+            'notify_on_new_version=COALESCE($7, notify_on_new_version), '
+            'notify_assignees_on_review=COALESCE($8, notify_assignees_on_review), '
+            'updated_at=NOW() WHERE tenant_id=$1',
+            tenant_id, body.review_reminder, body.reminder_day_of_week,
+            body.reminder_day_of_month, body.notify_on_approval,
+            body.notify_on_rejection, body.notify_on_new_version,
+            body.notify_assignees_on_review)
+    return await db.fetchrow('SELECT * FROM policy_notification_settings WHERE tenant_id=$1', tenant_id)
 
 @router.get('/shared/{token}')
 async def public_view(token: str, db=Depends(get_db)):
@@ -138,43 +151,43 @@ async def public_view(token: str, db=Depends(get_db)):
         raise HTTPException(403, 'Token expired')
     except Exception:
         raise HTTPException(404, 'Invalid token')
-    row = await db.fetchrow('SELECT * FROM policy_templates WHERE id= AND tenant_id= AND status=', policy_id, tenant_id, 'APPROVED')
+    row = await db.fetchrow('SELECT * FROM policy_templates WHERE id=$1 AND tenant_id=$2 AND status=$3', policy_id, tenant_id, 'APPROVED')
     if not row: raise HTTPException(404, 'Policy not found')
     return {k: row[k] for k in ['id','title','framework','version','body','effective_date','approved_by']}
 
 @router.get('/{policy_id}')
 async def get_policy(policy_id: str, request: Request, db=Depends(get_db)):
     tenant_id = get_tenant(request)
-    row = await db.fetchrow('SELECT * FROM v_policy_summary WHERE id= AND (tenant_id= OR tenant_id=)', policy_id, tenant_id, 'system')
+    row = await db.fetchrow('SELECT * FROM v_policy_summary WHERE id=$1 AND (tenant_id=$2 OR tenant_id=$3)', policy_id, tenant_id, 'system')
     if not row: raise HTTPException(404, 'Not found')
     return dict(row)
 
 @router.get('/{policy_id}/versions')
 async def get_versions(policy_id: str, request: Request, db=Depends(get_db)):
     tenant_id = get_tenant(request)
-    rows = await db.fetch('SELECT * FROM policy_versions WHERE policy_id= AND tenant_id= ORDER BY created_at DESC', policy_id, tenant_id)
+    rows = await db.fetch('SELECT * FROM policy_versions WHERE policy_id=$1 AND tenant_id=$2 ORDER BY created_at DESC', policy_id, tenant_id)
     return [dict(r) for r in rows]
 
 @router.get('/{policy_id}/activity')
 async def get_activity(policy_id: str, request: Request, page: int=1, db=Depends(get_db)):
     tenant_id = get_tenant(request)
-    rows = await db.fetch('SELECT * FROM policy_activity_log WHERE policy_id= AND tenant_id= ORDER BY created_at DESC LIMIT 50 OFFSET ', policy_id, tenant_id, (page-1)*50)
+    rows = await db.fetch('SELECT * FROM policy_activity_log WHERE policy_id=$1 AND tenant_id=$2 ORDER BY created_at DESC LIMIT 50 OFFSET $3', policy_id, tenant_id, (page-1)*50)
     return [dict(r) for r in rows]
 
 @router.get('/{policy_id}/signatures')
 async def get_signatures(policy_id: str, request: Request, db=Depends(get_db)):
     tenant_id = get_tenant(request)
-    rows = await db.fetch('SELECT * FROM policy_signatures WHERE policy_id= AND tenant_id= ORDER BY signed_at DESC', policy_id, tenant_id)
+    rows = await db.fetch('SELECT * FROM policy_signatures WHERE policy_id=$1 AND tenant_id=$2 ORDER BY signed_at DESC', policy_id, tenant_id)
     return [dict(r) for r in rows]
 
 @router.get('/{policy_id}/download')
 async def download_pdf(policy_id: str, request: Request, db=Depends(get_db)):
     tenant_id = get_tenant(request)
     user_id = get_user(request)
-    row = await db.fetchrow('SELECT pt.*, array_agg(row_to_json(ps)) FILTER (WHERE ps.id IS NOT NULL) as signatures FROM policy_templates pt LEFT JOIN policy_signatures ps ON ps.policy_id=pt.id AND ps.version=pt.version WHERE pt.id= AND (pt.tenant_id= OR pt.tenant_id=) GROUP BY pt.id', policy_id, tenant_id, 'system')
+    row = await db.fetchrow('SELECT pt.*, array_agg(row_to_json(ps)) FILTER (WHERE ps.id IS NOT NULL) as signatures FROM policy_templates pt LEFT JOIN policy_signatures ps ON ps.policy_id=pt.id AND ps.version=pt.version WHERE pt.id=$1 AND (pt.tenant_id=$2 OR pt.tenant_id=$3) GROUP BY pt.id', policy_id, tenant_id, 'system')
     if not row: raise HTTPException(404, 'Not found')
     pdf_bytes = await generate_policy_pdf(dict(row))
-    await db.execute('INSERT INTO policy_activity_log(tenant_id,policy_id,actor_id,action,detail) VALUES(,,,,)', tenant_id, policy_id, user_id, 'DOWNLOADED', '{}')
+    await db.execute('INSERT INTO policy_activity_log(tenant_id,policy_id,actor_id,action,detail) VALUES($1,$2,$3,$4,$5)', tenant_id, policy_id, user_id, 'DOWNLOADED', '{}')
     return Response(content=pdf_bytes, media_type='application/pdf', headers={'Content-Disposition': f'attachment; filename=policy-{policy_id}.pdf'})
 
 @router.post('/clone/{template_id}')

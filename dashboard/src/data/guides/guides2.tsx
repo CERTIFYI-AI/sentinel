@@ -332,32 +332,17 @@ export const guides2: Collection[] = [
           {
             id: 'audit-trail-core',
             title: 'Audit Trail - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Detailed operational activity ledger recording all user actions, policy modifications, approval votes, model state changes, and config updates inside the platform.</p>
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">The platform's single, append-only activity ledger (at /audit-trail) recording all user actions, policy modifications, approval votes, model state changes, and config updates. It absorbed the former System Audit Log module — there is one audit surface, not two. Not to be confused with Audit Management (/audits), which is engagement management: planning internal/external audit engagements and tracking their findings, not an activity log.</p>
           },
           {
             id: 'audit-trail-regulatory',
             title: 'Audit Trail - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 27001 (Control A.12.4); ISO 42001 (Control A.9.2).</p>
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 27001 (Control A.12.4); ISO 42001 (Control A.9.2); EU AI Act (Article 12 Record-keeping).</p>
           },
           {
             id: 'audit-trail-auditor',
             title: 'Audit Trail - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Inspected to establish accountability for specific policy edits or operational state changes made within the system.</p>
-          },
-          {
-            id: 'system-audit-log-core',
-            title: 'System Audit Log - Core Architecture & Functionality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Low-level platform operational log infrastructure recording raw system transactions, API calls, database updates, and authentication events.</p>
-          },
-          {
-            id: 'system-audit-log-regulatory',
-            title: 'System Audit Log - Regulatory & Standard Mapping',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">ISO 27001 (Control A.12.4).</p>
-          },
-          {
-            id: 'system-audit-log-auditor',
-            title: 'System Audit Log - Auditor Reality',
-            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Reviewed by IT security auditors to verify underlying system integrity and operational security controls.</p>
+            content: <p className="text-sm text-[hsl(var(--text-2))] leading-relaxed">Inspected to establish accountability for specific policy edits or operational state changes made within the system. Append-only at the database level: no update or delete is granted, so entries cannot be altered or backdated.</p>
           },
           {
             id: 'comp-calendar-core',

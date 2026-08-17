@@ -29,6 +29,9 @@ import {
 import { toast } from 'sonner';
 import { useEvidenceData, useEvidenceChain } from '../hooks/useEvidenceData';
 import { useModelsData } from '../hooks/useModelsData';
+import { useControls } from '../hooks/queries/useControls';
+import { useIncidents } from '@/hooks/useRiskIncidents';
+import { InterlinkChip } from '../components/ui/InterlinkChip';
 import type { EvidenceRecord } from '../services/evidenceService';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { PageHeader } from '../components/ui/PageHeader';
@@ -79,23 +82,39 @@ interface UploadForm {
   type: string;
   source: string;
   collection_date: string;
+  /** Evidence validity end — freshness derives from this at read time. */
+  expiry_date: string;
   description: string;
   url: string;
+  /** → controls.id (uuid[]). */
+  linked_controls: string[];
+  /** → ai_models.id (uuid[]). */
+  linked_models: string[];
+  /** → incidents.id (uuid); empty = not linked. */
+  linked_incident_id: string;
+  /** → conformity_assessments.id (text ref); empty = not linked. */
+  linked_assessment_id: string;
 }
 
 const EMPTY_FORM: UploadForm = {
   title: '', type: 'Report', source: '',
   collection_date: new Date().toISOString().split('T')[0],
+  expiry_date: '',
   description: '', url: '',
+  linked_controls: [], linked_models: [],
+  linked_incident_id: '', linked_assessment_id: '',
 };
 
-// Derived from the record's own collection date — <=30d Fresh, <=90d Aging, else Stale.
-function deriveFreshness(collectionDate: string): string {
-  const days = Math.floor((Date.now() - new Date(collectionDate).getTime()) / 86400000);
-  if (days <= 30) return 'Fresh';
-  if (days <= 90) return 'Aging';
-  return 'Stale';
-}
+// Chain-of-custody entries reference governed entities by type + id — these
+// are the modules a chain row can deep-link back into.
+const CHAIN_ENTITY_ROUTES: Record<string, (id: string) => string> = {
+  incident: id => `/risk/incidents?open=${id}`,
+  risk: id => `/risks?open=${id}`,
+  model: id => `/models/inventory/${id}`,
+};
+
+// Freshness is derived at READ time by evidenceService (expiry_date ??
+// collection_date) — never written into the row as a permanent label.
 
 export default function EvidenceVault() {
   const navigate = useNavigate();
@@ -103,6 +122,9 @@ export default function EvidenceVault() {
   const { evidence, isLoading, error, save, remove, isSaving } = useEvidenceData();
   const { chain, isLoading: chainLoading, error: chainError } = useEvidenceChain();
   const { models } = useModelsData();
+  const controlsQuery = useControls();
+  const controls = controlsQuery.data ?? [];
+  const { items: incidents } = useIncidents();
 
   // ?tab=vault|chain|sync selects the initial tab (used by legacy-route redirects).
   const initialTab = ['vault', 'chain', 'sync'].includes(searchParams.get('tab') || '')
@@ -145,7 +167,8 @@ export default function EvidenceVault() {
     const matchSearch = !q
       || e.title.toLowerCase().includes(q)
       || (e.source || '').toLowerCase().includes(q)
-      || (e.linked_controls || []).some(c => c.toLowerCase().includes(q));
+      // Search matches the RESOLVED control label (ref + name), not the raw uuid.
+      || (e.linked_controls || []).some(c => controlLabel(c).toLowerCase().includes(q));
     const matchType = filterType === 'all' || e.type === filterType;
     const matchFresh = filterFreshness === 'all'
       || (e.freshness_status || '').toLowerCase() === filterFreshness;
@@ -155,6 +178,14 @@ export default function EvidenceVault() {
   const freshCount = evidence.filter(e => (e.freshness_status || '').toLowerCase() === 'fresh').length;
   const staleCount = evidence.filter(e => ['stale', 'expired'].includes((e.freshness_status || '').toLowerCase())).length;
   const autoCount = evidence.filter(e => e.auto_collected).length;
+  // Records whose declared expiry_date falls within the next 30 days.
+  const expiringSoonCount = evidence.filter(e => {
+    if (!e.expiry_date) return false;
+    const exp = new Date(e.expiry_date).getTime();
+    if (isNaN(exp)) return false;
+    const days = (exp - Date.now()) / 86400000;
+    return days >= 0 && days <= 30;
+  }).length;
 
   // Collection-source coverage, derived from real records (Sync tab).
   const sources = useMemo(() => {
@@ -176,16 +207,37 @@ export default function EvidenceVault() {
   const resolveModel = (ref: string) =>
     models.find(m => m.id === ref || m.slug === ref);
 
+  // linked_controls stores controls.id uuids — resolve to control_ref + name
+  // for display; unresolvable ids render as "Unavailable", never a raw uuid.
+  const controlLabel = (id: string) => {
+    const c = controls.find(x => x.id === id);
+    if (!c) return 'Unavailable';
+    const name = c.name || c.title || 'Untitled control';
+    return c.controlRef ? `${c.controlRef} — ${name}` : name;
+  };
+
+  // Resolved display label for a linked incident — never a raw uuid.
+  const incidentLabel = (id: string) => {
+    const inc = incidents.find(i => i.id === id);
+    return inc ? (inc.incidentId ? `${inc.incidentId} — ${inc.title}` : inc.title) : 'Unavailable';
+  };
+
   const handleUpload = async () => {
     try {
+      // No freshness_status here — the service derives it at read time from
+      // expiry_date ?? collection_date, so labels never go stale in the row.
       await save({
         title: form.title.trim(),
         type: form.type,
         source: form.source.trim() || null,
         collection_date: form.collection_date || null,
+        expiry_date: form.expiry_date || null,
         description: form.description.trim() || null,
         url: form.url.trim() || null,
-        freshness_status: deriveFreshness(form.collection_date),
+        linked_controls: form.linked_controls.length ? form.linked_controls : null,
+        linked_models: form.linked_models.length ? form.linked_models : null,
+        linked_incident_id: form.linked_incident_id || null,
+        linked_assessment_id: form.linked_assessment_id.trim() || null,
         auto_collected: false,
       } as Partial<EvidenceRecord>);
       toast.success(`Evidence "${form.title.trim()}" saved`);
@@ -211,6 +263,7 @@ export default function EvidenceVault() {
   const kpis: StatCardRowItem[] = [
     { label: 'Evidence Records', value: String(evidence.length), icon: <Vault size={18} style={{ color: 'hsl(var(--brand))' }} /> },
     { label: 'Fresh', value: String(freshCount), icon: <ShieldCheck size={18} style={{ color: 'hsl(var(--s-ok-tx))' }} />, delta: `${staleCount} stale/expired` },
+    { label: 'Expiring ≤ 30d', value: String(expiringSoonCount), icon: <Clock size={18} style={{ color: expiringSoonCount > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-3))' }} />, delta: 'by declared expiry date' },
     { label: 'Auto-collected', value: String(autoCount), icon: <Robot size={18} style={{ color: 'hsl(var(--s-in-tx))' }} />, delta: `${evidence.length - autoCount} manual` },
     { label: 'Custody Chain Entries', value: String(chain.length), icon: <LinkIcon size={18} style={{ color: 'hsl(var(--brand))' }} /> },
   ];
@@ -232,8 +285,9 @@ export default function EvidenceVault() {
                 exportCsv(
                   evidence.map(e => ({
                     id: e.id, title: e.title, type: e.type, source: e.source,
-                    collection_date: e.collection_date, freshness: e.freshness_status,
-                    linked_controls: (e.linked_controls || []).join('; '),
+                    collection_date: e.collection_date, expiry_date: e.expiry_date,
+                    freshness: e.freshness_status, // derived at read time
+                    linked_controls: (e.linked_controls || []).map(controlLabel).join('; '),
                   })),
                   'evidence.csv',
                 );
@@ -331,7 +385,7 @@ export default function EvidenceVault() {
                   <table className="w-full">
                     <thead style={{ background: 'hsl(var(--bg-muted))' }}>
                       <tr>
-                        {['Title', 'Type', 'Source', 'Linked Controls', 'Linked Models', 'Freshness', 'Collected', ''].map(h => (
+                        {['Title', 'Type', 'Source', 'Linked Controls', 'Linked Models', 'Freshness', 'Collected', 'Expires', ''].map(h => (
                           <th key={h} className="text-left p-3 text-xs font-semibold" style={{ color: 'hsl(var(--text-2))' }}>{h}</th>
                         ))}
                       </tr>
@@ -354,10 +408,10 @@ export default function EvidenceVault() {
                             </td>
                             <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{e.type || '—'}</td>
                             <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{e.source || '—'}</td>
-                            <td className="p-3">
+                            <td className="p-3" onClick={ev => ev.stopPropagation()}>
                               <div className="flex flex-wrap gap-1">
                                 {(e.linked_controls || []).slice(0, 3).map(c => (
-                                  <span key={c} className="font-mono text-[10px] px-1.5 py-0.5" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>{c}</span>
+                                  <InterlinkChip key={c} label={controlLabel(c)} to={`/compliance/controls?open=${c}`} />
                                 ))}
                                 {(e.linked_controls || []).length > 3 && (
                                   <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>+{(e.linked_controls || []).length - 3}</span>
@@ -393,6 +447,7 @@ export default function EvidenceVault() {
                               <Badge style={{ background: fs.bg, color: fs.color, borderRadius: 0, fontSize: 10 }}>{fs.label}</Badge>
                             </td>
                             <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(e.collection_date)}</td>
+                            <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(e.expiry_date)}</td>
                             <td className="p-3" onClick={ev => ev.stopPropagation()}>
                               <div className="flex items-center gap-1">
                                 <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(e)}>
@@ -473,7 +528,19 @@ export default function EvidenceVault() {
                           <td className="p-3">
                             <Badge style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))', borderRadius: 0, fontSize: 10 }}>{entry.action}</Badge>
                           </td>
-                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{entry.entity_type}</td>
+                          <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>
+                            {/* Deep link back into the source module when the
+                                entity type is routable — never a raw uuid. */}
+                            {(() => {
+                              const route = CHAIN_ENTITY_ROUTES[(entry.entity_type || '').toLowerCase()] as
+                                ((id: string) => string) | undefined;
+                              return route && entry.entity_id ? (
+                                <InterlinkChip label={entry.entity_type.replace(/_/g, ' ')} to={route(entry.entity_id)} />
+                              ) : (
+                                <span>{entry.entity_type}</span>
+                              );
+                            })()}
+                          </td>
                           <td className="p-3 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{entry.actor || '—'}</td>
                           <td className="p-3 text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{truncateHash(entry.prev_hash)}</td>
                           <td className="p-3 text-[10px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{truncateHash(entry.hash)}</td>
@@ -568,6 +635,7 @@ export default function EvidenceVault() {
                 {[
                   { label: 'Source', value: viewItem.source || '—' },
                   { label: 'Collected', value: formatDate(viewItem.collection_date) },
+                  { label: 'Expires', value: formatDate(viewItem.expiry_date) },
                   { label: 'Created', value: formatDate(viewItem.created_at) },
                   { label: 'Last Updated', value: formatDate(viewItem.updated_at) },
                 ].map(r => (
@@ -591,7 +659,7 @@ export default function EvidenceVault() {
                       <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No controls linked</span>
                     )}
                     {(viewItem.linked_controls || []).map(c => (
-                      <span key={c} className="font-mono text-[11px] px-2 py-0.5" style={{ background: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' }}>{c}</span>
+                      <InterlinkChip key={c} label={controlLabel(c)} to={`/compliance/controls?open=${c}`} />
                     ))}
                   </div>
                 </div>
@@ -616,6 +684,26 @@ export default function EvidenceVault() {
                     })}
                   </div>
                 </div>
+
+                {(viewItem.linked_incident_id || viewItem.linked_assessment_id) && (
+                  <div className="pt-1">
+                    <p className="text-xs font-semibold mb-1.5" style={{ color: 'hsl(var(--text-2))' }}>Source Records</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {viewItem.linked_incident_id && (
+                        <InterlinkChip
+                          label={incidentLabel(viewItem.linked_incident_id)}
+                          to={`/risk/incidents?open=${viewItem.linked_incident_id}`}
+                        />
+                      )}
+                      {viewItem.linked_assessment_id && (
+                        <InterlinkChip
+                          label={`Assessment ${viewItem.linked_assessment_id}`}
+                          to={`/conformity?open=${viewItem.linked_assessment_id}`}
+                        />
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 {(viewItem.url || viewItem.file_url) && (
                   <div className="pt-1">
@@ -668,9 +756,68 @@ export default function EvidenceVault() {
                 <Input type="date" value={form.collection_date} onChange={e => setForm(p => ({ ...p, collection_date: e.target.value }))} style={{ borderRadius: 0 }} />
               </div>
             </div>
-            <div>
-              <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Source</label>
-              <Input value={form.source} placeholder="e.g. Internal Audit, Vendor Trust Portal" onChange={e => setForm(p => ({ ...p, source: e.target.value }))} style={{ borderRadius: 0 }} />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Expiry Date (optional)</label>
+                <Input type="date" value={form.expiry_date} onChange={e => setForm(p => ({ ...p, expiry_date: e.target.value }))} style={{ borderRadius: 0 }} />
+                <p className="text-[10px] mt-1" style={{ color: 'hsl(var(--text-4))' }}>Freshness derives from this at read time</p>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Source</label>
+                <Input value={form.source} placeholder="e.g. Internal Audit, Vendor Trust Portal" onChange={e => setForm(p => ({ ...p, source: e.target.value }))} style={{ borderRadius: 0 }} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Linked Controls</label>
+                {controls.length === 0 ? (
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No controls in the library yet.</p>
+                ) : (
+                  <div className="max-h-28 overflow-y-auto p-2 space-y-1" style={{ border: '1px solid hsl(var(--border))' }}>
+                    {controls.filter(c => c.id).map(c => (
+                      <label key={c.id} className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: 'hsl(var(--text-2))' }}>
+                        <input
+                          type="checkbox"
+                          checked={form.linked_controls.includes(c.id!)}
+                          onChange={() => setForm(p => ({
+                            ...p,
+                            linked_controls: p.linked_controls.includes(c.id!)
+                              ? p.linked_controls.filter(x => x !== c.id)
+                              : [...p.linked_controls, c.id!],
+                          }))}
+                          className="rounded-none"
+                        />
+                        <span className="truncate">{c.controlRef ? `${c.controlRef} — ` : ''}{c.name || c.title || 'Untitled control'}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Linked Models</label>
+                {models.length === 0 ? (
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No models in the inventory yet.</p>
+                ) : (
+                  <div className="max-h-28 overflow-y-auto p-2 space-y-1" style={{ border: '1px solid hsl(var(--border))' }}>
+                    {models.map(m => (
+                      <label key={m.id} className="flex items-center gap-2 text-xs cursor-pointer" style={{ color: 'hsl(var(--text-2))' }}>
+                        <input
+                          type="checkbox"
+                          checked={form.linked_models.includes(m.id)}
+                          onChange={() => setForm(p => ({
+                            ...p,
+                            linked_models: p.linked_models.includes(m.id)
+                              ? p.linked_models.filter(x => x !== m.id)
+                              : [...p.linked_models, m.id],
+                          }))}
+                          className="rounded-none"
+                        />
+                        <span className="truncate">{m.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
             <div>
               <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Artifact URL</label>
@@ -679,6 +826,34 @@ export default function EvidenceVault() {
             <div>
               <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Description</label>
               <Textarea rows={3} value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} style={{ borderRadius: 0 }} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Source Incident (optional)</label>
+                <Select
+                  value={form.linked_incident_id || 'none'}
+                  onValueChange={v => setForm(p => ({ ...p, linked_incident_id: v === 'none' ? '' : v }))}
+                >
+                  <SelectTrigger style={{ width: '100%', borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value="none">Not linked</SelectItem>
+                    {incidents.filter(i => i.id).map(i => (
+                      <SelectItem key={i.id} value={i.id!}>
+                        {i.incidentId ? `${i.incidentId} — ${i.title}` : i.title}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <label className="text-xs font-medium mb-1 block" style={{ color: 'hsl(var(--text-2))' }}>Assessment Ref (optional)</label>
+                <Input
+                  value={form.linked_assessment_id}
+                  placeholder="Conformity assessment id"
+                  onChange={e => setForm(p => ({ ...p, linked_assessment_id: e.target.value }))}
+                  style={{ borderRadius: 0 }}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>

@@ -1,238 +1,527 @@
-import { useState, useRef } from 'react'
+// SPDX-License-Identifier: Apache-2.0
+// Copyright (c) 2026 CERTIFYI-AI. All rights reserved.
+//
+// VendorUpload — the vendor compliance-document portal, backed by Supabase
+// Storage and the org-scoped `vendor_documents` table.
+//
+// What this page used to be: a local SEED array and a toast. Files were never
+// uploaded anywhere — dropping a file fired
+// `toast.success('… queued for upload')` with the promise that it would be
+// "reviewed by the security team within 5 business days", and that was the
+// entire feature. Accept and reject both stamped `reviewedBy: 'Sarah Chen'`,
+// a hardcoded name, with no audit entry. The "Expiring < 90 days" tile was the
+// literal `2` sitting between three computed tiles, while real expiry dates
+// were in the same array.
+//
+// Now: the file goes to Storage, a row lands in `vendor_documents` with a
+// sha-256 digest, the reviewer is the authenticated user's uuid resolved
+// server-side, every decision is audit-logged, and the expiry KPI is computed
+// from the real `expires_at` column.
+
+import { useMemo, useRef, useState } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import {
+  CloudArrowUp, FileText, CheckCircle, Clock, Warning, Buildings, Export,
+} from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
+import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow'
+import { DataTable, type Column } from '@/components/ui/DataTable'
+import { FilterBar } from '@/components/ui/FilterBar'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { ErrorState } from '@/components/ui/ErrorState'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
+import { FormDialog, Field } from '@/components/evals/FormDialog'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { CloudArrowUp, FileText, CheckCircle, Warning, X, Eye, Clock, MagnifyingGlass, Trash } from '@phosphor-icons/react'
 import { toast } from 'sonner'
-import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { useVendorDocuments } from '@/hooks/useVendorDocuments'
+import { useVendorOptions } from '@/hooks/useVendorsData'
+import {
+  DOCUMENT_TYPES, documentsExpiringWithin, getVendorDocumentUrl,
+  type VendorDocumentRecord,
+} from '@/services/vendorDocumentService'
+import { Pill, LinkPill, FilterChip, Fact, docTone, fmtDate, daysUntil } from './vendors/vendorUi'
 
-
-interface UploadSubmission {
-  id: string
-  vendor: string
-  type: 'AIBOM' | 'SOC2' | 'ISO Cert' | 'Penetration Test' | 'Data Processing Agreement' | 'Security Questionnaire' | 'Model Card'
-  filename: string
-  uploadedBy: string
-  uploadedDate: string
-  size: string
-  status: 'Pending Review' | 'Accepted' | 'Rejected' | 'Under Review'
-  reviewedBy?: string
-  reviewNotes?: string
-  expiryDate?: string
+function fmtSize(bytes?: number | null): string {
+  if (bytes === null || bytes === undefined || !Number.isFinite(bytes)) return '—'
+  if (bytes < 1024) return `${bytes} B`
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`
 }
 
-const SEED: UploadSubmission[] = [
-  { id: 'VUP-001', vendor: 'OpenAI', type: 'SOC2', filename: 'OpenAI_SOC2_TypeII_2025.pdf', uploadedBy: 'vendor@openai.com', uploadedDate: '2026-04-05', size: '3.2 MB', status: 'Accepted', reviewedBy: 'Sarah Chen', reviewNotes: 'SOC 2 Type II valid until Dec 2026. All trust service criteria reviewed.', expiryDate: '2026-12-31' },
-  { id: 'VUP-002', vendor: 'Anthropic', type: 'Security Questionnaire', filename: 'Anthropic_VendorSecQ_2026.xlsx', uploadedBy: 'security@anthropic.com', uploadedDate: '2026-04-08', size: '1.1 MB', status: 'Under Review', reviewedBy: 'Marcus Johnson' },
-  { id: 'VUP-003', vendor: 'Hugging Face', type: 'AIBOM', filename: 'HF_AIBOM_mistral7b.cdx.json', uploadedBy: 'compliance@huggingface.co', uploadedDate: '2026-04-09', size: '245 KB', status: 'Pending Review' },
-  { id: 'VUP-004', vendor: 'AWS', type: 'Data Processing Agreement', filename: 'AWS_DPA_GDPR_2026.pdf', uploadedBy: 'aws-legal@amazon.com', uploadedDate: '2026-03-28', size: '892 KB', status: 'Accepted', reviewedBy: 'Maria Santos', reviewNotes: 'DPA reviewed by legal. GDPR Article 28 compliant. SCCs included.', expiryDate: '2028-03-28' },
-  { id: 'VUP-005', vendor: 'Experian', type: 'Penetration Test', filename: 'Experian_PenTest_2025-Q4.pdf', uploadedBy: 'security@experian.com', uploadedDate: '2026-01-15', size: '4.7 MB', status: 'Accepted', reviewedBy: 'Sarah Chen', reviewNotes: 'External pentest by NCC Group. 0 critical, 2 high findings (remediated).', expiryDate: '2026-07-15' },
-  { id: 'VUP-006', vendor: 'Microsoft Azure', type: 'ISO Cert', filename: 'Azure_ISO27001_27701_2025.pdf', uploadedBy: 'compliance@microsoft.com', uploadedDate: '2026-02-20', size: '2.1 MB', status: 'Accepted', reviewedBy: 'Marcus Johnson', reviewNotes: 'ISO 27001 and 27701 certificates valid. Accreditation verified with BSI.', expiryDate: '2026-11-20' },
-  { id: 'VUP-007', vendor: 'Cohere', type: 'Model Card', filename: 'Cohere_Command_R_ModelCard_v2.pdf', uploadedBy: 'trustworthy-ai@cohere.com', uploadedDate: '2026-04-10', size: '567 KB', status: 'Pending Review' },
-]
+type UploadState = {
+  vendorId: string
+  docType: string
+  title: string
+  validFrom: string
+  expiresAt: string
+  confidentiality: string
+  renewalLeadDays: string
+}
 
-const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
-  'Pending Review': { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-  Accepted: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-  Rejected: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-  'Under Review': { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
+const BLANK_UPLOAD: UploadState = {
+  vendorId: '', docType: 'SOC2', title: '', validFrom: '', expiresAt: '',
+  confidentiality: 'confidential', renewalLeadDays: '',
 }
 
 export default function VendorUpload() {
-  const [dragOver, setDragOver] = useState(false)
-  const [submissions, setSubmissions] = useState(SEED)
-  const [selected, setSelected] = useState<UploadSubmission | null>(null)
-  const [statusFilter, setStatusFilter] = useState('All')
+  const navigate = useNavigate()
+  const [params, setParams] = useSearchParams()
+  const vendorParam = params.get('vendor')
+  const openParam = params.get('open')
+
+  const { documents, isLoading, isError, error, refetch, upload, review, remove } =
+    useVendorDocuments(vendorParam ?? undefined)
+  const { options: vendorOptions, resolveName } = useVendorOptions()
+
   const [search, setSearch] = useState('')
-  const [rejectTarget, setRejectTarget] = useState<UploadSubmission | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<UploadSubmission | null>(null)
+  const [statusFilter, setStatusFilter] = useState('')
+  const [typeFilter, setTypeFilter] = useState('')
+  const [dragOver, setDragOver] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [form, setForm] = useState<UploadState>(BLANK_UPLOAD)
+  const [rejectTarget, setRejectTarget] = useState<VendorDocumentRecord | null>(null)
+  const [rejectNotes, setRejectNotes] = useState('')
+  const [deleteTarget, setDeleteTarget] = useState<VendorDocumentRecord | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  const filtered = submissions.filter(s =>
-    (statusFilter === 'All' || s.status === statusFilter) &&
-    (!search || s.vendor.toLowerCase().includes(search.toLowerCase()) || s.filename.toLowerCase().includes(search.toLowerCase()) || s.type.toLowerCase().includes(search.toLowerCase()))
-  )
+  const set = <K extends keyof UploadState>(k: K, v: UploadState[K]) => setForm((f) => ({ ...f, [k]: v }))
+  const selected = openParam ? documents.find((d) => d.id === openParam) ?? null : null
 
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    const files = Array.from(e.dataTransfer.files)
-    if (files.length > 0) {
-      toast.success(`${files.length} file(s) queued for upload`, { description: 'Files will be reviewed by the security team within 5 business days.' })
+  const expiring90 = documentsExpiringWithin(documents, 90)
+  const accepted = documents.filter((d) => d.status === 'accepted').length
+  const pendingReview = documents.filter((d) => d.status === 'pending_review').length
+  const withExpiry = documents.filter((d) => !!d.expiresAt)
+
+  const kpis: StatCardRowItem[] = [
+    { label: 'Documents', value: documents.length, icon: <FileText size={18} /> },
+    {
+      label: 'Accepted', value: documents.length ? accepted : '—', icon: <CheckCircle size={18} />,
+      description: `${accepted} reviewed and accepted`,
+    },
+    {
+      label: 'Pending review', value: documents.length ? pendingReview : '—', icon: <Clock size={18} />,
+      description: `${pendingReview} awaiting a reviewer`,
+    },
+    {
+      label: 'Expiring < 90 days',
+      value: withExpiry.length ? expiring90.length : '—',
+      icon: <Warning size={18} />,
+      isPositiveUp: false,
+      description: withExpiry.length
+        ? `Computed from expiry dates on ${withExpiry.length} of ${documents.length} documents`
+        : 'No document carries an expiry date',
+    },
+  ]
+
+  const filtered = useMemo(() => documents.filter((d) => {
+    if (statusFilter && d.status !== statusFilter) return false
+    if (typeFilter && d.docType !== typeFilter) return false
+    if (search) {
+      const q = search.toLowerCase()
+      const hay = `${resolveName(d.vendorId)} ${d.fileName ?? ''} ${d.title ?? ''} ${d.docType ?? ''}`.toLowerCase()
+      if (!hay.includes(q)) return false
+    }
+    return true
+  }), [documents, statusFilter, typeFilter, search, resolveName])
+
+  function clearVendorFilter() {
+    const next = new URLSearchParams(params); next.delete('vendor'); setParams(next, { replace: true })
+  }
+  function openRecord(d: VendorDocumentRecord) {
+    const next = new URLSearchParams(params); next.set('open', d.id); setParams(next, { replace: true })
+  }
+  function closeRecord() {
+    const next = new URLSearchParams(params); next.delete('open'); setParams(next, { replace: true })
+  }
+
+  function takeFile(file: File) {
+    setPendingFile(file)
+    setForm({ ...BLANK_UPLOAD, vendorId: vendorParam ?? '', title: file.name })
+  }
+
+  function submitUpload() {
+    if (!pendingFile) return
+    upload.mutate({
+      file: pendingFile,
+      vendorId: form.vendorId,
+      docType: form.docType,
+      title: form.title || pendingFile.name,
+      validFrom: form.validFrom || undefined,
+      expiresAt: form.expiresAt || undefined,
+      confidentiality: form.confidentiality || undefined,
+      renewalLeadDays: form.renewalLeadDays ? Number(form.renewalLeadDays) : undefined,
+    }, {
+      // The dialog closes only once the object and the row both exist.
+      onSuccess: () => { setPendingFile(null); setForm(BLANK_UPLOAD) },
+    })
+  }
+
+  async function download(d: VendorDocumentRecord) {
+    try {
+      const url = await getVendorDocumentUrl(d.storagePath)
+      if (!url) { toast.error('No stored file for this record.'); return }
+      window.open(url, '_blank', 'noopener')
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Could not open the document')
     }
   }
 
-  const handleAccept = (id: string) => {
-    setSubmissions(prev => prev.map(s => s.id === id ? { ...s, status: 'Accepted' as const, reviewedBy: 'Sarah Chen' } : s))
-    setSelected(null)
-    toast.success('Submission accepted')
+  function handleExport() {
+    const header = ['id', 'vendor', 'doc_type', 'file_name', 'status', 'version', 'expires_at', 'file_digest']
+    const csv = [
+      header.join(','),
+      ...filtered.map((d) => [
+        d.id, JSON.stringify(resolveName(d.vendorId)), d.docType ?? '', JSON.stringify(d.fileName ?? ''),
+        d.status, d.version, d.expiresAt ?? '', d.fileDigest ?? '',
+      ].join(',')),
+    ].join('\n')
+    const el = document.createElement('a')
+    el.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
+    el.download = `vendor-documents-${new Date().toISOString().slice(0, 10)}.csv`
+    el.click()
   }
 
-  const confirmReject = () => {
-    if (!rejectTarget) return
-    setSubmissions(prev => prev.map(s => s.id === rejectTarget.id ? { ...s, status: 'Rejected' as const, reviewedBy: 'Sarah Chen' } : s))
-    setSelected(null)
-    setRejectTarget(null)
-    toast.error('Submission rejected')
-  }
+  const columns: Column<VendorDocumentRecord>[] = [
+    {
+      key: 'vendor', header: 'Vendor', sortable: true,
+      render: (d) => {
+        const name = d.vendorId ? resolveName(d.vendorId) : 'Unavailable'
+        return d.vendorId && name !== 'Unavailable'
+          ? <LinkPill to={`/vendors/${d.vendorId}`}>{name}</LinkPill>
+          : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Unavailable</span>
+      },
+    },
+    { key: 'docType', header: 'Type', sortable: true, render: (d) => (
+      <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>{d.docType || '—'}</span>
+    ) },
+    { key: 'fileName', header: 'File', sortable: true, render: (d) => (
+      <div className="max-w-xs">
+        <div className="truncate text-sm" style={{ color: 'hsl(var(--text-1))' }}>{d.title || d.fileName || '—'}</div>
+        <div className="truncate text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+          {d.fileName ?? '—'} · {fmtSize(d.fileSizeBytes)} · v{d.version}
+        </div>
+      </div>
+    ) },
+    { key: 'status', header: 'Status', sortable: true, render: (d) => (
+      <Pill tone={docTone(d.status)}>{d.status.replace(/_/g, ' ')}</Pill>
+    ) },
+    {
+      key: 'expiresAt', header: 'Expires', sortable: true,
+      render: (d) => {
+        const days = daysUntil(d.expiresAt)
+        return (
+          <span
+            className="text-xs"
+            style={{ color: days !== null && days < 90 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))' }}
+          >
+            {fmtDate(d.expiresAt)}
+            {days !== null && (days < 0 ? ' · expired' : days < 90 ? ` · ${days}d` : '')}
+          </span>
+        )
+      },
+    },
+    { key: 'reviewedAt', header: 'Reviewed', sortable: true, render: (d) => (
+      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{fmtDate(d.reviewedAt)}</span>
+    ) },
+  ]
 
-  const confirmDelete = () => {
-    if (!deleteTarget) return
-    setSubmissions(prev => prev.filter(s => s.id !== deleteTarget.id))
-    toast.success(`${deleteTarget.id} removed`)
-    setDeleteTarget(null)
-    setSelected(null)
-  }
+  if (isLoading) return <PageSkeleton title="Vendor documents" rows={8} />
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <CloudArrowUp size={20} weight="fill" className="text-[hsl(var(--brand))]" />
-            Vendor Upload Portal
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-4))] mt-0.5">Secure portal for vendors to upload compliance documents — SOC 2, ISO certifications, AIBOMs, DPAs, and model cards</p>
-        </div>
-      </div>
-
-      {/* Drop zone */}
-      <div
-        className={`border-2 border-dashed rounded p-10 text-center transition-colors cursor-pointer ${dragOver ? 'border-[hsl(var(--brand))] bg-[hsl(var(--brand)/0.05)]' : 'border-[hsl(var(--border))] hover:border-[hsl(var(--brand)/0.5)]'}`}
-        onDragOver={e => { e.preventDefault(); setDragOver(true) }}
-        onDragLeave={() => setDragOver(false)}
-        onDrop={handleDrop}
-        onClick={() => fileRef.current?.click()}
-      >
-        <input ref={fileRef} type="file" className="hidden" multiple onChange={e => { if (e.target.files?.length) toast.success(`${e.target.files.length} file(s) queued`) }} />
-        <CloudArrowUp size={36} className={`mx-auto mb-3 ${dragOver ? 'text-[hsl(var(--brand))]' : 'text-[hsl(var(--text-4))]'}`} />
-        <p className="text-sm font-semibold text-[hsl(var(--text-1))]">Drop compliance documents here or click to browse</p>
-        <p className="text-xs text-[hsl(var(--text-4))] mt-1">Accepted: PDF, XLSX, JSON, XML · Max 25 MB per file</p>
-        <p className="text-[10px] text-[hsl(var(--text-4))] mt-2">SOC 2 Reports · ISO Certificates · AIBOMs · Penetration Tests · DPAs · Model Cards · Security Questionnaires</p>
-      </div>
-
-      <div className="grid grid-cols-4 gap-4">
-        {[
-          { label: 'Total Submissions', value: submissions.length, color: 'hsl(var(--text-1))' },
-          { label: 'Accepted', value: submissions.filter(s => s.status === 'Accepted').length, color: 'hsl(var(--s-ok-tx))' },
-          { label: 'Pending Review', value: submissions.filter(s => s.status === 'Pending Review').length, color: 'hsl(var(--s-in-tx))' },
-          { label: 'Expiring < 90 days', value: 2, color: 'hsl(var(--s-wn-tx))' },
-        ].map(s => (
-          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
-            <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide mb-1">{s.label}</p>
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
+    <div className="space-y-6">
+      <PageHeader
+        title="Vendor Document Portal"
+        subtitle="SOC 2 reports, ISO certificates, DPAs, pentest reports and AIBOMs — stored, hashed and reviewed"
+        breadcrumbs={[
+          { label: 'Home', href: '/' },
+          { label: 'Vendors', href: '/vendors' },
+          { label: 'Documents' },
+        ]}
+        actions={
+          <div className="flex flex-wrap gap-2">
+            <Button variant="ghost" size="sm" onClick={() => navigate('/vendors')}>
+              <Buildings size={14} /> Registry
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => navigate('/vendors/tprm')}>TPRM Workspace</Button>
+            <Button variant="outline" size="sm" onClick={handleExport}><Export size={14} /> Export CSV</Button>
           </div>
-        ))}
-      </div>
+        }
+      />
 
-      <div className="flex gap-3">
-        <div className="flex items-center gap-2 flex-1 max-w-sm border border-[hsl(var(--border))] bg-surface px-3">
-          <MagnifyingGlass size={14} className="text-[hsl(var(--text-4))] flex-shrink-0" />
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search vendors, files…" className="flex-1 py-2 text-sm bg-transparent text-[hsl(var(--text-1))] placeholder-[hsl(var(--text-4))] focus:outline-none" />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            {['All', 'Pending Review', 'Under Review', 'Accepted', 'Rejected'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-          </SelectContent>
-        </Select>
-      </div>
+      {isError ? (
+        <ErrorState title="Could not load documents" error={error} onRetry={() => refetch()} />
+      ) : (
+        <>
+          <StatCardRow cards={kpis} />
 
-      <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b border-[hsl(var(--border))] bg-raised">
-              {['ID', 'Vendor', 'Document Type', 'File', 'Uploaded', 'Size', 'Expires', 'Reviewed By', 'Status', 'Actions'].map(h => (
-                <th key={h} className="text-left px-4 py-3 text-[11px] font-semibold text-[hsl(var(--text-4))] uppercase tracking-wide">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {filtered.map(s => (
-              <tr key={s.id} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer" onClick={() => setSelected(s)}>
-                <td className="px-4 py-3 font-mono text-xs text-[hsl(var(--brand))]">{s.id}</td>
-                <td className="px-4 py-3 text-xs font-medium text-[hsl(var(--text-1))]">{s.vendor}</td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{s.type}</td>
-                <td className="px-4 py-3">
-                  <div className="flex items-center gap-1.5 text-xs text-[hsl(var(--text-2))]">
-                    <FileText size={12} />
-                    <span className="truncate max-w-[160px]">{s.filename}</span>
-                  </div>
-                </td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{s.uploadedDate}</td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{s.size}</td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-4))]">{s.expiryDate ?? '—'}</td>
-                <td className="px-4 py-3 text-xs text-[hsl(var(--text-3))]">{s.reviewedBy ?? '—'}</td>
-                <td className="px-4 py-3"><span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[s.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{s.status}</span></td>
-                <td className="px-4 py-3" onClick={ev => ev.stopPropagation()}>
-                  <button onClick={() => setDeleteTarget(s)} className="p-1.5 text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:bg-[hsl(var(--s-er-bg))]"><Trash size={13} /></button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {filtered.length === 0 && <div className="text-center py-12 text-[hsl(var(--text-4))] text-sm">No submissions match filters</div>}
-      </div>
+          {vendorParam && (
+            <FilterChip label="Vendor" value={resolveName(vendorParam)} onClear={clearVendorFilter} />
+          )}
 
-      {selected && (
-        <div className="fixed inset-0 z-50 flex">
-          <div className="flex-1 bg-black/40" onClick={() => setSelected(null)} />
-          <div className="w-[440px] bg-surface border-l border-[hsl(var(--border))] flex flex-col h-full overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-[hsl(var(--border))]">
-              <div><p className="font-mono text-xs text-[hsl(var(--brand))]">{selected.id}</p><h2 className="text-sm font-semibold text-[hsl(var(--text-1))]">{selected.vendor} — {selected.type}</h2></div>
-              <button onClick={() => setSelected(null)}><X size={18} className="text-[hsl(var(--text-4))]" /></button>
-            </div>
-            <div className="p-4 space-y-4">
-              <span className="text-[11px] px-2 py-0.5 font-medium" style={STATUS_STYLE[selected.status] || { bg: "hsl(var(--border))", color: "hsl(var(--text-4))" }}>{selected.status}</span>
-              <div className="flex items-center gap-2 p-3 bg-raised border border-[hsl(var(--border))] cursor-pointer hover:bg-[hsl(var(--bg-page))]" onClick={() => toast.info(`Opening ${selected.filename}`)}>
-                <FileText size={16} className="text-[hsl(var(--brand))]" />
-                <div><p className="text-xs font-medium text-[hsl(var(--text-1))]">{selected.filename}</p><p className="text-[10px] text-[hsl(var(--text-4))]">{selected.size}</p></div>
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Uploaded By', value: selected.uploadedBy },
-                  { label: 'Upload Date', value: selected.uploadedDate },
-                  { label: 'Expiry Date', value: selected.expiryDate ?? 'N/A' },
-                  { label: 'Reviewed By', value: selected.reviewedBy ?? 'Unassigned' },
-                ].map(({ label, value }) => (
-                  <div key={label} className="p-3 bg-raised border border-[hsl(var(--border))]">
-                    <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{label}</p>
-                    <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5">{value}</p>
-                  </div>
-                ))}
-              </div>
-              {selected.reviewNotes && <div><p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-1">Review Notes</p><p className="text-sm text-[hsl(var(--text-2))] p-3 bg-raised border border-[hsl(var(--border))] leading-relaxed">{selected.reviewNotes}</p></div>}
-            </div>
-            {(selected.status === 'Pending Review' || selected.status === 'Under Review') && (
-              <div className="p-4 border-t border-[hsl(var(--border))] flex gap-2">
-                <button onClick={() => handleAccept(selected.id)} className="flex-1 py-2 bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] text-sm font-medium hover:opacity-90">Accept</button>
-                <button onClick={() => setRejectTarget(selected)} className="flex-1 py-2 border border-[hsl(var(--destructive))] text-[hsl(var(--destructive))] text-sm font-medium hover:bg-[hsl(var(--s-er-bg))]">Reject</button>
-              </div>
-            )}
-            <div className="px-4 pb-4">
-              <button onClick={() => setDeleteTarget(selected)} className="w-full flex items-center justify-center gap-1.5 py-2 border border-[hsl(var(--border))] text-xs text-[hsl(var(--text-4))] hover:text-[hsl(var(--destructive))] hover:border-[hsl(var(--destructive))]">
-                <Trash size={12} /> Remove Submission
-              </button>
-            </div>
+          {/* Drop zone. Selecting a file opens the metadata dialog; nothing is
+              claimed to be uploaded until the write resolves. */}
+          <div
+            role="button"
+            tabIndex={0}
+            aria-label="Select a compliance document to upload"
+            className="cursor-pointer border-2 border-dashed p-10 text-center transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+            style={{
+              borderColor: dragOver ? 'hsl(var(--brand))' : 'hsl(var(--border))',
+              background: dragOver ? 'hsl(var(--s-in-bg))' : 'transparent',
+              outlineColor: 'hsl(var(--brand))',
+            }}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(true) }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={(e) => {
+              e.preventDefault(); setDragOver(false)
+              const f = e.dataTransfer.files?.[0]
+              if (f) takeFile(f)
+            }}
+            onClick={() => fileRef.current?.click()}
+            onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') fileRef.current?.click() }}
+          >
+            <input
+              ref={fileRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) takeFile(f); e.target.value = '' }}
+            />
+            <CloudArrowUp size={36} className="mx-auto mb-3" style={{ color: dragOver ? 'hsl(var(--brand))' : 'hsl(var(--text-4))' }} />
+            <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+              Drop a compliance document here, or click to browse
+            </p>
+            <p className="mt-1 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+              The file is stored against a vendor with a sha-256 digest. It stays in "pending review" until a
+              signed-in reviewer accepts or rejects it.
+            </p>
           </div>
-        </div>
+
+          <FilterBar
+            search={search}
+            onSearchChange={setSearch}
+            searchPlaceholder="Search by vendor, file, type…"
+            filters={[
+              {
+                key: 'status', label: 'Status', value: statusFilter, onChange: setStatusFilter,
+                options: ['pending_review', 'accepted', 'rejected', 'expired']
+                  .map((s) => ({ label: s.replace(/_/g, ' '), value: s })),
+              },
+              {
+                key: 'type', label: 'Type', value: typeFilter, onChange: setTypeFilter,
+                options: DOCUMENT_TYPES.map((t) => ({ label: t, value: t })),
+              },
+            ]}
+            activeFilterCount={[statusFilter, typeFilter].filter(Boolean).length}
+            onClearAll={() => { setSearch(''); setStatusFilter(''); setTypeFilter('') }}
+            trailing={
+              <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                {filtered.length} of {documents.length}
+              </span>
+            }
+          />
+
+          {documents.length === 0 ? (
+            <EmptyState
+              icon={<FileText size={32} weight="duotone" />}
+              title="No documents on file"
+              description="Nothing has been uploaded yet. Certificates and reports uploaded here appear on the vendor record and can be attached to an assessment as evidence."
+              action={<Button size="sm" onClick={() => fileRef.current?.click()}>Upload a document</Button>}
+            />
+          ) : (
+            <DataTable
+              data={filtered}
+              columns={columns}
+              searchKey="fileName"
+              onRowClick={openRecord}
+              onView={openRecord}
+              onDelete={setDeleteTarget}
+              emptyMessage="No documents match the current filters."
+            />
+          )}
+        </>
       )}
 
-      <ConfirmDialog
+      {/* ── Detail sheet ──────────────────────────────────────────────────── */}
+      <Sheet open={!!selected} onOpenChange={(o) => { if (!o) closeRecord() }}>
+        <SheetContent style={{ borderRadius: 0, width: 600, maxWidth: '100vw' }}>
+          <SheetHeader>
+            <SheetTitle>{selected?.title || selected?.fileName || 'Document'}</SheetTitle>
+          </SheetHeader>
+          {selected && (
+            <div className="mt-4 h-[calc(100vh-140px)] space-y-5 overflow-y-auto pr-1">
+              <div className="flex flex-wrap items-center gap-2">
+                <Pill tone={docTone(selected.status)}>{selected.status.replace(/_/g, ' ')}</Pill>
+                {selected.vendorId && resolveName(selected.vendorId) !== 'Unavailable' && (
+                  <LinkPill to={`/vendors/${selected.vendorId}`}>{resolveName(selected.vendorId)}</LinkPill>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <Fact label="Document type" value={selected.docType} />
+                <Fact label="Version" value={selected.version} />
+                <Fact label="File" value={selected.fileName} hint={fmtSize(selected.fileSizeBytes)} />
+                <Fact label="Confidentiality" value={selected.confidentiality} />
+                <Fact label="Valid from" value={fmtDate(selected.validFrom)} />
+                <Fact label="Expires" value={fmtDate(selected.expiresAt)} />
+                <Fact label="Renewal lead" value={selected.renewalLeadDays ? `${selected.renewalLeadDays} days` : null} />
+                <Fact label="Retention until" value={fmtDate(selected.retentionUntil)} />
+                <Fact label="Uploaded" value={fmtDate(selected.createdAt)} />
+                <Fact label="Reviewed" value={fmtDate(selected.reviewedAt)} />
+                <Fact label="Virus scan" value={selected.virusScanStatus} hint="unset until a scanner reports" />
+                <Fact label="Supersedes" value={selected.supersedesId ? `version ${selected.version - 1}` : null} />
+              </div>
+
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>
+                  Integrity digest (SHA-256)
+                </p>
+                <p className="mt-1 break-all font-mono text-[11px]" style={{ color: 'hsl(var(--text-2))' }}>
+                  {selected.fileDigest ?? '—'}
+                </p>
+              </div>
+
+              {selected.reviewNotes && <Fact label="Review notes" value={selected.reviewNotes} />}
+
+              {selected.assessmentId && (
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider" style={{ color: 'hsl(var(--text-4))' }}>
+                    Attached to assessment
+                  </p>
+                  <div className="mt-1">
+                    <LinkPill to={`/vendors/assessments?open=${selected.assessmentId}`}>Open assessment</LinkPill>
+                  </div>
+                </div>
+              )}
+
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button size="sm" variant="outline" onClick={() => download(selected)} disabled={!selected.storagePath}>
+                  Open file
+                </Button>
+                {selected.status === 'pending_review' && (
+                  <>
+                    <Button
+                      size="sm"
+                      loading={review.isPending}
+                      onClick={() => review.mutate({ id: selected.id, decision: 'accepted' })}
+                    >
+                      Accept
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={() => { setRejectNotes(''); setRejectTarget(selected) }}
+                    >
+                      Reject
+                    </Button>
+                  </>
+                )}
+              </div>
+              <p className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>
+                The reviewer recorded against a decision is the signed-in user — it cannot be entered by hand.
+              </p>
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Upload metadata ───────────────────────────────────────────────── */}
+      <FormDialog
+        open={!!pendingFile}
+        onOpenChange={(o) => { if (!o) { setPendingFile(null); setForm(BLANK_UPLOAD) } }}
+        title="Upload compliance document"
+        description={pendingFile ? `${pendingFile.name} · ${fmtSize(pendingFile.size)}` : undefined}
+        submitLabel="Upload"
+        busy={upload.isPending}
+        disabled={!form.vendorId || vendorOptions.length === 0}
+        onSubmit={submitUpload}
+      >
+        {vendorOptions.length === 0 && (
+          <p className="text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>
+            No vendors are registered. A document must belong to a vendor record.
+          </p>
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Vendor" required hint="Stored as the vendor's id.">
+            <Select value={form.vendorId} onValueChange={(v) => set('vendorId', v)}>
+              <SelectTrigger className="h-9"><SelectValue placeholder="Select a vendor" /></SelectTrigger>
+              <SelectContent>
+                {vendorOptions.map((v) => <SelectItem key={v.id} value={v.id}>{v.name || 'Unnamed vendor'}</SelectItem>)}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Document type">
+            <Select value={form.docType} onValueChange={(v) => set('docType', v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>{DOCUMENT_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+            </Select>
+          </Field>
+          <Field label="Title">
+            <Input value={form.title} onChange={(e) => set('title', e.target.value)} />
+          </Field>
+          <Field label="Confidentiality">
+            <Select value={form.confidentiality} onValueChange={(v) => set('confidentiality', v)}>
+              <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {['public', 'internal', 'confidential', 'restricted'].map((c) => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Valid from">
+            <Input type="date" value={form.validFrom} onChange={(e) => set('validFrom', e.target.value)} />
+          </Field>
+          <Field label="Expires" hint="Drives the expiry KPI and the renewal reminder.">
+            <Input type="date" value={form.expiresAt} onChange={(e) => set('expiresAt', e.target.value)} />
+          </Field>
+          <Field label="Renewal lead (days)">
+            <Input inputMode="numeric" value={form.renewalLeadDays} onChange={(e) => set('renewalLeadDays', e.target.value)} />
+          </Field>
+        </div>
+      </FormDialog>
+
+      {/* ── Reject ────────────────────────────────────────────────────────── */}
+      <FormDialog
         open={!!rejectTarget}
-        title="Reject Submission"
-        description={`Reject "${rejectTarget?.filename}" from ${rejectTarget?.vendor}? The vendor will be notified that their submission was not accepted.`}
-        confirmLabel="Reject"
-        type="danger"
-        onConfirm={confirmReject}
-        onClose={() => setRejectTarget(null)}
-      />
+        onOpenChange={(o) => { if (!o) setRejectTarget(null) }}
+        title="Reject this document"
+        description="Rejection is recorded against your signed-in identity and written to the audit log."
+        submitLabel="Reject document"
+        busy={review.isPending}
+        disabled={!rejectNotes.trim()}
+        onSubmit={() => {
+          if (!rejectTarget) return
+          review.mutate({ id: rejectTarget.id, decision: 'rejected', notes: rejectNotes }, {
+            onSuccess: () => { setRejectTarget(null); setRejectNotes('') },
+          })
+        }}
+      >
+        <Field label="Reason" required hint="The vendor needs to know what to fix.">
+          <textarea
+            value={rejectNotes}
+            onChange={(e) => setRejectNotes(e.target.value)}
+            className="h-24 w-full resize-none p-2 text-xs"
+            style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))' }}
+          />
+        </Field>
+      </FormDialog>
+
       <ConfirmDialog
         open={!!deleteTarget}
-        title="Remove Submission"
-        description={`Permanently remove "${deleteTarget?.filename}" from ${deleteTarget?.vendor}? This cannot be undone.`}
-        confirmLabel="Remove"
+        onOpenChange={(o) => { if (!o) setDeleteTarget(null) }}
+        title="Delete this document?"
+        description="The record and the stored file are removed. If the document is cited as evidence on an assessment, that link is broken. This cannot be undone."
+        confirmLabel="Delete document"
         type="danger"
-        onConfirm={confirmDelete}
-        onClose={() => setDeleteTarget(null)}
+        onConfirm={async () => {
+          if (!deleteTarget) return false
+          await remove.mutateAsync(deleteTarget.id)
+          setDeleteTarget(null)
+        }}
       />
     </div>
   )

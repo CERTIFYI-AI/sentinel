@@ -210,7 +210,7 @@ lines.push("");
 lines.push(`COMMIT;`);
 lines.push(`-- Summary: 1 org + 12 users + 22 frameworks + 150 controls + 120 evidence + 60 incidents + 80 risks + 40 vendors + ${assignCount} training = ${12 + 22 + 150 + 120 + 60 + 80 + 40 + assignCount} rows (+1 org).`);
 
-const outPath = path.join(OUT_DIR, "20260421_ws09_seed.sql");
+const outPath = path.join(OUT_DIR, "20260421000020_ws09_seed.sql");
 fs.writeFileSync(outPath, lines.join("\n") + "\n", "utf8");
 
 const total = 12 + 22 + 150 + 120 + 60 + 80 + 40 + assignCount;

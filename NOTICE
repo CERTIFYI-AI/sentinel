@@ -1,0 +1,14 @@
+Sentinel AI GRC
+Copyright 2026 CERTIFYI-AI
+
+This product includes software developed at CERTIFYI-AI
+(https://certifyi.ai), licensed under the Apache License, Version 2.0.
+
+Compliance framework catalogs under frameworks/ contain only control
+identifiers and short titles, referencing the respective authorities
+(ISO/IEC, NIST, AICPA, EU, and others). The authoritative requirement
+texts are available from those bodies and are not reproduced here.
+
+Demo seed data in supabase/migrations/ and data/ is entirely fictional.
+Names of real institutions appear only as narrative context for the demo
+scenario and do not represent real data, customers, or endorsements.

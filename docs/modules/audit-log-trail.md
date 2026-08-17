@@ -20,3 +20,7 @@ Insert-only RLS. Log schema documented in `../compliance/audit-log-schema.md`. E
 
 ## Access
 Read restricted to auditor/viewer roles; search + export rate-limited and itself audited (meta-audit).
+
+
+## Data backing (corrected 2026-08)
+- One `audit_log` table serving two writer shapes: the flat module/entity columns (universal trigger, `auditLogger`) and the action/resource columns written by `audit_client_event` (SECURITY DEFINER; org + actor forced server-side). The trail renders both; a warning banner surfaces failing writes. IP/user-agent/correlation fields exist as nullable columns and are populated only by server-side writers.

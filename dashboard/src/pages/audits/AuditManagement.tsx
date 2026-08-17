@@ -1,651 +1,817 @@
-import { useState, useMemo, useCallback } from 'react';
+// SPDX-License-Identifier: Apache-2.0
+// Audit Management — real org-scoped backend (audits / audit_findings via
+// useComplianceGroup). Findings interlink to controls and remediation plans;
+// a finding can spawn a real remediation_plans row through the incident
+// pipeline. No invented metrics: KPIs are counts over loaded records only.
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
+import { Label } from '../../components/ui/label';
+import { Textarea } from '../../components/ui/textarea';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '../../components/ui/alert-dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
+import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { PageHeader } from '../../components/ui/PageHeader';
+import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { StatCardRow } from '../../components/ui/StatCardRow';
+import type { StatCardRowItem } from '../../components/ui/StatCardRow';
+import { FilterBar } from '../../components/ui/FilterBar';
+import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import {
-  ClipboardText, MagnifyingGlass, Export, Plus, Eye, Warning, CheckCircle,
-  Clock, CalendarCheck, User, Flag, ArrowRight, CaretDown, ListChecks,
-  PencilSimple, Trash,
+  ClipboardText, Export, Plus, Eye, Warning, CheckCircle,
+  CalendarCheck, User, PencilSimple, Trash, Wrench,
 } from '@phosphor-icons/react';
 import { useSettingsStore } from '../../stores/settingsStore';
+import { useAudits, useAuditFindings } from '../../hooks/useComplianceGroup';
+import { useRemediations } from '../../hooks/useRiskIncidents';
+import { useControls } from '../../hooks/queries/useControls';
+import { useRisksData } from '../../hooks/useRisksData';
+import type { AuditRecord, AuditFindingRecord } from '../../services/complianceOpsService';
+import type { RemediationRecord } from '../../services/incidentResponseService';
+import { exportCsv } from '../../lib/exportUtils';
+import { severityColor, statusColor, formatDate } from '../../data/seed';
 
+/* ── Constants ─────────────────────────────────────────────────────────── */
 
-/* ── Types ──────────────────────────────────────────────────────────────────── */
+const AUDIT_STATUSES = [
+  { value: 'planned', label: 'Planned' },
+  { value: 'in_progress', label: 'In Progress' },
+  { value: 'completed', label: 'Completed' },
+  { value: 'cancelled', label: 'Cancelled' },
+];
+const AUDIT_TYPES = ['internal', 'external', 'certification', 'regulator'];
+const FINDING_SEVERITIES = ['minor', 'moderate', 'major', 'critical'];
+const FINDING_STATUSES = [
+  { value: 'open', label: 'Open' },
+  { value: 'in_remediation', label: 'In Remediation' },
+  { value: 'closed', label: 'Closed' },
+];
 
-interface AuditFinding {
-  id: string;
+// audit_findings severity vocabulary → the platform's risk color scale.
+const SEVERITY_TO_SCALE: Record<string, string> = {
+  critical: 'critical', major: 'high', moderate: 'medium', minor: 'low',
+};
+const findingSeverityStyle = (s?: string) =>
+  severityColor(SEVERITY_TO_SCALE[(s || '').toLowerCase()] ?? 'medium');
+
+// Remediation priority derived from finding severity.
+const SEVERITY_TO_PRIORITY: Record<string, string> = {
+  critical: 'critical', major: 'high', moderate: 'medium', minor: 'low',
+};
+
+const typeBadgeStyle = (t?: string): React.CSSProperties => {
+  const map: Record<string, { bg: string; tx: string }> = {
+    internal: { bg: 'hsl(var(--s-in-bg))', tx: 'hsl(var(--s-in-tx))' },
+    external: { bg: 'hsl(var(--s-wn-bg))', tx: 'hsl(var(--s-wn-tx))' },
+    certification: { bg: 'hsl(var(--s-ok-bg))', tx: 'hsl(var(--s-ok-tx))' },
+    regulator: { bg: 'hsl(var(--s-er-bg))', tx: 'hsl(var(--s-er-tx))' },
+  };
+  const s = map[(t || '').toLowerCase()] ?? { bg: 'hsl(var(--bg-muted))', tx: 'hsl(var(--text-3))' };
+  return { background: s.bg, color: s.tx, borderRadius: 0, fontSize: 10 };
+};
+
+/* ── Forms ─────────────────────────────────────────────────────────────── */
+
+interface AuditForm {
+  id?: string;
+  auditRef: string;
   title: string;
-  severity: 'Critical' | 'High' | 'Medium' | 'Low';
-  status: 'Open' | 'In Progress' | 'Resolved' | 'Accepted';
-  description: string;
-  owner: string;
-  dueDate: string;
-}
-
-interface AuditActionItem {
-  id: string;
-  title: string;
-  assignee: string;
-  status: 'Pending' | 'In Progress' | 'Complete' | 'Overdue';
-  dueDate: string;
-  priority: 'High' | 'Medium' | 'Low';
-}
-
-interface AuditEvidence {
-  id: string;
-  name: string;
-  type: string;
-  uploadedBy: string;
-  date: string;
-  status: 'Accepted' | 'Pending Review' | 'Rejected';
-}
-
-interface AuditTimeline {
-  id: string;
-  date: string;
-  event: string;
-  user: string;
-}
-
-interface Audit {
-  id: string;
+  auditType: string;
   framework: string;
   scope: string;
   auditor: string;
-  status: 'Planning' | 'In Progress' | 'Review' | 'Closed';
+  status: string;
   startDate: string;
   endDate: string;
-  findingsCount: number;
-  riskRating: 'Critical' | 'High' | 'Medium' | 'Low';
+  owner: string;
   description: string;
-  findings: AuditFinding[];
-  actionItems: AuditActionItem[];
-  evidence: AuditEvidence[];
-  timeline: AuditTimeline[];
 }
 
-/* ── Seed Data ──────────────────────────────────────────────────────────────── */
+const EMPTY_AUDIT_FORM: AuditForm = {
+  auditRef: '', title: '', auditType: 'internal', framework: '', scope: '',
+  auditor: '', status: 'planned', startDate: '', endDate: '', owner: '', description: '',
+};
 
-const AUDITS: Audit[] = [
-  {
-    id: 'AUD-001', framework: 'ISO 27001', scope: 'Information Security Management System — All AI Systems',
-    auditor: 'Deloitte LLP', status: 'In Progress', startDate: '2026-01-15', endDate: '2026-04-30',
-    findingsCount: 8, riskRating: 'Medium',
-    description: 'Annual ISO 27001 recertification audit covering ISMS for all AI-powered systems at Acme Financial Corp, including model training infrastructure and data pipelines.',
-    findings: [
-      { id: 'F-001', title: 'Incomplete access review logs for model training servers', severity: 'High', status: 'In Progress', description: 'Access reviews for GPU cluster nodes not performed quarterly as required by A.9.2.5.', owner: 'David Kim', dueDate: '2026-03-15' },
-      { id: 'F-002', title: 'Missing encryption at rest for staging model artifacts', severity: 'Medium', status: 'Open', description: 'Model checkpoints in staging environment stored without AES-256 encryption.', owner: 'Priya Sharma', dueDate: '2026-04-01' },
-      { id: 'F-003', title: 'Outdated incident response procedures for AI-specific threats', severity: 'High', status: 'Resolved', description: 'IR playbook does not include adversarial attack or model poisoning scenarios.', owner: 'James Wilson', dueDate: '2026-02-28' },
-    ],
-    actionItems: [
-      { id: 'ACT-001', title: 'Implement quarterly access review automation', assignee: 'David Kim', status: 'In Progress', dueDate: '2026-03-15', priority: 'High' },
-      { id: 'ACT-002', title: 'Enable encryption for staging model artifacts', assignee: 'Priya Sharma', status: 'Pending', dueDate: '2026-04-01', priority: 'Medium' },
-      { id: 'ACT-003', title: 'Update IR playbook with AI threat scenarios', assignee: 'James Wilson', status: 'Complete', dueDate: '2026-02-28', priority: 'High' },
-    ],
-    evidence: [
-      { id: 'EV-001', name: 'Access Review Report Q4 2025', type: 'PDF', uploadedBy: 'David Kim', date: '2026-01-20', status: 'Accepted' },
-      { id: 'EV-002', name: 'Encryption Configuration Screenshot', type: 'PNG', uploadedBy: 'Priya Sharma', date: '2026-02-10', status: 'Pending Review' },
-    ],
-    timeline: [
-      { id: 'TL-001', date: '2026-01-15', event: 'Audit kickoff meeting held', user: 'Sarah Chen' },
-      { id: 'TL-002', date: '2026-01-22', event: 'Document request list sent to teams', user: 'Deloitte LLP' },
-      { id: 'TL-003', date: '2026-02-05', event: 'Fieldwork phase started', user: 'Deloitte LLP' },
-      { id: 'TL-004', date: '2026-03-01', event: 'Draft findings shared for management response', user: 'Deloitte LLP' },
-    ],
-  },
-  {
-    id: 'AUD-002', framework: 'SOC 2 Type II', scope: 'AI Platform Trust Services Criteria',
-    auditor: 'PwC', status: 'Planning', startDate: '2026-05-01', endDate: '2026-08-31',
-    findingsCount: 0, riskRating: 'Low',
-    description: 'SOC 2 Type II examination covering Security, Availability, and Confidentiality trust services criteria for Acme Financial Corp AI platform.',
-    findings: [],
-    actionItems: [
-      { id: 'ACT-004', title: 'Prepare SOC 2 evidence package', assignee: 'Sarah Chen', status: 'Pending', dueDate: '2026-04-15', priority: 'High' },
-      { id: 'ACT-005', title: 'Complete vendor risk assessments', assignee: 'Michael Torres', status: 'Pending', dueDate: '2026-04-20', priority: 'Medium' },
-    ],
-    evidence: [],
-    timeline: [
-      { id: 'TL-005', date: '2026-03-10', event: 'Engagement letter signed with PwC', user: 'Sarah Chen' },
-      { id: 'TL-006', date: '2026-03-25', event: 'Pre-audit readiness assessment scheduled', user: 'PwC' },
-    ],
-  },
-  {
-    id: 'AUD-003', framework: 'EU AI Act', scope: 'High-Risk AI System Conformity Assessment',
-    auditor: 'BSI Group', status: 'In Progress', startDate: '2026-02-01', endDate: '2026-05-15',
-    findingsCount: 5, riskRating: 'High',
-    description: 'Conformity assessment for Acme Financial Corp high-risk AI systems under EU AI Act Article 43, covering credit scoring, fraud detection, and AML models.',
-    findings: [
-      { id: 'F-004', title: 'Insufficient documentation of training data provenance', severity: 'Critical', status: 'Open', description: 'Article 10 requires detailed data governance. Credit scoring model lacks complete lineage for 3 of 12 training data sources.', owner: 'Emily Rodriguez', dueDate: '2026-03-30' },
-      { id: 'F-005', title: 'Bias testing coverage gaps for protected characteristics', severity: 'High', status: 'In Progress', description: 'Article 10(2)(f) bias testing incomplete — age and disability not tested for fraud detection model.', owner: 'Amir Hassan', dueDate: '2026-04-15' },
-    ],
-    actionItems: [
-      { id: 'ACT-006', title: 'Complete data provenance documentation', assignee: 'Emily Rodriguez', status: 'In Progress', dueDate: '2026-03-30', priority: 'High' },
-      { id: 'ACT-007', title: 'Extend bias testing to all protected characteristics', assignee: 'Amir Hassan', status: 'In Progress', dueDate: '2026-04-15', priority: 'High' },
-    ],
-    evidence: [
-      { id: 'EV-003', name: 'Credit Scoring Model Card v2.1', type: 'PDF', uploadedBy: 'Emily Rodriguez', date: '2026-02-20', status: 'Accepted' },
-      { id: 'EV-004', name: 'Bias Audit Report — Fraud Detection', type: 'PDF', uploadedBy: 'Amir Hassan', date: '2026-03-05', status: 'Pending Review' },
-    ],
-    timeline: [
-      { id: 'TL-007', date: '2026-02-01', event: 'Conformity assessment initiated', user: 'BSI Group' },
-      { id: 'TL-008', date: '2026-02-15', event: 'High-risk AI system inventory verified', user: 'Sarah Chen' },
-      { id: 'TL-009', date: '2026-03-01', event: 'Technical documentation review started', user: 'BSI Group' },
-    ],
-  },
-  {
-    id: 'AUD-004', framework: 'NIST AI RMF', scope: 'AI Risk Management Framework Gap Analysis',
-    auditor: 'Internal Audit', status: 'Review', startDate: '2026-01-05', endDate: '2026-03-31',
-    findingsCount: 12, riskRating: 'Medium',
-    description: 'Internal gap analysis against NIST AI RMF functions: Govern, Map, Measure, Manage. Assessing Acme Financial Corp readiness for NIST AI RMF adoption.',
-    findings: [
-      { id: 'F-006', title: 'No formal AI risk appetite statement', severity: 'Medium', status: 'Open', description: 'GOVERN 1.1 — Organization lacks a formal AI risk appetite statement approved by the board.', owner: 'Sarah Chen', dueDate: '2026-04-15' },
-      { id: 'F-007', title: 'Incomplete model impact assessments', severity: 'Medium', status: 'In Progress', description: 'MAP 1.1 — Impact assessments not performed for 4 of 18 production models.', owner: 'Michael Torres', dueDate: '2026-04-01' },
-    ],
-    actionItems: [
-      { id: 'ACT-008', title: 'Draft AI risk appetite statement for board approval', assignee: 'Sarah Chen', status: 'In Progress', dueDate: '2026-04-15', priority: 'High' },
-      { id: 'ACT-009', title: 'Complete remaining model impact assessments', assignee: 'Michael Torres', status: 'In Progress', dueDate: '2026-04-01', priority: 'Medium' },
-    ],
-    evidence: [
-      { id: 'EV-005', name: 'NIST AI RMF Self-Assessment Workbook', type: 'XLSX', uploadedBy: 'Sarah Chen', date: '2026-01-10', status: 'Accepted' },
-    ],
-    timeline: [
-      { id: 'TL-010', date: '2026-01-05', event: 'Gap analysis project initiated', user: 'Sarah Chen' },
-      { id: 'TL-011', date: '2026-02-01', event: 'Function-level assessment completed', user: 'Internal Audit' },
-      { id: 'TL-012', date: '2026-03-15', event: 'Draft report submitted for review', user: 'Internal Audit' },
-    ],
-  },
-  {
-    id: 'AUD-005', framework: 'GDPR', scope: 'Data Protection Assessment — AI Data Processing',
-    auditor: 'Internal DPO', status: 'Closed', startDate: '2025-10-01', endDate: '2025-12-20',
-    findingsCount: 6, riskRating: 'Medium',
-    description: 'GDPR Data Protection Impact Assessment for AI systems processing personal data at Acme Financial Corp, covering consent management, data minimization, and cross-border transfers.',
-    findings: [
-      { id: 'F-008', title: 'Consent records not linked to specific AI processing purposes', severity: 'High', status: 'Resolved', description: 'Article 6/7 — Consent management system does not map consent to individual AI model training purposes.', owner: 'Legal Team', dueDate: '2025-12-01' },
-      { id: 'F-009', title: 'Data retention policy not enforced for model training datasets', severity: 'Medium', status: 'Resolved', description: 'Article 5(1)(e) — Training data retained beyond stated 24-month retention period.', owner: 'Data Engineering', dueDate: '2025-12-15' },
-    ],
-    actionItems: [
-      { id: 'ACT-010', title: 'Implement consent-purpose mapping', assignee: 'Legal Team', status: 'Complete', dueDate: '2025-12-01', priority: 'High' },
-      { id: 'ACT-011', title: 'Enforce data retention automation', assignee: 'Data Engineering', status: 'Complete', dueDate: '2025-12-15', priority: 'Medium' },
-    ],
-    evidence: [
-      { id: 'EV-006', name: 'DPIA Report — AI Processing Activities', type: 'PDF', uploadedBy: 'DPO Office', date: '2025-10-15', status: 'Accepted' },
-      { id: 'EV-007', name: 'Updated Consent Management Screenshots', type: 'PDF', uploadedBy: 'Legal Team', date: '2025-11-20', status: 'Accepted' },
-    ],
-    timeline: [
-      { id: 'TL-013', date: '2025-10-01', event: 'DPIA initiated for AI processing activities', user: 'DPO Office' },
-      { id: 'TL-014', date: '2025-11-15', event: 'All findings remediated', user: 'Internal DPO' },
-      { id: 'TL-015', date: '2025-12-20', event: 'Audit closed — all items resolved', user: 'Sarah Chen' },
-    ],
-  },
-  {
-    id: 'AUD-006', framework: 'Internal AI Ethics', scope: 'AI Ethics & Responsible AI Program Review',
-    auditor: 'Ethics Committee', status: 'In Progress', startDate: '2026-03-01', endDate: '2026-06-30',
-    findingsCount: 3, riskRating: 'Low',
-    description: 'Annual review of Acme Financial Corp AI Ethics Program, covering fairness metrics, transparency commitments, human oversight mechanisms, and stakeholder engagement.',
-    findings: [
-      { id: 'F-010', title: 'Fairness dashboards not accessible to all stakeholders', severity: 'Low', status: 'Open', description: 'Fairness metrics dashboards restricted to ML engineers — product managers and compliance lack access.', owner: 'Platform Team', dueDate: '2026-05-01' },
-    ],
-    actionItems: [
-      { id: 'ACT-012', title: 'Extend fairness dashboard access to compliance and product teams', assignee: 'Platform Team', status: 'Pending', dueDate: '2026-05-01', priority: 'Low' },
-    ],
-    evidence: [
-      { id: 'EV-008', name: 'AI Ethics Program Annual Report 2025', type: 'PDF', uploadedBy: 'Ethics Committee', date: '2026-03-05', status: 'Accepted' },
-    ],
-    timeline: [
-      { id: 'TL-016', date: '2026-03-01', event: 'Ethics review commenced', user: 'Ethics Committee' },
-      { id: 'TL-017', date: '2026-03-20', event: 'Stakeholder interviews completed', user: 'Ethics Committee' },
-    ],
-  },
-];
-
-/* ── Helpers ─────────────────────────────────────────────────────────────────── */
-
-function statusStyle(s: string) {
-  const map: Record<string, { bg: string; text: string }> = {
-    Planning: { bg: 'hsl(var(--s-in-bg))', text: 'hsl(var(--s-in-tx))' },
-    'In Progress': { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' },
-    Review: { bg: 'hsl(280 60% 50% / 0.12)', text: 'hsl(280 60% 40%)' },
-    Closed: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' },
-  };
-  return map[s] || map.Planning;
+interface FindingForm {
+  id?: string;
+  findingRef: string;
+  title: string;
+  description: string;
+  severity: string;
+  status: string;
+  dueDate: string;
+  owner: string;
+  /** → controls.id (picked from the control library, never typed by hand). */
+  linkedControlId: string;
+  /** → risks.id (uuid). */
+  linkedRiskId: string;
 }
 
-function riskStyle(r: string) {
-  const map: Record<string, { bg: string; text: string }> = {
-    Critical: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--destructive))' },
-    High: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(25 95% 45%)' },
-    Medium: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' },
-    Low: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' },
-  };
-  return map[r] || map.Low;
-}
+const EMPTY_FINDING_FORM: FindingForm = {
+  findingRef: '', title: '', description: '', severity: 'moderate',
+  status: 'open', dueDate: '', owner: '', linkedControlId: '', linkedRiskId: '',
+};
 
-function findingSeverityStyle(s: string) {
-  return riskStyle(s);
-}
-
-function formatDate(d: string) {
-  if (!d) return '—';
-  return new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-}
-
-/* ── Metric Tile ─────────────────────────────────────────────────────────────── */
-
-function MetricTile({ label, value, variant, icon, sub }: {
-  label: string; value: string; variant: 'ok' | 'warn' | 'error' | 'info';
-  icon: React.ReactNode; sub?: string;
-}) {
-  const vs: Record<string, { bg: string; color: string }> = {
-    ok: { bg: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
-    warn: { bg: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
-    error: { bg: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' },
-    info: { bg: 'hsl(var(--s-in-bg))', color: 'hsl(var(--s-in-tx))' },
-  };
-  const s = vs[variant];
-  return (
-    <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
-          <div className="p-1.5" style={{ background: s.bg, borderRadius: 0 }}>{icon}</div>
-        </div>
-        <div className="text-2xl font-bold" style={{ color: s.color }}>{value}</div>
-        {sub && <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-4))' }}>{sub}</p>}
-      </CardContent>
-    </Card>
-  );
-}
-
-/* ── Toast ────────────────────────────────────────────────────────────────────── */
-
-interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info' }
-
-/* ── Component ────────────────────────────────────────────────────────────────── */
+/* ── Component ─────────────────────────────────────────────────────────── */
 
 export default function AuditManagement() {
   const { orgName } = useSettingsStore();
-  const [audits, setAudits] = useState<Audit[]>(AUDITS);
+  const audits = useAudits();
+  const findings = useAuditFindings();
+  const remediations = useRemediations();
+  // Control library + risk register for resolved interlink labels and the
+  // finding form's control picker — ids are stored, names resolve at render.
+  const controlsQuery = useControls();
+  const { risks } = useRisksData();
+  const [searchParams, setSearchParams] = useSearchParams();
+
   const [search, setSearch] = useState('');
   const [filterStatus, setFilterStatus] = useState('all');
-  const [selected, setSelected] = useState<Audit | null>(null);
-  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [selected, setSelected] = useState<AuditRecord | null>(null);
+  const [auditDialogOpen, setAuditDialogOpen] = useState(false);
+  const [auditForm, setAuditForm] = useState<AuditForm>(EMPTY_AUDIT_FORM);
+  const [deleteTarget, setDeleteTarget] = useState<AuditRecord | null>(null);
+  const [findingDialogOpen, setFindingDialogOpen] = useState(false);
+  const [findingForm, setFindingForm] = useState<FindingForm>(EMPTY_FINDING_FORM);
+  const [deleteFindingTarget, setDeleteFindingTarget] = useState<AuditFindingRecord | null>(null);
+  // Which finding currently has a remediation-plan write in flight.
+  const [remediatingId, setRemediatingId] = useState<string | null>(null);
 
-  // CRUD state
-  const [addOpen, setAddOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<Audit | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
-  const [form, setForm] = useState({ framework: '', scope: '', auditor: '', startDate: '', endDate: '', riskRating: 'Medium' as Audit['riskRating'], status: 'Planning' as Audit['status'], description: '' });
+  // Deep link: ?open=<id> opens that audit once data is loaded.
+  useEffect(() => {
+    const openId = searchParams.get('open');
+    if (!openId || audits.isLoading) return;
+    const match = audits.items.find(a => a.id === openId);
+    if (match) setSelected(match);
+    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('open'); return next; }, { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audits.isLoading, audits.items.length]);
 
-  const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now();
-    setToasts(prev => [...prev, { id, text, type }]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
-  }, []);
+  const findingsByAudit = useMemo(() => {
+    const map = new Map<string, AuditFindingRecord[]>();
+    for (const f of findings.items) {
+      const list = map.get(f.auditId) ?? [];
+      list.push(f);
+      map.set(f.auditId, list);
+    }
+    return map;
+  }, [findings.items]);
 
-  const handleAdd = () => {
-    if (!form.framework || !form.scope || !form.auditor || !form.startDate || !form.endDate) { toast('Please fill all required fields.', 'error'); return; }
-    const newAudit: Audit = {
-      id: `AUD-${String(audits.length + 1).padStart(3, '0')}`,
-      ...form,
-      findingsCount: 0,
-      findings: [],
-      actionItems: [],
-      evidence: [],
-      timeline: [{ id: `TL-${Date.now()}`, date: new Date().toISOString().split('T')[0], event: 'Audit created', user: 'Sarah Chen' }],
-    };
-    setAudits(prev => [newAudit, ...prev]);
-    setAddOpen(false);
-    setForm({ framework: '', scope: '', auditor: '', startDate: '', endDate: '', riskRating: 'Medium', status: 'Planning', description: '' });
-    toast(`Audit ${newAudit.id} created successfully`);
+  // Findings count is DERIVED from the loaded findings, never read from the
+  // stored audits.findings_count column (which drifts as findings change).
+  const findingsCountFor = (auditId?: string): number =>
+    auditId ? (findingsByAudit.get(auditId)?.length ?? 0) : 0;
+
+  // Remediation plans already raised from a finding. Plans store
+  // source_type='audit_finding' with source_id as either the finding uuid or
+  // its finding_ref (both exist in the wild — e.g. the seeded REM-2026-001
+  // carries AF-007's uuid), so match on either key.
+  const plansForFinding = (f: AuditFindingRecord): RemediationRecord[] =>
+    remediations.items.filter(p =>
+      p.sourceType === 'audit_finding' &&
+      !!p.sourceId &&
+      (p.sourceId === f.id || (!!f.findingRef && p.sourceId === f.findingRef)));
+
+  const controls = controlsQuery.data ?? [];
+  // Resolved display label for a linked control — never a raw uuid.
+  const controlLabel = (id: string) => {
+    const c = controls.find(x => x.id === id);
+    if (!c) return 'Unavailable';
+    const name = c.name || c.title || 'Untitled control';
+    return c.controlRef ? `${c.controlRef} — ${name}` : name;
+  };
+  // Resolved display label for a linked risk — never a raw uuid.
+  const riskLabel = (id: string) => {
+    const r = risks.find(x => x.id === id);
+    return r ? (r.risk_id ? `${r.risk_id} — ${r.title}` : r.title) : 'Unavailable';
   };
 
-  const handleEdit = () => {
-    if (!editTarget) return;
-    setAudits(prev => prev.map(a => a.id === editTarget.id ? { ...a, ...form } : a));
-    setEditTarget(null);
-    toast('Audit updated successfully');
-  };
-
-  const handleDelete = () => {
-    if (!deleteId) return;
-    setAudits(prev => prev.filter(a => a.id !== deleteId));
-    if (selected?.id === deleteId) setSelected(null);
-    toast('Audit deleted', 'info');
-    setDeleteId(null);
-  };
-
-  const openEdit = (audit: Audit, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setForm({ framework: audit.framework, scope: audit.scope, auditor: audit.auditor, startDate: audit.startDate, endDate: audit.endDate, riskRating: audit.riskRating, status: audit.status, description: audit.description });
-    setEditTarget(audit);
-  };
-
-  const filtered = useMemo(() => audits.filter(a => {
+  const filtered = useMemo(() => audits.items.filter(a => {
     if (search) {
       const q = search.toLowerCase();
-      if (!a.id.toLowerCase().includes(q) && !a.framework.toLowerCase().includes(q) && !a.scope.toLowerCase().includes(q) && !a.auditor.toLowerCase().includes(q)) return false;
+      const hay = [a.auditRef, a.title, a.framework, a.scope, a.auditor, a.leadAuditor]
+        .filter(Boolean).join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
     }
     if (filterStatus !== 'all' && a.status !== filterStatus) return false;
     return true;
-  }), [audits, search, filterStatus]);
+  }), [audits.items, search, filterStatus]);
 
-  const activeAudits = audits.filter(a => a.status !== 'Closed').length;
-  const findingsOpen = audits.reduce((sum, a) => sum + a.findings.filter(f => f.status !== 'Resolved').length, 0);
-  const overdueActions = audits.reduce((sum, a) => sum + a.actionItems.filter(ai => ai.status === 'Overdue' || (ai.status !== 'Complete' && new Date(ai.dueDate) < new Date())).length, 0);
-  const avgScore = audits.length > 0 ? Math.round(audits.filter(a => a.status === 'Closed').reduce((s, a) => s + (100 - a.findingsCount * 3), 0) / Math.max(audits.filter(a => a.status === 'Closed').length, 1)) : 0;
+  const activeCount = audits.items.filter(a => ['planned', 'in_progress'].includes(a.status)).length;
+  const openFindings = findings.items.filter(f => f.status !== 'closed').length;
+  const inRemediation = findings.items.filter(f => f.status === 'in_remediation').length;
+  const overdueFindings = findings.items.filter(f =>
+    f.status !== 'closed' && f.dueDate && new Date(f.dueDate).getTime() < Date.now()).length;
+
+  const kpis: StatCardRowItem[] = [
+    { label: 'Active Audits', value: audits.items.length === 0 ? '—' : String(activeCount), icon: <ClipboardText size={18} style={{ color: 'hsl(var(--s-in-tx))' }} /> },
+    { label: 'Open Findings', value: findings.items.length === 0 ? '—' : String(openFindings), icon: <Warning size={18} style={{ color: 'hsl(var(--s-wn-tx))' }} /> },
+    { label: 'In Remediation', value: findings.items.length === 0 ? '—' : String(inRemediation), icon: <Wrench size={18} style={{ color: 'hsl(var(--brand))' }} /> },
+    { label: 'Overdue Findings', value: findings.items.length === 0 ? '—' : String(overdueFindings), icon: <CheckCircle size={18} style={{ color: 'hsl(var(--s-er-tx))' }} /> },
+  ];
+
+  /* ── Handlers (toasts are owned by the hooks — no fake success here) ── */
+
+  const openCreateAudit = () => { setAuditForm(EMPTY_AUDIT_FORM); setAuditDialogOpen(true); };
+  const openEditAudit = (a: AuditRecord) => {
+    setAuditForm({
+      id: a.id,
+      auditRef: a.auditRef ?? '',
+      title: a.title,
+      auditType: a.auditType ?? 'internal',
+      framework: a.framework ?? '',
+      scope: a.scope ?? '',
+      auditor: a.auditor ?? '',
+      status: a.status,
+      startDate: a.startDate ?? '',
+      endDate: a.endDate ?? '',
+      owner: a.owner ?? '',
+      description: a.description ?? '',
+    });
+    setAuditDialogOpen(true);
+  };
+
+  const handleSaveAudit = async () => {
+    if (!auditForm.title.trim()) return;
+    const existing = auditForm.id ? audits.items.find(a => a.id === auditForm.id) : undefined;
+    const record: AuditRecord = {
+      id: auditForm.id,
+      auditRef: auditForm.auditRef.trim() || undefined,
+      title: auditForm.title.trim(),
+      auditType: auditForm.auditType,
+      framework: auditForm.framework.trim() || undefined,
+      scope: auditForm.scope.trim() || undefined,
+      auditor: auditForm.auditor.trim() || undefined,
+      status: auditForm.status,
+      startDate: auditForm.startDate || null,
+      endDate: auditForm.endDate || null,
+      owner: auditForm.owner.trim() || null,
+      // Counts are backend/seed-owned — never recalculated client-side.
+      findingsCount: existing?.findingsCount ?? 0,
+      description: auditForm.description.trim() || undefined,
+    };
+    try {
+      const saved = await audits.save(record); // hook toasts success; throws on failure
+      setAuditDialogOpen(false);
+      if (selected?.id && selected.id === saved.id) setSelected(saved);
+    } catch { /* hook surfaces the error toast */ }
+  };
+
+  const handleDeleteAudit = async () => {
+    if (!deleteTarget?.id) return;
+    try {
+      await audits.remove(deleteTarget.id);
+      if (selected?.id === deleteTarget.id) setSelected(null);
+      setDeleteTarget(null);
+    } catch { /* hook surfaces the error toast */ }
+  };
+
+  const openCreateFinding = () => { setFindingForm(EMPTY_FINDING_FORM); setFindingDialogOpen(true); };
+  const openEditFinding = (f: AuditFindingRecord) => {
+    setFindingForm({
+      id: f.id,
+      findingRef: f.findingRef ?? '',
+      title: f.title,
+      description: f.description ?? '',
+      severity: f.severity ?? 'moderate',
+      status: f.status,
+      dueDate: f.dueDate ?? '',
+      owner: f.owner ?? '',
+      linkedControlId: f.linkedControlId ?? '',
+      linkedRiskId: f.linkedRiskId ?? '',
+    });
+    setFindingDialogOpen(true);
+  };
+
+  const handleSaveFinding = async () => {
+    if (!selected?.id || !findingForm.title.trim()) return;
+    const record: AuditFindingRecord = {
+      id: findingForm.id,
+      auditId: selected.id,
+      findingRef: findingForm.findingRef.trim() || undefined,
+      title: findingForm.title.trim(),
+      description: findingForm.description.trim() || undefined,
+      severity: findingForm.severity,
+      status: findingForm.status,
+      linkedControlId: findingForm.linkedControlId || null,
+      linkedRiskId: findingForm.linkedRiskId || null,
+      dueDate: findingForm.dueDate || null,
+      owner: findingForm.owner.trim() || null,
+    };
+    try {
+      await findings.save(record);
+      setFindingDialogOpen(false);
+    } catch { /* hook surfaces the error toast */ }
+  };
+
+  const handleDeleteFinding = async () => {
+    if (!deleteFindingTarget?.id) return;
+    try {
+      await findings.remove(deleteFindingTarget.id);
+      setDeleteFindingTarget(null);
+    } catch { /* hook surfaces the error toast */ }
+  };
+
+  // Raise a REAL remediation plan from a finding through the incident
+  // pipeline; the plan links back via source_type/source_id = finding_ref.
+  const handleCreateRemediation = async (f: AuditFindingRecord) => {
+    const ref = f.findingRef ?? f.id;
+    if (!ref) return;
+    setRemediatingId(f.id ?? ref);
+    const plan: RemediationRecord = {
+      title: f.findingRef ? `Remediate ${f.findingRef} — ${f.title}` : `Remediate — ${f.title}`,
+      status: 'planned',
+      priority: SEVERITY_TO_PRIORITY[(f.severity || '').toLowerCase()] ?? 'medium',
+      sourceType: 'audit_finding',
+      sourceId: ref,
+      dueDate: f.dueDate ?? null,
+      owner: f.owner ?? null,
+      progressPct: 0,
+      milestones: [],
+    };
+    try {
+      await remediations.save(plan); // hook toasts 'Plan saved'; throws on failure
+    } catch { /* hook surfaces the error toast */ }
+    setRemediatingId(null);
+  };
 
   const handleExport = () => {
-    const csv = ['Audit ID,Framework,Scope,Auditor,Status,Start Date,End Date,Findings,Risk Rating']
-      .concat(filtered.map(a => `${a.id},${a.framework},"${a.scope}",${a.auditor},${a.status},${a.startDate},${a.endDate},${a.findingsCount},${a.riskRating}`))
-      .join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url; link.download = 'audits.csv'; link.click();
-    URL.revokeObjectURL(url);
-    toast('Exported audits to CSV');
+    if (!filtered.length) return;
+    exportCsv(
+      filtered.map(a => ({
+        audit_ref: a.auditRef ?? '',
+        title: a.title,
+        type: a.auditType ?? '',
+        framework: a.framework ?? '',
+        auditor: a.auditor ?? '',
+        status: a.status,
+        start_date: a.startDate ?? '',
+        end_date: a.endDate ?? '',
+        // Derived from loaded findings — the stored column is not displayed.
+        findings_count: findingsCountFor(a.id),
+      })),
+      'audits.csv',
+    );
   };
+
+  if (audits.isLoading) return <PageSkeleton />;
+
+  const selectedFindings = selected?.id ? (findingsByAudit.get(selected.id) ?? []) : [];
 
   return (
     <div className="space-y-6">
-      {/* Toast */}
-      <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
-        {toasts.map(t => (
-          <div key={t.id} className="px-4 py-2 text-sm font-medium shadow-lg pointer-events-auto"
-            style={{ background: t.type === 'success' ? 'hsl(var(--s-ok-tx))' : t.type === 'error' ? 'hsl(var(--destructive))' : 'hsl(var(--s-in-tx))', color: 'hsl(var(--bg-surface))', borderRadius: 0, minWidth: 300 }}>
-            {t.text}
+      <PageHeader
+        title="Audit Management"
+        subtitle={`${orgName} · Internal, external and certification audits with tracked findings`}
+        breadcrumbs={[{ label: 'Dashboard', href: '/' }, { label: 'Audit Management' }]}
+        actions={
+          <div className="flex gap-2">
+            <Button size="sm" variant="outline" onClick={handleExport} disabled={!filtered.length} style={{ borderRadius: 0 }}>
+              <Export size={14} /> Export CSV
+            </Button>
+            <Button size="sm" onClick={openCreateAudit} style={{ borderRadius: 0 }}>
+              <Plus size={14} /> New Audit
+            </Button>
           </div>
-        ))}
-      </div>
+        }
+      />
 
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Audit Management</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>{orgName} · {audits.length} audits tracked</p>
+      <StatCardRow cards={kpis} />
+
+      {audits.error && (
+        <div role="alert" className="p-3 text-sm" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', color: 'hsl(var(--s-er-tx))' }}>
+          Failed to load audits: {(audits.error as Error).message}
         </div>
-        <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleExport} style={{ borderRadius: 0 }}>
-            <Export size={14} /> Export CSV
+      )}
+      {findings.error && (
+        <div role="alert" className="p-3 text-sm" style={{ background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--s-er-br))', color: 'hsl(var(--s-er-tx))' }}>
+          Failed to load audit findings: {(findings.error as Error).message}
+        </div>
+      )}
+
+      <FilterBar
+        search={search}
+        onSearchChange={setSearch}
+        searchPlaceholder="Search by ref, title, framework, auditor…"
+        filters={[
+          {
+            key: 'status', label: 'Status',
+            value: filterStatus === 'all' ? '' : filterStatus,
+            onChange: (v: string) => setFilterStatus(v || 'all'),
+            options: AUDIT_STATUSES.map(s => ({ label: s.label, value: s.value })),
+          },
+        ]}
+        activeFilterCount={filterStatus !== 'all' ? 1 : 0}
+        onClearAll={() => { setSearch(''); setFilterStatus('all'); }}
+        trailing={
+          <span className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
+            {filtered.length} of {audits.items.length} audits
+          </span>
+        }
+      />
+
+      {!audits.error && audits.items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 text-center" style={{ border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-3))' }}>
+          <ClipboardText size={40} />
+          <p className="mt-3 text-sm font-medium" style={{ color: 'hsl(var(--text-2))' }}>No audits recorded yet</p>
+          <p className="text-xs mt-1 max-w-md">Track internal reviews, external certification audits and regulator examinations — findings link to controls and remediation plans.</p>
+          <Button size="sm" className="mt-4" style={{ borderRadius: 0 }} onClick={openCreateAudit}>
+            <Plus size={14} /> New Audit
           </Button>
-          <Button size="sm" onClick={() => setAddOpen(true)} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus size={14} /> Start Audit
-          </Button>
         </div>
-      </div>
-
-      {/* KPIs */}
-      <div className="grid grid-cols-4 gap-4">
-        <MetricTile label="Active Audits" value={String(activeAudits)} variant="info" icon={<ClipboardText size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} sub="Currently in progress" />
-        <MetricTile label="Findings Open" value={String(findingsOpen)} variant="warn" icon={<Warning size={16} weight="fill" className="text-[hsl(var(--s-wn-tx))]" />} sub="Across all active audits" />
-        <MetricTile label="Overdue Actions" value={String(overdueActions)} variant="error" icon={<Clock size={16} weight="fill" className="text-[hsl(var(--s-er-tx))]" />} sub="Require immediate attention" />
-        <MetricTile label="Audit Score" value={avgScore > 0 ? `${avgScore}%` : '—'} variant="ok" icon={<CheckCircle size={16} weight="fill" className="text-[hsl(var(--s-ok-tx))]" />} sub="Average closed audit score" />
-      </div>
-
-      {/* Filters */}
-      <div className="flex items-center gap-3">
-        <div className="relative flex-1 max-w-xs">
-          <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2" style={{ color: 'hsl(var(--text-4))' }} />
-          <Input placeholder="Search audits..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9 h-8 text-xs" style={{ borderRadius: 0 }} />
-        </div>
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="h-8 w-36 text-xs" style={{ borderRadius: 0 }}>
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent style={{ borderRadius: 0 }}>
-            <SelectItem value="all">All Status</SelectItem>
-            <SelectItem value="Planning">Planning</SelectItem>
-            <SelectItem value="In Progress">In Progress</SelectItem>
-            <SelectItem value="Review">Review</SelectItem>
-            <SelectItem value="Closed">Closed</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Table */}
-      <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-        <CardContent className="p-0">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                  {['Audit ID', 'Framework', 'Scope', 'Auditor', 'Status', 'Start Date', 'End Date', 'Findings', 'Risk Rating', ''].map(h => (
-                    <th key={h} className="px-3 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(a => {
-                  const ss = statusStyle(a.status);
-                  const rs = riskStyle(a.riskRating);
-                  return (
-                    <tr key={a.id} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30 cursor-pointer" onClick={() => setSelected(a)}>
-                      <td className="px-3 py-2.5 text-xs font-mono font-medium" style={{ color: 'hsl(var(--brand))' }}>{a.id}</td>
-                      <td className="px-3 py-2.5 text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{a.framework}</td>
-                      <td className="px-3 py-2.5 text-xs max-w-[200px] truncate" style={{ color: 'hsl(var(--text-2))' }}>{a.scope}</td>
-                      <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.auditor}</td>
-                      <td className="px-3 py-2.5">
-                        <Badge style={{ background: ss.bg, color: ss.text, borderRadius: 0, fontSize: 10 }}>{a.status}</Badge>
-                      </td>
-                      <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(a.startDate)}</td>
-                      <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{formatDate(a.endDate)}</td>
-                      <td className="px-3 py-2.5 text-xs font-medium" style={{ color: a.findingsCount > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-3))' }}>{a.findingsCount}</td>
-                      <td className="px-3 py-2.5">
-                        <Badge style={{ background: rs.bg, color: rs.text, borderRadius: 0, fontSize: 10 }}>{a.riskRating}</Badge>
-                      </td>
-                      <td className="px-3 py-2.5">
-                        <div className="flex items-center gap-1">
-                          <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={e => { e.stopPropagation(); setSelected(a); }}>
-                            <Eye size={13} />
-                          </Button>
-                          <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={e => openEdit(a, e)}>
-                            <PencilSimple size={13} />
-                          </Button>
-                          <Button size="sm" variant="ghost" style={{ padding: '2px 6px', color: 'hsl(var(--destructive))' }} onClick={e => { e.stopPropagation(); setDeleteId(a.id); }}>
-                            <Trash size={13} />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Create / Edit Dialog */}
-      <Dialog open={addOpen || !!editTarget} onOpenChange={o => { if (!o) { setAddOpen(false); setEditTarget(null); } }}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 560 }}>
-          <DialogHeader>
-            <DialogTitle>{editTarget ? `Edit Audit — ${editTarget.id}` : 'Start New Audit'}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 py-2">
-            {[
-              { label: 'Framework *', key: 'framework', placeholder: 'e.g. ISO 27001, SOC 2, EU AI Act' },
-              { label: 'Scope *', key: 'scope', placeholder: 'Audit scope and coverage area' },
-              { label: 'Lead Auditor *', key: 'auditor', placeholder: 'e.g. Deloitte LLP, PwC, Internal' },
-              { label: 'Description', key: 'description', placeholder: 'Audit objective and background' },
-            ].map(f => (
-              <div key={f.key}>
-                <label className="text-xs font-medium text-[hsl(var(--text-3))] block mb-1">{f.label}</label>
-                <Input style={{ borderRadius: 0 }} placeholder={f.placeholder} value={(form as any)[f.key]} onChange={e => setForm(p => ({ ...p, [f.key]: e.target.value }))} />
+      ) : (
+        <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead style={{ background: 'hsl(var(--bg-muted))' }}>
+                  <tr>
+                    {['Ref', 'Title', 'Type', 'Framework', 'Auditor', 'Status', 'Start', 'End', 'Findings', ''].map(h => (
+                      <th key={h} className="px-3 py-3 text-left text-xs font-semibold whitespace-nowrap" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {filtered.map(a => {
+                    const sc = statusColor(a.status);
+                    return (
+                      <tr
+                        key={a.id}
+                        style={{ borderTop: '1px solid hsl(var(--border))' }}
+                        className="hover:bg-muted/30 cursor-pointer"
+                        onClick={() => setSelected(a)}
+                      >
+                        <td className="px-3 py-2.5 text-xs font-mono font-medium" style={{ color: 'hsl(var(--brand))' }}>{a.auditRef ?? '—'}</td>
+                        <td className="px-3 py-2.5 text-xs font-medium max-w-[240px] truncate" style={{ color: 'hsl(var(--text-1))' }}>{a.title}</td>
+                        <td className="px-3 py-2.5">
+                          {a.auditType ? <Badge style={typeBadgeStyle(a.auditType)}>{a.auditType}</Badge> : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>—</span>}
+                        </td>
+                        <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.framework ?? '—'}</td>
+                        <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-2))' }}>{a.auditor ?? '—'}</td>
+                        <td className="px-3 py-2.5">
+                          <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 10 }}>{a.status.replace(/_/g, ' ')}</Badge>
+                        </td>
+                        <td className="px-3 py-2.5 text-xs whitespace-nowrap" style={{ color: 'hsl(var(--text-3))' }}>{a.startDate ? formatDate(a.startDate) : '—'}</td>
+                        <td className="px-3 py-2.5 text-xs whitespace-nowrap" style={{ color: 'hsl(var(--text-3))' }}>{a.endDate ? formatDate(a.endDate) : '—'}</td>
+                        <td className="px-3 py-2.5 text-xs font-medium" style={{ color: findingsCountFor(a.id) > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-3))' }}>
+                          {findings.isLoading ? '—' : findingsCountFor(a.id)}
+                        </td>
+                        <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
+                          <div className="flex items-center gap-1">
+                            <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={() => setSelected(a)} aria-label="View audit">
+                              <Eye size={13} />
+                            </Button>
+                            <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={() => openEditAudit(a)} aria-label="Edit audit">
+                              <PencilSimple size={13} />
+                            </Button>
+                            <Button size="sm" variant="ghost" style={{ padding: '2px 6px', color: 'hsl(var(--destructive))' }} onClick={() => setDeleteTarget(a)} aria-label="Delete audit">
+                              <Trash size={13} />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+            {filtered.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12" style={{ color: 'hsl(var(--text-3))' }}>
+                <ClipboardText size={32} />
+                <p className="mt-2 text-sm">No audits match the current filters</p>
               </div>
-            ))}
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* ── Detail Sheet ── */}
+      <Sheet open={!!selected} onOpenChange={o => !o && setSelected(null)}>
+        <SheetContent side="right" className="w-[600px] sm:max-w-[600px] overflow-y-auto" style={{ borderRadius: 0 }}>
+          {selected && (
+            <>
+              <SheetHeader className="pb-4">
+                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>
+                  {selected.auditRef ? `${selected.auditRef} — ${selected.title}` : selected.title}
+                </SheetTitle>
+                <div className="flex gap-2 mt-1 flex-wrap">
+                  <Badge style={{ background: statusColor(selected.status).bg, color: statusColor(selected.status).text, borderRadius: 0, fontSize: 10 }}>
+                    {selected.status.replace(/_/g, ' ')}
+                  </Badge>
+                  {selected.auditType && <Badge style={typeBadgeStyle(selected.auditType)}>{selected.auditType}</Badge>}
+                  {selected.framework && <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>{selected.framework}</Badge>}
+                </div>
+              </SheetHeader>
+
+              <div className="space-y-3">
+                {selected.description && (
+                  <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{selected.description}</p>
+                )}
+                {[
+                  { label: 'Scope', value: selected.scope ?? '—' },
+                  { label: 'Auditor', value: selected.auditor ?? '—' },
+                  { label: 'Lead Auditor', value: selected.leadAuditor ?? '—' },
+                  { label: 'Owner', value: selected.owner ?? '—' },
+                  { label: 'Period', value: `${selected.startDate ? formatDate(selected.startDate) : '—'} → ${selected.endDate ? formatDate(selected.endDate) : '—'}` },
+                  { label: 'Findings on record', value: findings.isLoading ? '—' : String(findingsCountFor(selected.id)) },
+                ].map(r => (
+                  <div key={r.label} className="flex justify-between py-2 gap-4" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                    <span className="text-sm flex-shrink-0" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
+                    <span className="text-sm font-medium text-right" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
+                  </div>
+                ))}
+
+                {/* Findings */}
+                <div className="pt-2">
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                      Findings ({selectedFindings.length})
+                    </p>
+                    <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={openCreateFinding}>
+                      <Plus size={12} /> Add Finding
+                    </Button>
+                  </div>
+
+                  {findings.isLoading ? (
+                    <p className="text-xs py-4" style={{ color: 'hsl(var(--text-4))' }}>Loading findings…</p>
+                  ) : selectedFindings.length === 0 ? (
+                    <p className="text-sm py-6 text-center" style={{ color: 'hsl(var(--text-3))' }}>No findings recorded for this audit yet.</p>
+                  ) : (
+                    <div className="space-y-2">
+                      {selectedFindings.map(f => {
+                        const fs = findingSeverityStyle(f.severity);
+                        const plans = plansForFinding(f);
+                        const overdue = f.status !== 'closed' && f.dueDate && new Date(f.dueDate).getTime() < Date.now();
+                        return (
+                          <div key={f.id} className="p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>
+                                {f.findingRef && <span className="font-mono text-xs mr-1.5" style={{ color: 'hsl(var(--brand))' }}>{f.findingRef}</span>}
+                                {f.title}
+                              </p>
+                              <div className="flex items-center gap-1 flex-shrink-0">
+                                {f.severity && (
+                                  <Badge style={{ background: fs.bg, color: fs.text, border: `1px solid ${fs.border}`, borderRadius: 0, fontSize: 9, textTransform: 'uppercase' }}>
+                                    {f.severity}
+                                  </Badge>
+                                )}
+                                <Badge variant="outline" style={{ borderRadius: 0, fontSize: 9 }}>{f.status.replace(/_/g, ' ')}</Badge>
+                              </div>
+                            </div>
+                            {f.description && <p className="text-xs mb-2" style={{ color: 'hsl(var(--text-3))' }}>{f.description}</p>}
+                            <div className="flex items-center gap-3 text-xs flex-wrap" style={{ color: 'hsl(var(--text-4))' }}>
+                              {f.owner && <span><User size={10} className="inline mr-1" />{f.owner}</span>}
+                              {f.dueDate && (
+                                <span style={overdue ? { color: 'hsl(var(--s-er-tx))', fontWeight: 600 } : undefined}>
+                                  <CalendarCheck size={10} className="inline mr-1" />Due {formatDate(f.dueDate)}{overdue ? ' · overdue' : ''}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+                              {f.linkedControlId && (
+                                <InterlinkChip label={controlLabel(f.linkedControlId)} to={`/compliance/controls?open=${f.linkedControlId}`} />
+                              )}
+                              {f.linkedRiskId && (
+                                <InterlinkChip label={riskLabel(f.linkedRiskId)} to={`/risks?open=${f.linkedRiskId}`} />
+                              )}
+                              {plans.map(p => (
+                                <InterlinkChip
+                                  key={p.id}
+                                  label={p.planRef ? `Plan ${p.planRef}` : p.title}
+                                  to={`/remediation-tracker?open=${p.id}`}
+                                />
+                              ))}
+                            </div>
+                            <div className="flex items-center gap-1.5 mt-2">
+                              <Button
+                                size="sm" variant="outline" style={{ borderRadius: 0, fontSize: 11, height: 26 }}
+                                disabled={remediations.isSaving && remediatingId === (f.id ?? f.findingRef)}
+                                onClick={() => handleCreateRemediation(f)}
+                              >
+                                <Wrench size={11} />
+                                {remediations.isSaving && remediatingId === (f.id ?? f.findingRef) ? 'Creating…' : 'Create remediation plan'}
+                              </Button>
+                              <Button size="sm" variant="ghost" style={{ borderRadius: 0, height: 26, padding: '2px 6px' }} onClick={() => openEditFinding(f)} aria-label="Edit finding">
+                                <PencilSimple size={12} />
+                              </Button>
+                              <Button size="sm" variant="ghost" style={{ borderRadius: 0, height: 26, padding: '2px 6px', color: 'hsl(var(--destructive))' }} onClick={() => setDeleteFindingTarget(f)} aria-label="Delete finding">
+                                <Trash size={12} />
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex gap-2 mt-6">
+                <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => openEditAudit(selected)}>
+                  <PencilSimple size={14} /> Edit Audit
+                </Button>
+                <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => setSelected(null)}>Close</Button>
+              </div>
+            </>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* ── Audit Create/Edit Dialog ── */}
+      <Dialog open={auditDialogOpen} onOpenChange={o => !o && setAuditDialogOpen(false)}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 580 }}>
+          <DialogHeader>
+            <DialogTitle>{auditForm.id ? 'Edit Audit' : 'New Audit'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2 max-h-[65vh] overflow-y-auto pr-1">
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs font-medium text-[hsl(var(--text-3))] block mb-1">Start Date *</label>
-                <Input type="date" style={{ borderRadius: 0 }} value={form.startDate} onChange={e => setForm(p => ({ ...p, startDate: e.target.value }))} />
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Audit Ref</Label>
+                <Input style={{ borderRadius: 0 }} placeholder="e.g. AUD-2026-001" value={auditForm.auditRef} onChange={e => setAuditForm(p => ({ ...p, auditRef: e.target.value }))} />
               </div>
               <div>
-                <label className="text-xs font-medium text-[hsl(var(--text-3))] block mb-1">End Date *</label>
-                <Input type="date" style={{ borderRadius: 0 }} value={form.endDate} onChange={e => setForm(p => ({ ...p, endDate: e.target.value }))} />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-[hsl(var(--text-3))] block mb-1">Status</label>
-                <Select value={form.status} onValueChange={v => setForm(p => ({ ...p, status: v as Audit['status'] }))}>
-                  <SelectTrigger style={{ borderRadius: 0, height: 36 }}><SelectValue /></SelectTrigger>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Type</Label>
+                <Select value={auditForm.auditType} onValueChange={v => setAuditForm(p => ({ ...p, auditType: v }))}>
+                  <SelectTrigger style={{ borderRadius: 0, width: '100%' }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
-                    {['Planning', 'In Progress', 'Review', 'Closed'].map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                    {AUDIT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Title *</Label>
+              <Input style={{ borderRadius: 0 }} value={auditForm.title} onChange={e => setAuditForm(p => ({ ...p, title: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Framework</Label>
+                <Input style={{ borderRadius: 0 }} placeholder="e.g. ISO/IEC 42001, EU AI Act" value={auditForm.framework} onChange={e => setAuditForm(p => ({ ...p, framework: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Auditor</Label>
+                <Input style={{ borderRadius: 0 }} placeholder="Audit firm or internal team" value={auditForm.auditor} onChange={e => setAuditForm(p => ({ ...p, auditor: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Scope</Label>
+              <Input style={{ borderRadius: 0 }} placeholder="Coverage area" value={auditForm.scope} onChange={e => setAuditForm(p => ({ ...p, scope: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Start Date</Label>
+                <Input type="date" style={{ borderRadius: 0 }} value={auditForm.startDate} onChange={e => setAuditForm(p => ({ ...p, startDate: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>End Date</Label>
+                <Input type="date" style={{ borderRadius: 0 }} value={auditForm.endDate} onChange={e => setAuditForm(p => ({ ...p, endDate: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Status</Label>
+                <Select value={auditForm.status} onValueChange={v => setAuditForm(p => ({ ...p, status: v }))}>
+                  <SelectTrigger style={{ borderRadius: 0, width: '100%' }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {AUDIT_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <label className="text-xs font-medium text-[hsl(var(--text-3))] block mb-1">Risk Rating</label>
-                <Select value={form.riskRating} onValueChange={v => setForm(p => ({ ...p, riskRating: v as Audit['riskRating'] }))}>
-                  <SelectTrigger style={{ borderRadius: 0, height: 36 }}><SelectValue /></SelectTrigger>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Owner</Label>
+                <Input style={{ borderRadius: 0 }} placeholder="Internal owner" value={auditForm.owner} onChange={e => setAuditForm(p => ({ ...p, owner: e.target.value }))} />
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Description</Label>
+              <Textarea rows={3} style={{ borderRadius: 0 }} value={auditForm.description} onChange={e => setAuditForm(p => ({ ...p, description: e.target.value }))} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setAuditDialogOpen(false)}>Cancel</Button>
+            <Button style={{ borderRadius: 0 }} disabled={!auditForm.title.trim() || audits.isSaving} onClick={handleSaveAudit}>
+              {audits.isSaving ? 'Saving…' : auditForm.id ? 'Save Changes' : 'Create Audit'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Finding Editor Dialog ── */}
+      <Dialog open={findingDialogOpen} onOpenChange={o => !o && setFindingDialogOpen(false)}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 540 }}>
+          <DialogHeader>
+            <DialogTitle>{findingForm.id ? 'Edit Finding' : 'Add Finding'}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Finding Ref</Label>
+                <Input style={{ borderRadius: 0 }} placeholder="e.g. AF-012" value={findingForm.findingRef} onChange={e => setFindingForm(p => ({ ...p, findingRef: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Severity</Label>
+                <Select value={findingForm.severity} onValueChange={v => setFindingForm(p => ({ ...p, severity: v }))}>
+                  <SelectTrigger style={{ borderRadius: 0, width: '100%' }}><SelectValue /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
-                    {['Critical', 'High', 'Medium', 'Low'].map(r => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                    {FINDING_SEVERITIES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Title *</Label>
+              <Input style={{ borderRadius: 0 }} value={findingForm.title} onChange={e => setFindingForm(p => ({ ...p, title: e.target.value }))} />
+            </div>
+            <div>
+              <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Description</Label>
+              <Textarea rows={2} style={{ borderRadius: 0 }} value={findingForm.description} onChange={e => setFindingForm(p => ({ ...p, description: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Status</Label>
+                <Select value={findingForm.status} onValueChange={v => setFindingForm(p => ({ ...p, status: v }))}>
+                  <SelectTrigger style={{ borderRadius: 0, width: '100%' }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    {FINDING_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Due Date</Label>
+                <Input type="date" style={{ borderRadius: 0 }} value={findingForm.dueDate} onChange={e => setFindingForm(p => ({ ...p, dueDate: e.target.value }))} />
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Owner</Label>
+                <Input style={{ borderRadius: 0 }} placeholder="Responsible team or role" value={findingForm.owner} onChange={e => setFindingForm(p => ({ ...p, owner: e.target.value }))} />
+              </div>
+              <div>
+                {/* Id-keyed picker over the control library — controls.id is
+                    stored; the ref + name are display only. */}
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Linked Control</Label>
+                <Select
+                  value={findingForm.linkedControlId || 'none'}
+                  onValueChange={v => setFindingForm(p => ({ ...p, linkedControlId: v === 'none' ? '' : v }))}
+                >
+                  <SelectTrigger style={{ borderRadius: 0, width: '100%' }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value="none">Not linked</SelectItem>
+                    {controls.filter(c => c.id).map(c => (
+                      <SelectItem key={c.id} value={c.id!}>
+                        {c.controlRef ? `${c.controlRef} — ${c.name || c.title || 'Untitled control'}` : (c.name || c.title || 'Untitled control')}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs mb-1 block" style={{ color: 'hsl(var(--text-3))' }}>Linked Risk</Label>
+                <Select
+                  value={findingForm.linkedRiskId || 'none'}
+                  onValueChange={v => setFindingForm(p => ({ ...p, linkedRiskId: v === 'none' ? '' : v }))}
+                >
+                  <SelectTrigger style={{ borderRadius: 0, width: '100%' }}><SelectValue /></SelectTrigger>
+                  <SelectContent style={{ borderRadius: 0 }}>
+                    <SelectItem value="none">Not linked</SelectItem>
+                    {risks.filter(r => r.id).map(r => (
+                      <SelectItem key={r.id} value={r.id!}>
+                        {r.risk_id ? `${r.risk_id} — ${r.title}` : r.title}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => { setAddOpen(false); setEditTarget(null); }}>Cancel</Button>
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={editTarget ? handleEdit : handleAdd}>
-              {editTarget ? 'Save Changes' : 'Create Audit'}
+            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setFindingDialogOpen(false)}>Cancel</Button>
+            <Button style={{ borderRadius: 0 }} disabled={!findingForm.title.trim() || findings.isSaving} onClick={handleSaveFinding}>
+              {findings.isSaving ? 'Saving…' : findingForm.id ? 'Save Changes' : 'Add Finding'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteId} onOpenChange={o => !o && setDeleteId(null)}>
-        <AlertDialogContent style={{ borderRadius: 0 }}>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Delete Audit {deleteId}?</AlertDialogTitle>
-            <AlertDialogDescription>This action cannot be undone. All findings, evidence and action items for this audit will be permanently removed.</AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction style={{ borderRadius: 0, background: 'hsl(var(--destructive))', color: 'hsl(var(--bg-surface))' }} onClick={handleDelete}>Delete Audit</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Detail Drawer */}
-      <Sheet open={!!selected} onOpenChange={o => !o && setSelected(null)}>
-        <SheetContent side="right" className="w-[560px] sm:max-w-[560px] overflow-y-auto" style={{ borderRadius: 0 }}>
-          {selected && (
-            <>
-              <SheetHeader className="pb-4">
-                <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>{selected.framework} — {selected.id}</SheetTitle>
-                <div className="flex gap-2 mt-1">
-                  <Badge style={{ ...statusStyle(selected.status), borderRadius: 0, fontSize: 10 }}>{selected.status}</Badge>
-                  <Badge style={{ ...riskStyle(selected.riskRating), borderRadius: 0, fontSize: 10 }}>{selected.riskRating} Risk</Badge>
-                </div>
-              </SheetHeader>
-
-              <Tabs defaultValue="overview">
-                <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
-                  <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
-                  <TabsTrigger value="findings" style={{ borderRadius: 0 }}>Findings ({selected.findings.length})</TabsTrigger>
-                  <TabsTrigger value="evidence" style={{ borderRadius: 0 }}>Evidence</TabsTrigger>
-                  <TabsTrigger value="actions" style={{ borderRadius: 0 }}>Actions</TabsTrigger>
-                  <TabsTrigger value="timeline" style={{ borderRadius: 0 }}>Timeline</TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" className="mt-4 space-y-3">
-                  <p className="text-sm" style={{ color: 'hsl(var(--text-2))' }}>{selected.description}</p>
-                  {[
-                    { label: 'Audit ID', value: selected.id },
-                    { label: 'Framework', value: selected.framework },
-                    { label: 'Scope', value: selected.scope },
-                    { label: 'Auditor', value: selected.auditor },
-                    { label: 'Period', value: `${formatDate(selected.startDate)} — ${formatDate(selected.endDate)}` },
-                    { label: 'Total Findings', value: String(selected.findingsCount) },
-                  ].map(r => (
-                    <div key={r.label} className="flex justify-between py-2" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                      <span className="text-sm" style={{ color: 'hsl(var(--text-3))' }}>{r.label}</span>
-                      <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.value}</span>
-                    </div>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="findings" className="mt-4 space-y-2">
-                  {selected.findings.length === 0 ? (
-                    <p className="text-sm py-8 text-center" style={{ color: 'hsl(var(--text-3))' }}>No findings recorded yet.</p>
-                  ) : selected.findings.map(f => {
-                    const fs = findingSeverityStyle(f.severity);
-                    return (
-                      <div key={f.id} className="p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
-                        <div className="flex items-start justify-between mb-1">
-                          <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{f.title}</p>
-                          <Badge style={{ background: fs.bg, color: fs.text, borderRadius: 0, fontSize: 10 }}>{f.severity}</Badge>
-                        </div>
-                        <p className="text-xs mb-2" style={{ color: 'hsl(var(--text-3))' }}>{f.description}</p>
-                        <div className="flex items-center gap-3 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                          <span><User size={10} className="inline mr-1" />{f.owner}</span>
-                          <span><CalendarCheck size={10} className="inline mr-1" />Due {formatDate(f.dueDate)}</span>
-                          <Badge variant="outline" style={{ borderRadius: 0, fontSize: 9 }}>{f.status}</Badge>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </TabsContent>
-
-                <TabsContent value="evidence" className="mt-4 space-y-2">
-                  {selected.evidence.length === 0 ? (
-                    <p className="text-sm py-8 text-center" style={{ color: 'hsl(var(--text-3))' }}>No evidence uploaded yet.</p>
-                  ) : selected.evidence.map(ev => (
-                    <div key={ev.id} className="flex items-center justify-between p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
-                      <div>
-                        <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{ev.name}</p>
-                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{ev.type} · Uploaded by {ev.uploadedBy} · {formatDate(ev.date)}</p>
-                      </div>
-                      <Badge style={{ background: ev.status === 'Accepted' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-wn-bg))', color: ev.status === 'Accepted' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))', borderRadius: 0, fontSize: 10 }}>{ev.status}</Badge>
-                    </div>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="actions" className="mt-4 space-y-2">
-                  {selected.actionItems.length === 0 ? (
-                    <p className="text-sm py-8 text-center" style={{ color: 'hsl(var(--text-3))' }}>No action items.</p>
-                  ) : selected.actionItems.map(ai => (
-                    <div key={ai.id} className="flex items-center justify-between p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
-                      <div>
-                        <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{ai.title}</p>
-                        <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                          <User size={10} className="inline mr-1" />{ai.assignee} · Due {formatDate(ai.dueDate)}
-                        </p>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Badge style={{ background: ai.priority === 'High' ? 'hsl(var(--s-er-bg))' : ai.priority === 'Medium' ? 'hsl(var(--s-wn-bg))' : 'hsl(var(--s-ok-bg))', color: ai.priority === 'High' ? 'hsl(var(--destructive))' : ai.priority === 'Medium' ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>{ai.priority}</Badge>
-                        <Badge variant="outline" style={{ borderRadius: 0, fontSize: 9 }}>{ai.status}</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="timeline" className="mt-4">
-                  <div className="space-y-0">
-                    {selected.timeline.map((tl, i) => (
-                      <div key={tl.id} className="flex gap-3 pb-4">
-                        <div className="flex flex-col items-center">
-                          <div className="w-2.5 h-2.5 mt-1" style={{ background: i === 0 ? 'hsl(var(--brand))' : 'hsl(var(--text-4))', borderRadius: 0 }} />
-                          {i < selected.timeline.length - 1 && <div className="w-px flex-1 mt-1" style={{ background: 'hsl(var(--border))' }} />}
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{tl.event}</p>
-                          <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(tl.date)} · {tl.user}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
+      {/* ── Delete Confirmations ── */}
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={o => !o && setDeleteTarget(null)}
+        title={`Delete audit${deleteTarget?.auditRef ? ` ${deleteTarget.auditRef}` : ''}?`}
+        description={`"${deleteTarget?.title ?? ''}" will be permanently removed. Findings recorded against it remain in the audit_findings table but lose their parent.`}
+        confirmLabel="Delete Audit"
+        isDestructive
+        onConfirm={handleDeleteAudit}
+      />
+      <ConfirmDialog
+        open={!!deleteFindingTarget}
+        onOpenChange={o => !o && setDeleteFindingTarget(null)}
+        title={`Delete finding${deleteFindingTarget?.findingRef ? ` ${deleteFindingTarget.findingRef}` : ''}?`}
+        description={`"${deleteFindingTarget?.title ?? ''}" will be permanently removed. Linked remediation plans are not deleted.`}
+        confirmLabel="Delete Finding"
+        isDestructive
+        onConfirm={handleDeleteFinding}
+      />
     </div>
   );
 }

@@ -1,410 +1,440 @@
-import { useState, useMemo } from 'react';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
-import { useSupabaseTable } from '@/hooks/useSupabaseTable';
-import { toast } from 'sonner';
+// Transparency Reports — backed by the org-scoped transparency_reports table
+// via useTransparencyReports (writes throw; success toasts fire only from the
+// mutation's onSuccess). The governance mesh's NarrativeEngineAgent writes
+// rows here too: those show generated_by + event_id, labelled honestly. Models
+// resolve through ai_models.id → InterlinkChip; Download hands over the real
+// stored content, and Publish is an awaited write.
+import { useState, useMemo, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
+import { FileText, Plus, MagnifyingGlass, PencilSimple, Trash, DownloadSimple, Cube, X, Robot } from '@phosphor-icons/react'
+import { toast } from 'sonner'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select'
+import { Button } from '../components/ui/button'
+import { Input } from '../components/ui/input'
+import { Label } from '../components/ui/label'
+import { Textarea } from '../components/ui/textarea'
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/sheet'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../components/ui/dialog'
 import {
-  Plus, Eye, Trash, MagnifyingGlass, ArrowRight, DownloadSimple, Globe,
-} from '@phosphor-icons/react';
-import { Card, CardContent } from '../components/ui/card';
-import { PageHeader } from '../components/ui/PageHeader';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import {
-  Sheet, SheetContent, SheetHeader, SheetTitle,
-} from '../components/ui/sheet';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import {
-  Dialog, DialogContent, DialogHeader, DialogTitle,
-} from '../components/ui/dialog';
-import {
-
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-  AlertDialogTrigger,
-} from '../components/ui/alert-dialog';
+} from '../components/ui/alert-dialog'
+import { PageHeader } from '../components/ui/PageHeader'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { EmptyState } from '@/components/ui/EmptyState'
+import { InterlinkChip } from '@/components/ui/InterlinkChip'
+import { useTransparencyReports } from '@/hooks/useComplianceGroup'
+import { useModelsData } from '@/hooks/useModelsData'
+import type { TransparencyReportRecord } from '@/services/regulatoryOpsService'
 
-type ReportType = 'System Transparency Art.13' | 'User Notification Art.52' | 'GPAI Disclosure Art.53' | 'Annual Summary';
-type ReportStatus = 'Published' | 'Draft' | 'Overdue';
-type Audience = 'Public/Regulators' | 'End Users' | 'Public' | 'Applicants/Regulators';
-
-interface TransparencyReport {
-  id: string;
-  system: string;
-  type: ReportType;
-  version: string;
-  audience: Audience;
-  publishedDate: string;
-  status: ReportStatus;
-  url?: string;
+const prettifyStatus = (s?: string) => {
+  const v = (s ?? 'DRAFT').toUpperCase()
+  return v.charAt(0) + v.slice(1).toLowerCase()
 }
 
-const SEED: TransparencyReport[] = [
-  { id: 'TR-001', system: 'Credit Risk Scorer', type: 'System Transparency Art.13', version: 'v2.0', audience: 'Public/Regulators', publishedDate: '2026-01-15', status: 'Published', url: 'https://sentinel.example.com/reports/tr-001' },
-  { id: 'TR-002', system: 'Loan Approval Assistant', type: 'User Notification Art.52', version: 'v1.0', audience: 'End Users', publishedDate: '2026-02-01', status: 'Published' },
-  { id: 'TR-003', system: 'HR Screening System', type: 'System Transparency Art.13', version: 'v1.0', audience: 'Applicants/Regulators', publishedDate: '', status: 'Draft' },
-  { id: 'TR-004', system: 'Customer Service Chatbot', type: 'User Notification Art.52', version: 'v1.1', audience: 'End Users', publishedDate: '2026-01-01', status: 'Published' },
-  { id: 'TR-005', system: 'Loan Approval Assistant', type: 'GPAI Disclosure Art.53', version: 'v1.0', audience: 'Public', publishedDate: '', status: 'Overdue' },
-];
-
-const REPORT_TYPES: ReportType[] = ['System Transparency Art.13', 'User Notification Art.52', 'GPAI Disclosure Art.53', 'Annual Summary'];
-const AUDIENCES = ['Public/Regulators', 'End Users', 'Public', 'Applicants/Regulators', 'DPA'];
-
-function MetricTile({ label, value, variant }: { label: string; value: string | number; variant: 'default' | 'error' | 'warn' | 'ok' }) {
-  const colors = {
-    default: { bg: 'hsl(var(--bg-surface))', text: 'hsl(var(--text-1))', border: 'hsl(var(--border))' },
-    error: { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' },
-    warn: { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' },
-    ok: { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' },
-  };
-  const c = colors[variant];
-  return (
-    <Card style={{ borderRadius: 0, background: c.bg, border: `1px solid ${c.border}` }}>
-      <CardContent className="px-4 py-3">
-        <p className="text-xs font-medium mb-1" style={{ color: 'hsl(var(--text-4))' }}>{label}</p>
-        <p className="text-2xl font-bold" style={{ color: c.text }}>{value}</p>
-      </CardContent>
-    </Card>
-  );
+const STATUS_STYLE: Record<string, React.CSSProperties> = {
+  PUBLISHED: { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
+  DRAFT:     { background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' },
 }
+const statusStyle = (s?: string): React.CSSProperties =>
+  STATUS_STYLE[(s ?? 'DRAFT').toUpperCase()] ?? { background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }
 
-function statusColor(s: ReportStatus) {
-  switch (s) {
-    case 'Published': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
-    case 'Draft': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
-    case 'Overdue': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
-    default: return { bg: 'hsl(var(--bg-raised))', text: 'hsl(var(--text-4))' };
-  }
+// Provenance: a report is mesh-generated only when generated_by names a known
+// governance agent or a triggering event id is present. A human author in
+// generated_by (e.g. "Compliance Office") renders as "Prepared by …" — never
+// with the robot/mesh badge.
+const KNOWN_MESH_AGENTS = ['NarrativeEngineAgent']
+const isMeshGenerated = (r: TransparencyReportRecord) =>
+  !!r.eventId || (!!r.generatedBy && KNOWN_MESH_AGENTS.includes(r.generatedBy))
+
+interface ReportForm {
+  title: string; audience: string; reportType: string
+  content: string; version: string; modelId: string
 }
-
-const ART13_SECTIONS = [
-  { key: 'provider', label: 'Provider identity + contact' },
-  { key: 'purpose', label: 'Intended purpose' },
-  { key: 'risk', label: 'Risk classification' },
-  { key: 'oversight', label: 'Human oversight measures' },
-  { key: 'training', label: 'Training data description' },
-  { key: 'performance', label: 'Performance metrics' },
-  { key: 'limitations', label: 'Known limitations + prohibited uses' },
-];
-
-const ART52_SECTIONS = [
-  { key: 'disclosure', label: '"This system uses AI" disclosure template' },
-  { key: 'nature', label: 'Nature and purpose' },
-  { key: 'contact', label: 'Contact for explanations' },
-  { key: 'rights', label: 'Right to explanation notice' },
-];
-
-const ART53_SECTIONS = [
-  { key: 'arch', label: 'Model architecture summary' },
-  { key: 'data', label: 'Training data summary' },
-  { key: 'compute', label: 'Compute resources' },
-  { key: 'safety', label: 'Safety evaluations' },
-  { key: 'policy', label: 'EU policy compliance measures' },
-];
-
-function getSections(type: ReportType) {
-  if (type === 'System Transparency Art.13') return ART13_SECTIONS;
-  if (type === 'User Notification Art.52') return ART52_SECTIONS;
-  if (type === 'GPAI Disclosure Art.53') return ART53_SECTIONS;
-  return ART13_SECTIONS;
-}
+const EMPTY_FORM: ReportForm = { title: '', audience: '', reportType: '', content: '', version: '1.0', modelId: '' }
 
 export default function TransparencyReports() {
-  const { data: items, setData: setItems } = useSupabaseTable('transparencyreports_table', SEED);
-  const [search, setSearch] = useState('');
-  const [activeTab, setActiveTab] = useState('all');
-  const [selected, setSelected] = useState<TransparencyReport | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const [wizardOpen, setWizardOpen] = useState(false);
+  const { items, isLoading, error, save, remove, isSaving } = useTransparencyReports()
+  const { models } = useModelsData()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const modelName = (id: string) => models.find(m => m.id === id)?.name ?? 'Unavailable'
 
-  const [wSystem, setWSystem] = useState('');
-  const [wType, setWType] = useState<ReportType>('System Transparency Art.13');
-  const [wAudience, setWAudience] = useState('Public/Regulators');
-  const [wVersion, setWVersion] = useState('v1.0');
-  const [wEffectiveDate, setWEffectiveDate] = useState('');
-  const [wSections, setWSections] = useState<Record<string, string>>({});
+  const [search, setSearch] = useState('')
+  const [selected, setSelected] = useState<TransparencyReportRecord | null>(null)
+  const [dialogOpen, setDialogOpen] = useState(false)
+  const [editing, setEditing] = useState<TransparencyReportRecord | null>(null)
+  const [form, setForm] = useState<ReportForm>({ ...EMPTY_FORM })
+  const [deleteTarget, setDeleteTarget] = useState<TransparencyReportRecord | null>(null)
+  const [publishing, setPublishing] = useState(false)
 
-  const filtered = useMemo(() => items.filter(i => {
-    const matchSearch = !search || i.system.toLowerCase().includes(search.toLowerCase()) || i.id.toLowerCase().includes(search.toLowerCase());
-    const matchTab = activeTab === 'all' || (activeTab === 'art13' && i.type === 'System Transparency Art.13') ||
-      (activeTab === 'art52' && i.type === 'User Notification Art.52') ||
-      (activeTab === 'art53' && i.type === 'GPAI Disclosure Art.53') ||
-      (activeTab === 'annual' && i.type === 'Annual Summary');
-    return matchSearch && matchTab;
-  }), [items, search, activeTab]);
+  // ?model=<uuid> deep link — dismissible filter chip.
+  const modelParam = searchParams.get('model')
+  const modelFilter = modelParam ? models.find(m => m.id === modelParam) : undefined
+  const clearModelFilter = () =>
+    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('model'); return next }, { replace: true })
 
-  const total = items.length;
-  const published = items.filter(i => i.status === 'Published').length;
-  const draft = items.filter(i => i.status === 'Draft').length;
-  const overdue = items.filter(i => i.status === 'Overdue').length;
+  // ?open=<id> deep link → open that report's detail sheet once loaded.
+  useEffect(() => {
+    const openId = searchParams.get('open')
+    if (!openId || items.length === 0) return
+    const record = items.find(r => r.id === openId)
+    if (record) setSelected(record)
+    setSearchParams(prev => { const next = new URLSearchParams(prev); next.delete('open'); return next }, { replace: true })
+  }, [items, searchParams, setSearchParams])
 
-  function submitWizard() {
-    const newReport: TransparencyReport = {
-      id: `TR-${String(items.length + 1).padStart(3, '0')}`,
-      system: wSystem || 'Unnamed System',
-      type: wType,
-      version: wVersion,
-      audience: wAudience as Audience,
-      publishedDate: '',
-      status: 'Draft',
-    };
-    setItems(prev => [newReport, ...prev]);
-    toast.success(`Transparency report "${newReport.id}" created`);
-    setWizardOpen(false);
-    setWSystem(''); setWType('System Transparency Art.13'); setWAudience('Public/Regulators'); setWSections({});
+  const filtered = useMemo(() => items.filter(r => {
+    if (modelParam && r.modelId !== modelParam) return false
+    const q = search.toLowerCase()
+    return !q || r.title.toLowerCase().includes(q) || (r.audience ?? '').toLowerCase().includes(q) || (r.reportType ?? '').toLowerCase().includes(q)
+  }), [items, search, modelParam])
+
+  // KPIs — derived from loaded rows only.
+  const published = items.filter(r => (r.status ?? '').toUpperCase() === 'PUBLISHED').length
+  const drafts = items.filter(r => (r.status ?? '').toUpperCase() !== 'PUBLISHED').length
+  const meshGenerated = items.filter(isMeshGenerated).length
+
+  const openCreate = () => { setEditing(null); setForm({ ...EMPTY_FORM }); setDialogOpen(true) }
+  const openEdit = (r: TransparencyReportRecord) => {
+    setEditing(r)
+    setForm({
+      title: r.title, audience: r.audience ?? '', reportType: r.reportType ?? '',
+      content: r.content ?? '', version: r.version ?? '1.0', modelId: r.modelId ?? '',
+    })
+    setSelected(null)
+    setDialogOpen(true)
   }
 
-  function deleteItem(id: string) {
-    const item = items.find(i => i.id === id);
-    if (item) toast.success(`Report "${item.id}" deleted`);
-    setItems(prev => prev.filter(i => i.id !== id));
+  const handleSave = async () => {
+    if (!form.title.trim()) { toast.error('Report title is required'); return }
+    try {
+      await save({
+        ...(editing ?? { status: 'DRAFT' }),
+        title: form.title.trim(),
+        audience: form.audience.trim() || undefined,
+        reportType: form.reportType.trim() || undefined,
+        content: form.content || null,
+        version: form.version.trim() || null,
+        modelId: form.modelId || null,
+      })
+      // Success toast fires from the mutation only after the write resolved.
+      setDialogOpen(false)
+      setEditing(null)
+      setForm({ ...EMPTY_FORM })
+    } catch {
+      // Error toast fires from the mutation; keep the dialog open.
+    }
   }
 
-  const sections = getSections(wType);
+  // Publish — awaited write; the sheet reflects the new state via the cache.
+  const publish = async (r: TransparencyReportRecord) => {
+    setPublishing(true)
+    try {
+      const saved = await save({ ...r, status: 'PUBLISHED', publishedAt: new Date().toISOString() })
+      setSelected(saved)
+    } catch {
+      // Error toast fires from the mutation.
+    } finally {
+      setPublishing(false)
+    }
+  }
+
+  // Download — a real Blob of the stored content text, nothing synthesized.
+  const download = (r: TransparencyReportRecord) => {
+    if (!r.content) { toast.error('This report has no content to download yet.'); return }
+    const blob = new Blob([r.content], { type: 'text/plain;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${r.title.replace(/[^a-z0-9]+/gi, '-').toLowerCase()}${r.version ? `-v${r.version}` : ''}.txt`
+    a.click()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
+  const handleDelete = async () => {
+    if (!deleteTarget?.id) { setDeleteTarget(null); return }
+    try { await remove(deleteTarget.id); setSelected(null) } catch { /* error toast from the mutation */ }
+    setDeleteTarget(null)
+  }
+
+  if (isLoading) return <PageSkeleton title="Transparency Reports" showStats rows={6} />
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <PageHeader
-        title="AI Transparency Reports"
-        subtitle="Public transparency disclosures per EU AI Act Articles 13 and 52"
+        title="Transparency Reports"
+        subtitle="Transparency disclosures per EU AI Act Articles 13 and 50 — written by the team and by the governance mesh's narrative engine"
+        icon={FileText}
         actions={
-          <Button onClick={() => setWizardOpen(true)} style={{ borderRadius: 0 }}>
-            <Plus size={15} /> Generate Report
+          <Button size="sm" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={openCreate}>
+            <Plus size={14} /> New Report
           </Button>
         }
       />
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricTile label="Total Reports" value={total} variant="default" />
-        <MetricTile label="Published" value={published} variant="ok" />
-        <MetricTile label="Draft" value={draft} variant="warn" />
-        <MetricTile label="Overdue" value={overdue} variant="error" />
-      </div>
+      {error && (
+        <div role="alert" className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load transparency reports</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{(error as Error).message}</p>
+        </div>
+      )}
 
-      {/* Tab bar */}
-      <div className="flex gap-1 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
+      {/* KPIs — derived from loaded rows */}
+      <div className="grid grid-cols-4 gap-4">
         {[
-          { key: 'all', label: 'All' },
-          { key: 'art13', label: 'System Transparency (Art.13)' },
-          { key: 'art52', label: 'User Notification (Art.52)' },
-          { key: 'art53', label: 'GPAI Disclosure (Art.53)' },
-          { key: 'annual', label: 'Annual Summary' },
-        ].map(tab => (
-          <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-            className="px-3 py-2 text-xs font-medium border-b-2 transition-colors"
-            style={{ borderColor: activeTab === tab.key ? 'hsl(var(--brand))' : 'transparent', color: activeTab === tab.key ? 'hsl(var(--brand))' : 'hsl(var(--text-4))', borderRadius: 0 }}>
-            {tab.label}
-          </button>
+          { label: 'Total Reports', value: String(items.length), sub: 'In the register', color: 'hsl(var(--text-1))' },
+          { label: 'Published', value: String(published), sub: 'Visible to their audience', color: 'hsl(var(--s-ok-tx))' },
+          { label: 'Drafts', value: String(drafts), sub: 'Not yet published', color: 'hsl(var(--s-wn-tx))' },
+          { label: 'Mesh-Generated', value: String(meshGenerated), sub: 'Written by governance agents', color: 'hsl(var(--brand))' },
+        ].map(s => (
+          <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
+            <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide">{s.label}</p>
+            <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
+            <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{s.sub}</p>
+          </div>
         ))}
       </div>
 
-      <Card style={{ borderRadius: 0 }}>
-        <CardContent className="p-0">
-          <div className="p-4 border-b flex items-center gap-3" style={{ borderColor: 'hsl(var(--border))' }}>
-            <MagnifyingGlass size={15} style={{ color: 'hsl(var(--text-4))' }} />
-            <Input placeholder="Search reports..." value={search} onChange={e => setSearch(e.target.value)}
-              className="h-8 border-0 p-0 focus-visible:ring-0 bg-transparent" style={{ color: 'hsl(var(--text-1))' }} />
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead>
-                <tr style={{ borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
-                  {['TR ID', 'System', 'Type', 'Version', 'Audience', 'Published Date', 'Status', 'Actions'].map(h => (
-                    <th key={h} className="text-left px-3 py-2.5 text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map(item => {
-                  const sc = statusColor(item.status);
-                  return (
-                    <tr key={item.id} className="border-b hover:bg-raised transition-colors cursor-pointer" style={{ borderColor: 'hsl(var(--border))' }}
-                      onClick={() => { setSelected(item); setSheetOpen(true); }}>
-                      <td className="px-3 py-2.5">
-                        <span className="font-mono text-xs px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{item.id}</span>
-                      </td>
-                      <td className="px-3 py-2.5 font-medium" style={{ color: 'hsl(var(--text-1))' }}>{item.system}</td>
-                      <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{item.type}</td>
-                      <td className="px-3 py-2.5 text-xs font-mono" style={{ color: 'hsl(var(--text-3))' }}>{item.version}</td>
-                      <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{item.audience}</td>
-                      <td className="px-3 py-2.5 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{item.publishedDate || '—'}</td>
-                      <td className="px-3 py-2.5">
-                        <span className="text-xs px-2 py-0.5 font-medium" style={{ background: sc.bg, color: sc.text, borderRadius: 0 }}>{item.status}</span>
-                      </td>
-                      <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
-                        <div className="flex items-center gap-1">
-                          <Button variant="ghost" size="sm" className="h-7 px-2" style={{ borderRadius: 0 }}
-                            onClick={() => { setSelected(item); setSheetOpen(true); }}>
-                            <Eye size={13} />
-                          </Button>
-                          <AlertDialog>
-                            <AlertDialogTrigger asChild>
-                              <Button variant="ghost" size="sm" className="h-7 px-2" style={{ borderRadius: 0, color: 'hsl(var(--s-er-tx))' }}>
-                                <Trash size={13} />
-                              </Button>
-                            </AlertDialogTrigger>
-                            <AlertDialogContent style={{ borderRadius: 0 }}>
-                              <AlertDialogHeader>
-                                <AlertDialogTitle>Delete Report</AlertDialogTitle>
-                                <AlertDialogDescription>Delete {item.id}? This cannot be undone.</AlertDialogDescription>
-                              </AlertDialogHeader>
-                              <AlertDialogFooter>
-                                <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-                                <AlertDialogAction style={{ borderRadius: 0 }} onClick={() => deleteItem(item.id)}>Delete</AlertDialogAction>
-                              </AlertDialogFooter>
-                            </AlertDialogContent>
-                          </AlertDialog>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Model deep-link filter chip */}
+      {modelParam && (
+        <div className="flex items-center gap-2 px-3 py-2" style={{ background: 'hsl(var(--brand-subtle))', border: '1px solid hsl(var(--border))' }}>
+          <Cube size={14} style={{ color: 'hsl(var(--brand))' }} />
+          <span className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>
+            Showing reports for <strong style={{ color: 'hsl(var(--brand))' }}>{modelFilter ? modelFilter.name : 'Unavailable'}</strong>
+          </span>
+          <button onClick={clearModelFilter} aria-label="Clear model filter" className="ml-auto text-[hsl(var(--text-3))] hover:text-[hsl(var(--text-1))]">
+            <X size={14} />
+          </button>
+        </div>
+      )}
 
-      {/* Detail Sheet */}
-      <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
-        <SheetContent style={{ width: 560, borderRadius: 0 }}>
+      {/* Search */}
+      <div className="relative max-w-sm">
+        <MagnifyingGlass size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[hsl(var(--text-4))]" />
+        <Input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search reports…" className="pl-9" style={{ borderRadius: 0 }} />
+      </div>
+
+      {/* Table */}
+      {items.length === 0 && !error ? (
+        <EmptyState
+          icon={<FileText size={32} />}
+          title="No transparency reports yet"
+          description="Draft one here, or let the governance mesh's narrative engine generate one from a risk or incident event."
+          action={<Button onClick={openCreate} style={{ borderRadius: 0 }}><Plus size={14} /> New Report</Button>}
+        />
+      ) : filtered.length === 0 && !error ? (
+        <div className="rounded border border-[hsl(var(--border))] bg-surface py-10 text-center">
+          <p className="text-sm text-[hsl(var(--text-4))]">No reports match the current filters.</p>
+        </div>
+      ) : (
+        <div className="rounded border border-[hsl(var(--border))] bg-surface overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[hsl(var(--border))]" style={{ background: 'hsl(var(--bg-raised))' }}>
+                {['Title', 'Audience', 'Model', 'Status', 'Version', 'Published', ''].map(h => (
+                  <th key={h} className="px-3 py-2.5 text-left text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(r => (
+                <tr key={r.id} onClick={() => setSelected(r)} className="border-b border-[hsl(var(--border))] hover:bg-raised cursor-pointer transition-colors">
+                  <td className="px-3 py-2.5 font-medium text-[hsl(var(--text-1))] max-w-[280px]">
+                    <span className="truncate block">{r.title}</span>
+                    {isMeshGenerated(r) ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] mt-0.5" style={{ color: 'hsl(var(--brand))' }}>
+                        <Robot size={11} /> Generated by the governance mesh
+                      </span>
+                    ) : r.generatedBy ? (
+                      <span className="inline-flex items-center gap-1 text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
+                        Prepared by {r.generatedBy}
+                      </span>
+                    ) : null}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    {r.audience
+                      ? <span className="text-[10px] px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-3))] uppercase tracking-wide">{r.audience}</span>
+                      : <span className="text-xs text-[hsl(var(--text-4))]">—</span>}
+                  </td>
+                  <td className="px-3 py-2.5" onClick={e => e.stopPropagation()}>
+                    {r.modelId
+                      ? <InterlinkChip label={modelName(r.modelId)} to={`/models/inventory/${r.modelId}`} />
+                      : <span className="text-xs text-[hsl(var(--text-4))]">—</span>}
+                  </td>
+                  <td className="px-3 py-2.5">
+                    <span className="text-[11px] px-2 py-0.5 font-medium" style={statusStyle(r.status)}>{prettifyStatus(r.status)}</span>
+                  </td>
+                  <td className="px-3 py-2.5 text-xs font-mono text-[hsl(var(--text-3))]">{r.version ?? '—'}</td>
+                  <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-3))]">{r.publishedAt ? r.publishedAt.slice(0, 10) : '—'}</td>
+                  <td className="px-3 py-2.5 text-right" onClick={e => e.stopPropagation()}>
+                    <div className="flex justify-end gap-1">
+                      <Button variant="ghost" size="sm" aria-label={`Edit ${r.title}`} onClick={() => openEdit(r)}><PencilSimple size={14} /></Button>
+                      <Button variant="ghost" size="sm" aria-label={`Delete ${r.title}`} className="text-[hsl(var(--destructive))]" onClick={() => setDeleteTarget(r)}><Trash size={14} /></Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+
+      {/* Detail Sheet — the real stored content */}
+      <Sheet open={!!selected} onOpenChange={o => { if (!o) setSelected(null) }}>
+        <SheetContent className="w-[600px] sm:max-w-[600px] overflow-y-auto" style={{ borderRadius: 0 }}>
           {selected && (
             <>
-              <SheetHeader className="pb-4 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
-                <SheetTitle className="flex items-center gap-2">
-                  <span className="font-mono text-sm px-1.5 py-0.5" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{selected.id}</span>
-                  {selected.system}
-                </SheetTitle>
+              <SheetHeader className="pb-4" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="text-[11px] px-2 py-0.5 font-medium" style={statusStyle(selected.status)}>{prettifyStatus(selected.status)}</span>
+                  {selected.audience && <span className="text-[10px] px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-4))] uppercase tracking-wide">{selected.audience}</span>}
+                  {selected.version && <span className="text-[10px] font-mono text-[hsl(var(--text-4))]">v{selected.version}</span>}
+                </div>
+                <SheetTitle className="text-base" style={{ color: 'hsl(var(--text-1))' }}>{selected.title}</SheetTitle>
               </SheetHeader>
-              <Tabs defaultValue="overview" className="mt-4">
-                <TabsList style={{ borderRadius: 0 }}>
-                  <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
-                  <TabsTrigger value="content" style={{ borderRadius: 0 }}>Content</TabsTrigger>
-                  <TabsTrigger value="publication" style={{ borderRadius: 0 }}>Publication</TabsTrigger>
-                  <TabsTrigger value="activity" style={{ borderRadius: 0 }}>Activity</TabsTrigger>
-                </TabsList>
 
-                <TabsContent value="overview" className="mt-4 space-y-3">
-                  {[
-                    { label: 'System', value: selected.system },
-                    { label: 'Report Type', value: selected.type },
-                    { label: 'Version', value: selected.version },
-                    { label: 'Audience', value: selected.audience },
-                    { label: 'Published', value: selected.publishedDate || 'Not yet published' },
-                    { label: 'Status', value: selected.status },
-                  ].map(({ label, value }) => (
-                    <div key={label} className="flex items-center justify-between py-2 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
-                      <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{label}</span>
-                      <span className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>{value}</span>
+              <div className="mt-4 space-y-4">
+                {isMeshGenerated(selected) ? (
+                  <div className="flex items-start gap-2 p-3" style={{ background: 'hsl(var(--brand-subtle))', border: '1px solid hsl(var(--border))' }}>
+                    <Robot size={15} style={{ color: 'hsl(var(--brand))', marginTop: 1, flexShrink: 0 }} />
+                    <div className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>
+                      <p className="font-semibold" style={{ color: 'hsl(var(--brand))' }}>Generated by the governance mesh</p>
+                      {selected.generatedBy && <p className="mt-0.5">Agent: <span className="font-mono">{selected.generatedBy}</span></p>}
+                      {selected.eventId && <p>Triggering event: <span className="font-mono">{selected.eventId}</span></p>}
                     </div>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="content" className="mt-4 space-y-3">
-                  {getSections(selected.type).map(sec => (
-                    <div key={sec.key} className="space-y-1">
-                      <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>{sec.label}</p>
-                      <div className="p-2 border text-xs" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))', borderRadius: 0 }}>
-                        [Auto-filled from model card or enter manually]
-                      </div>
-                    </div>
-                  ))}
-                </TabsContent>
-
-                <TabsContent value="publication" className="mt-4 space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Published URL</label>
-                    <Input style={{ borderRadius: 0 }} defaultValue={selected.url || ''} placeholder="https://..." />
                   </div>
-                  <div className="flex gap-2 mt-3">
-                    <Button size="sm" style={{ borderRadius: 0 }} className="flex-1">
-                      <DownloadSimple size={13} /> Download PDF
-                    </Button>
-                    <Button size="sm" variant="outline" style={{ borderRadius: 0 }} className="flex-1">
-                      <Globe size={13} /> Submit to EU AI Office
-                    </Button>
+                ) : selected.generatedBy ? (
+                  <div className="p-3" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
+                    <p className="text-xs" style={{ color: 'hsl(var(--text-2))' }}>Prepared by <span className="font-medium">{selected.generatedBy}</span></p>
                   </div>
-                </TabsContent>
+                ) : null}
 
-                <TabsContent value="activity" className="mt-4 space-y-2">
+                <div className="grid grid-cols-2 gap-3">
                   {[
-                    { date: '2026-01-01', action: 'Report created', user: 'System' },
-                    ...(selected.status === 'Published' ? [{ date: selected.publishedDate, action: 'Report published', user: 'James Patel' }] : []),
-                  ].map((ev, i) => (
-                    <div key={i} className="flex items-start gap-2 p-2 border-b" style={{ borderColor: 'hsl(var(--border))' }}>
-                      <div className="w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0" style={{ background: 'hsl(var(--brand))' }} />
-                      <div>
-                        <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-2))' }}>{ev.action}</p>
-                        <p className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>{ev.date} · {ev.user}</p>
-                      </div>
+                    { label: 'Report Type', value: selected.reportType ?? '—' },
+                    { label: 'Published At', value: selected.publishedAt ? new Date(selected.publishedAt).toLocaleString() : 'Not published' },
+                    { label: 'Created', value: selected.createdAt ? selected.createdAt.slice(0, 10) : '—' },
+                    { label: 'External URL', value: selected.url ?? '—' },
+                  ].map(fld => (
+                    <div key={fld.label} className="p-3 bg-raised border border-[hsl(var(--border))]">
+                      <p className="text-[10px] text-[hsl(var(--text-4))] uppercase">{fld.label}</p>
+                      <p className="text-xs font-medium text-[hsl(var(--text-1))] mt-0.5 break-all">{fld.value}</p>
                     </div>
                   ))}
-                </TabsContent>
-              </Tabs>
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Model</p>
+                  {selected.modelId ? (
+                    <InterlinkChip label={modelName(selected.modelId)} to={`/models/inventory/${selected.modelId}`} />
+                  ) : (
+                    <p className="text-xs italic text-[hsl(var(--text-4))]">Not linked to a model.</p>
+                  )}
+                </div>
+
+                <div>
+                  <p className="text-[11px] font-semibold text-[hsl(var(--text-3))] uppercase tracking-wide mb-2">Content</p>
+                  {selected.content ? (
+                    <pre className="text-xs p-3 whitespace-pre-wrap break-words leading-relaxed" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-2))', fontFamily: 'inherit' }}>
+                      {selected.content}
+                    </pre>
+                  ) : (
+                    <p className="text-xs italic text-[hsl(var(--text-4))]">No content written yet — edit the report to add it.</p>
+                  )}
+                </div>
+
+                <div className="flex gap-2 pt-2 border-t border-[hsl(var(--border))] flex-wrap">
+                  <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => openEdit(selected)}>
+                    <PencilSimple size={14} /> Edit
+                  </Button>
+                  {(selected.status ?? '').toUpperCase() !== 'PUBLISHED' && (
+                    <Button
+                      size="sm"
+                      style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
+                      disabled={publishing}
+                      onClick={() => publish(selected)}
+                    >
+                      {publishing ? 'Publishing…' : 'Publish'}
+                    </Button>
+                  )}
+                  <Button size="sm" variant="outline" style={{ borderRadius: 0 }} disabled={!selected.content} onClick={() => download(selected)}>
+                    <DownloadSimple size={14} /> Download
+                  </Button>
+                  <Button size="sm" variant="outline" className="text-[hsl(var(--destructive))]" style={{ borderRadius: 0 }} onClick={() => setDeleteTarget(selected)}>
+                    <Trash size={14} /> Delete
+                  </Button>
+                </div>
+              </div>
             </>
           )}
         </SheetContent>
       </Sheet>
 
-      {/* Generate Report Modal */}
-      <Dialog open={wizardOpen} onOpenChange={setWizardOpen}>
-        <DialogContent style={{ borderRadius: 0, maxWidth: 620 }}>
+      {/* Editor dialog */}
+      <Dialog open={dialogOpen} onOpenChange={o => { setDialogOpen(o); if (!o) setEditing(null) }}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 620 }} className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Generate Transparency Report</DialogTitle>
+            <DialogTitle style={{ color: 'hsl(var(--text-1))' }}>{editing ? 'Edit Report' : 'New Transparency Report'}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 mt-2">
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Title *</Label>
+              <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="e.g. Credit Risk Scorer — public transparency report" style={{ borderRadius: 0 }} />
+            </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-1">
-                <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>System *</label>
-                <Input style={{ borderRadius: 0 }} value={wSystem} onChange={e => setWSystem(e.target.value)} placeholder="e.g. Credit Risk Scorer" />
+                <Label className="text-xs font-medium">Audience</Label>
+                <Input value={form.audience} onChange={e => setForm(f => ({ ...f, audience: e.target.value }))} placeholder="e.g. public, regulator, board" style={{ borderRadius: 0 }} />
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Report Type *</label>
-                <Select value={wType} onValueChange={v => setWType(v as ReportType)}>
-                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
+                <Label className="text-xs font-medium">Report Type</Label>
+                <Input value={form.reportType} onChange={e => setForm(f => ({ ...f, reportType: e.target.value }))} placeholder="e.g. system_transparency, annual_summary" style={{ borderRadius: 0 }} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs font-medium">Model</Label>
+                <Select value={form.modelId || 'none'} onValueChange={v => setForm(f => ({ ...f, modelId: v === 'none' ? '' : v }))}>
+                  <SelectTrigger style={{ borderRadius: 0 }}><SelectValue placeholder="No linked model" /></SelectTrigger>
                   <SelectContent style={{ borderRadius: 0 }}>
-                    {REPORT_TYPES.map(t => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                    <SelectItem value="none">No linked model</SelectItem>
+                    {models.map(m => <SelectItem key={m.id} value={m.id!}>{m.name}</SelectItem>)}
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-1">
-                <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Target Audience *</label>
-                <Select value={wAudience} onValueChange={setWAudience}>
-                  <SelectTrigger className="w-full" style={{ borderRadius: 0 }}><SelectValue /></SelectTrigger>
-                  <SelectContent style={{ borderRadius: 0 }}>
-                    {AUDIENCES.map(a => <SelectItem key={a} value={a}>{a}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-1">
-                <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Version</label>
-                <Input style={{ borderRadius: 0 }} value={wVersion} onChange={e => setWVersion(e.target.value)} placeholder="v1.0" />
+                <Label className="text-xs font-medium">Version</Label>
+                <Input value={form.version} onChange={e => setForm(f => ({ ...f, version: e.target.value }))} placeholder="1.0" style={{ borderRadius: 0 }} />
               </div>
             </div>
-
-            <div className="border-t pt-4" style={{ borderColor: 'hsl(var(--border))' }}>
-              <p className="text-xs font-semibold mb-3" style={{ color: 'hsl(var(--text-2))' }}>Report Sections — {wType}</p>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {sections.map(sec => (
-                  <div key={sec.key} className="space-y-0.5">
-                    <label className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>{sec.label}</label>
-                    <div className="flex gap-2">
-                      <textarea className="flex-1 text-xs border p-1.5 min-h-[40px]" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
-                        value={wSections[sec.key] || ''} onChange={e => setWSections(prev => ({ ...prev, [sec.key]: e.target.value }))} />
-                      <Button size="sm" variant="outline" style={{ borderRadius: 0, fontSize: 11 }} onClick={() => setWSections(prev => ({ ...prev, [sec.key]: '[Auto-filled from model card]' }))}>
-                        Auto-fill
-                      </Button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+            <div className="space-y-1">
+              <Label className="text-xs font-medium">Content</Label>
+              <Textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} rows={8} placeholder="The disclosure text as it will be published…" style={{ borderRadius: 0 }} />
             </div>
           </div>
-          <div className="flex items-center justify-between pt-4 border-t" style={{ borderColor: 'hsl(var(--border))' }}>
-            <Button variant="outline" style={{ borderRadius: 0 }} onClick={() => setWizardOpen(false)}>Cancel</Button>
-            <Button style={{ borderRadius: 0 }} onClick={submitWizard}>Generate Report</Button>
-          </div>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isSaving} style={{ borderRadius: 0 }}>Cancel</Button>
+            <Button onClick={handleSave} disabled={isSaving} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+              {isSaving ? 'Saving…' : editing ? 'Save Changes' : 'Create Report'}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={!!deleteTarget} onOpenChange={o => !o && setDeleteTarget(null)}>
+        <AlertDialogContent style={{ borderRadius: 0 }}>
+          <AlertDialogHeader>
+            <AlertDialogTitle style={{ color: 'hsl(var(--text-1))' }}>Delete Report</AlertDialogTitle>
+            <AlertDialogDescription>
+              Delete <strong>{deleteTarget?.title}</strong>? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} style={{ background: 'hsl(var(--destructive))', borderRadius: 0 }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
-  );
+  )
 }

@@ -50,6 +50,17 @@ ALTER TABLE controls ADD COLUMN IF NOT EXISTS clause_reference TEXT;
 ALTER TABLE controls ADD COLUMN IF NOT EXISTS evaluation_type  TEXT;   -- AUTO | MANUAL
 ALTER TABLE controls ADD COLUMN IF NOT EXISTS is_default       BOOLEAN DEFAULT false;
 
+-- REPLAY NOTE: on a from-zero replay regulation_entries exists with a
+-- different column set than the live table; heal the columns this seed
+-- needs (no-op live).
+ALTER TABLE regulation_entries ADD COLUMN IF NOT EXISTS tenant_id text DEFAULT 'default';
+ALTER TABLE regulation_entries ALTER COLUMN org_id SET DEFAULT '00000000-0000-0000-0000-000000000001'::uuid;
+ALTER TABLE regulation_entries ADD COLUMN IF NOT EXISTS name text;
+ALTER TABLE regulation_entries ADD COLUMN IF NOT EXISTS jurisdiction text;
+ALTER TABLE regulation_entries ADD COLUMN IF NOT EXISTS status text;
+ALTER TABLE regulation_entries ADD COLUMN IF NOT EXISTS effective_date date;
+ALTER TABLE regulation_entries ADD COLUMN IF NOT EXISTS requirements_summary text;
+
 -- ── Step 0: seed the 11 default frameworks into regulation_entries ──
 INSERT INTO regulation_entries (id, tenant_id, name, jurisdiction, status, effective_date, requirements_summary)
 VALUES

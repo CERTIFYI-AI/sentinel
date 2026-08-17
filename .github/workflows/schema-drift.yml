@@ -1,12 +1,22 @@
 name: schema-drift
 on: [pull_request]
+
+# Supersede in-progress runs on the same PR (spins up a full Postgres replay —
+# the priciest job to leave running against a stale commit).
+concurrency:
+  group: drift-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   drift:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Static replay check (fast, no docker)
+        run: python3 scripts/check_migration_replay.py
       - uses: supabase/setup-cli@v1
-      - run: supabase db start
+      - name: Full from-zero replay
+        run: supabase db start
       - run: supabase db diff --use-migra -f _drift_check
       - run: |
           if [ -s supabase/migrations/*_drift_check.sql ]; then

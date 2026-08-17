@@ -6,7 +6,7 @@ This document explains how initial seed data is populated into the Sentinel AI G
 
 Unlike many projects that use external scripts or one-off data dumps, Sentinel leverages **Supabase Migrations** to guarantee consistency between environments, testing, and initial deployments.
 
-Our seed data is packaged directly inside the migration chain. Specifically, our final migration files (e.g. `20260421_ws09_seed.sql` and `20260417_seed_frameworks.sql` in `supabase/migrations/`) insert a comprehensive set of canonical baseline data.
+Our seed data is packaged directly inside the migration chain. Specifically, our final migration files (e.g. `20260421000020_ws09_seed.sql` and `20260417000002_seed_frameworks.sql` in `supabase/migrations/`) insert a comprehensive set of canonical baseline data.
 
 ## What's Included in the Seed?
 

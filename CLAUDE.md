@@ -75,8 +75,66 @@ exist and will be found by an auditor instead of by us.
 - Model detail route: `/models/inventory/:id` (canonical). Use cases:
   `/use-cases/:id`.
 - Migrations live in `supabase/migrations/` — write idempotent SQL and keep the
-  file in the repo even when applied live.
+  file in the repo even when applied live. **Never reference a table before
+  the migration that creates it** — verify with
+  `python3 scripts/check_migration_replay.py` (CI enforces this; see
+  `supabase/migrations/README.md`).
 - Typecheck before shipping: `cd dashboard && npx tsc --noEmit`.
 - Every new module needs a `docs/modules/<module>.md` written to the standard
   shape (purpose → why it exists → how it works → fields → interlinks →
   compliance → operations). Docs are part of the change, not a follow-up.
+
+
+## Mandatory pre-merge review — the four roles
+
+Every change (human- or agent-authored) passes all four role reviews before
+it is committed to `main`. The roles check **each other**: a change one role
+approves can still be blocked by another. Multiple teams work this repo in
+parallel — these gates are what keep the platform one product. Record the
+outcome as a four-line checklist in the PR description.
+
+1. **QA/QC engineer** — *does it work, and is it wired in?*
+   - `cd dashboard && npx tsc --noEmit` and `npx vitest run` are green;
+     Python changes also pass `ruff check sentinel/` and `pytest tests/`.
+   - Migrations replay from zero (`python3 scripts/check_migration_replay.py`).
+   - Interlink check: new records link to their model / use case / dataset /
+     assessment **and are reachable back** — an unreachable module is
+     unfinished (First principle #1).
+   - No fake success: writes throw on failure; toasts fire only after the
+     write resolves; no fabricated metrics.
+
+2. **UI/UX reviewer** — *does it look and behave like the same product?*
+   - Reuses the established components (PageHeader, DataTable, pill links,
+     empty/error/loading states) and design tokens — no one-off styles,
+     colors, or layouts foreign to the rest of the dashboard.
+   - Fortune-500 posture: honest empty states, real loading states, resolved
+     display names (never raw uuids — "Unavailable" when unresolvable),
+     dismissible filter chips on deep links.
+   - Keyboard focus visible; dialogs close only on success.
+
+3. **Documentation expert** — *will the next person know this exists?*
+   - New/changed modules, env vars, workflows, or processes update the
+     matching docs (`README.md`, `docs/`, `dashboard/docs/`, migration
+     READMEs) **in the same change** — documentation is part of the diff,
+     not a follow-up.
+   - User-facing behavior changes update the getting-started flow if it is
+     affected.
+
+4. **Senior compliance officer** — *does it keep us aligned with the
+   frameworks we sell alignment to?*
+   - New modules and data flows map to the relevant EU AI Act obligations
+     (risk classification, human oversight, logging/traceability, incident
+     reporting) and ISO/IEC 42001 AIMS clauses; governed entities carry the
+     links that make that mapping auditable.
+   - Auditability: state-changing actions write to the audit log with a real
+     actor; evidence and approvals reference their source records.
+   - Data minimisation and org isolation: new tables are org-scoped with RLS
+     (DB default fills the scoping column); no personal data in seeds or
+     fixtures — demo data stays fictional and labeled as such.
+
+A change that cannot satisfy a gate documents why in the PR and gets an
+explicit human sign-off on that line — silence is not a pass.
+
+The full binding process (gate order, cross-checking rules, sign-off record
+format) lives in `docs/contributing/review-process.md`.
+

@@ -1,157 +1,184 @@
-import { useState } from 'react';
-import { Card, CardContent } from '../components/ui/card';
-import { PageHeader } from '../components/ui/PageHeader';
-import { Badge } from '../components/ui/badge';
-import { Button } from '../components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
-import { TooltipProvider } from '../components/ui/tooltip';
-import { toast } from 'sonner';
-import {
-  Globe, Warning, Clock, Brain, ShieldCheck, ArrowRight,
-  TrendUp, Bell, CheckCircle, FileText, Lightning, Info,
-} from '@phosphor-icons/react';
-import {
-  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
-  ResponsiveContainer, BarChart, Bar, Cell, LineChart, Line, Legend,
-} from 'recharts';
-import { useSettingsStore } from '../stores/settingsStore';
-import { useChartTheme } from '../hooks/useChartTheme';
+// Regulatory Velocity — change pressure derived entirely from the org-scoped
+// regulation_entries register. "Velocity" here means how many tracked
+// regulations become effective in the next 90/180 days, computed from the
+// stored effective dates via daysUntil() at render time. No scores, trends or
+// impact levels are invented: obligations come from the jsonb, and impacted
+// models are the union of linkedModelIds resolved through ai_models.id.
+import { useMemo } from 'react'
+import { Link } from 'react-router-dom'
+import { Gauge, Globe, ArrowSquareOut } from '@phosphor-icons/react'
+import { Card, CardContent } from '../components/ui/card'
+import { PageHeader } from '../components/ui/PageHeader'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { InterlinkChip } from '@/components/ui/InterlinkChip'
+import { HorizonBadge, OB_STYLE } from '@/components/ui/HorizonBadge'
+import { useRegulationEntries } from '@/hooks/useRiskIncidents'
+import { useModelsData } from '@/hooks/useModelsData'
+import { daysUntil, type RegulationEntryRecord } from '@/services/riskGroupService'
 
-const VELOCITY_SCORES = [
-  { reg: 'EU AI Act', velocity: 94, change: '+12', articles: 113, activeArticles: 7, deadline: '2026-08-02', region: 'EU', models: 3, readiness: 71 },
-  { reg: 'EU AI Liability Dir.', velocity: 78, change: '+8', articles: 24, activeArticles: 3, deadline: '2026-12-15', region: 'EU', models: 3, readiness: 44 },
-  { reg: 'NIST AI RMF 1.1', velocity: 61, change: '+5', articles: 36, activeArticles: 2, deadline: '2026-09-30', region: 'US', models: 6, readiness: 68 },
-  { reg: 'UK AI Safety Bill', velocity: 55, change: '+9', articles: 18, activeArticles: 4, deadline: '2027-01-01', region: 'UK', models: 2, readiness: 52 },
-  { reg: 'ECOA / Reg B', velocity: 34, change: '+1', articles: 12, activeArticles: 1, deadline: 'Effective', region: 'US', models: 2, readiness: 82 },
-  { reg: 'ISO 42001', velocity: 28, change: '+3', articles: 45, activeArticles: 2, deadline: '2026-11-30', region: 'Global', models: 6, readiness: 61 },
-];
-
-const VELOCITY_TREND = [
-  { month: 'Oct', euAIAct: 62, nist: 41, ukBill: 28 },
-  { month: 'Nov', euAIAct: 67, nist: 44, ukBill: 32 },
-  { month: 'Dec', euAIAct: 72, nist: 49, ukBill: 37 },
-  { month: 'Jan', euAIAct: 78, nist: 53, ukBill: 41 },
-  { month: 'Feb', euAIAct: 84, nist: 56, ukBill: 47 },
-  { month: 'Mar', euAIAct: 89, nist: 59, ukBill: 51 },
-  { month: 'Apr', euAIAct: 94, nist: 61, ukBill: 55 },
-];
-
-const MODEL_IMPACT_MAP = [
-  { model: 'CreditRisk-XGB-v3.2', id: 'MDL-001', regs: ['EU AI Act', 'ECOA', 'EU AI Liability'], impact: 'Critical', gaps: 3, daysToDeadline: 112 },
-  { model: 'FraudDetect-LSTM-v1.8', id: 'MDL-002', regs: ['EU AI Act', 'NIST AI RMF'], impact: 'High', gaps: 1, daysToDeadline: 112 },
-  { model: 'CreditScoreNLP-v2.1', id: 'MDL-004', regs: ['EU AI Act', 'ECOA', 'UK AI Safety'], impact: 'High', gaps: 2, daysToDeadline: 112 },
-  { model: 'RiskForecast-GBM', id: 'MDL-005', regs: ['NIST AI RMF', 'ISO 42001'], impact: 'Medium', gaps: 1, daysToDeadline: 171 },
-  { model: 'DocClassifier-BERT', id: 'MDL-006', regs: ['ISO 42001'], impact: 'Low', gaps: 0, daysToDeadline: 232 },
-];
-
-const UPCOMING_CHANGES = [
-  { date: '2026-05-01', reg: 'EU AI Act', article: 'Art. 52 — Transparency obligations for GPAI', impact: 'High', modelsAffected: 2, autoMapped: true },
-  { date: '2026-06-15', reg: 'NIST AI RMF 1.1', article: 'GOVERN 6.1 — Policies for AI deployment decisions', impact: 'Medium', modelsAffected: 6, autoMapped: true },
-  { date: '2026-08-02', reg: 'EU AI Act', article: 'Art. 9 — Full risk management system required', impact: 'Critical', modelsAffected: 3, autoMapped: false },
-  { date: '2026-09-01', reg: 'UK AI Safety Bill', article: 'Cl. 12 — Mandatory bias assessments for public-facing AI', impact: 'High', modelsAffected: 2, autoMapped: false },
-  { date: '2026-11-30', reg: 'ISO 42001', article: 'Clause 9 — Performance evaluation requirements', impact: 'Medium', modelsAffected: 6, autoMapped: true },
-];
-
-const READINESS_DATA = VELOCITY_SCORES.map(v => ({ name: v.reg.replace('EU AI ', '').replace(' Dir.', ''), readiness: v.readiness }));
-
-function velColor(v: number) {
-  if (v >= 80) return 'hsl(var(--destructive))';
-  if (v >= 60) return 'hsl(var(--s-wn-tx))';
-  return 'hsl(var(--s-ok-tx))';
-}
-
-function impactBadge(impact: string) {
-  const map: Record<string, { bg: string; tx: string }> = {
-    Critical: { bg: 'hsl(var(--destructive) / 0.12)', tx: 'hsl(var(--destructive))' },
-    High: { bg: 'hsl(var(--s-wn-bg))', tx: 'hsl(var(--s-wn-tx))' },
-    Medium: { bg: 'hsl(45 90% 50% / 0.12)', tx: 'hsl(45 90% 38%)' },
-    Low: { bg: 'hsl(var(--s-nt-bg))', tx: 'hsl(var(--text-4))' },
-  };
-  return map[impact] || map.Low;
+/** Per-entry obligation status tallies — straight from the jsonb. */
+function obligationTallies(r: RegulationEntryRecord) {
+  const tallies: Record<string, number> = {}
+  for (const ob of r.obligations) {
+    const key = (ob.status ?? 'unmapped').toLowerCase()
+    tallies[key] = (tallies[key] ?? 0) + 1
+  }
+  return tallies
 }
 
 export default function RegulatoryVelocity() {
-  const { orgName } = useSettingsStore();
-  const ct = useChartTheme();
-  const [tab, setTab] = useState('velocity');
+  const { items, isLoading, error } = useRegulationEntries()
+  const { models } = useModelsData()
+  const modelName = (id: string) => models.find(m => m.id === id)?.name ?? 'Unavailable'
 
-  const criticalRegs = VELOCITY_SCORES.filter(r => r.velocity >= 80).length;
-  const totalModelsAtRisk = new Set(MODEL_IMPACT_MAP.filter(m => m.impact === 'Critical' || m.impact === 'High').map(m => m.id)).size;
+  // KPIs — derived only.
+  const within90 = items.filter(r => { const d = daysUntil(r.effectiveOn); return d != null && d >= 0 && d <= 90 })
+  const within180 = items.filter(r => { const d = daysUntil(r.effectiveOn); return d != null && d >= 0 && d <= 180 })
+  const totalObligations = items.reduce((s, r) => s + r.obligations.length, 0)
+  const metObligations = items.reduce((s, r) => s + r.obligations.filter(o => (o.status ?? '').toLowerCase() === 'mapped').length, 0)
+  const openObligations = totalObligations - metObligations
+
+  // Per-jurisdiction breakdown, counted from real rows.
+  const byJurisdiction = useMemo(() => {
+    const map = new Map<string, { total: number; upcoming90: number; inForce: number }>()
+    for (const r of items) {
+      const key = r.jurisdiction?.trim() || 'Unspecified'
+      const row = map.get(key) ?? { total: 0, upcoming90: 0, inForce: 0 }
+      row.total += 1
+      const d = daysUntil(r.effectiveOn)
+      if (d != null && d < 0) row.inForce += 1
+      if (d != null && d >= 0 && d <= 90) row.upcoming90 += 1
+      map.set(key, row)
+    }
+    return Array.from(map.entries()).sort((a, b) => b[1].total - a[1].total)
+  }, [items])
+
+  // Upcoming changes: dated entries sorted by computed days-until (in-force
+  // entries excluded — they are no longer "upcoming").
+  const upcoming = useMemo(() =>
+    items
+      .map(r => ({ r, d: daysUntil(r.effectiveOn) }))
+      .filter((x): x is { r: RegulationEntryRecord; d: number } => x.d != null && x.d >= 0)
+      .sort((a, b) => a.d - b.d),
+    [items])
+
+  // Models impacted = union of linkedModelIds across all entries.
+  const impactedModelIds = useMemo(() => {
+    const set = new Set<string>()
+    for (const r of items) for (const id of r.linkedModelIds ?? []) set.add(id)
+    return Array.from(set)
+  }, [items])
+
+  if (isLoading) return <PageSkeleton title="Regulatory Velocity" showStats rows={5} />
 
   return (
-    <TooltipProvider>
-      <div className="space-y-6">
-        <PageHeader
-          title="Regulatory Velocity Engine"
-          subtitle={`${orgName} · AI-powered regulatory change velocity scoring with automatic model impact mapping and deadline intelligence`}
-          actions={
-            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
-              onClick={() => toast.success('Regulatory scan triggered — results in 30s')}>
-              <Lightning size={13} />Run Regulatory Scan
-            </Button>
-          }
-        />
+    <div className="space-y-5">
+      <PageHeader
+        title="Regulatory Velocity"
+        subtitle="Change pressure computed from the regulation register — effective-date horizons, obligation totals and model exposure, nothing invented"
+        icon={Gauge}
+      />
 
-        <div className="grid grid-cols-4 gap-3">
-          {[
-            { label: 'Regulations Tracked', value: VELOCITY_SCORES.length, sub: '6 jurisdictions' },
-            { label: 'High-Velocity Regulations', value: criticalRegs, sub: 'Velocity score ≥ 80', alert: true },
-            { label: 'Models at Critical/High Risk', value: totalModelsAtRisk, sub: 'Auto-mapped exposure', alert: true },
-            { label: 'Upcoming Article Changes (90d)', value: UPCOMING_CHANGES.length, sub: '2 require immediate action' },
-          ].map((tile, i) => (
-            <div key={i} className="p-4" style={{ border: `1px solid ${tile.alert ? 'hsl(var(--s-wn-br))' : 'hsl(var(--border))'}`, background: tile.alert ? 'hsl(var(--s-wn-bg) / 0.5)' : 'hsl(var(--bg-surface))' }}>
-              <span className="text-[10px] uppercase tracking-widest font-semibold block mb-1" style={{ color: 'hsl(var(--text-4))' }}>{tile.label}</span>
-              <p className="text-2xl font-bold" style={{ color: tile.alert ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-1))' }}>{tile.value}</p>
-              <p className="text-[10px] mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>{tile.sub}</p>
-            </div>
-          ))}
+      {error && (
+        <div role="alert" className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
+          <p className="text-sm font-semibold text-[hsl(var(--destructive))]">Failed to load regulation entries</p>
+          <p className="text-xs text-[hsl(var(--text-3))] mt-0.5">{(error as Error).message}</p>
         </div>
+      )}
 
-        <div className="p-3 flex items-start gap-3" style={{ border: '1px solid hsl(var(--brand) / 0.3)', background: 'hsl(var(--brand) / 0.04)' }}>
-          <Info size={16} style={{ color: 'hsl(var(--brand))', flexShrink: 0, marginTop: 2 }} />
-          <div>
-            <p className="text-xs font-semibold" style={{ color: 'hsl(var(--brand))' }}>Switching Cost: Your Regulation-Model Mapping History is Irreplaceable</p>
-            <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
-              Every model-to-regulation mapping, compliance decision, and article-level evidence link you've built over 14 months lives exclusively in Sentinel.
-              Migrating this data to any other platform would require months of manual re-mapping work — a structural switching cost that protects your investment.
-            </p>
+      {items.length === 0 && !error ? (
+        <div className="rounded border border-[hsl(var(--border))] bg-surface py-14 text-center">
+          <Gauge size={28} className="mx-auto mb-3 opacity-40 text-[hsl(var(--text-4))]" />
+          <p className="text-sm text-[hsl(var(--text-2))]">No regulations tracked yet — there is no velocity to compute.</p>
+          <p className="text-xs text-[hsl(var(--text-4))] mt-1">
+            Start tracking entries in <Link to="/reg-radar" className="underline text-[hsl(var(--brand))]">Reg Radar</Link>; every figure on this page derives from that register.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* KPIs — all computed from loaded rows */}
+          <div className="grid grid-cols-4 gap-4">
+            {[
+              { label: 'Effective Within 90 Days', value: String(within90.length), sub: 'Computed from effective dates', color: within90.length > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--text-1))' },
+              { label: 'Effective Within 180 Days', value: String(within180.length), sub: `Of ${items.length} tracked regulations`, color: 'hsl(var(--text-1))' },
+              { label: 'Obligations Open vs Met', value: totalObligations > 0 ? `${openObligations} / ${metObligations}` : '—', sub: totalObligations > 0 ? 'Open (not mapped) vs mapped to controls' : 'No obligations extracted yet', color: openObligations > 0 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--s-ok-tx))' },
+              { label: 'Models Impacted', value: String(impactedModelIds.length), sub: 'Union of models linked in the register', color: 'hsl(var(--brand))' },
+            ].map(s => (
+              <div key={s.label} className="rounded border border-[hsl(var(--border))] bg-surface p-4">
+                <p className="text-[11px] text-[hsl(var(--text-4))] uppercase tracking-wide">{s.label}</p>
+                <p className="text-2xl font-bold mt-1" style={{ color: s.color }}>{s.value}</p>
+                <p className="text-xs text-[hsl(var(--text-4))] mt-0.5">{s.sub}</p>
+              </div>
+            ))}
           </div>
-        </div>
 
-        <Tabs value={tab} onValueChange={setTab}>
-          <TabsList style={{ borderRadius: 0 }}>
-            <TabsTrigger value="velocity" style={{ borderRadius: 0 }}>Velocity Scores</TabsTrigger>
-            <TabsTrigger value="impact" style={{ borderRadius: 0 }}>Model Impact Map</TabsTrigger>
-            <TabsTrigger value="upcoming" style={{ borderRadius: 0 }}>Upcoming Changes</TabsTrigger>
-            <TabsTrigger value="trend" style={{ borderRadius: 0 }}>Velocity Trends</TabsTrigger>
-          </TabsList>
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            {/* Upcoming changes */}
+            <div className="lg:col-span-2 space-y-3">
+              <p className="text-sm font-semibold text-[hsl(var(--text-1))]">Upcoming Changes</p>
+              {upcoming.length === 0 ? (
+                <div className="rounded border border-[hsl(var(--border))] bg-surface py-10 text-center">
+                  <p className="text-sm text-[hsl(var(--text-4))]">No tracked regulation has a future effective date.</p>
+                  <p className="text-xs text-[hsl(var(--text-4))] mt-1">
+                    Add effective dates in <Link to="/reg-radar" className="underline text-[hsl(var(--brand))]">Reg Radar</Link> to build the horizon.
+                  </p>
+                </div>
+              ) : (
+                upcoming.map(({ r, d }) => {
+                  const tallies = obligationTallies(r)
+                  return (
+                    <Link
+                      key={r.id}
+                      to={`/reg-radar/${r.id}`}
+                      className="block rounded border bg-surface p-4 hover:border-[hsl(var(--brand)/0.4)] transition-colors"
+                      style={{ borderColor: d <= 90 ? 'hsl(var(--destructive) / 0.4)' : 'hsl(var(--border))' }}
+                    >
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            {r.regulationRef && <span className="font-mono text-[10px] text-[hsl(var(--brand))]">{r.regulationRef}</span>}
+                            {r.jurisdiction && <span className="text-[10px] px-1.5 py-0.5 border border-[hsl(var(--border))] text-[hsl(var(--text-4))]">{r.jurisdiction}</span>}
+                            <HorizonBadge effectiveOn={r.effectiveOn} compact />
+                          </div>
+                          <p className="text-sm font-semibold text-[hsl(var(--text-1))]">{r.name}</p>
+                          {r.obligations.length > 0 ? (
+                            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                              {Object.entries(tallies).map(([status, count]) => (
+                                <span key={status} className="text-[10px] px-1.5 py-0.5 font-medium" style={OB_STYLE[status] ?? { background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-4))' }}>
+                                  {count} {status}
+                                </span>
+                              ))}
+                            </div>
+                          ) : (
+                            <p className="text-[10px] italic text-[hsl(var(--text-4))] mt-2">No obligations extracted yet.</p>
+                          )}
+                        </div>
+                        <div className="text-right flex-shrink-0">
+                          <p className="text-xs text-[hsl(var(--text-4))]">Effective</p>
+                          <p className="text-sm font-semibold text-[hsl(var(--text-1))]">{r.effectiveOn}</p>
+                        </div>
+                      </div>
+                    </Link>
+                  )
+                })
+              )}
+            </div>
 
-          <TabsContent value="velocity" className="mt-4">
-            <div className="grid grid-cols-2 gap-4">
+            {/* Right rail: jurisdictions + impacted models */}
+            <div className="space-y-4">
               <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
                 <CardContent className="p-4">
-                  <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Regulation Velocity Score — Change Rate Index (0-100)</p>
-                  <div className="space-y-3">
-                    {VELOCITY_SCORES.sort((a, b) => b.velocity - a.velocity).map((reg, i) => (
-                      <div key={i}>
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="flex items-center gap-2">
-                            <Globe size={11} style={{ color: 'hsl(var(--brand))' }} />
-                            <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{reg.reg}</span>
-                            <span className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{reg.region}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-[10px]" style={{ color: 'hsl(var(--s-ok-tx))' }}>{reg.change} pts/mo</span>
-                            <span className="text-xs font-bold" style={{ color: velColor(reg.velocity) }}>{reg.velocity}</span>
-                          </div>
-                        </div>
-                        <div className="w-full h-1.5 overflow-hidden" style={{ background: 'hsl(var(--border))' }}>
-                          <div style={{ width: `${reg.velocity}%`, height: '100%', background: velColor(reg.velocity) }} />
-                        </div>
-                        <div className="flex items-center justify-between mt-1 text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>
-                          <span>{reg.activeArticles} articles changing · {reg.models} models affected</span>
-                          <span>Readiness: <strong style={{ color: reg.readiness >= 70 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }}>{reg.readiness}%</strong></span>
-                        </div>
+                  <p className="text-sm font-semibold mb-3 flex items-center gap-1.5" style={{ color: 'hsl(var(--text-1))' }}>
+                    <Globe size={14} /> By Jurisdiction
+                  </p>
+                  <div className="space-y-2">
+                    {byJurisdiction.map(([jur, row]) => (
+                      <div key={jur} className="flex items-center justify-between text-xs border-b border-[hsl(var(--border))] pb-2 last:border-b-0 last:pb-0">
+                        <span className="font-medium" style={{ color: 'hsl(var(--text-1))' }}>{jur}</span>
+                        <span style={{ color: 'hsl(var(--text-4))' }}>
+                          {row.total} tracked · {row.inForce} in force
+                          {row.upcoming90 > 0 && <strong style={{ color: 'hsl(var(--destructive))' }}> · {row.upcoming90} due ≤90d</strong>}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -160,155 +187,32 @@ export default function RegulatoryVelocity() {
 
               <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
                 <CardContent className="p-4">
-                  <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Compliance Readiness vs. Regulation</p>
-                  <ResponsiveContainer width="100%" height={280}>
-                    <BarChart data={READINESS_DATA} layout="vertical" barCategoryGap={8}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} horizontal={false} />
-                      <XAxis type="number" domain={[0, 100]} tick={{ fill: ct.axis, fontSize: 9 }} />
-                      <YAxis dataKey="name" type="category" tick={{ fill: ct.axis, fontSize: 10 }} width={80} />
-                      <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 11 }} />
-                      <Bar dataKey="readiness" name="Readiness %" radius={0}>
-                        {READINESS_DATA.map((entry, i) => (
-                          <Cell key={i} fill={entry.readiness >= 70 ? 'hsl(var(--s-ok-tx))' : entry.readiness >= 55 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))'} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
+                  <p className="text-sm font-semibold mb-1" style={{ color: 'hsl(var(--text-1))' }}>Models Impacted</p>
+                  <p className="text-[11px] mb-3" style={{ color: 'hsl(var(--text-4))' }}>Every model linked to at least one tracked regulation.</p>
+                  {impactedModelIds.length === 0 ? (
+                    <p className="text-xs italic" style={{ color: 'hsl(var(--text-4))' }}>
+                      No models linked in the register yet — link models from Regulatory Intelligence.
+                    </p>
+                  ) : (
+                    <div className="flex flex-wrap gap-1.5">
+                      {impactedModelIds.map(id => (
+                        <InterlinkChip key={id} label={modelName(id)} to={`/models/inventory/${id}`} />
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
+
+              <div className="flex items-center gap-2 text-xs text-[hsl(var(--text-4))]">
+                <span>Maintain the register in</span>
+                <Link to="/reg-radar" className="inline-flex items-center gap-1 text-[hsl(var(--brand))] hover:underline">
+                  Reg Radar <ArrowSquareOut size={12} />
+                </Link>
+              </div>
             </div>
-          </TabsContent>
-
-          <TabsContent value="impact" className="mt-4">
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardContent className="p-0">
-                <div className="p-3 flex items-center gap-2" style={{ borderBottom: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
-                  <Brain size={13} style={{ color: 'hsl(var(--brand))' }} />
-                  <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
-                    Auto-mapped using Sentinel's proprietary model-regulation semantic matching engine. Models are automatically linked to applicable regulations based on use-case classification, geography, and data type.
-                  </p>
-                </div>
-                <table className="w-full text-xs">
-                  <thead>
-                    <tr style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                      {['Model', 'Applicable Regulations', 'Impact Level', 'Open Gaps', 'Nearest Deadline'].map(h => (
-                        <th key={h} className="px-4 py-3 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MODEL_IMPACT_MAP.map((m, i) => {
-                      const ib = impactBadge(m.impact);
-                      return (
-                        <tr key={i} style={{ borderBottom: '1px solid hsl(var(--border))' }} className="hover:bg-muted/30">
-                          <td className="px-4 py-3">
-                            <p className="font-medium" style={{ color: 'hsl(var(--text-1))' }}>{m.model}</p>
-                            <p className="text-[10px] font-mono" style={{ color: 'hsl(var(--brand))' }}>{m.id}</p>
-                          </td>
-                          <td className="px-4 py-3">
-                            <div className="flex flex-wrap gap-1">
-                              {m.regs.map(r => (
-                                <span key={r} className="text-[9px] px-1.5 py-0.5" style={{ background: 'hsl(var(--s-nt-bg))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))' }}>{r}</span>
-                              ))}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className="text-[10px] px-1.5 py-0.5 font-semibold" style={{ background: ib.bg, color: ib.tx }}>{m.impact}</span>
-                          </td>
-                          <td className="px-4 py-3 font-mono font-bold" style={{ color: m.gaps > 0 ? 'hsl(var(--destructive))' : 'hsl(var(--s-ok-tx))' }}>{m.gaps}</td>
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-1">
-                              <Clock size={10} style={{ color: m.daysToDeadline < 120 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-4))' }} />
-                              <span style={{ color: m.daysToDeadline < 120 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--text-3))' }}>
-                                {m.daysToDeadline === 0 ? 'Effective now' : `${m.daysToDeadline} days`}
-                              </span>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="upcoming" className="mt-4">
-            <div className="space-y-3">
-              {UPCOMING_CHANGES.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()).map((change, i) => {
-                const ib = impactBadge(change.impact);
-                const daysLeft = Math.ceil((new Date(change.date).getTime() - Date.now()) / 86400000);
-                return (
-                  <Card key={i} style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: `1px solid ${change.impact === 'Critical' ? 'hsl(var(--destructive) / 0.4)' : 'hsl(var(--border))'}` }}>
-                    <CardContent className="p-4">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                          <div className="text-center p-2 min-w-12" style={{ background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))' }}>
-                            <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{new Date(change.date).toLocaleDateString('en', { month: 'short' })}</p>
-                            <p className="text-lg font-bold" style={{ color: 'hsl(var(--text-1))' }}>{new Date(change.date).getDate()}</p>
-                            <p className="text-[9px]" style={{ color: 'hsl(var(--text-4))' }}>{new Date(change.date).getFullYear()}</p>
-                          </div>
-                          <div>
-                            <div className="flex items-center gap-2 mb-1">
-                              <span className="text-xs font-semibold" style={{ color: 'hsl(var(--brand))' }}>{change.reg}</span>
-                              <span className="text-[9px] px-1.5 py-0.5 font-semibold" style={{ background: ib.bg, color: ib.tx }}>{change.impact}</span>
-                              {change.autoMapped && (
-                                <span className="text-[9px] px-1.5 py-0.5" style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' }}>AUTO-MAPPED</span>
-                              )}
-                            </div>
-                            <p className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{change.article}</p>
-                            <p className="text-[10px] mt-1" style={{ color: 'hsl(var(--text-4))' }}>
-                              {change.modelsAffected} model{change.modelsAffected > 1 ? 's' : ''} affected · {daysLeft} days remaining
-                            </p>
-                          </div>
-                        </div>
-                        <div className="flex gap-1.5 ml-4">
-                          <Button size="sm" variant="outline" className="h-7 text-[10px] px-2" style={{ borderRadius: 0 }}
-                            onClick={() => toast.success('Compliance task created for this article')}>
-                            <CheckCircle size={10} />Create Task
-                          </Button>
-                          {!change.autoMapped && (
-                            <Button size="sm" className="h-7 text-[10px] px-2" style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
-                              onClick={() => toast.success('Auto-mapping models to this regulation…')}>
-                              <Brain size={10} />Auto-Map
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-          </TabsContent>
-
-          <TabsContent value="trend" className="mt-4">
-            <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
-              <CardContent className="p-4">
-                <p className="text-sm font-semibold mb-3" style={{ color: 'hsl(var(--text-1))' }}>Regulatory Velocity Index — 7-Month Trend by Key Regulation</p>
-                <ResponsiveContainer width="100%" height={280}>
-                  <LineChart data={VELOCITY_TREND}>
-                    <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                    <XAxis dataKey="month" tick={{ fill: ct.axis, fontSize: 11 }} />
-                    <YAxis domain={[0, 100]} tick={{ fill: ct.axis, fontSize: 11 }} label={{ value: 'Velocity Score', angle: -90, position: 'insideLeft', style: { fill: ct.axis, fontSize: 10 } }} />
-                    <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 11 }} />
-                    <Line type="monotone" dataKey="euAIAct" stroke="hsl(var(--destructive))" strokeWidth={2.5} name="EU AI Act" dot={{ fill: 'hsl(var(--destructive))', r: 3 }} />
-                    <Line type="monotone" dataKey="nist" stroke="hsl(var(--brand))" strokeWidth={2} name="NIST AI RMF" dot={{ fill: 'hsl(var(--brand))', r: 3 }} />
-                    <Line type="monotone" dataKey="ukBill" stroke="hsl(var(--s-wn-tx))" strokeWidth={2} name="UK AI Safety Bill" dot={{ fill: 'hsl(var(--s-wn-tx))', r: 3 }} />
-                  </LineChart>
-                </ResponsiveContainer>
-                <div className="mt-3 p-3" style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-raised))' }}>
-                  <p className="text-xs" style={{ color: 'hsl(var(--text-3))' }}>
-                    <strong style={{ color: 'hsl(var(--destructive))' }}>EU AI Act</strong> velocity has accelerated +32 points over 7 months and is projected to hit 98/100 by the August 2, 2026 full effectiveness deadline.
-                    Immediate action recommended for MDL-001, MDL-002, MDL-004.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
-    </TooltipProvider>
-  );
+          </div>
+        </>
+      )}
+    </div>
+  )
 }

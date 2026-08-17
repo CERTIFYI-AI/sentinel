@@ -1,4 +1,114 @@
+## 1.65.0 (2026-08-17)
+
+* feat: rebuild Vendors/TPRM, AI Supply Chain & Sustainability on the platform contract (#75) ([16f6a8c](https://github.com/CERTIFYI-AI/sentinel/commit/16f6a8c)), closes [#75](https://github.com/CERTIFYI-AI/sentinel/issues/75)
+* feat(interlinks): surface the sustainability footprint on models; deep-link vendor records ([d2bf761](https://github.com/CERTIFYI-AI/sentinel/commit/d2bf761))
+* feat(supply-chain): rebuild AIBOM, Provenance and Attestations; add module docs ([1f0ce05](https://github.com/CERTIFYI-AI/sentinel/commit/1f0ce05))
+* feat(tprm,esg): rebuild Vendors/TPRM and Sustainability clusters on real backends ([1351b95](https://github.com/CERTIFYI-AI/sentinel/commit/1351b95))
+* feat(tprm,supply-chain,esg): canonical schema, org-scoped RLS, and seeds on the one id-space ([053ad49](https://github.com/CERTIFYI-AI/sentinel/commit/053ad49))
+* docs(compliance): map TPRM, supply-chain and ESG modules to EU AI Act and ISO 42001 ([86be49b](https://github.com/CERTIFYI-AI/sentinel/commit/86be49b))
+* docs(technical-debt): register the demo-table exposure, the grant gap, and unperformed verification ([299e3d2](https://github.com/CERTIFYI-AI/sentinel/commit/299e3d2))
+* fix(policies): heal live framework/interlink column drift; supersede stale CI runs ([be50387](https://github.com/CERTIFYI-AI/sentinel/commit/be50387))
+
+## 1.64.0 (2026-08-16)
+
+* feat: agentic mesh + go-public + Security/Risk/Compliance groups on the platform contract (#74) ([49b15da](https://github.com/CERTIFYI-AI/sentinel/commit/49b15da)), closes [#74](https://github.com/CERTIFYI-AI/sentinel/issues/74)
+* feat(ci): static duplicate-version guard in the replay checker ([5b543c8](https://github.com/CERTIFYI-AI/sentinel/commit/5b543c8))
+* feat(compliance-critical): Autopilot tenancy gate + audit-trail consolidation + honest Overview ([63f6434](https://github.com/CERTIFYI-AI/sentinel/commit/63f6434))
+* feat(compliance-critical): controls/evidence interlink graph, testing cadence, Art. 12 logging ([9a7dbf6](https://github.com/CERTIFYI-AI/sentinel/commit/9a7dbf6))
+* feat(compliance-critical): full policy lifecycle — rich text, versions, approval, sign-off, acknowle ([6bb9b58](https://github.com/CERTIFYI-AI/sentinel/commit/6bb9b58))
+* feat(compliance-critical): regulatory honesty, statutory windows, Trust Center made real ([7f38d57](https://github.com/CERTIFYI-AI/sentinel/commit/7f38d57))
+* feat(compliance): Audit Management, Calendar, Evidence + Audit Trail wiring ([7a66005](https://github.com/CERTIFYI-AI/sentinel/commit/7a66005))
+* feat(compliance): canonical org-scoped schema + cross-linked seeds (22 modules) ([32c24ff](https://github.com/CERTIFYI-AI/sentinel/commit/32c24ff))
+* feat(compliance): frameworks & controls cluster on real backends (7 pages) ([127d0d5](https://github.com/CERTIFYI-AI/sentinel/commit/127d0d5))
+* feat(compliance): one real policy module — Policies/Templates/Editor/Documents ([f86a343](https://github.com/CERTIFYI-AI/sentinel/commit/f86a343))
+* feat(compliance): regulatory cluster on real backends (7 pages) ([ae9d85a](https://github.com/CERTIFYI-AI/sentinel/commit/ae9d85a))
+* feat(compliance): service + hooks layer for the 22-module group ([6538fa0](https://github.com/CERTIFYI-AI/sentinel/commit/6538fa0))
+* feat(interlinks): model detail becomes a back-link hub (Risk & Security tab) ([0475eee](https://github.com/CERTIFYI-AI/sentinel/commit/0475eee))
+* feat(mesh): agentic mesh — 10 always-on sentinel fleet on the shared event bus ([8aede88](https://github.com/CERTIFYI-AI/sentinel/commit/8aede88))
+* feat(risk-critical): canonical Risk Register seeds with full interlinks ([ad44891](https://github.com/CERTIFYI-AI/sentinel/commit/ad44891))
+* feat(risk-critical): incident cluster elevation — editable incidents, Art. 73 prompt, unified except ([d23f5a5](https://github.com/CERTIFYI-AI/sentinel/commit/d23f5a5))
+* feat(risk-critical): oversight + executive elevation — real notifications, multi-step approval UI, h ([a6bb9ad](https://github.com/CERTIFYI-AI/sentinel/commit/a6bb9ad))
+* feat(risk-critical): the Risk Register becomes the platform's operable center of gravity ([49f9636](https://github.com/CERTIFYI-AI/sentinel/commit/49f9636))
+* feat(risk-incidents): canonical org-scoped schema + fictional demo seeds ([c63d91f](https://github.com/CERTIFYI-AI/sentinel/commit/c63d91f))
+* feat(risk-incidents): HITL, Approvals, Automation on the real oversight backend ([d0b6d4a](https://github.com/CERTIFYI-AI/sentinel/commit/d0b6d4a))
+* feat(risk-incidents): Incident Log + Workflow on the real incidents backend ([aeda3a7](https://github.com/CERTIFYI-AI/sentinel/commit/aeda3a7))
+* feat(risk-incidents): Playbooks, Tabletop, Remediation, Exceptions on real backend ([41b3ce5](https://github.com/CERTIFYI-AI/sentinel/commit/41b3ce5))
+* feat(risk-incidents): Risk Register interlinks + Matrix/Intelligence/Financial on real backend ([d4c8c95](https://github.com/CERTIFYI-AI/sentinel/commit/d4c8c95))
+* feat(risk-incidents): service + hooks layer on the throws-on-failure contract ([7aaa2a1](https://github.com/CERTIFYI-AI/sentinel/commit/7aaa2a1))
+* feat(security): canonical backend + seeds for the Security group (13 modules) ([072f453](https://github.com/CERTIFYI-AI/sentinel/commit/072f453))
+* feat(security): repoint Defense & Policies pages to real backend (13/13 done) ([a09832e](https://github.com/CERTIFYI-AI/sentinel/commit/a09832e))
+* feat(security): repoint Threats&Scans + Red Teaming pages to real backend ([1dcd9bf](https://github.com/CERTIFYI-AI/sentinel/commit/1dcd9bf))
+* feat(security): service + hooks layer for the Security group ([81fb15a](https://github.com/CERTIFYI-AI/sentinel/commit/81fb15a))
+* fix(audit): client-side audit writes actually land in audit_log ([d974207](https://github.com/CERTIFYI-AI/sentinel/commit/d974207))
+* fix(ci): replay-checker array-cast bug, pinned actions, eval spacy dep ([c109ea1](https://github.com/CERTIFYI-AI/sentinel/commit/c109ea1))
+* fix(compliance-critical): write-path repair, RLS hardening, canonical controls, id-space seed heals ([c558081](https://github.com/CERTIFYI-AI/sentinel/commit/c558081))
+* fix(db): baseline eval_techniques — live-only table extended by main's new canonical migration ([852bc58](https://github.com/CERTIFYI-AI/sentinel/commit/852bc58))
+* fix(db): from-zero replay executes end-to-end — verified on real Postgres 16 ([a736c63](https://github.com/CERTIFYI-AI/sentinel/commit/a736c63))
+* fix(db): replay-heal main's cross-tenant RLS migration ([b0c7b42](https://github.com/CERTIFYI-AI/sentinel/commit/b0c7b42))
+* fix(db): replay-heal main's privacy-group migration (consent_records.tenant_id) ([6340985](https://github.com/CERTIFYI-AI/sentinel/commit/6340985))
+* fix(db): tolerate pgcrypto install in shadow DB — CLI role lacks pg_read_file ([32614b7](https://github.com/CERTIFYI-AI/sentinel/commit/32614b7))
+* fix(db): unique migration versions — same-date files collided in schema_migrations ([0aec4f9](https://github.com/CERTIFYI-AI/sentinel/commit/0aec4f9))
+* fix(db): unique versions for the two bare-20260816 migrations — CI drift collision ([fa1b3ed](https://github.com/CERTIFYI-AI/sentinel/commit/fa1b3ed))
+* fix(fabric): telemetry plane + incident cascade actually work end-to-end ([81cb599](https://github.com/CERTIFYI-AI/sentinel/commit/81cb599))
+* fix(readiness): repair migration replay, security CI, broken SQL — go-public blockers ([5b394fd](https://github.com/CERTIFYI-AI/sentinel/commit/5b394fd))
+* fix(risk-critical): core data-contract and cascade fixes from the criticality re-audit ([b18fb7f](https://github.com/CERTIFYI-AI/sentinel/commit/b18fb7f))
+* fix(security): constant console.error format strings (semgrep unsafe-formatstring) ([884b1cf](https://github.com/CERTIFYI-AI/sentinel/commit/884b1cf))
+* fix(security): constant console.warn format strings (semgrep unsafe-formatstring) ([c716bb3](https://github.com/CERTIFYI-AI/sentinel/commit/c716bb3))
+* fix(security): SecurityHome on real data + canonical vocabulary across the group ([2c5d3f1](https://github.com/CERTIFYI-AI/sentinel/commit/2c5d3f1))
+* docs(mesh)+fix(db): honest always-on activation path ([40c3f63](https://github.com/CERTIFYI-AI/sentinel/commit/40c3f63))
+* Merge main: autonomous-grc provenance — agent writes reconciled against replayed schema ([6d69ab2](https://github.com/CERTIFYI-AI/sentinel/commit/6d69ab2))
+* Merge main: interlink rollout + privacy seeds — conflicts resolved, replay healed ([2e42956](https://github.com/CERTIFYI-AI/sentinel/commit/2e42956))
+* Merge remote-tracking branch 'origin/main' into claude/agentic-mesh-architecture-d6y5re ([66bd1d9](https://github.com/CERTIFYI-AI/sentinel/commit/66bd1d9))
+* Merge remote-tracking branch 'origin/main' into claude/agentic-mesh-architecture-d6y5re ([f028ff7](https://github.com/CERTIFYI-AI/sentinel/commit/f028ff7))
+* Merge remote-tracking branch 'origin/main' into claude/agentic-mesh-architecture-d6y5re ([d4374ef](https://github.com/CERTIFYI-AI/sentinel/commit/d4374ef))
+* Merge remote-tracking branch 'origin/main' into claude/agentic-mesh-architecture-d6y5re ([22bea9b](https://github.com/CERTIFYI-AI/sentinel/commit/22bea9b))
+* docs(compliance): module docs for all 22 modules — new pages + corrected claims ([b4fe42a](https://github.com/CERTIFYI-AI/sentinel/commit/b4fe42a))
+* docs(risk-incidents): data-backing sections for all 13 wired modules ([9b9a878](https://github.com/CERTIFYI-AI/sentinel/commit/9b9a878))
+* chore(risk-incidents): QA pass — fix Button variant, drop orphaned remediation layer ([b0935ef](https://github.com/CERTIFYI-AI/sentinel/commit/b0935ef))
+
+## 1.63.0 (2026-08-16)
+
+* feat(autonomous-grc): make the governance mesh actually fire and write ([918a08e](https://github.com/CERTIFYI-AI/sentinel/commit/918a08e))
+* Merge main ([ca2966c](https://github.com/CERTIFYI-AI/sentinel/commit/ca2966c))
+* docs(completion): version live-only seeds, close compliance mapping gaps ([eb3c7fb](https://github.com/CERTIFYI-AI/sentinel/commit/eb3c7fb))
+
 ## Unreleased
+
+### Compliance & Regulatory elevated to a critical module
+
+* **Write paths repaired at the database** — the tenancy era added `org_id
+  NOT NULL` columns without DB defaults across the compliance cluster, so
+  every client create/edit on policies, controls, control tests, conformity
+  assessments, documents and approvals died on a NOT NULL violation (services
+  correctly never send scoping columns). Defaults added; rows stranded in the
+  literal `'default'` tenant healed.
+* **RLS hardening** — dropped a cross-tenant read policy on `audit_findings`
+  (predicate `true`); enabled RLS on `control_evaluation_history`; removed the
+  permissive UPDATE/DELETE policies that let the append-only `audit_log` /
+  `audit_logs` be edited, so the deny policies actually deny.
+* **Full policy lifecycle** — template → sanitized rich-text section editor →
+  version history with compare/restore → submit-for-approval bound to the
+  multi-step `policy_change` workflow → publish-on-approve → employee
+  acknowledgment (new `policy_acknowledgments` table, synced from AI Literacy
+  training attendees) → published-policy visibility in the Trust Center.
+* **Autopilot crash fixed** — pages demanding org context synchronously threw
+  to the error boundary during the async tenant hydrate on every reload/token
+  refresh; a tenancy gate in `ProtectedLayout` plus in-place re-hydration fixes
+  it platform-wide (also GovernanceMesh, JIT Elevation, SSO Providers).
+* **Audit trail consolidated** — one canonical append-only `/audit-trail`
+  (with `?open=`/`?module=` deep links); Overview's fabricated activity feed
+  replaced with the real audit log; dead duplicate audit component and service
+  removed; fabricated Overview scorecard/alerts/trend arrays deleted.
+* **Interlink graph made real** — the `controls` table was empty after a
+  from-zero replay, making every control interlink vacuous; a canonical
+  ISO 42001 / EU AI Act / NRB control set seeds it, and risk↔control,
+  finding↔control↔risk, evidence↔control now resolve. Conformity, AI-literacy
+  and trust-center seeds moved off slugs/phantom uuids onto real ids.
+* **Honesty fixes** — regulator-notify agent no longer reports success for
+  filings it didn't persist; statutory deadlines derive from a shared window
+  map (Art. 73, GDPR-33, NIS2, DORA) instead of hand-typed values; transparency
+  provenance no longer labels human-authored reports as mesh-generated;
+  Art. 12 `logAction` added across the compliance and regulatory services.
 
 ### Platform interlink rollout and privacy repair
 

@@ -77,7 +77,7 @@ export default function TIA() {
   const ropaName = (id: string) => ropa.data.find((r) => r.id === id)?.processingActivity
   // The supplier on the receiving end of the transfer — a TIA without a
   // named recipient cannot be assessed.
-  const { vendors } = useVendorOptions()
+  const { vendors, error: vendorsError } = useVendorOptions()
   const vendorName = (id?: string | null) => vendors.find((v: any) => v.id === id)?.name
 
   const [formOpen, setFormOpen] = useState(false)
@@ -152,9 +152,12 @@ export default function TIA() {
     ) },
     { key: 'vendorId', header: 'Recipient', render: (t) => {
       const name = vendorName(t.vendorId)
+      // Deep-link to the vendor record, not the list: the uuid is already in
+      // hand, and landing on an unfiltered list makes the reader search for the
+      // recipient they just clicked.
       if (name) return (
         <button className="text-xs text-[hsl(var(--brand))] hover:underline"
-          onClick={(e) => { e.stopPropagation(); nav('/vendors') }}>{name}</button>
+          onClick={(e) => { e.stopPropagation(); nav(`/vendors/${t.vendorId}`) }}>{name}</button>
       )
       return <span className="text-xs text-[hsl(var(--text-4))]">{t.vendorId ? 'Unavailable' : '—'}</span>
     } },
@@ -276,6 +279,11 @@ export default function TIA() {
                 {vendors.map((v: any) => <SelectItem key={v.id} value={v.id}>{v.name}</SelectItem>)}
               </SelectContent>
             </Select>
+            {vendorsError && (
+              <p role="alert" className="mt-1 text-[11px] text-[hsl(var(--destructive))]">
+                Vendor options failed to load: {vendorsError.message}
+              </p>
+            )}
           </Field>
         </div>
         <Field label="Processing activity" hint="The Art. 30 record whose data crosses the border">

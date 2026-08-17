@@ -15,3 +15,6 @@ Track corrective and preventive actions (CAPA) linked to gaps, findings, inciden
 
 ## Lifecycle
 Open → Owner → Plan → Execute → Evidence attached → Independent verification → Close. Overdue items escalate and degrade Trust Score.
+
+## Data backing (wired 2026-08)
+- `public.remediation_plans` (uuid PK, org-scoped RLS): `progress_pct`, milestones jsonb, `incident_id` → incidents, `risk_id` → risks, `linked_model_ids` → models; full CRUD via `useRemediations` (writes throw — no fake success).

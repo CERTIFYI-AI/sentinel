@@ -99,7 +99,7 @@ creates IDOR risk; the JWT is the only source of truth.
 ## 5. The Five-Policy RLS Template
 
 Every tenant-scoped table receives the same five policies, generated
-by `20260421_ws01_tenancy_phase_c_rls_template.sql`:
+by `20260421000010_ws01_tenancy_phase_c_rls_template.sql`:
 
 | Policy name | Operation | Predicate |
 |---|---|---|

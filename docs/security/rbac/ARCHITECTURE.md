@@ -12,7 +12,7 @@ audited privilege. Enterprise buyers require:
 
 ## Solution
 
-### Server (`supabase/migrations/20260421_ws04_rbac_depth.sql`)
+### Server (`supabase/migrations/20260421000018_ws04_rbac_depth.sql`)
 
 - **`org_role_enum`** — 12 canonical roles:
   `org_admin`, `security_admin`, `compliance_officer`, `risk_manager`,
@@ -48,7 +48,7 @@ anyRoleHasPermission(roles, permission)
 matchesWildcard(pattern, candidate)
 ```
 
-The matrix must stay in sync with `20260421_ws04_rbac_depth.sql`;
+The matrix must stay in sync with `20260421000018_ws04_rbac_depth.sql`;
 tests in `dashboard/src/lib/__tests__/rbac.test.ts` cover the core
 semantics.
 

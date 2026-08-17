@@ -44,7 +44,7 @@ const EMPTY: PermissionSet = { grants: [], roles: [] };
  *   { grants: text[], roles: text[] }
  * scoped to the caller's current `org_id` (via auth.current_org_id()).
  *
- * See `supabase/migrations/20260421_ws03_current_user_permissions.sql`.
+ * See `supabase/migrations/20260421000016_ws03_current_user_permissions.sql`.
  */
 export function usePermissions(): {
   readonly data: PermissionSet;
