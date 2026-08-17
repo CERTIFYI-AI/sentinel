@@ -86,7 +86,7 @@ recorded.
 
 ---
 
-## TD-001 — Modules still reading generic demo tables (P0, 19 modules)
+## TD-001 — Modules still reading generic demo tables (P0, 12 remaining of 19)
 
 **Status:** Open · **Severity:** P0 · **Owner:** Platform team
 
@@ -146,18 +146,18 @@ that has no provenance.
 
 | Module | Page | Demo table |
 |---|---|---|
-| Asset Management | `pages/AssetManagement.tsx` | `assetmanagement_table` |
-| Business Impact Analysis | `pages/BIA.tsx` | `bia_table` |
+| ~~Asset Management~~ | ~~`pages/AssetManagement.tsx`~~ | **migrated** → `assets` (2026-08-25) |
+| ~~Business Impact Analysis~~ | ~~`pages/BIA.tsx`~~ | **migrated** → `bia_records` (2026-08-25) |
 | DPIA | `pages/DPIA.tsx` | `dpia_table` |
-| Identity Governance (IGA) | `pages/IGA.tsx` | `iga_table` |
-| Model Risk Committee | `pages/ModelRiskCommittee.tsx` | `modelriskcommittee_table` |
+| ~~Identity Governance (IGA)~~ | ~~`pages/IGA.tsx`~~ | **migrated** → `access_reviews` (2026-08-25) |
+| ~~Model Risk Committee~~ | ~~`pages/ModelRiskCommittee.tsx`~~ | **migrated** → `mrc_meetings` / `mrc_agenda_items` / `mrc_votes` / `mrc_committee_members` (2026-08-25) |
 | Regulator Filings | `pages/RegulatorFilings.tsx` | `regulatorfilings_table` |
 | Tabletop Exercises | `pages/TabletopExercises.tsx` | `tabletopexercises_table` |
 | Transparency Reports | `pages/TransparencyReports.tsx` | `transparencyreports_table` |
 | Committee Management | `pages/committee/CommitteeManagement.tsx` | `committeemanagement_table` |
 | Regulatory Radar | `pages/governance/RegRadar.tsx` | `regradar_table` |
 | HITL Review Center | `pages/hitl/HITLReviewCenter.tsx` | `hitlreviewcenter_table` |
-| Reporting | `pages/reporting/Reporting.tsx` | `reporting_table` |
+| ~~Reporting~~ | ~~`pages/reporting/Reporting.tsx`~~ | **migrated** → `security_reports` / `security_report_runs` (2026-08-25) |
 | Attack Surface | `pages/security/AttackSurface.tsx` | `attacksurface_table` |
 | Keys Vault | `pages/security/KeysVault.tsx` | `keysvault_table` |
 | Policy Firewall | `pages/security/PolicyFirewall.tsx` | `policyfirewall_table` |
@@ -167,6 +167,32 @@ that has no provenance.
 | ~~Vendor SLA~~ | ~~`pages/vendors/VendorSLA.tsx`~~ | **migrated** → `vendor_slas` (2026-08-16) |
 | ~~AIBOM Registry~~ | ~~`pages/AibomRegistry.tsx`~~ | **migrated** → `aibom_records` (2026-08-16) |
 | ~~Supply Chain Attestations~~ | ~~`pages/SupplyChainAttestations.tsx`~~ | **migrated** → `supply_chain_attestations` (2026-08-16) |
+
+> **Final-wave migration (2026-08-25, `20260825000001_last_demo_table_retirement.sql`).**
+> Asset Registry, BIA, Identity Governance (Access Reviews), Model Risk
+> Committee and Reporting migrated off their demo tables onto the real
+> org-scoped tables that already existed. No table was created for their core
+> data; the only new table is `mrc_committee_members` (the committee roster,
+> previously kept in `modelriskcommittee_table`'s jsonb with no tenant column
+> and seeded from seven hardcoded names in the page file — so every quorum
+> badge the product ever rendered was computed from fiction).
+>
+> **The MRC interlink was broken *and invisible*.** On a from-zero replay,
+> `mrc_agenda_items.model_id` and `mrc_votes.model_id` resolved to **0 of 12**
+> `ai_models` rows — the AIIA seed wrote model uuids that exist in no registry
+> row, and the tables' denormalised `model_name` made every pill render a
+> plausible name over a dead link. `model_id` was also `text` with no foreign
+> key, so any string was a legal reference. The migration converts it to `uuid`,
+> re-resolves each reference by name against `ai_models` (nulling what does not
+> resolve — never inventing), then adds the FK so a fabricated id is rejected by
+> the database. Post-migration: **agenda items 4/4, votes 8/8 resolve**, and
+> `insert … model_id='ffffffff-…'` now raises
+> `violates foreign key constraint "mrc_agenda_items_model_id_fkey"`.
+>
+> Demo `*_table` rows are **not** dropped (other environments may hold rows);
+> the pages simply stop reading them. Evidence: `git`-tracked migration +
+> from-zero replay (124 migrations, 0 failures); services throw on failure and
+> call `logAction`; `npx tsc --noEmit` clean; `npx vitest run` 266/266.
 
 > **Register correction (2026-08-16).** `aibomregistry_table` and
 > `supplychainattestations_table` were **absent from this table** until the
@@ -188,12 +214,24 @@ Act's Art. 14 oversight record, and conformity evidence. A seeded row here is th
 highest-consequence defect in the register.
 
 **Tier 2 — governance process records**
-`Model Risk Committee`, `Committee Management`, `Vendor Assessments`,
-`Vendor SLA`, `BIA`, `Tabletop Exercises`, `Transparency Reports`.
+Remaining: `Committee Management`, `Tabletop Exercises`, `Transparency Reports`.
+(`Model Risk Committee` and `BIA` migrated 2026-08-25; `Vendor Assessments` and
+`Vendor SLA` migrated 2026-08-16.)
 
 **Tier 3 — operational surfaces**
-`Asset Management`, `IGA`, `Reporting`, `Report Generator`, `Regulatory Radar`,
-`Attack Surface`, `Keys Vault`, `Policy Firewall`, `Red Team Lab`.
+Remaining: `Report Generator`, `Regulatory Radar`, `Attack Surface`,
+`Keys Vault`, `Policy Firewall`, `Red Team Lab`.
+(`Asset Management`, `IGA` and `Reporting` migrated 2026-08-25.)
+
+> **Remaining after the 2026-08-25 wave (9 modules):** `DPIA`,
+> `Regulator Filings`, `HITL Review Center` (Tier 1); `Committee Management`,
+> `Tabletop Exercises`, `Transparency Reports` (Tier 2); `Report Generator`,
+> `Regulatory Radar`, `Attack Surface`, `Keys Vault`, `Policy Firewall`,
+> `Red Team Lab` (Tier 3). TD-001 is **not** closed — these still render seeded
+> fiction through `useSupabaseTable`. The five migrated in this wave were the
+> last ones whose real tables already existed and sat unread; the remainder are
+> a mix of already-migrated-service surfaces (the four security pages read real
+> services but a couple still fall back) and genuine new builds.
 
 ### Known-good remediation pattern
 
@@ -396,6 +434,69 @@ and carries the fields real signing needs (`signature` DSSE envelope,
 server-side digest computation over the canonical BOM document and DSSE/Sigstore
 signing with key custody, which is its own change. Until then the UI must never
 present an unverified record as verified.
+
+---
+
+## TD-012 — Shadow model/vendor/policy id-space in seed data (mostly closed)
+
+**Owner:** Platform team · **Raised:** 2026-08-25 · **Severity:** P0 ·
+**Status:** Closed for `model_id`; residual follow-up on `transfer_impact_assessments`.
+
+### What
+
+A resolution sweep of every `*_id` uuid/text column against its target table
+(`scripts/` ad-hoc; reproduced in the migration's §8 proof block) found model,
+vendor and policy references living in a **parallel id-space that resolved to
+nothing**. Three illegal shapes were in use, all forbidden by First principle
+#2 (*"Models are keyed by `ai_models.id` (uuid) everywhere — never by name,
+slug, or a business code like `MDL-001`"*):
+
+1. **Fabricated uuids** — e.g. `83a20820-…` meaning "Credit Risk Scorer" in
+   nine tables, belonging to no `ai_models` row.
+2. **Business codes** — `MDL-001`, `MDL-002`, `NEP-001`.
+3. **Version slugs** — `credit-scoring-v3-2-1`, `nlp-sentiment-v1-5`.
+
+At its worst, `mrc_agenda_items.model_id` and `mrc_votes.model_id` resolved to
+**0 of 12** real models, while a denormalised `model_name` column rendered a
+plausible label over the dead link. Across the platform the sweep found ~72
+model references, plus `vendor-00N` codes in `ai_apps` /
+`transfer_impact_assessments` and 52 fabricated `policy_id`s in
+`guardrail_events` / `live_traces`, none resolving.
+
+### Why it survived six audit waves
+
+The shadow space was **internally consistent** — the same fabricated uuid meant
+the same model in every table that cited it — so each module looked correct in
+isolation and even joined to its siblings. It only broke on the one join that
+matters: to `ai_models`. Audits that asked *"does this page look honest?"*
+passed it; only *"where does this id actually resolve?"* caught it.
+
+### Root cause
+
+Structural, not editorial: **14 of the 15 `model_id` columns were `text` with
+no foreign key.** A text column with no referent silently accepts a slug, a
+business code, or a typo. Remapping rows without fixing the column type would
+let the shadow space grow straight back.
+
+### Addressed
+
+`20260825000002_unify_model_id_space.sql` (and, for MRC specifically,
+`20260825000001`) remaps each reference to the real id by its name label,
+**NULLs** whatever still does not resolve (a null renders "Unavailable" — a
+dangling pointer renders a lie; no model is invented to point at), converts the
+columns `text → uuid`, and adds `REFERENCES ai_models(id)` / `vendors(id)` /
+`policies(id)`. Shapes (2) and (3) are now a type error; shape (1) is an FK
+violation. Proven on a from-zero Postgres 16 replay: every remaining reference
+resolves (`total = resolves` on all 27 columns), and a re-inserted `MDL-001` /
+fabricated uuid is rejected by the DB.
+
+### Remaining debt
+
+`transfer_impact_assessments.vendor_id` carried `vendor-00N` codes but the table
+holds no name or app label to bridge from, so those rows were NULLed and the
+column constrained. Authoring meaningful demo linkage for TIA vendors (which
+supplier each cross-border transfer assessment covers) is deferred — the column
+and FK exist and are enforced; only the demo attribution is absent.
 
 ---
 

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { Settings as SettingsIcon, User, Shield, Bell, Key, Users, Database, Globe, Lock } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
@@ -212,8 +212,14 @@ const INTEGRATIONS = [
   { name: "Okta", description: "SSO and identity management", status: "disconnected", icon: "🔐" },
 ];
 
+const TAB_IDS = new Set<Tab>(["general", "team", "api-keys", "notifications", "compliance", "integrations", "demo-data"]);
+
 export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<Tab>("general");
+  // Deep link support (e.g. the Get-started checklist links ?tab=demo-data).
+  const [searchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const initialTab: Tab = requestedTab && TAB_IDS.has(requestedTab as Tab) ? (requestedTab as Tab) : "general";
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab);
 
   return (
     <div className="space-y-5">

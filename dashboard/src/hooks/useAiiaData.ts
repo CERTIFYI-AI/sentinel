@@ -17,7 +17,8 @@ import {
 } from '@/services/riskTieringService'
 import {
   fetchMeetings, fetchAgendaItems, fetchVotes, createMeeting, createAgendaItem,
-  setAgendaDecision, castVote, type MrcMeeting, type MrcAgendaItem, type MrcVote, type Decision,
+  setAgendaDecision, castVote, fetchCommitteeMembers, addCommitteeMember, removeCommitteeMember,
+  type MrcMeeting, type MrcAgendaItem, type MrcVote, type MrcMember, type Decision,
 } from '@/services/mrcService'
 
 // Shared: model registry options for interlink dropdowns across all modules.
@@ -102,18 +103,24 @@ export function useMrc() {
   const meetings = useQuery({ queryKey: ['mrc-meetings'], queryFn: fetchMeetings, staleTime: 20_000 })
   const agenda = useQuery({ queryKey: ['mrc-agenda'], queryFn: fetchAgendaItems, staleTime: 20_000 })
   const votes = useQuery({ queryKey: ['mrc-votes'], queryFn: fetchVotes, staleTime: 20_000 })
+  const members = useQuery({ queryKey: ['mrc-members'], queryFn: fetchCommitteeMembers, staleTime: 20_000 })
   const invAll = () => {
     qc.invalidateQueries({ queryKey: ['mrc-meetings'] })
     qc.invalidateQueries({ queryKey: ['mrc-agenda'] })
     qc.invalidateQueries({ queryKey: ['mrc-votes'] })
   }
+  const invMembers = () => qc.invalidateQueries({ queryKey: ['mrc-members'] })
   const vote = useMutation({ mutationFn: (v: Partial<MrcVote>) => castVote(v), onSuccess: invAll })
   const addMeeting = useMutation({ mutationFn: (m: Partial<MrcMeeting>) => createMeeting(m), onSuccess: invAll })
   const addAgenda = useMutation({ mutationFn: (a: Partial<MrcAgendaItem>) => createAgendaItem(a), onSuccess: invAll })
   const decide = useMutation({ mutationFn: ({ id, decision }: { id: string; decision: Decision }) => setAgendaDecision(id, decision), onSuccess: invAll })
+  const addMember = useMutation({ mutationFn: (m: Partial<MrcMember>) => addCommitteeMember(m), onSuccess: invMembers })
+  const removeMember = useMutation({ mutationFn: (id: string) => removeCommitteeMember(id), onSuccess: invMembers })
   return {
-    meetings: meetings.data ?? [], agenda: agenda.data ?? [], votes: votes.data ?? [],
+    meetings: meetings.data ?? [], agenda: agenda.data ?? [], votes: votes.data ?? [], members: members.data ?? [],
     isLoading: meetings.isLoading || agenda.isLoading || votes.isLoading,
-    vote, addMeeting, addAgenda, decide,
+    membersLoading: members.isLoading,
+    error: (meetings.error || agenda.error || votes.error) as Error | null,
+    vote, addMeeting, addAgenda, decide, addMember, removeMember,
   }
 }

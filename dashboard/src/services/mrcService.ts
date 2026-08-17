@@ -6,6 +6,9 @@
 // from its recorded votes, not hand-authored.
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { logAction } from '../lib/auditLogger'
+
+const MODULE = 'model-risk-committee'
 
 export type VoteChoice = 'approve' | 'reject' | 'abstain'
 export type Decision = 'pending' | 'approved' | 'rejected' | 'deferred' | 'conditional'
@@ -44,6 +47,22 @@ export interface MrcVote {
   vote: VoteChoice
   rationale: string | null
   votedAt: string
+}
+
+// The committee roster — quorum (SR 11-7 §IV.C) is counted from this, not from
+// a hardcoded list in the page. Backed by mrc_committee_members
+// (20260825000001_last_demo_table_retirement.sql), which replaces the
+// modelriskcommittee_table demo table.
+export interface MrcMember {
+  id: string
+  userId: string | null            // user_profiles.id — the real person
+  memberName: string
+  committeeRole: string
+  department: string | null
+  isChair: boolean
+  countsTowardQuorum: boolean
+  appointedAt: string | null
+  createdAt: string
 }
 
 const asArr = <T,>(v: unknown): T[] => (Array.isArray(v) ? (v as T[]) : [])
@@ -97,7 +116,9 @@ export async function createMeeting(m: Partial<MrcMeeting>): Promise<MrcMeeting>
   }
   const { data, error } = await supabase.from('mrc_meetings').insert(row).select().single()
   if (error) { console.warn('[mrc] createMeeting:', error.message); throw new Error(error.message) }
-  return meetingFromRow(data)
+  const saved = meetingFromRow(data)
+  void logAction({ module: MODULE, entityType: 'mrc_meeting', entityId: saved.id, entityName: saved.title, action: 'create', newValues: row })
+  return saved
 }
 export async function createAgendaItem(a: Partial<MrcAgendaItem>): Promise<MrcAgendaItem> {
   if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot add agenda item.')
@@ -108,7 +129,9 @@ export async function createAgendaItem(a: Partial<MrcAgendaItem>): Promise<MrcAg
   }
   const { data, error } = await supabase.from('mrc_agenda_items').insert(row).select().single()
   if (error) { console.warn('[mrc] createAgenda:', error.message); throw new Error(error.message) }
-  return agendaFromRow(data)
+  const saved = agendaFromRow(data)
+  void logAction({ module: MODULE, entityType: 'mrc_agenda_item', entityId: saved.id, entityName: saved.title, action: 'create', newValues: row })
+  return saved
 }
 export async function setAgendaDecision(id: string, decision: Decision): Promise<void> {
   if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot record decision.')
@@ -116,6 +139,7 @@ export async function setAgendaDecision(id: string, decision: Decision): Promise
     .update({ decision, decided_at: decision === 'pending' ? null : new Date().toISOString(), updated_at: new Date().toISOString() })
     .eq('id', id)
   if (error) { console.warn('[mrc] setDecision:', error.message); throw new Error(error.message) }
+  void logAction({ module: MODULE, entityType: 'mrc_agenda_item', entityId: id, action: 'decision', newValues: { decision } })
 }
 export async function castVote(v: Partial<MrcVote>): Promise<MrcVote> {
   if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot record vote.')
@@ -125,7 +149,43 @@ export async function castVote(v: Partial<MrcVote>): Promise<MrcVote> {
   }
   const { data, error } = await supabase.from('mrc_votes').insert(row).select().single()
   if (error) { console.warn('[mrc] castVote:', error.message); throw new Error(error.message) }
-  return voteFromRow(data)
+  const saved = voteFromRow(data)
+  void logAction({ module: MODULE, entityType: 'mrc_vote', entityId: saved.id, entityName: saved.agendaItemTitle ?? saved.id, action: 'vote', newValues: row })
+  return saved
+}
+
+// ── Committee roster (quorum source of truth) ───────────────────────────────
+const memberFromRow = (r: Record<string, any>): MrcMember => ({
+  id: r.id, userId: r.user_id ?? null, memberName: r.member_name ?? '',
+  committeeRole: r.committee_role ?? 'Committee Member', department: r.department ?? null,
+  isChair: !!r.is_chair, countsTowardQuorum: r.counts_toward_quorum !== false,
+  appointedAt: r.appointed_at ?? null, createdAt: r.created_at,
+})
+
+export async function fetchCommitteeMembers(): Promise<MrcMember[]> {
+  if (!isSupabaseConfigured() || !supabase) return []
+  const { data, error } = await supabase.from('mrc_committee_members').select('*').order('created_at', { ascending: true })
+  if (error) { console.warn('[mrc] members:', error.message); throw new Error(error.message) }
+  return (data ?? []).map(memberFromRow)
+}
+export async function addCommitteeMember(m: Partial<MrcMember>): Promise<MrcMember> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot add committee member.')
+  const row: Record<string, any> = {
+    user_id: m.userId ?? null, member_name: m.memberName, committee_role: m.committeeRole ?? 'Committee Member',
+    department: m.department ?? null, is_chair: m.isChair ?? false, counts_toward_quorum: m.countsTowardQuorum ?? true,
+    appointed_at: m.appointedAt ?? null,
+  }
+  const { data, error } = await supabase.from('mrc_committee_members').insert(row).select().single()
+  if (error) { console.warn('[mrc] addMember:', error.message); throw new Error(error.message) }
+  const saved = memberFromRow(data)
+  void logAction({ module: MODULE, entityType: 'mrc_committee_member', entityId: saved.id, entityName: saved.memberName, action: 'create', newValues: row })
+  return saved
+}
+export async function removeCommitteeMember(id: string): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot remove committee member.')
+  const { error } = await supabase.from('mrc_committee_members').delete().eq('id', id)
+  if (error) { console.warn('[mrc] removeMember:', error.message); throw new Error(error.message) }
+  void logAction({ module: MODULE, entityType: 'mrc_committee_member', entityId: id, action: 'delete' })
 }
 
 // Derive an item's approve/reject/abstain tally from its recorded votes.

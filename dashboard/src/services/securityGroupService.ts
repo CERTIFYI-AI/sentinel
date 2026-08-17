@@ -10,6 +10,7 @@
 // Lab/Findings, Model Arena, Policy Firewall, Keys Vault, Security Reports.
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { logAction } from '../lib/auditLogger'
 
 function arr<T>(v: T[] | null | undefined): T[] { return Array.isArray(v) ? v : [] }
 
@@ -309,23 +310,36 @@ export type ReportTemplate = {
   id?: string; name: string; category?: string; description?: string; frequency?: string
   sections?: string[]; recipients?: string[]; format?: string; generationCount?: number
   lastGeneratedAt?: string; createdAt?: string
+  /** ai_models.id this report is scoped to; null/undefined = org-wide. */
+  linkedModelId?: string | null
 }
 export function mapReport(r: any): ReportTemplate {
   return {
     id: r.id, name: r.name, category: r.category, description: r.description, frequency: r.frequency,
     sections: arr(r.sections), recipients: arr(r.recipients), format: r.format,
     generationCount: r.generation_count ?? 0, lastGeneratedAt: r.last_generated_at, createdAt: r.created_at,
+    linkedModelId: r.linked_model_id ?? null,
   }
 }
 export async function fetchReports(): Promise<ReportTemplate[]> { return (await selectAll('security_reports')).map(mapReport) }
 export async function saveReport(t: ReportTemplate) {
-  return mapReport(await upsertRow('security_reports', {
+  const saved = mapReport(await upsertRow('security_reports', {
     ...(t.id ? { id: t.id } : {}),
     name: t.name, category: t.category, description: t.description, frequency: t.frequency,
     sections: t.sections ?? [], recipients: t.recipients ?? [], format: t.format ?? 'json',
+    linked_model_id: t.linkedModelId ?? null,
   }))
+  void logAction({
+    module: 'reporting', entityType: 'security_report', entityId: saved.id,
+    entityName: saved.name, action: t.id ? 'update' : 'create',
+    newValues: { name: saved.name, category: saved.category, linked_model_id: saved.linkedModelId },
+  })
+  return saved
 }
-export const deleteReport = (id: string) => deleteRow('security_reports', id)
+export async function deleteReport(id: string) {
+  await deleteRow('security_reports', id)
+  void logAction({ module: 'reporting', entityType: 'security_report', entityId: id, action: 'delete' })
+}
 
 export type ReportRun = {
   id: string; reportId?: string; status: string; generatedBy?: string; generatedAt: string
@@ -373,6 +387,11 @@ export async function generateReport(template: ReportTemplate, generatedBy: stri
     }).eq('id', template.id)
     if (cntErr) console.warn('[securityGroup:generate] counter update failed: %s', cntErr.message)
   }
+  void logAction({
+    module: 'reporting', entityType: 'security_report_run', entityId: data.id,
+    entityName: template.name, action: 'generate',
+    newValues: { report_id: template.id, sections, size_bytes: sizeBytes },
+  })
   return {
     id: data.id, reportId: data.report_id, status: data.status, generatedBy: data.generated_by,
     generatedAt: data.generated_at, format: data.format, content: data.content, sizeBytes: data.size_bytes,

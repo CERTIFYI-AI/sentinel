@@ -1,3 +1,8 @@
+## Unreleased
+
+* feat(demo-table-retirement): rebuild the last five modules reading generic `(id, doc jsonb)` demo tables — Asset Registry (`assets`), Business Impact Analysis (`bia_records`), Identity Governance / Access Reviews (`access_reviews`), Model Risk Committee (`mrc_meetings`/`mrc_agenda_items`/`mrc_votes` + new `mrc_committee_members`) and Reporting (`security_reports`/`security_report_runs`) — on throwing services, React Query hooks and platform primitives with skeleton/empty/error states, `logAction` on every mutation, and bidirectional interlinks. Fixes the invisible MRC model-id defect (0/12 → 4/4 agenda items, 8/8 votes resolve; `model_id` converted text→uuid with a FK so a fabricated id is now rejected by the DB). Deletes every fabricated metric on these pages (fake audit history, invented KPIs, named approvers, the RSA-SHA256 "sign-off" tab, the `setTimeout` fake-generate flow)
+* feat(onboarding): data-driven "Get started" guided-setup checklist — each step's done-state is derived from the real tables (never stored), surfaced in the RightSidebar and as a dismissible `/overview` card; `null` sources render as "Unknown", never as done or not-done
+
 ## 1.66.0 (2026-08-17)
 
 * Merge remote-tracking branch 'origin/main' into claude/modules-audit-akm64k ([0428705](https://github.com/CERTIFYI-AI/sentinel/commit/0428705))
