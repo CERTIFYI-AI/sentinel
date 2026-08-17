@@ -131,3 +131,33 @@ risk data.
   "Third-Party Risk Analyst"), never named individuals — the previous mocks
   attributed signed attestations and accepted SOC 2 reports to invented people,
   which is an audit-integrity problem rather than a cosmetic one.
+
+---
+
+## Module Coverage — Executive Surfaces (Dashboard, CISO, Board Report, Peer Benchmarking)
+
+Added 2026-08-17. These surfaces own no data; they summarise the governed
+tables. They are mapped because Clause 9 turns on whether management review is
+fed by real measurement.
+
+| Control | Control description | Module & backing | Status |
+|---|---|---|---|
+| 9.1 | Monitoring, measurement, analysis and evaluation | [Dashboard / CISO Dashboard](../modules/executive-surfaces.md) — every KPI derives from an org-scoped query at render; unmeasured renders `—`, never a zero | Implemented |
+| 9.3 | Management review | [Board Report](../modules/executive-surfaces.md) — risk, compliance, incident and model sections plus Priority Actions derived from real open records; exportable with provenance | Implemented |
+| 9.3.2 | Management review inputs must be factual | Averages exclude unscored rows and state the true denominator; no trend is claimed because no snapshots are stored | Implemented |
+| A.2.4 | Reporting and communication | Export via `exportUtils` with a provenance block, audit-logged through `logAction` | Implemented |
+| A.9.2 | Performance against objectives — peer/industry comparison | [Peer Benchmarking](../modules/executive-surfaces.md) | **Not implemented** — no peer-contribution pipeline exists. The module renders an honest empty state naming the precondition rather than showing figures. Recorded here explicitly so the gap is visible rather than assumed covered. |
+
+### Audit evidence for these surfaces
+
+- **Traceability of reporting.** Board Report exports write an `audit_log` entry
+  naming the authenticated actor, the module and the action, so the point at
+  which governance figures left the platform is recoverable.
+- **Provenance on the artefact.** Each exported file states the org, the derived
+  period, a `data_as_of` timestamp, the source tables, and — in plain words —
+  that the figures are point-in-time counts rather than an audited or aggregated
+  position.
+- **No fabricated inputs to management review.** As of 2026-08-17 no figure on
+  any of these surfaces is a literal. Where a source does not exist the section
+  is removed and an empty state names what is missing; where a query fails the
+  page reports the failure rather than rendering a zero.

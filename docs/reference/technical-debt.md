@@ -312,9 +312,29 @@ extend `trg_audit` to `conformity_assessments` and `frameworks`.
 
 ---
 
-## TD-009 — Main Overview still carries fabricated dashboard sections
+## TD-009 — Main Overview fabricated dashboard sections (CLOSED 2026-08-17)
 
-**Status:** Open · **Severity:** P2 · **Owner:** Platform team
+**Status:** Closed · **Severity:** was P2 — should have been P0 · **Owner:** Platform team
+
+> **Closed 2026-08-17.** All eight listed sections are resolved: deleted where
+> nothing could back them (SLA countdown, cross-module dependency SVG, trust
+> score, governance coverage matrix) or derived from a real org-scoped query
+> (supply-chain provenance from `supply_chain_attestation_status` × `ai_models`,
+> shadow AI and kill-switch gates from `agent_gov_registry`, the heat map from
+> `ai_models.risk_tier × lifecycle_stage`, the calendar from
+> `compliance_calendar`). "System Operational" is now computed from the page's
+> own eleven queries and can report "N of 11 data sources unavailable".
+>
+> **The severity was wrong, and that is the lesson worth keeping.** This was
+> filed as P2 "display-only invented data". Two of the entries were not
+> cosmetic: `94.2% — 48 of 51 production models carry verified cryptographic
+> AIBOM attestations` was a fabricated *attestation* claim — the first thing an
+> auditor would test — sitting directly above a working link to the real AIBOM
+> register that would have shown a different number; and the hardcoded trust
+> score of `86` collided with the genuine 0.0–1.0 verifier composite documented
+> in `trust-score.md`, so the same term meant two different things in one
+> product. Invented data on the page every customer and auditor opens first is
+> not P2, whatever its render path.
 
 The 2026-08-16 audit-consolidation wave removed the fabricated Recent Activity
 feed, regulatory scorecard, alert items and synthesized trend arrays from

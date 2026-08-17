@@ -176,3 +176,39 @@ model it described.
 | Art. 12 | Record-keeping over automated action | Every agent write carries `source`, `auto_generated`, `created_by_agent` and `source_event_id`, so an auditor can trace a record back to the event that caused it |
 | Art. 14 | Human oversight | `PrivacyPostureAgent` and `ConsentWithdrawalAgent` open risks and tasks; neither closes a risk, accepts a residual risk, nor edits a statutory record. Judging a transfer lawful or a residual risk acceptable stays a human decision — the agent only ensures it is asked for |
 | Art. 12 | Honest reporting of automated steps | Agents return `failed` when a write does not land. `DSRImpactAgent` previously reported `succeeded` over a rejected insert, so the mesh recorded a completed Art. 34 notification step that had produced no record |
+
+---
+
+## Module Coverage — Executive Surfaces (Dashboard, CISO, Board Report, Peer Benchmarking)
+
+Added 2026-08-17. These four surfaces own no data; they summarise the governed
+tables. They appear here because they are what an executive or an assessor reads
+first, and because until this date the front page and the board pack rendered
+figures that no query produced.
+
+| Article | Obligation | Module & backing | Status |
+|---|---|---|---|
+| Art. 12 | Record-keeping — traceability of governance reporting | [Board Report](../modules/executive-surfaces.md) export calls `logAction` with the authenticated actor, so the moment a figure leaves the platform is recorded | Implemented |
+| Art. 13 | Transparency — the reader can tell what a figure is | Every export carries a provenance block: org, period, `data_as_of` timestamp, source tables, and an explicit statement that figures are point-in-time counts, **not audited**, and carry **no trend because no snapshots are stored** | Implemented |
+| — | Reporting surfaces are not themselves a regulated obligation | The underlying obligations are mapped in the module docs of the sources these pages read (`risks`, `incidents`, `ai_models`, `controls`, `frameworks`, attestations) | N/A — derived views |
+
+### Notes for assessors
+
+- **A figure with no backing query is not rendered.** Not greyed, not footnoted,
+  not labelled "simulated" — removed, with an honest empty state naming what is
+  missing. Anything you see on these pages resolves to records you can open.
+- **No trend is claimed anywhere.** The platform stores no posture snapshots, so
+  quarter-over-quarter movement cannot be computed and is not approximated. A
+  previous version asserted a "↓2.6 pts vs Q4 2025" improvement against a
+  baseline the schema has no way to hold.
+- **Unmeasured never reads as compliant or as failing.** Averages exclude
+  unscored rows and state the true denominator; a null renders `—` in a neutral
+  tone with no arc and no bar. Previously an unscored framework was averaged in
+  as `0`, producing a 37% figure rendered in the success colour against a
+  denominator label that was half the real one.
+- **A failed query is an error, never an empty state.** The Dashboard reports
+  "N of 11 data sources unavailable" rather than rendering zeros and greens.
+- **Peer Benchmarking is inert by design.** There is no peer-contribution
+  pipeline, so the module shows no peer figures and says why. Claims about an
+  anonymised peer network were removed rather than relabelled — see the module
+  doc for what was asserted and why it could not stand.
