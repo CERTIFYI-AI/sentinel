@@ -43,27 +43,39 @@ where asset_ref='AST-010';
 -- criticality was uniformly 'medium' on every row while risk_level said High or
 -- Medium. Two columns answering the same question differently is how a register
 -- loses the reader's trust; criticality is now derived from risk_level.
-update public.assets
-set criticality = case lower(risk_level)
-    when 'critical' then 'critical' when 'high' then 'high'
-    when 'medium' then 'medium' else 'low' end
-where risk_level is not null;
+-- REPLAY FIX (2026-08-17): risk_level is a live-only drift column; a bare
+-- UPDATE aborts a from-zero replay. Guard on column existence.
+do $$ begin
+  if exists (select 1 from information_schema.columns
+             where table_schema='public' and table_name='assets' and column_name='risk_level') then
+    update public.assets
+    set criticality = case lower(risk_level)
+        when 'critical' then 'critical' when 'high' then 'high'
+        when 'medium' then 'medium' else 'low' end
+    where risk_level is not null;
+  end if;
+end $$;
 
 -- bia_processes holds the RTO/RPO the business agreed; assets carried empty
 -- copies of the same fields. Copying them by department lets Asset Registry
 -- answer "how long can this be down?" from the BIA rather than from a second,
 -- unmaintained number.
-update public.assets a set bia_rto_hours=p.rto_hours, bia_rpo_hours=p.rpo_hours
-from public.bia_processes p
-where lower(a.department)=lower(p.department) and a.bia_rto_hours is null;
+do $$ begin
+  if exists (select 1 from information_schema.columns
+             where table_schema='public' and table_name='bia_processes' and column_name='rto_hours') then
+    update public.assets a set bia_rto_hours=p.rto_hours, bia_rpo_hours=p.rpo_hours
+    from public.bia_processes p
+    where lower(a.department)=lower(p.department) and a.bia_rto_hours is null;
+  end if;
+end $$;
 
 -- risks.linked_asset_ids was empty on all 12 rows, so no risk could answer
 -- "what breaks if this lands?".
 update public.risks r set linked_asset_ids=array[a.id] from public.assets a
-where a.asset_ref='AST-001' and r.id in ('risk-002','risk-006');
+where a.asset_ref='AST-001' and r.id::text in ('risk-002','risk-006');
 update public.risks r set linked_asset_ids=array[a.id] from public.assets a
-where a.asset_ref='AST-003' and r.id='risk-007';
+where a.asset_ref='AST-003' and r.id::text='risk-007';
 update public.risks r set linked_asset_ids=array[a.id] from public.assets a
-where a.asset_ref='AST-009' and r.id in ('risk-001','risk-003');
+where a.asset_ref='AST-009' and r.id::text in ('risk-001','risk-003');
 update public.risks r set linked_asset_ids=array[a.id] from public.assets a
-where a.asset_ref='AST-002' and r.id='risk-004';
+where a.asset_ref='AST-002' and r.id::text='risk-004';

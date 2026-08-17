@@ -23,6 +23,12 @@ export type IncidentRecord = {
   category?: string
   source?: string
   model_id?: string | null
+  /** → vendors.id (20260824000001 vendor-hub interlink). */
+  vendor_id?: string | null
+  /** → vendor_slas.id (20260824000001). */
+  vendor_sla_id?: string | null
+  /** → risks.id uuids (20260819000001). */
+  linked_risk_ids?: string[]
   affected_models?: string[]
   detected_at?: string
   resolved_at?: string

@@ -13,7 +13,7 @@ import {
   Sparkle, FileText, ListBullets, CalendarCheck, Copy, Plus,
   ShieldCheck, CaretRight, Bank, Siren, UsersThree, CurrencyDollar, Crosshair,
   SealCheck, Vault, Pulse, CheckSquare, Megaphone, GraduationCap,
-  Leaf, Lightning, Recycle, Package,
+  Leaf, Lightning, Recycle, Package, ClipboardText,
 } from '@phosphor-icons/react';
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ReTooltip,
@@ -1003,6 +1003,16 @@ function ModelDetailView({ model }: { model: Model }) {
               loading={backlinksLoading}
               viewAllTo={`/esg-reports?model=${model.id}`}
               itemTo={item => `/esg-reports?open=${item.id}`}
+            />
+            {/* Open governance tasks raised against this model — the inbound
+                half of the Tasks entity picker (linked_entity_type='model'). */}
+            <BacklinkCard
+              title="Open Tasks"
+              icon={<ClipboardText size={14} style={{ color: 'hsl(var(--brand))' }} />}
+              source={backlinks?.openTasks}
+              loading={backlinksLoading}
+              viewAllTo="/tasks"
+              itemTo={item => `/tasks?open=${item.id}`}
             />
           </div>
         </div>

@@ -193,7 +193,7 @@ alter table public.dsar_requests
   add column if not exists linked_ropa_id    uuid references public.ropa_records(id) on delete set null,
   add column if not exists linked_consent_id uuid references public.consent_records(id) on delete set null,
   add column if not exists incident_id       text references public.incidents(id) on delete set null,
-  add column if not exists linked_risk_id    text references public.risks(id) on delete set null,
+  add column if not exists linked_risk_id       text references public.risks(id) on delete set null,
   -- Art. 34 breach communications are handled as one batch record per incident
   -- rather than one row per subject; these describe that batch honestly.
   add column if not exists legal_basis    text,
@@ -220,7 +220,7 @@ alter table public.ropa_records
   add column if not exists linked_model_ids     uuid[] not null default '{}',
   add column if not exists linked_dataset_ids   text[] not null default '{}',
   add column if not exists linked_use_case_id   text references public.use_cases(id) on delete set null,
-  add column if not exists processor_vendor_id  text references public.vendors(id) on delete set null,
+  add column if not exists processor_vendor_id       text references public.vendors(id) on delete set null,
   add column if not exists next_review_at       date;
 
 -- A transfer is a transfer *of* a processing activity's data, carried out by
@@ -232,7 +232,7 @@ alter table public.transfer_impact_assessments
 -- A DPIA whose residual risk stays high is a risk the register must carry, and
 -- it is nearly always an assessment of a registered use case.
 alter table public.dpia_assessments
-  add column if not exists linked_risk_id     text references public.risks(id) on delete set null,
+  add column if not exists linked_risk_id       text references public.risks(id) on delete set null,
   add column if not exists linked_use_case_id text references public.use_cases(id) on delete set null;
 
 -- Indexes on the link columns actually used as filters (?model=, ?open=).

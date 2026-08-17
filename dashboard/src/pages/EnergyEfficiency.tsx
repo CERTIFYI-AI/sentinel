@@ -30,7 +30,7 @@
 // smart-metered reading is never silently averaged with a self-declared
 // estimate.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -118,6 +118,7 @@ const BLANK = {
 export default function EnergyEfficiency() {
   const [searchParams, setSearchParams] = useSearchParams()
   const modelParam = searchParams.get('model')
+  const openParam = searchParams.get('open')
 
   const { metrics, isLoading, isError, error, refetch, save, remove, isSaving } = useEnergyData()
   const { models } = useModelOptions()
@@ -128,6 +129,18 @@ export default function EnergyEfficiency() {
   const [formOpen, setFormOpen] = useState(false)
   const [form, setForm] = useState(BLANK)
   const [toDelete, setToDelete] = useState<EnergyMetric | null>(null)
+  const [openMissing, setOpenMissing] = useState(false)
+
+  // Deep link ?open=<id> — applied once on data arrival, so a refetch does not
+  // reopen a drawer the user has closed (pattern shared with AibomRegistry).
+  const appliedOpen = useRef<string | null>(null)
+  useEffect(() => {
+    if (!openParam || isLoading || isError || appliedOpen.current === openParam) return
+    appliedOpen.current = openParam
+    const match = metrics.find(r => r.id === openParam)
+    if (match) setSelected(match)
+    else setOpenMissing(true)
+  }, [openParam, isLoading, isError, metrics])
 
   const modelName = (id: string | null): string | null =>
     id ? (models.find(m => m.id === id)?.name ?? 'Unavailable') : null
@@ -371,6 +384,17 @@ export default function EnergyEfficiency() {
             </button>
           </span>
           <InterlinkChip label="Carbon records for this model" to={`/carbon-ledger?model=${modelParam}`} />
+        </div>
+      )}
+
+      {openMissing && (
+        <div className="flex items-center gap-2 px-3 py-2 text-xs border"
+          style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderColor: 'hsl(var(--border))' }}>
+          <span>Record not found or not visible to you.</span>
+          <button aria-label="Dismiss notice" onClick={() => setOpenMissing(false)}
+            className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer">
+            <X size={12} />
+          </button>
         </div>
       )}
 

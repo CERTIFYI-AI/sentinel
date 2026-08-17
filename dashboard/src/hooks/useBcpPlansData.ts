@@ -4,7 +4,7 @@ import { toast } from 'sonner'
 
 export function useBcpPlansData(filters: Record<string, any> = {}) {
   const qc = useQueryClient()
-  const { data: items = [], isLoading, error } = useQuery({
+  const { data: items = [], isLoading, error, refetch } = useQuery({
     queryKey: ['bcpPlans', filters],
     queryFn: () => fetchAllBcpPlans(filters),
     staleTime: 30_000,
@@ -23,7 +23,7 @@ export function useBcpPlansData(filters: Record<string, any> = {}) {
   })
 
   return {
-    items, isLoading, error,
+    items, isLoading, error, refetch,
     saveBcpPlans: saveMutation.mutateAsync,
     removeBcpPlans: deleteMutation.mutateAsync,
     save: saveMutation.mutateAsync,

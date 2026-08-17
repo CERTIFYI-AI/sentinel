@@ -107,7 +107,7 @@ export async function deleteBiaProcess(id: string): Promise<boolean> {
 // ── Identity Governance ─────────────────────────────────────────────────────
 
 // These vocabularies are enforced by CHECK constraints
-// (20260823000001_admin_registers_and_demo_table_lockdown.sql) — an option
+// (20260823000005_admin_registers_and_demo_table_lockdown.sql) — an option
 // offered here that the database rejects would be a fake-success trap.
 export const IDENTITY_TYPES = ['human', 'service', 'agent'] as const
 export const PRIVILEGE_LEVELS = ['admin', 'operator', 'viewer'] as const

@@ -58,7 +58,8 @@ free-text model name, so no AIBOM could be reached from the model it described.
 - `org_id` is filled by the DB default `current_user_org_id()`.
 - Create, update, delete on records and components all call `logAction`
   (EU AI Act Art. 12) — previously zero calls.
-- `?model=<ai_models.id>` filters to that model with a dismissible chip;
+- `?model=<ai_models.id>` filters to that model and `?vendor=<vendors.id>`
+  filters to that supplier, each with a dismissible chip;
   `?open=<aibom_records.id>` opens the record.
 
 ## Fields (`aibom_records`)
@@ -162,6 +163,8 @@ Inbound:
   [Attestations](supply-chain-attestations.md),
   [Provenance](provenance.md) and the
   [Supply Chain Graph](supply-chain-graph.md).
+- `?vendor=<vendors.id>` with a dismissible chip, from the vendor detail's
+  Linked tab ([Vendor Registry](vendor-registry.md)).
 - `?open=<aibom_records.id>` for a specific record.
 
 ## Compliance

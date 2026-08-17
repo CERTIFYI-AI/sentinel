@@ -181,6 +181,8 @@ export async function uploadVendorDocument(params: {
   supersedesId?: string
   assessmentId?: string
   renewalLeadDays?: number
+  /** controls.id (uuid) — the framework controls this document evidences. */
+  satisfiesControlIds?: string[]
 }): Promise<VendorDocumentRecord> {
   if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot upload document.')
   if (!params.vendorId) throw new Error('Select a vendor before uploading.')
@@ -215,6 +217,7 @@ export async function uploadVendorDocument(params: {
     renewalLeadDays: params.renewalLeadDays,
     supersedesId: params.supersedesId,
     assessmentId: params.assessmentId,
+    satisfiesControlIds: params.satisfiesControlIds,
     version,
     status: 'pending_review',
   })

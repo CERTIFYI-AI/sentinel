@@ -13,18 +13,18 @@
 update public.ropa_records set
   linked_model_ids = array(select m.id from public.ai_models m
     where m.name in ('Credit Risk Scorer','CreditScore AI v3','Loan Approval Assistant')),
-  linked_dataset_ids = array(select d.id from public.datasets d
-    where d.name in ('Agricultural Loan Applications (7 Provinces)','CIB Credit History Extracts')),
+  linked_dataset_ids = array(select d.id::uuid from public.datasets d
+    where d.id ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' and d.name in ('Agricultural Loan Applications (7 Provinces)','CIB Credit History Extracts')),
   linked_use_case_id = 'UC-CREDIT-001',
-  processor_vendor_id = 'vendor-004',
+  processor_vendor_id = (select v.id from public.vendors v where v.name = 'DataRobot' limit 1),
   next_review_at = date '2027-01-31'
 where reference = 'ROPA-001';
 
 update public.ropa_records set
   linked_model_ids = array(select m.id from public.ai_models m
     where m.name in ('Fraud Detection Engine','FraudShield ML')),
-  linked_dataset_ids = array(select d.id from public.datasets d
-    where d.name in ('Remittance Corridor Flows','Mobile Banking Transaction Stream (NPR)')),
+  linked_dataset_ids = array(select d.id::uuid from public.datasets d
+    where d.id ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' and d.name in ('Remittance Corridor Flows','Mobile Banking Transaction Stream (NPR)')),
   linked_use_case_id = 'UC-FRAUD-001',
   next_review_at = date '2026-11-30'
 where reference = 'ROPA-002';
@@ -32,19 +32,19 @@ where reference = 'ROPA-002';
 update public.ropa_records set
   linked_model_ids = array(select m.id from public.ai_models m
     where m.name in ('KYC Image Classifier','DocumentParser GPT','Document Classifier')),
-  linked_dataset_ids = array(select d.id from public.datasets d
-    where d.name in ('KYC Document Corpus (Citizenship & NID)')),
-  processor_vendor_id = 'vendor-003',
+  linked_dataset_ids = array(select d.id::uuid from public.datasets d
+    where d.id ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' and d.name in ('KYC Document Corpus (Citizenship & NID)')),
+  processor_vendor_id = (select v.id from public.vendors v where v.name = 'Microsoft Azure AI' limit 1),
   next_review_at = date '2027-03-31'
 where reference = 'ROPA-003';
 
 update public.ropa_records set
   linked_model_ids = array(select m.id from public.ai_models m
     where m.name in ('Customer Support Copilot','NLP Sentiment Analyzer','NepBERTa')),
-  linked_dataset_ids = array(select d.id from public.datasets d
-    where d.name in ('Nepali–English Support Conversation Corpus')),
+  linked_dataset_ids = array(select d.id::uuid from public.datasets d
+    where d.id ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' and d.name in ('Nepali–English Support Conversation Corpus')),
   linked_use_case_id = 'UC-SUPPORT-001',
-  processor_vendor_id = 'vendor-002',
+  processor_vendor_id = (select v.id from public.vendors v where v.name = 'Anthropic' limit 1),
   next_review_at = date '2026-10-31'
 where reference = 'ROPA-004';
 
@@ -58,43 +58,41 @@ update public.ropa_records set next_review_at = date '2027-06-30' where referenc
 -- processing that demonstrably exists.
 insert into public.ropa_records (
   org_id, reference, processing_activity, purpose, legal_basis, data_subjects,
-  data_categories, recipients, cross_border_transfers, retention_period,
-  dpia_required, dpia_completed, technical_measures, organizational_measures,
+  data_categories, recipients, third_country_transfers, retention_period,
+  security_measures,
   controller_name, status, linked_model_ids, linked_dataset_ids,
   linked_use_case_id, next_review_at)
 select '00000000-0000-0000-0000-000000000001', 'ROPA-006',
   'Automated CV screening and shortlisting',
   'Rank and shortlist job applicants for human review',
-  'legitimate_interests', 'Job applicants',
-  'Name, contact details, employment history, education, self-declared skills',
-  'HR department; hiring managers', false, '2 years after the recruitment round closes',
-  true, false,
-  'Access restricted to HR; applicant records pseudonymised for model evaluation',
-  'Every shortlist is reviewed by a hiring manager before any rejection is sent',
+  'legitimate_interests', array['Job applicants'],
+  array['Name','Contact details','Employment history','Education','Self-declared skills'],
+  array['HR department','Hiring managers'], false, '2 years after the recruitment round closes',
+  'Access restricted to HR; applicant records pseudonymised for model evaluation. '
+    || 'Every shortlist is reviewed by a hiring manager before any rejection is sent.',
   'Head of People', 'active',
   array(select m.id from public.ai_models m where m.name = 'HRScreener Bot'),
-  array(select d.id from public.datasets d where d.name = 'HR Applicant Pool 2081-82'),
+  array(select d.id::uuid from public.datasets d where d.id ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' and d.name = 'HR Applicant Pool 2081-82'),
   'UC-HR-001', date '2026-12-31'
 where not exists (select 1 from public.ropa_records where reference = 'ROPA-006');
 
 insert into public.ropa_records (
   org_id, reference, processing_activity, purpose, legal_basis, data_subjects,
-  data_categories, recipients, cross_border_transfers, retention_period,
-  dpia_required, dpia_completed, technical_measures, organizational_measures,
+  data_categories, recipients, third_country_transfers, retention_period,
+  security_measures,
   controller_name, status, linked_model_ids, linked_dataset_ids,
   linked_use_case_id, next_review_at)
 select '00000000-0000-0000-0000-000000000001', 'ROPA-007',
   'Customer churn prediction for retention',
   'Predict likelihood of account closure to target retention offers',
-  'legitimate_interests', 'Retail banking customers',
-  'Account tenure, product holdings, transaction frequency, channel usage',
-  'Retail marketing team', false, '24 months rolling',
-  false, false,
-  'Feature store excludes special-category data; scores expire after 90 days',
-  'Legitimate-interests assessment reviewed annually; opt-out honoured at customer request',
+  'legitimate_interests', array['Retail banking customers'],
+  array['Account tenure','Product holdings','Transaction frequency','Channel usage'],
+  array['Retail marketing team'], false, '24 months rolling',
+  'Feature store excludes special-category data; scores expire after 90 days. '
+    || 'Legitimate-interests assessment reviewed annually; opt-out honoured at customer request.',
   'Head of Retail Banking', 'active',
   array(select m.id from public.ai_models m where m.name in ('Churn Predictor','CustomerChurn Predictor')),
-  array(select d.id from public.datasets d where d.name = 'Digital Banking Churn Feature Store'),
+  array(select d.id::uuid from public.datasets d where d.id ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$' and d.name = 'Digital Banking Churn Feature Store'),
   'UC-CHURN-001', date '2027-02-28'
 where not exists (select 1 from public.ropa_records where reference = 'ROPA-007');
 
@@ -154,7 +152,7 @@ where t.reference = 'TIA-2026-001';
 
 -- ── DPIA → the use case assessed and the risk it leaves behind ─────────────
 
-update public.dpia_assessments set linked_use_case_id = 'UC-CREDIT-001',  linked_risk_id = 'risk-006' where reference = 'DPIA-2026-001';
-update public.dpia_assessments set linked_use_case_id = 'UC-FRAUD-001',   linked_risk_id = 'risk-007' where reference = 'DPIA-2026-002';
-update public.dpia_assessments set linked_use_case_id = 'UC-SUPPORT-001', linked_risk_id = 'risk-004' where reference = 'DPIA-2026-004';
+update public.dpia_assessments set linked_use_case_id = 'UC-CREDIT-001',  linked_risk_id = (select r.id from public.risks r where r.risk_id = 'RSK-2026-001' limit 1) where reference = 'DPIA-2026-001';
+update public.dpia_assessments set linked_use_case_id = 'UC-FRAUD-001',   linked_risk_id = (select r.id from public.risks r where r.risk_id = 'RSK-2026-002' limit 1) where reference = 'DPIA-2026-002';
+update public.dpia_assessments set linked_use_case_id = 'UC-SUPPORT-001', linked_risk_id = (select r.id from public.risks r where r.risk_id = 'RSK-2026-003' limit 1) where reference = 'DPIA-2026-004';
 -- DPIA-2026-003 (KYC OCR) closed at low residual risk and carries no open risk.

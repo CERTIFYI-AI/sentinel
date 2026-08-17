@@ -2,7 +2,7 @@
 // Copyright (c) 2026 CERTIFYI-AI.
 //
 // The ADMIN register vocabularies are enforced by CHECK constraints in
-// 20260823000001_admin_registers_and_demo_table_lockdown.sql. A service
+// 20260823000005_admin_registers_and_demo_table_lockdown.sql. A service
 // constant that drifts from the constraint is a fake-success trap: the form
 // offers the option, the database rejects the write. This test parses the
 // migration and pins the two sides together — the same drift class that made
@@ -18,7 +18,7 @@ import { CRITICALITIES, DATA_CLASSIFICATIONS } from '@/services/assetService'
 
 const MIGRATION = join(
   __dirname,
-  '../../../supabase/migrations/20260823000001_admin_registers_and_demo_table_lockdown.sql',
+  '../../../supabase/migrations/20260823000005_admin_registers_and_demo_table_lockdown.sql',
 )
 
 /** Extract the vocabulary of `check (col is null or col in (...))`. */

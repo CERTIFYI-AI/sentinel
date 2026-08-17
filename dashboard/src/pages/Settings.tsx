@@ -1,9 +1,17 @@
 import { useState } from "react";
-import { Settings as SettingsIcon, User, Shield, Bell, Key, Users, Database, Globe } from "lucide-react";
+import { Link } from "react-router-dom";
+import { Settings as SettingsIcon, User, Shield, Bell, Key, Users, Database, Globe, Lock } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
 import { PageHeader } from "../components/ui/PageHeader";
+import { ConfirmDialog } from "../components/ui/ConfirmDialog";
+import {
+  fetchDemoDataStatus, importDemoData, removeDemoData,
+  type DemoImportStep,
+} from "../services/demoImportService";
 
-type Tab = "general" | "team" | "api-keys" | "notifications" | "compliance" | "integrations";
+type Tab = "general" | "team" | "api-keys" | "notifications" | "compliance" | "integrations" | "demo-data";
 
 const TABS: { id: Tab; label: string; icon: typeof User }[] = [
   { id: "general", label: "General", icon: User },
@@ -12,7 +20,173 @@ const TABS: { id: Tab; label: string; icon: typeof User }[] = [
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "compliance", label: "Compliance", icon: Shield },
   { id: "integrations", label: "Integrations", icon: Globe },
+  { id: "demo-data", label: "Demo data", icon: Database },
 ];
+
+// ── Demo data section ────────────────────────────────────────────────────────
+
+const STEP_GLYPH: Record<DemoImportStep["status"], { glyph: string; cls: string }> = {
+  pending: { glyph: "○", cls: "text-[hsl(var(--text-4))]" },
+  running: { glyph: "◔", cls: "text-[hsl(var(--s-in-tx))] animate-pulse" },
+  done:    { glyph: "✓", cls: "text-[hsl(var(--s-ok-tx))]" },
+  skipped: { glyph: "–", cls: "text-[hsl(var(--s-wn-tx))]" },
+  failed:  { glyph: "✕", cls: "text-[hsl(var(--destructive))]" },
+};
+
+function DemoDataSection() {
+  const qc = useQueryClient();
+  const statusQuery = useQuery({ queryKey: ["demo-data-status"], queryFn: fetchDemoDataStatus });
+
+  const [running, setRunning] = useState<null | "import" | "remove">(null);
+  const [steps, setSteps] = useState<DemoImportStep[] | null>(null);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [confirm, setConfirm] = useState<null | "import" | "remove">(null);
+
+  const busy = running !== null;
+  const imported = statusQuery.data?.imported ?? false;
+
+  const finish = async () => {
+    setRunning(null);
+    // Every module reads these tables — refresh the whole cache so the
+    // imported (or removed) data shows up live across the platform.
+    await qc.invalidateQueries();
+  };
+
+  const runImport = async () => {
+    setRunning("import");
+    setLastError(null);
+    setSteps(null);
+    try {
+      await importDemoData(setSteps);
+      // Toast only after the whole import resolved — never before.
+      toast.success("Demo data imported. Every module now shows the linked demo dataset.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastError(msg);
+      toast.error(msg);
+    } finally {
+      await finish();
+    }
+  };
+
+  const runRemove = async () => {
+    setRunning("remove");
+    setLastError(null);
+    setSteps(null);
+    try {
+      await removeDemoData(setSteps);
+      toast.success("Demo data removed. Only rows carrying the demo marker were deleted.");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setLastError(msg);
+      toast.error(msg);
+    } finally {
+      await finish();
+    }
+  };
+
+  return (
+    <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
+      <CardHeader><CardTitle className="text-sm">Demo data</CardTitle></CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-[hsl(var(--text-3))]">
+          Seeds this organization with a small, coherent, <strong>clearly-fictional</strong> dataset
+          — models, vendors, risks, an incident, assessments, SLAs, an AIBOM, attestations,
+          a provenance graph, cited carbon/energy estimates, a draft ESG report and tasks —
+          all interlinked through the real service layer. Every record is labelled
+          "(Demo)" and carries a removable <code className="font-mono text-xs">demo_seed</code> marker.
+        </p>
+
+        {/* Status line */}
+        {statusQuery.isLoading ? (
+          <p className="text-xs text-[hsl(var(--text-4))]">Checking for existing demo data…</p>
+        ) : statusQuery.isError ? (
+          <p className="text-xs text-[hsl(var(--destructive))]">
+            Could not check demo-data status: {(statusQuery.error as Error).message}
+          </p>
+        ) : imported ? (
+          <p className="text-xs font-medium text-[hsl(var(--s-ok-tx))]">
+            Demo data is already imported ({statusQuery.data!.modelCount} demo model{statusQuery.data!.modelCount === 1 ? "" : "s"} found).
+            Remove it before re-importing.
+          </p>
+        ) : (
+          <p className="text-xs text-[hsl(var(--text-4))]">No demo data found for this organization.</p>
+        )}
+
+        <div className="flex gap-2">
+          <button
+            onClick={() => setConfirm("import")}
+            disabled={busy || imported || statusQuery.isLoading || statusQuery.isError}
+            className="bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {running === "import" ? "Importing…" : "Import demo data"}
+          </button>
+          <button
+            onClick={() => setConfirm("remove")}
+            disabled={busy || !imported || statusQuery.isLoading}
+            className="border border-[hsl(var(--border))] text-[hsl(var(--destructive))] px-4 py-2 rounded-lg text-sm font-medium transition-colors hover:bg-[hsl(var(--s-er-bg))] disabled:opacity-40 disabled:cursor-not-allowed"
+          >
+            {running === "remove" ? "Removing…" : "Remove demo data"}
+          </button>
+        </div>
+
+        {/* Step-by-step progress */}
+        {steps && (
+          <div className="border border-[hsl(var(--border))] rounded-lg divide-y divide-[hsl(var(--border))]">
+            {steps.map((s) => {
+              const g = STEP_GLYPH[s.status];
+              return (
+                <div key={s.key} className="flex items-start gap-2 px-3 py-1.5">
+                  <span className={`w-4 text-sm font-bold ${g.cls}`} aria-hidden>{g.glyph}</span>
+                  <div className="min-w-0 flex-1">
+                    <span className={`text-xs ${s.status === "pending" ? "text-[hsl(var(--text-4))]" : "text-[hsl(var(--text-2))]"}`}>
+                      {s.label}
+                    </span>
+                    {s.detail && (
+                      <p className={`text-[11px] ${s.status === "failed" ? "text-[hsl(var(--destructive))]" : "text-[hsl(var(--text-4))]"}`}>
+                        {s.detail}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Error surfaced verbatim */}
+        {lastError && (
+          <div className="border border-[hsl(var(--destructive))] bg-[hsl(var(--s-er-bg))] rounded-lg px-3 py-2">
+            <p className="text-xs text-[hsl(var(--destructive))] font-mono break-words">{lastError}</p>
+            <p className="text-[11px] text-[hsl(var(--text-3))] mt-1">
+              The run stopped at the failed step — records created by earlier steps remain and can be
+              cleaned up with "Remove demo data".
+            </p>
+          </div>
+        )}
+
+        <ConfirmDialog
+          open={confirm === "import"}
+          onClose={() => setConfirm(null)}
+          type="info"
+          title="Import demo data?"
+          message="This writes clearly-labelled fictional records into this organization's live tables, step by step. Nothing is fabricated as measured: estimates cite emission factors, and approvals/attestations stay pending or draft."
+          confirmLabel="Import"
+          onConfirm={() => { setConfirm(null); void runImport(); }}
+        />
+        <ConfirmDialog
+          open={confirm === "remove"}
+          onClose={() => setConfirm(null)}
+          isDestructive
+          title="Remove demo data?"
+          message="Deletes only rows carrying the demo_seed marker, children before parents. Real records are never touched."
+          confirmLabel="Remove"
+          onConfirm={() => { setConfirm(null); void runRemove(); }}
+        />
+      </CardContent>
+    </Card>
+  );
+}
 
 const TEAM_MEMBERS = [
   { name: "Alice Chen", email: "alice@certifyi.ai", role: "Admin", lastActive: "2 min ago" },
@@ -64,6 +238,15 @@ export default function SettingsPage() {
                 </button>
               );
             })}
+            {/* SSO provider management lives on its own page (role-gated
+                sso:manage) — linked here so it is reachable without typing
+                the route by hand. */}
+            <Link
+              to="/settings/sso"
+              className="w-full flex items-center gap-2 px-3 py-2 text-sm rounded-lg transition-colors text-[hsl(var(--text-3))] hover:bg-[hsl(var(--bg-muted))]"
+            >
+              <Lock size={14} /> SSO Providers
+            </Link>
           </nav>
         </div>
 
@@ -235,6 +418,8 @@ export default function SettingsPage() {
               ))}
             </div>
           )}
+
+          {activeTab === "demo-data" && <DemoDataSection />}
         </div>
       </div>
     </div>

@@ -405,7 +405,7 @@ export default function VendorAssessments() {
                 ) : (
                   <div className="mt-1 flex flex-wrap gap-2">
                     {selected.evidenceIds.map((eid) => (
-                      <LinkPill key={eid} to={`/evidence?open=${eid}`}>Evidence record</LinkPill>
+                      <LinkPill key={eid} to={`/evidence-vault?open=${eid}`}>Evidence record</LinkPill>
                     ))}
                   </div>
                 )}

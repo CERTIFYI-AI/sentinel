@@ -28,7 +28,7 @@
 // and the carbon budget is explicitly labelled session-only because there is
 // nowhere to persist it.
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
@@ -133,6 +133,7 @@ function MethodBadge({ method, cite }: { method: MeasurementMethod | null; cite:
 export default function CarbonLedger() {
   const [searchParams, setSearchParams] = useSearchParams()
   const modelParam = searchParams.get('model')
+  const openParam = searchParams.get('open')
 
   const {
     items, isLoading, isError, error, refetch,
@@ -151,6 +152,18 @@ export default function CarbonLedger() {
   // is labelled as such rather than toasting "budget saved".
   const [budget, setBudget] = useState<number | null>(null)
   const [budgetInput, setBudgetInput] = useState('')
+  const [openMissing, setOpenMissing] = useState(false)
+
+  // Deep link ?open=<id> — applied once on data arrival, so a refetch does not
+  // reopen a drawer the user has closed (pattern shared with AibomRegistry).
+  const appliedOpen = useRef<string | null>(null)
+  useEffect(() => {
+    if (!openParam || isLoading || isError || appliedOpen.current === openParam) return
+    appliedOpen.current = openParam
+    const match = items.find(r => r.id === openParam)
+    if (match) setSelected(match)
+    else setOpenMissing(true)
+  }, [openParam, isLoading, isError, items])
 
   const modelName = (id: string | null): string | null =>
     id ? (models.find(m => m.id === id)?.name ?? 'Unavailable') : null
@@ -414,6 +427,17 @@ export default function CarbonLedger() {
           {modelParam && (
             <InterlinkChip label="Energy readings for this model" to={`/energy-efficiency?model=${modelParam}`} />
           )}
+        </div>
+      )}
+
+      {openMissing && (
+        <div className="flex items-center gap-2 px-3 py-2 text-xs border"
+          style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))', borderColor: 'hsl(var(--border))' }}>
+          <span>Record not found or not visible to you.</span>
+          <button aria-label="Dismiss notice" onClick={() => setOpenMissing(false)}
+            className="inline-flex items-center hover:text-[hsl(var(--text-1))] cursor-pointer">
+            <X size={12} />
+          </button>
         </div>
       )}
 

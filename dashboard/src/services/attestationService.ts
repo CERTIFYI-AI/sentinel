@@ -68,6 +68,7 @@ export interface Attestation {
   frameworkControlIds: string[]
   evidenceIds: string[]
   reviewNotes: string | null
+  metadata: Record<string, unknown>
   /** Computed by the view. Read-only. */
   derivedValidity: DerivedValidity
   createdAt: string
@@ -111,6 +112,7 @@ function rowToAttestation(r: Record<string, any>): Attestation {
     frameworkControlIds: arr(r.framework_control_ids),
     evidenceIds: arr(r.evidence_ids),
     reviewNotes: r.review_notes ?? null,
+    metadata: (r.metadata && typeof r.metadata === 'object' ? r.metadata : {}) as Record<string, unknown>,
     derivedValidity: (r.derived_validity ?? 'unknown') as DerivedValidity,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
@@ -153,6 +155,9 @@ function attestationToRow(a: Partial<Attestation>): Record<string, any> {
   set('framework_control_ids', a.frameworkControlIds)
   set('evidence_ids', a.evidenceIds)
   set('review_notes', a.reviewNotes)
+  // metadata (jsonb, from the functional_integration shell) — carries e.g. the
+  // demo importer's { demo_seed: true } marker.
+  set('metadata', a.metadata)
   return row
 }
 

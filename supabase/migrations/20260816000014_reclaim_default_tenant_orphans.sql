@@ -25,36 +25,46 @@
 -- Both tenant partitions had independently numbered CNS-2026-001 and -002, so
 -- the references must be released before the merge or the unique index on
 -- (tenant_id, consent_ref) rejects it.
-update public.consent_records set consent_ref = null where tenant_id = 'default';
+do $rel$ begin
+  if exists (select 1 from information_schema.columns where table_schema='public'
+             and table_name='consent_records' and column_name='tenant_id') then
+    update public.consent_records set consent_ref = null where tenant_id = 'default';
+  end if;
+end $rel$;
 
-update public.consent_records      set tenant_id = '00000000-0000-0000-0000-000000000001' where tenant_id = 'default';
-update public.carbon_records       set tenant_id = '00000000-0000-0000-0000-000000000001' where tenant_id = 'default';
-update public.remediation_plans    set tenant_id = '00000000-0000-0000-0000-000000000001' where tenant_id = 'default';
+-- REPLAY FIX (2026-08-17): several of these tables had tenant_id DROPped by
+-- 20260421000008_ws01_tenancy_phase_a_unify, so a bare UPDATE aborts a
+-- from-zero replay with "column tenant_id does not exist". The reclaim is only
+-- meaningful where the column still exists, so guard each table individually.
+do $reclaim$
+declare t text;
+begin
+  foreach t in array array['consent_records','carbon_records','remediation_plans','transparency_reports'] loop
+    if exists (select 1 from information_schema.columns
+               where table_schema = 'public' and table_name = t and column_name = 'tenant_id') then
+      execute format(
+        'update public.%I set tenant_id = %L where tenant_id = %L',
+        t, '00000000-0000-0000-0000-000000000001', 'default');
+    end if;
+  end loop;
+end $reclaim$;
+
 -- Remove the trap that produced the orphans. Every one of these tables now
 -- fills tenant_id from the session's org, as ai_models has always done — the
 -- client never chooses a tenant.
-alter table public.consent_records      alter column tenant_id set default (current_user_org_id())::text;
-alter table public.carbon_records       alter column tenant_id set default (current_user_org_id())::text;
-alter table public.remediation_plans    alter column tenant_id set default (current_user_org_id())::text;
-alter table public.bias_audits          alter column tenant_id set default (current_user_org_id())::text;
-alter table public.hitl_reviews         alter column tenant_id set default (current_user_org_id())::text;
-alter table public.vendors              alter column tenant_id set default (current_user_org_id())::text;
-
--- transparency_reports and compliance_scores are created later in the replay
--- order (20260818000001_security_group_canonical.sql), so a from-zero replay
--- reaches this file before they exist. Guarded here and re-applied
--- unconditionally in 20260817000002_replay_repair.sql, which runs after them —
--- the pattern the migrations README prescribes for a forward reference.
-do $$
+-- Same guard: set the default only where the column survived the tenancy unify.
+do $defaults$
+declare t text;
 begin
-  if to_regclass('public.transparency_reports') is not null then
-    update public.transparency_reports set tenant_id = '00000000-0000-0000-0000-000000000001' where tenant_id = 'default';
-    alter table public.transparency_reports alter column tenant_id set default (current_user_org_id())::text;
-  end if;
-  if to_regclass('public.compliance_scores') is not null then
-    alter table public.compliance_scores alter column tenant_id set default (current_user_org_id())::text;
-  end if;
-end $$;
+  foreach t in array array['consent_records','carbon_records','remediation_plans','transparency_reports',
+                           'bias_audits','compliance_scores','hitl_reviews','vendors'] loop
+    if exists (select 1 from information_schema.columns
+               where table_schema = 'public' and table_name = t and column_name = 'tenant_id') then
+      execute format(
+        'alter table public.%I alter column tenant_id set default (current_user_org_id())::text', t);
+    end if;
+  end loop;
+end $defaults$;
 
 -- Renumber the merged consent register as one sequence.
 update public.consent_records c set consent_ref = s.ref from (
