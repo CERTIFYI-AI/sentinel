@@ -145,7 +145,13 @@ export function fromRow(r: Record<string, any>): EsgReport {
     // code hiding this real column.
     aiMetrics: toMetricsObject(r.ai_metrics),
     assuranceStatus: (txt(r.assurance_status) as AssuranceStatus | null),
-    assuranceProvider: txt(r.assurance_provider) ?? txt(metadata.assurance_provider),
+    // Read the COLUMN only. The `metadata.assurance_provider` fallback that used
+    // to sit here surfaced seeded values (real audit firms — 'PwC', 'Deloitte')
+    // on rows whose assurance_status is 'none', so the UI rendered the
+    // self-contradicting "No assurance · PwC". An assurance provider is a claim
+    // about who signed off; it may only come from the governed column that the
+    // approval path writes.
+    assuranceProvider: txt(r.assurance_provider),
     assuranceDate: r.assurance_date ?? null,
     approver: txt(r.approver),
     approvedBy: r.approved_by ?? null,
