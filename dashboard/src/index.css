@@ -139,3 +139,12 @@
     border-radius: 0 !important;
   }
 }
+
+/* Reduced-motion: honour the OS setting for entrance animations (WCAG 2.3.3).
+   A CISO or board deck must never induce motion for someone who opted out. */
+@media (prefers-reduced-motion: reduce) {
+  .animate-fade-in-up,
+  .animate-in-up {
+    animation: none !important;
+  }
+}

