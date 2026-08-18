@@ -1475,8 +1475,16 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 13,
+  "entryCount": 14,
   "entries": [
+    {
+      "type": "feat",
+      "scope": "integrations",
+      "summary": "surface the 219-product evidence catalogue and wire the evidence chain to controls. `integration_catalog` (219 rows), `integration_findings`, `control_finding_evidence` and `background_jobs` had **zero readers** anywhere in the app or edge functions — the platform had a real collection pipeline, a real control-mapping engine, and no way for a user to reach any of it; `/integrations` showed only hand-created connector records from a separate, older table. Adds a **Catalog** tab: all 219 sources with category filters and search across the operator prose (so \"which of these evidences MFA?\" is answerable), each stating its adapter status honestly. **Connect is rendered only for a product that ships an adapter** — exactly one (`github`) today — and a catalogued-only entry says why it cannot be connected while still showing what it would evidence, how it is pulled and what it maps to. `isConnectable()` is the single gate and mirrors the server, which refuses slugs absent from its registry. Connect creates the org `integrations` row carrying `catalog_slug` (status `configuring` — linked, not yet collecting; credentials stay server-side, AES-256-GCM, never in the browser); disconnect soft-deletes but **retains findings**, since disconnecting a source must not erase the evidence trail (Art. 12). Both audit-logged. New **Automated Evidence** tab on `ControlDetail` lists the findings mapped to that control with posture, counts and remediation — deliberately separate from `controls.status`, because a machine finding is a signal about a control, not the owner's assertion about it. Reverse view on each connected source shows what it has actually collected, worst-first, or an honest \"nothing collected yet\". New `docs/modules/integration-catalog.md`; 21 new unit tests (322 total) including the capability gate that stops a catalogued-only product ever offering Connect",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "chore",
       "scope": "replay-check",
