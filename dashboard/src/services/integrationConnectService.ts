@@ -3,19 +3,22 @@
 //
 // integrationConnectService — the browser half of the connect handshake.
 //
-// Credentials go to the FastAPI backend, NOT to Supabase directly, because
-// only the server holds the encryption key. Writing them from the browser
-// would either store plaintext or ship the key to every client; both are
-// unacceptable, and `integrations.credentials_encrypted` is service-role
-// write-only for that reason.
+// Credentials go to the `integrations-connect` Supabase Edge Function, NOT to
+// the database directly, because only the server holds the encryption key.
+// Writing them from the browser would either store plaintext or ship the key to
+// every client; both are unacceptable, and `integrations.credentials_encrypted`
+// is service-role write-only for that reason. The edge function encrypts with
+// AES-256-GCM into the exact blob the Python sync worker decrypts.
 //
-// This module never persists a credential: values are passed through to fetch
-// and go out of scope. Nothing here logs the request body.
+// The function is invoked through supabase-js, which attaches the caller's
+// session token automatically — so the server derives the org from the verified
+// JWT, never from anything the browser asserts. This module never persists a
+// credential: values are passed to invoke() and go out of scope; nothing here
+// logs the request body.
 
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 
-/** Base URL of the Sentinel API. Empty means same-origin. */
-const API_BASE = (import.meta.env.VITE_SENTINEL_API_URL ?? '').replace(/\/$/, '')
+const FUNCTION = 'integrations-connect'
 
 export interface ConnectResult {
   integrationId: string
@@ -24,111 +27,92 @@ export interface ConnectResult {
   message: string
 }
 
-async function authHeader(): Promise<Record<string, string>> {
+function ensureConfigured(): void {
   if (!isSupabaseConfigured() || !supabase) {
-    throw new Error('Not signed in — cannot connect an integration.')
+    throw new Error('Not signed in — cannot manage integrations.')
   }
-  const { data } = await supabase.auth.getSession()
-  const token = data.session?.access_token
-  if (!token) throw new Error('Your session has expired. Sign in again to connect an integration.')
-  return { Authorization: `Bearer ${token}` }
 }
 
 /**
- * Read the server's error message without letting a non-JSON body (an HTML
- * error page from a proxy, say) surface as unreadable noise.
+ * Pull the server's own error message out of a failed function invocation,
+ * without letting a non-JSON body surface as unreadable noise.
  */
-async function errorFrom(res: Response): Promise<string> {
-  try {
-    const body = await res.json()
-    if (typeof body?.detail === 'string') return body.detail
-    if (Array.isArray(body?.detail)) return 'The details provided are not valid for this integration.'
-  } catch {
-    /* fall through to the status-based message */
+async function messageFromError(error: unknown, fallback: string): Promise<string> {
+  // supabase-js FunctionsHttpError carries the Response on `.context`.
+  const ctx = (error as { context?: unknown })?.context
+  if (ctx && typeof (ctx as Response).json === 'function') {
+    try {
+      const body = await (ctx as Response).json()
+      if (typeof body?.error === 'string') return body.error
+    } catch {
+      /* fall through */
+    }
   }
-  if (res.status === 401) return 'Your session has expired. Sign in again.'
-  if (res.status === 403) return 'You do not have permission to connect integrations.'
-  if (res.status === 503) return 'The integration backend is not configured. Contact your administrator.'
-  return `Could not connect (HTTP ${res.status}). Nothing was stored.`
+  const msg = (error as { message?: unknown })?.message
+  return typeof msg === 'string' && msg ? msg : fallback
 }
 
 /**
  * Store credentials for a catalogue product and queue its first sync.
  *
- * Throws on any failure so the form shows a real error — a silent success
- * here would leave an integration that never collects, which is exactly the
- * state this whole feature exists to make visible.
+ * Throws on any failure so the form shows a real error — a silent success here
+ * would leave an integration that never collects, which is exactly the state
+ * this whole feature exists to make visible.
  */
 export async function connectIntegration(input: {
   catalogSlug: string
   name?: string
   credentials: Record<string, string>
 }): Promise<ConnectResult> {
-  const headers = { 'Content-Type': 'application/json', ...(await authHeader()) }
-
-  let res: Response
-  try {
-    res = await fetch(`${API_BASE}/v1/integrations/connect`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        catalog_slug: input.catalogSlug,
-        name: input.name,
-        credentials: input.credentials,
-      }),
-    })
-  } catch {
-    // Network-level failure: do not claim anything about what the server did.
-    throw new Error('Could not reach the integration backend. Nothing was stored.')
-  }
-
-  if (!res.ok) throw new Error(await errorFrom(res))
-
-  const body = await res.json()
+  ensureConfigured()
+  const { data, error } = await supabase!.functions.invoke(FUNCTION, {
+    body: {
+      action: 'connect',
+      catalog_slug: input.catalogSlug,
+      name: input.name,
+      credentials: input.credentials,
+    },
+  })
+  if (error) throw new Error(await messageFromError(error, 'Could not connect. Nothing was stored.'))
   return {
-    integrationId: String(body.integration_id),
-    status: String(body.status ?? 'configuring'),
-    jobId: body.job_id ? String(body.job_id) : null,
-    message: String(body.message ?? 'Connected.'),
+    integrationId: String(data.integration_id),
+    status: String(data.status ?? 'configuring'),
+    jobId: data.job_id ? String(data.job_id) : null,
+    message: String(data.message ?? 'Connected.'),
   }
 }
 
 /** Queue another sync for an already-connected integration. */
 export async function resyncIntegration(integrationId: string): Promise<ConnectResult> {
-  const headers = { 'Content-Type': 'application/json', ...(await authHeader()) }
-  let res: Response
-  try {
-    res = await fetch(`${API_BASE}/v1/integrations/${integrationId}/sync`, {
-      method: 'POST',
-      headers,
-    })
-  } catch {
-    throw new Error('Could not reach the integration backend.')
-  }
-  if (!res.ok) throw new Error(await errorFrom(res))
-  const body = await res.json()
+  ensureConfigured()
+  const { data, error } = await supabase!.functions.invoke(FUNCTION, {
+    body: { action: 'sync', integration_id: integrationId },
+  })
+  if (error) throw new Error(await messageFromError(error, 'Could not queue the sync.'))
   return {
-    integrationId: String(body.integration_id),
-    status: String(body.status ?? 'queued'),
-    jobId: body.job_id ? String(body.job_id) : null,
-    message: String(body.message ?? 'Sync queued.'),
+    integrationId: String(data.integration_id),
+    status: String(data.status ?? 'queued'),
+    jobId: data.job_id ? String(data.job_id) : null,
+    message: String(data.message ?? 'Sync queued.'),
   }
 }
 
 /**
- * Slugs the SERVER will accept, i.e. those with a registered adapter.
- *
- * The catalogue's `adapter_status` drives the UI, and this is the server's own
- * answer to the same question. Returns null when the backend cannot be
- * reached, so the caller can fall back to the catalogue rather than wrongly
- * concluding nothing is connectable.
+ * Slugs the SERVER will accept, i.e. those whose catalogue adapter_status is
+ * 'available' or 'beta'. The catalogue's adapter_status drives the UI, and this
+ * is the server's own answer to the same question. Returns null when the
+ * function cannot be reached (or the caller is not signed in), so the caller
+ * falls back to the catalogue rather than wrongly concluding nothing is
+ * connectable.
  */
 export async function fetchServerAvailableSlugs(): Promise<string[] | null> {
+  if (!isSupabaseConfigured() || !supabase) return null
   try {
-    const res = await fetch(`${API_BASE}/v1/integrations/available`)
-    if (!res.ok) return null
-    const body = await res.json()
-    return Array.isArray(body?.slugs) ? body.slugs.map(String) : null
+    const { data, error } = await supabase.functions.invoke(FUNCTION, {
+      body: { action: 'available' },
+    })
+    if (error) return null
+    return Array.isArray(data?.slugs) ? data.slugs.map(String) : null
   } catch {
     return null
   }

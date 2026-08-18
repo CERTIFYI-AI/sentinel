@@ -1,0 +1,79 @@
+# Evidence sync worker — free-tier posture.
+#
+# WHY THIS EXISTS: the integration evidence pipeline needs a process that claims
+# integration_sync jobs from background_jobs and runs the provider adapters.
+# Rather than pay for an always-on host, this runs the SAME Python worker as a
+# scheduled job in drain-once mode: it processes everything pg_cron (and the
+# connect endpoint) enqueued, then exits. No machine runs 24/7.
+#
+# Cadence: daily. GitHub-hosted minutes on a private repo are limited (2,000/mo
+# on the free plan); a daily ~2-minute drain is ~60 min/month — comfortably
+# free. Raise the cron frequency only with the minute budget in mind.
+#
+# ── One-time setup ──────────────────────────────────────────────────────────
+# Add two repository secrets (Settings → Secrets and variables → Actions):
+#   SENTINEL_DATABASE_URL     Service-role Postgres DSN for the Supabase project
+#   SENTINEL_CREDENTIALS_KEY  base64 that decodes to 32 bytes — the SAME key the
+#                             integrations-connect edge function encrypts with
+# Until both exist the job SKIPS with a notice rather than failing.
+#
+# ── Safety ──────────────────────────────────────────────────────────────────
+# The worker only reads queued jobs and writes findings/evidence for the org
+# each job's integration belongs to. It never deletes. Credentials are decrypted
+# in memory and never logged. Runs manually (workflow_dispatch) or on schedule.
+
+name: Evidence Worker
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # 02:00 UTC daily
+  workflow_dispatch:
+
+concurrency:
+  group: evidence-worker
+  cancel-in-progress: false
+
+jobs:
+  drain:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check for required secrets
+        id: guard
+        env:
+          SENTINEL_DATABASE_URL: ${{ secrets.SENTINEL_DATABASE_URL }}
+          SENTINEL_CREDENTIALS_KEY: ${{ secrets.SENTINEL_CREDENTIALS_KEY }}
+        run: |
+          missing=""
+          [ -z "$SENTINEL_DATABASE_URL" ] && missing="$missing SENTINEL_DATABASE_URL"
+          [ -z "$SENTINEL_CREDENTIALS_KEY" ] && missing="$missing SENTINEL_CREDENTIALS_KEY"
+          if [ -n "$missing" ]; then
+            echo "::notice::Skipping evidence worker — missing secret(s):$missing"
+            echo "Add them under Settings → Secrets and variables → Actions."
+            echo "See docs/operations/backend-deployment.md."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Python
+        if: steps.guard.outputs.skip == 'false'
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install package with integration adapters
+        if: steps.guard.outputs.skip == 'false'
+        run: pip install --no-cache-dir '.[integrations]'
+
+      - name: Drain the evidence sync queue
+        if: steps.guard.outputs.skip == 'false'
+        env:
+          SENTINEL_DATABASE_URL: ${{ secrets.SENTINEL_DATABASE_URL }}
+          SENTINEL_CREDENTIALS_KEY: ${{ secrets.SENTINEL_CREDENTIALS_KEY }}
+          SENTINEL_WORKER_DRAIN: '1'
+        run: python -m sentinel.integrations.worker

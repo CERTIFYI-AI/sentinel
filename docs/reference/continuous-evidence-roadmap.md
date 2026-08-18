@@ -17,8 +17,8 @@ runbook at [`../operations/backend-deployment.md`](../operations/backend-deploym
 
 | # | Break | Evidence | State |
 | - | ----- | -------- | ----- |
-| ① | **No backend deployment.** The Dockerfile builds the API but nothing deploys it, so `POST /v1/integrations/connect` has no host. | `.github/workflows/*` deployed only the dashboard + migrations. | **Config landed** ([`fly.toml`](../../fly.toml), [`deploy-backend.yml`](../../.github/workflows/deploy-backend.yml)); deploy needs the user's Fly secret — see runbook. |
-| ② | **No worker process.** `sentinel/integrations/worker.py` has `run()`/`main()`; nothing invoked them. `docker-compose.yml`'s only worker is a *different*, older Celery engine (`sentinel.compliance.engine`). | — | **Config landed** — `fly.toml` runs it as the `worker` process. |
+| ① | **No backend deployment.** The Dockerfile builds the API but nothing deploys it, so `POST /v1/integrations/connect` has no host. | `.github/workflows/*` deployed only the dashboard + migrations. | **Fixed (free tier).** connect/sync/available reimplemented as the `integrations-connect` Supabase Edge Function ([`supabase/functions/integrations-connect/`](../../supabase/functions/integrations-connect/index.ts)); the frontend calls it via `supabase.functions.invoke`. No paid host. Fly was dropped (a 24/7 worker is not free). |
+| ② | **No worker process.** `sentinel/integrations/worker.py` has `run()`/`main()`; nothing invoked them. `docker-compose.yml`'s only worker is a *different*, older Celery engine (`sentinel.compliance.engine`). | — | **Fixed (free tier).** New `run(drain=True)` mode + scheduled GitHub Actions job ([`evidence-worker.yml`](../../.github/workflows/evidence-worker.yml)) drains the queue daily and exits — free Actions minutes, no 24/7 process. |
 | ③ | **Status handshake broken.** `connect()` writes `status='configuring'`; the worker updated `last_sync_at`/`last_run_status`/`health` but **never `status`**; both cron schedules enqueue only `where i.status='connected'`. Nothing promoted `configuring → connected`, so collection ran **once** at connect and never recurred. | `integrations/api.py:174`, `worker.py:157-165`, `20260825000001.sql:239`, `20260825000006.sql:68` | **Fixed** — `worker.py` now promotes `configuring → connected` on first successful sync (never overwriting a terminal state). |
 | ④ | **Router fork (found this pass).** `/v1/integrations/*` was mounted **only** on `sentinel/proxy.py`'s app, but the container runs `sentinel.api.main:app`, which never mounted it — so even once deployed, connect would 404. | `proxy.py:213` had it; `sentinel/api/main.py` did not. | **Fixed** — router mounted in `main.py` (verified via the app's OpenAPI schema), ahead of the catch-all frontend proxy that would otherwise swallow its GET routes. |
 
@@ -28,6 +28,14 @@ migrations that have not run on live. They apply the moment **Deploy
 Migrations** runs to completion — which is gated on the three Supabase secrets
 the user must add (tracked separately). No code change needed here; listed so
 the dependency is explicit.
+
+⑥ **Payload-contract mismatch (found while building the free path).**
+`process_job` read `payload["org_id"]` and `payload["integration_slug"]`, but
+**both** connect surfaces enqueue only `{integration_id, catalog_slug}` — so the
+worker would `KeyError` on the very first real job. **Fixed:** the worker now
+treats the `integrations` row as the authority, deriving `org_id` and slug from
+it keyed only by `integration_id` (which also keeps the org boundary intact — a
+job cannot name a different org than the row it points at).
 
 ## Unnecessary surface — verified, and the decision for each
 
@@ -65,18 +73,24 @@ Three different kinds; only the first is a clean delete:
 
 ## Phased plan
 
-### Phase 0 — unblock (no new features until this executes)
+### Phase 0 — unblock (no new features until this executes), $0 infra
 
-1. Deploy the API container + worker to Fly — **runbook**:
+1. Deploy the `integrations-connect` **edge function** + wire the scheduled
+   **evidence worker** — **runbook**:
    [`../operations/backend-deployment.md`](../operations/backend-deployment.md).
-   *(config landed; needs the user's Fly setup + `FLY_API_TOKEN`.)*
+   *(code landed; needs `supabase functions deploy` + `SENTINEL_CREDENTIALS_KEY`
+   on the function and `SENTINEL_DATABASE_URL`/`SENTINEL_CREDENTIALS_KEY` as
+   Actions secrets.)*
 2. Run **Deploy Migrations** to completion so the cron schedules and the
    evidence tables exist on live *(needs the three Supabase secrets).*
-3. ③ status handshake — **done in code**; verify end-to-end after deploy
-   (connect an integration, confirm it reaches `status='connected'`).
-4. ④ router mount — **done in code.**
+3. ③ status handshake, ⑥ payload contract — **done in code**; verify
+   end-to-end after deploy (connect an integration, run the worker once, confirm
+   it reaches `status='connected'`).
+4. ④ router mount — **done in code** (the Python reference surface; the edge
+   function is the deployed one).
 
-Nothing below this line can execute until Phase 0 is live.
+Nothing below this line can execute until Phase 0 is live. Fly.io was dropped —
+a 24/7 worker is not free; the drain-once GitHub Actions worker is.
 
 ### Phase 1 — continuous evidence
 

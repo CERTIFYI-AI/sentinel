@@ -672,8 +672,17 @@ and not the other, exactly as happened here). `resolve_org` in
 `integrations/api.py` still reaches back into `proxy.py` for tenant resolution
 via a local import. Converging on a single app (or a shared router registry
 both mount) is the real fix; until then, **any new public router must be
-registered in both apps**, and that rule is easy to forget. Triage alongside
-the Phase-0 backend deploy.
+registered in both apps**, and that rule is easy to forget.
+
+**Now a THIRD surface.** The free-tier deploy (see
+[`continuous-evidence-roadmap.md`](continuous-evidence-roadmap.md)) makes the
+`integrations-connect` **Supabase Edge Function** (Deno) the *deployed* connect
+surface, while the two Python surfaces remain as the reference + test target.
+Three implementations of the same connect/sync/available contract now exist and
+must agree — the credential blob format especially (pinned by
+`crypto_interop_test.ts`). A behaviour change to the connect flow must be made
+in the edge function first (it is what runs) and mirrored into the Python
+surfaces. Consolidation is more valuable now, not less.
 
 ---
 
