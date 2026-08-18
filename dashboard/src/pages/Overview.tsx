@@ -18,6 +18,7 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCardRow } from '@/components/ui/StatCardRow';
+import { SetupCard } from '@/components/setup/SetupCard';
 import {
   Clock, Warning, Brain, WarningCircle, Briefcase,
   StackSimple, ArrowRight, ChartLine, CheckCircle,
@@ -579,6 +580,10 @@ export default function Overview() {
           </ul>
         </div>
       )}
+
+      {/* Guided setup — dismissible, shown only while setup is incomplete.
+          Every step's state is derived from real data (components/setup). */}
+      <SetupCard />
 
       {/* Alert Ribbon — live counts only; hidden when nothing needs attention */}
       {attentionItems.length > 0 && (

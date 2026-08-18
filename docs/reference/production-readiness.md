@@ -1,12 +1,13 @@
 # Is Sentinel ready to be called a "Trust Layer for Production AI"?
 
-**Verdict (2026-08-17): Not yet — and the honest distance is measurable.**
-The platform is close on the *governance record* half of that claim and
-materially short on the *runtime trust* half. This document is the evidence,
-assembled from six adversarial audit waves (Security, Risk & Incidents,
-Compliance & Regulatory, Vendors/Supply-Chain/ESG, the platform-wide interlink
-audit, and the HOME/executive-surfaces audit), each verified against a real
-from-zero Postgres replay rather than by inspection.
+**Verdict (2026-08-25): Not yet — but the honest distance is smaller and still
+measurable.** The platform is close on the *governance record* half of that
+claim and materially short on the *runtime trust* half. This document is the
+evidence, assembled from seven adversarial audit waves (Security, Risk &
+Incidents, Compliance & Regulatory, Vendors/Supply-Chain/ESG, the platform-wide
+interlink audit, the HOME/executive-surfaces audit, and the final demo-table
+retirement + id-space unification), each verified against a real from-zero
+Postgres replay rather than by inspection.
 
 The bar applied: a **trust layer** is software whose own claims can be trusted.
 Every criterion below is pass/fail on evidence, not aspiration.
@@ -17,10 +18,10 @@ Every criterion below is pass/fail on evidence, not aspiration.
 
 | Criterion | Evidence |
 |---|---|
-| **Schema replays from zero** | 123 migrations, 0 failures, on real Postgres 16.13. The duplicate-version guard runs on pushes to `main`, closing the merge-order-collision class that broke main twice. |
+| **Schema replays from zero** | 125 migrations, 0 failures, on real Postgres 16. The duplicate-version guard runs on pushes to `main`, closing the merge-order-collision class that broke main twice. |
 | **Tenant isolation on the governed spine** | Org-scoped RLS with DB-filled scoping columns (`current_user_org_id()`) across the canonical tables; cross-tenant view leak (`security_invoker`) found and proven closed with a two-org test; 53 demo tables contained with a populated-database-safe migration. |
 | **Writes are honest** | The service layer throws on failure across all rebuilt groups; success toasts fire only after resolution; a failed query renders an error, never an empty state (front page reports "N of 11 data sources unavailable"). |
-| **The one-id-space holds on the rebuilt groups** | Interlinks keyed by uuid, proven with `total = resolves` queries; business-code joins removed from every audited surface; seed business codes (`'vendor-004'`, `'risk-006'`) resolved to real ids. |
+| **The one-id-space holds platform-wide, and is now enforced** | Interlinks keyed by uuid, proven with `total = resolves` queries. A resolution sweep of *every* `*_id` column found a shadow id-space — 10 fabricated model uuids + `MDL-00N`/`NEP-001` codes across 12 modules (~72 refs, 0 resolving), plus `vendor-00N` codes and 52 fabricated `policy_id`s — internally consistent enough to pass six looks-honest audits while resolving to nothing. `20260825000004_unify_model_id_space.sql` remaps by name, NULLs the unresolvable (never invents), and converts 14 `text` `model_id` columns to `uuid` **with foreign keys**, so a business code is now a type error and a fabricated uuid an FK violation — the class cannot regress. All 27 model/vendor/policy columns resolve on a from-zero replay. |
 | **Fabricated assurance is gone from audited surfaces** | The `Math.random()` "SHA-256", the `sigHash !== 'PENDING'` signature check, the hardcoded signer, three fabricated *published* ESG disclosures naming PwC/Deloitte, the board report's invented risk score and trend, the "94.2% verified attestations" card, and the fictional 47-peer network — all deleted, not relabelled. Real companies carrying invented regulatory verdicts were de-named. |
 | **Art. 12 traceability on state changes** | `logAction` with a real actor across the rebuilt services (was zero in three whole groups); board-report exports audit-logged and carrying provenance blocks. |
 | **Derived, never authored, status** | SLA breach from numeric thresholds; attestation validity from `valid_until`; unmeasured renders `—`/`unmeasured`, never a healthy default or a green zero. |
@@ -44,12 +45,17 @@ Every criterion below is pass/fail on evidence, not aspiration.
    *To close: run the activation steps and connect a real model workload
    end-to-end through proxy → verdict → incident → HITL.*
 
-3. **~15 modules still sit on demo doc-tables (TD-001).** Contained (org-scoped
-   RLS since the re-fix), but their pages still render seeded fiction through a
-   hook whose writes are fire-and-forget. DPIA, BIA, IGA, Asset Management,
-   HITL Review Center, Regulator Filings and peers are in this state. Any one
-   of them shown to an auditor undermines the honest 80%.
-   *To close: the same treatment the five rebuilt groups received.*
+3. **12 modules still sit on demo doc-tables (TD-001), down from ~19.** The last
+   five with real tables already waiting — Asset Management, BIA, Identity
+   Governance, Model Risk Committee, Reporting — were migrated onto them
+   (`20260825000003`), which also surfaced and fixed the invisible MRC id defect
+   (0/12 → 4/4, 8/8). Contained (org-scoped RLS since the re-fix), but the
+   remaining twelve still render seeded fiction through a hook whose writes are
+   fire-and-forget: DPIA, HITL Review Center, Regulator Filings, Tabletop
+   Exercises, Transparency Reports, Committee Management, Regulatory Radar,
+   Attack Surface, Keys Vault, Policy Firewall, Red Team Lab, Report Generator.
+   Any one of them shown to an auditor undermines the honest ~85%.
+   *To close: the same treatment the now-ten rebuilt groups received.*
 
 4. **Agent layer partially verified (TD-004).** `vendorRiskAgent`,
    `vendorCascadeAgent`, `carbonAgent`, `esgAgent`, `remediationPlannerAgent`,
@@ -57,10 +63,10 @@ Every criterion below is pass/fail on evidence, not aspiration.
    fail-loud writes; the remaining registered agents have not been verified
    against their target schemas, and `safeInsert` still swallows for them.
 
-5. **CI is quota-blocked.** Every gate is green locally (typecheck, 255 vitest,
-   233 pytest, ruff, full replay), but GitHub Actions has been failing on
-   runner allocation since the quota exhausted. A trust claim needs its
-   pipeline green in public, not on a contributor's machine.
+5. **CI is quota-blocked.** Every gate is green locally (typecheck, 266 vitest,
+   233 pytest, ruff, full 125-migration replay), but GitHub Actions has been
+   failing on runner allocation since the quota exhausted. A trust claim needs
+   its pipeline green in public, not on a contributor's machine.
 
 6. **Peer benchmarking and real signing are honest gaps, stated as such.**
    Correct posture, but they are visible feature absences a buyer will notice.

@@ -86,7 +86,7 @@ recorded.
 
 ---
 
-## TD-001 — Modules still reading generic demo tables (P0, 19 modules)
+## TD-001 — Modules still reading generic demo tables (P0, 12 remaining of 19)
 
 **Status:** Open · **Severity:** P0 · **Owner:** Platform team
 
@@ -155,14 +155,14 @@ that has no provenance.
 | ~~Business Impact Analysis~~ | ~~`pages/BIA.tsx`~~ | **migrated** → `bia_processes` (2026-08-23) |
 | DPIA | `pages/DPIA.tsx` | `dpia_table` |
 | ~~Identity Governance (IGA)~~ | ~~`pages/IGA.tsx`~~ | **migrated** → `identities` + `sod_*` + `access_reviews` (2026-08-23) |
-| Model Risk Committee | `pages/ModelRiskCommittee.tsx` | `modelriskcommittee_table` |
+| ~~Model Risk Committee~~ | ~~`pages/ModelRiskCommittee.tsx`~~ | **migrated** → `mrc_meetings` / `mrc_agenda_items` / `mrc_votes` / `mrc_committee_members` (2026-08-25) |
 | Regulator Filings | `pages/RegulatorFilings.tsx` | `regulatorfilings_table` |
 | Tabletop Exercises | `pages/TabletopExercises.tsx` | `tabletopexercises_table` |
 | Transparency Reports | `pages/TransparencyReports.tsx` | `transparencyreports_table` |
 | Committee Management | `pages/committee/CommitteeManagement.tsx` | `committeemanagement_table` |
 | Regulatory Radar | `pages/governance/RegRadar.tsx` | `regradar_table` |
 | HITL Review Center | `pages/hitl/HITLReviewCenter.tsx` | `hitlreviewcenter_table` |
-| Reporting | `pages/reporting/Reporting.tsx` | `reporting_table` |
+| ~~Reporting~~ | ~~`pages/reporting/Reporting.tsx`~~ | **migrated** → `security_reports` / `security_report_runs` (2026-08-25) |
 | Attack Surface | `pages/security/AttackSurface.tsx` | `attacksurface_table` |
 | Keys Vault | `pages/security/KeysVault.tsx` | `keysvault_table` |
 | Policy Firewall | `pages/security/PolicyFirewall.tsx` | `policyfirewall_table` |
@@ -172,6 +172,32 @@ that has no provenance.
 | ~~Vendor SLA~~ | ~~`pages/vendors/VendorSLA.tsx`~~ | **migrated** → `vendor_slas` (2026-08-16) |
 | ~~AIBOM Registry~~ | ~~`pages/AibomRegistry.tsx`~~ | **migrated** → `aibom_records` (2026-08-16) |
 | ~~Supply Chain Attestations~~ | ~~`pages/SupplyChainAttestations.tsx`~~ | **migrated** → `supply_chain_attestations` (2026-08-16) |
+
+> **Final-wave migration (2026-08-25, `20260825000003_last_demo_table_retirement.sql`).**
+> Asset Registry, BIA, Identity Governance (Access Reviews), Model Risk
+> Committee and Reporting migrated off their demo tables onto the real
+> org-scoped tables that already existed. No table was created for their core
+> data; the only new table is `mrc_committee_members` (the committee roster,
+> previously kept in `modelriskcommittee_table`'s jsonb with no tenant column
+> and seeded from seven hardcoded names in the page file — so every quorum
+> badge the product ever rendered was computed from fiction).
+>
+> **The MRC interlink was broken *and invisible*.** On a from-zero replay,
+> `mrc_agenda_items.model_id` and `mrc_votes.model_id` resolved to **0 of 12**
+> `ai_models` rows — the AIIA seed wrote model uuids that exist in no registry
+> row, and the tables' denormalised `model_name` made every pill render a
+> plausible name over a dead link. `model_id` was also `text` with no foreign
+> key, so any string was a legal reference. The migration converts it to `uuid`,
+> re-resolves each reference by name against `ai_models` (nulling what does not
+> resolve — never inventing), then adds the FK so a fabricated id is rejected by
+> the database. Post-migration: **agenda items 4/4, votes 8/8 resolve**, and
+> `insert … model_id='ffffffff-…'` now raises
+> `violates foreign key constraint "mrc_agenda_items_model_id_fkey"`.
+>
+> Demo `*_table` rows are **not** dropped (other environments may hold rows);
+> the pages simply stop reading them. Evidence: `git`-tracked migration +
+> from-zero replay (124 migrations, 0 failures); services throw on failure and
+> call `logAction`; `npx tsc --noEmit` clean; `npx vitest run` 266/266.
 
 > **Register correction (2026-08-16).** `aibomregistry_table` and
 > `supplychainattestations_table` were **absent from this table** until the
@@ -193,14 +219,24 @@ Act's Art. 14 oversight record, and conformity evidence. A seeded row here is th
 highest-consequence defect in the register.
 
 **Tier 2 — governance process records**
-`Model Risk Committee`, `Committee Management`, `Vendor Assessments`,
-`Vendor SLA`, `Tabletop Exercises`, `Transparency Reports`.
-(`BIA` migrated 2026-08-23.)
+Remaining: `Committee Management`, `Tabletop Exercises`, `Transparency Reports`.
+(`Model Risk Committee` migrated 2026-08-25; `BIA` migrated 2026-08-23;
+`Vendor Assessments` and `Vendor SLA` migrated 2026-08-16.)
 
 **Tier 3 — operational surfaces**
-`Reporting`, `Report Generator`, `Regulatory Radar`,
-`Attack Surface`, `Keys Vault`, `Policy Firewall`, `Red Team Lab`.
-(`Asset Management` and `IGA` migrated 2026-08-23.)
+Remaining: `Report Generator`, `Regulatory Radar`, `Attack Surface`,
+`Keys Vault`, `Policy Firewall`, `Red Team Lab`.
+(`Asset Management` and `IGA` migrated 2026-08-23; `Reporting` migrated 2026-08-25.)
+
+> **Remaining after the 2026-08-23/25 waves (12 modules):** `DPIA`,
+> `Regulator Filings`, `HITL Review Center` (Tier 1); `Committee Management`,
+> `Tabletop Exercises`, `Transparency Reports` (Tier 2); `Report Generator`,
+> `Regulatory Radar`, `Attack Surface`, `Keys Vault`, `Policy Firewall`,
+> `Red Team Lab` (Tier 3). TD-001 is **not** closed — these still render seeded
+> fiction through `useSupabaseTable`. Asset Management, BIA and IGA were
+> migrated on main (2026-08-23, ADMIN registers wave); Model Risk Committee and
+> Reporting in the 2026-08-25 wave — the last ones whose real tables already
+> existed and sat unread.
 
 ### Known-good remediation pattern
 
@@ -403,6 +439,165 @@ and carries the fields real signing needs (`signature` DSSE envelope,
 server-side digest computation over the canonical BOM document and DSSE/Sigstore
 signing with key custody, which is its own change. Until then the UI must never
 present an unverified record as verified.
+
+---
+
+## TD-012 — Shadow model/vendor/policy id-space in seed data (mostly closed)
+
+**Owner:** Platform team · **Raised:** 2026-08-25 · **Severity:** P0 ·
+**Status:** Closed for `model_id`; residual follow-up on `transfer_impact_assessments`.
+
+### What
+
+A resolution sweep of every `*_id` uuid/text column against its target table
+(`scripts/` ad-hoc; reproduced in the migration's §8 proof block) found model,
+vendor and policy references living in a **parallel id-space that resolved to
+nothing**. Three illegal shapes were in use, all forbidden by First principle
+#2 (*"Models are keyed by `ai_models.id` (uuid) everywhere — never by name,
+slug, or a business code like `MDL-001`"*):
+
+1. **Fabricated uuids** — e.g. `83a20820-…` meaning "Credit Risk Scorer" in
+   nine tables, belonging to no `ai_models` row.
+2. **Business codes** — `MDL-001`, `MDL-002`, `NEP-001`.
+3. **Version slugs** — `credit-scoring-v3-2-1`, `nlp-sentiment-v1-5`.
+
+At its worst, `mrc_agenda_items.model_id` and `mrc_votes.model_id` resolved to
+**0 of 12** real models, while a denormalised `model_name` column rendered a
+plausible label over the dead link. Across the platform the sweep found ~72
+model references, plus `vendor-00N` codes in `ai_apps` /
+`transfer_impact_assessments` and 52 fabricated `policy_id`s in
+`guardrail_events` / `live_traces`, none resolving.
+
+### Why it survived six audit waves
+
+The shadow space was **internally consistent** — the same fabricated uuid meant
+the same model in every table that cited it — so each module looked correct in
+isolation and even joined to its siblings. It only broke on the one join that
+matters: to `ai_models`. Audits that asked *"does this page look honest?"*
+passed it; only *"where does this id actually resolve?"* caught it.
+
+### Root cause
+
+Structural, not editorial: **14 of the 15 `model_id` columns were `text` with
+no foreign key.** A text column with no referent silently accepts a slug, a
+business code, or a typo. Remapping rows without fixing the column type would
+let the shadow space grow straight back.
+
+### Addressed
+
+`20260825000004_unify_model_id_space.sql` (and, for MRC specifically,
+`20260825000003`) remaps each reference to the real id by its name label,
+**NULLs** whatever still does not resolve (a null renders "Unavailable" — a
+dangling pointer renders a lie; no model is invented to point at), converts the
+columns `text → uuid`, and adds `REFERENCES ai_models(id)` / `vendors(id)` /
+`policies(id)`. Shapes (2) and (3) are now a type error; shape (1) is an FK
+violation. Proven on a from-zero Postgres 16 replay: every remaining reference
+resolves (`total = resolves` on all 27 columns), and a re-inserted `MDL-001` /
+fabricated uuid is rejected by the DB.
+
+### Remaining debt
+
+`transfer_impact_assessments.vendor_id` carried `vendor-00N` codes but the table
+holds no name or app label to bridge from, so those rows were NULLed and the
+column constrained. Authoring meaningful demo linkage for TIA vendors (which
+supplier each cross-border transfer assessment covers) is deferred — the column
+and FK exist and are enforced; only the demo attribution is absent.
+
+---
+
+## TD-014 — From-zero replay is red on the `incidents.id` type split
+
+**Owner:** Risk & Incidents team · **Raised:** 2026-08-26 · **Severity:** P1 ·
+**Status:** Open. **Not caused by the framework-catalog change** — surfaced by
+it, because that branch runs a full replay locally that CI cannot currently run.
+
+### What
+
+`incidents.id` is **TEXT** (`gen_random_uuid()::text`, created in
+`20260418000002_core_grc_tables.sql`), but several columns that reference it —
+and several PL/pgSQL seed variables that compare against it — are **uuid**. On
+the live database these statements are no-ops (the constraints already exist
+from an earlier era), so nothing fails. On a **from-zero replay** they abort:
+
+| Site | Failure |
+|---|---|
+| `20260817000000_replay_repair.sql` §040 | `regulator_filings.linked_incident_id` is `uuid`, `incidents.id` is `text` → *"foreign key constraint … cannot be implemented"* |
+| `20260819000002_seed_risk_incidents.sql` | `i_pii`/`i_drift` declared `uuid`, compared to `playbook_runs.incident_id` → *"operator does not exist: text = uuid"* |
+
+Both files predate this branch and are owned by the Risk & Incidents work; a
+third-party patch risks colliding with that team's in-flight changes, so they
+are **deliberately left untouched here** and recorded instead.
+
+### Why it was not caught
+
+Two blind spots compounding:
+
+1. **CI cannot run the expensive replay.** The `drift` job (full Postgres via
+   the Supabase CLI) is PR-only and the account's Actions minutes are
+   exhausted, so only the cheap `static-replay` job runs.
+2. **The static checker cannot see it.** `check_migration_replay.py` parses
+   `CREATE`/`ALTER` at the top level; both failures are inside `DO $$ … $$`
+   blocks, and the second is a PL/pgSQL variable comparison, not DDL. The
+   static check reports **clean** on exactly the migrations that abort.
+
+### To close
+
+Decide the canonical type for `incidents.id` (TEXT is entrenched — every
+`tenant_id = v_org::text` seed assumes it) and align the referencing columns and
+seed variables to it, then prove with a from-zero replay rather than the static
+check. Consider teaching the static checker to flag FK type mismatches inside
+`DO` blocks — it already flags them at the top level, which is how the
+`assets.vendor_id uuid → vendors.id text` mismatch in this branch was caught and
+fixed before merge.
+
+> **Scope note.** The framework-catalog migrations (`20260826000001`–`000020`)
+> and this branch's own migrations replay cleanly; they run *after* the failing
+> files, so a from-zero replay stops before reaching them. Their correctness was
+> verified by applying them to a database replayed to that point — 936 catalog
+> controls across 15 frameworks, `count(*) = count(distinct control_ref)` per
+> framework.
+
+---
+
+## TD-013 — Two parallel framework-catalog systems
+
+**Owner:** Compliance team · **Raised:** 2026-08-26 · **Severity:** P2 ·
+**Status:** Open.
+
+### What
+
+There are now two representations of the compliance-framework catalog:
+
+1. **`framework_controls`** (DB) — the authoritative catalog authored in the
+   20260826000010–14 seeds: **15 frameworks, 936 real published controls**,
+   rendered in the Frameworks *Requirements* tab and interlinked to the org's
+   `controls`.
+2. **`/frameworks/*.yaml` + `manifest.json`** (static bundle, served by a
+   Worker) — a pre-existing reference set of **22 frameworks with 84 sample
+   controls** (3–6 per framework). It drives `FRAMEWORK_COUNT` /
+   `TOTAL_CONTROL_COUNT` in `dashboard/src/lib/frameworks.ts`, shown in the
+   Frameworks page header ("N frameworks bundled · N seed controls").
+
+### Why it matters
+
+The two disagree in the same view: the header reports 22 frameworks / 84
+controls from the static bundle while the detail tab shows a framework's full
+DB catalog (e.g. PCI DSS 246). A user sees two different "counts" for the same
+thing. The static bundle also covers 13 frameworks the DB catalog does not yet
+(ISO 27701, NIST CSF 2.0, NIST 800-53/171, CCPA/CPRA, PIPEDA, LGPD, CIS v8,
+SOX ITGC, CMMC 2.0, FedRAMP, DORA, FFIEC CAT), while the DB catalog covers 6
+AI frameworks the static bundle does not (OWASP LLM, MITRE ATLAS, Google SAIF,
+OECD, Singapore, UNESCO).
+
+### To close
+
+Converge on one source of truth. Preferred: generate the static manifest from
+the DB catalog (or retire the static bundle once the DB catalog covers the same
+frameworks), and either author full DB catalogs for the 13 reference-only
+frameworks or label them explicitly as "reference mapping, sample controls" in
+the UI so the header count and the detail count cannot contradict each other.
+Until then the README's "Supported Compliance Frameworks" is the reconciled
+statement of record (15 full catalogs + 13 reference-coverage frameworks).
 
 ---
 

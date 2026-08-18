@@ -23,7 +23,16 @@
     color: hsl(var(--text-1));
     transition: background-color 150ms ease, color 150ms ease;
   }
-  h1, h2, h3, h4, h5, h6 { font-weight: 600; }
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    /* Optical tightening scales with size: larger display text reads tighter.
+       Balanced wrapping avoids orphan words in multi-line headings. */
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  h1 { letter-spacing: -0.025em; }
+  /* Tabular figures for data-dense UI so numbers align in tables and KPIs. */
+  table, .tabular-nums, [data-tabular] { font-variant-numeric: tabular-nums; }
   code, pre, kbd, samp { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.75rem; }
   :focus-visible { outline: 2px solid hsl(var(--brand)); outline-offset: 2px; }
   ::selection { background-color: hsl(var(--brand) / 0.15); color: hsl(var(--text-1)); }

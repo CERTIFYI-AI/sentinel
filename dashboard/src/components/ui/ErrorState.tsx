@@ -41,16 +41,17 @@ export function ErrorState({
         textAlign: 'center',
         gap: 12,
         background: 'hsl(var(--s-er-bg))',
-        border: '1px solid hsl(var(--s-er-bg))',
+        border: '1px solid hsl(var(--s-er-br))',
         borderRadius: 0,
       }}
     >
       <div
         style={{
-          background: 'hsl(var(--s-er-bg))',
+          background: 'hsl(var(--bg-surface))',
           padding: 16,
           display: 'inline-flex',
           borderRadius: 0,
+          border: '1px solid hsl(var(--s-er-br))',
           color: 'hsl(var(--destructive))',
         }}
       >
