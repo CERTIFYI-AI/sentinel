@@ -16,7 +16,7 @@ export async function reportingSweep(ctx: SentinelContext): Promise<SentinelResu
   const { data: recent } = await supabase
     .from('notifications')
     .select('id')
-    .eq('notification_type', 'mesh_digest')
+    .eq('source_module', 'mesh-digest')
     .gte('created_at', windowStart)
     .limit(1)
   if (recent && recent.length > 0) {
@@ -47,11 +47,13 @@ export async function reportingSweep(ctx: SentinelContext): Promise<SentinelResu
     `Models under governance: ${models.count ?? 0}`,
   ]
 
+  // Live columns only: org_id/type/source_module (see notificationAgent).
   const inserted = await safeInsert('notifications', {
+    org_id: ctx.orgId,
     title: 'AI governance daily digest',
     message: lines.join(' · '),
-    notification_type: 'mesh_digest',
-    entity_type: 'mesh',
+    type: 'info',
+    source_module: 'mesh-digest',
     is_read: false,
   })
   if (!inserted) {

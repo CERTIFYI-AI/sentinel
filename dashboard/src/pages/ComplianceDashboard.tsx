@@ -11,7 +11,7 @@ import { useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Scale, Download } from 'lucide-react';
-import { ShieldCheck, CheckCircle, ChartBar, ArrowsClockwise } from '@phosphor-icons/react';
+import { ShieldCheck, CheckCircle, ChartBar, ArrowsClockwise, BookOpen } from '@phosphor-icons/react';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
@@ -73,6 +73,23 @@ export default function ComplianceDashboard() {
     queryKey: ['compliance-scores-recent'],
     queryFn: fetchRecentMeshRecalcs,
     staleTime: 30_000,
+  });
+
+  // Published control catalogs (`framework_controls`). /compliance previously
+  // had no reference to the catalog and no link to the page that renders it,
+  // so the 936 seeded controls were unreachable from the surface a user
+  // naturally opens. Counted for real — never asserted.
+  const catalogQuery = useQuery({
+    queryKey: ['framework-catalog-total'],
+    queryFn: async (): Promise<number | null> => {
+      if (!isSupabaseConfigured() || !supabase) return null
+      const { count, error } = await supabase
+        .from('framework_controls')
+        .select('id', { count: 'exact', head: true })
+      if (error) return null
+      return count ?? 0
+    },
+    staleTime: 60_000,
   });
 
   const { risks, error: risksError } = useRisksData();
@@ -149,6 +166,16 @@ export default function ComplianceDashboard() {
       variant: 'success',
       icon: <CheckCircle size={14} weight="fill" />,
       href: '/compliance/controls',
+    },
+    {
+      // Null (query failed) renders '—', never a fabricated 0.
+      label: 'Published Catalog Controls',
+      value: catalogQuery.data == null ? '—' : String(catalogQuery.data),
+      icon: <BookOpen size={14} weight="fill" />,
+      href: '/frameworks?tab=catalog',
+      description: catalogQuery.data == null
+        ? 'Catalog count unavailable'
+        : 'Requirements published by the adopted frameworks',
     },
     { label: 'Mesh Recalculations', value: String(recalcs.length), icon: <ArrowsClockwise size={14} weight="fill" /> },
   ];

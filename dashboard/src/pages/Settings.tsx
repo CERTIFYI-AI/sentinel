@@ -207,7 +207,7 @@ const API_KEYS = [
 // used to be here rendered a hardcoded six-item array with connect buttons
 // that did nothing — a fake-success surface duplicating a real module.
 
-const TAB_IDS = new Set<Tab>(["general", "team", "api-keys", "notifications", "compliance", "integrations", "demo-data"]);
+const TAB_IDS = new Set<Tab>(["general", "team", "api-keys", "notifications", "compliance", "demo-data"]);
 
 export default function SettingsPage() {
   // Deep link support (e.g. the Get-started checklist links ?tab=demo-data).

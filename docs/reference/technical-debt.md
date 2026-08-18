@@ -601,6 +601,58 @@ statement of record (15 full catalogs + 13 reference-coverage frameworks).
 
 ---
 
+## TD-015 — `frameworks` exists in two incompatible schemas (slug-keyed vs uuid-keyed)
+
+**Owner:** Platform team · **Raised:** 2026-08-18 · **Severity:** P1 ·
+**Status:** Open (live unblocked; the migration chain still forks).
+
+### What
+
+`public.frameworks` has two different definitions in this repo's history, and
+the live project runs the second one:
+
+| | A — slug-keyed (`20260418000003`) | B — uuid-keyed (**live**) |
+|---|---|---|
+| `id` | `TEXT` (`'soc2'`, `'pci-dss'`) | `uuid DEFAULT gen_random_uuid()` |
+| other | `short_name`, `issuing_body`, `structure`, `adopted`, `coverage_pct` | `code`, `category`, `jurisdiction`, `control_count`, `controls_total` |
+
+The `20260826000010–14` catalog seeds were authored against (A). On (B):
+
+* their `INSERT INTO public.frameworks` blocks name columns that do not exist,
+  so the five added frameworks never arrive; and
+* every seeded `framework_controls.framework_id` is a **slug**, while the
+  Frameworks catalog tab filters that column by `frameworks.id` — a **uuid**
+  (`frameworkCatalogService.fetchFrameworkCatalog`). All 936 rows load and
+  every catalog still renders empty, because the join never matches.
+
+### Why it matters
+
+This is the "one id-space" rule (First principle #2) broken by a schema fork,
+and it is **invisible to both file review and a from-zero replay**, because a
+replay of the committed chain builds schema (A) — the shape the seeds assume —
+and therefore passes. It is only observable by querying the live project. A
+2026-08-26 review verified the catalog against a locally replayed database and
+correctly concluded the data and code were sound; the fork it could not see was
+what actually kept the catalog blank in production.
+
+### Current state
+
+Live is unblocked: `20260826000002` supplies the missing table and the five
+frameworks using (B)'s columns (a guarded no-op on (A)), and `20260826000021`
+rewrites the seeds' slugs to live uuids. Verified live — advertised = actual =
+distinct refs for all 15 frameworks, 936 rows, and RLS confirmed by
+impersonating a real authenticated tenant (15 / 936 / SOC 2 = 61).
+
+### To close
+
+Decide which schema is canonical and converge the chain on it, so that a
+from-zero replay produces the shape production actually runs. Until then any
+migration touching `frameworks` must be written to tolerate both, and — the
+rule this cost us — **a catalog/interlink claim must be verified against the
+live database, not only against a replayed one.**
+
+---
+
 ## Closed
 
 | ID | Item | Closed |
