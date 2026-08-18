@@ -1,7 +1,6 @@
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { fromDB, mutateDB, getTenantId } from '@/lib/dataSource'
+import { fromDB, mutateDB } from '@/lib/dataSource'
 
-const TENANT_ID = getTenantId()
 
 const SEED_ETHICS_REPORTS = [
   { id: 'ER-001', date: '2026-03-15', category: 'AI Bias/Discrimination', severity: 'High', source: 'Anonymous', status: 'Under Investigation', assigned_investigator: 'David Kim', priority: 'High', description: 'Credit scoring model consistently outputs lower credit limits for applicants from certain zip codes, correlation with race suspected.', system: 'Auto-Credit Approver', created_at: new Date(Date.now() - 30 * 86400000).toISOString(), updated_at: new Date(Date.now() - 30 * 86400000).toISOString() },
@@ -33,7 +32,7 @@ export async function fetchEthicsReportsById(id: string) {
 export async function upsertEthicsReports(record: any) {
   if (!isSupabaseConfigured()) return record
   try {
-    const { data, error } = await supabase.from('ethics_reports').upsert({ ...record, tenant_id: TENANT_ID }).select().single()
+    const { data, error } = await supabase.from('ethics_reports').upsert(record).select().single()
     if (error) throw error
     return data
   } catch (e) { console.warn('[ethicsReportsService] upsert:', e); return record }

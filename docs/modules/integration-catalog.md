@@ -48,13 +48,34 @@ A catalogued-only product still shows its full operator prose — what it
 evidences, how evidence is pulled, what it maps to, connection steps — because
 that is genuinely useful for deciding which sources to prioritise.
 
-### Enable / disable
+### Enable / disable — where you fill in credentials
 
-- **Connect** creates the org's `integrations` row carrying `catalog_slug`; the
-  server-side worker picks the job up from there. The row starts as
-  `configuring`, which is the honest state: linked, not yet collecting.
-  Credentials are **not** handled in the browser — they are written encrypted
-  server-side (`sentinel/integrations/crypto.py`, AES-256-GCM).
+**Connect** opens a form built from the provider's own
+`IntegrationConfig.credentialFields` (e.g. GitHub asks for an access token, an
+organization, and an optional API base URL for Enterprise Server). Submitting
+it posts to **`POST /v1/integrations/connect`** (`sentinel/integrations/api.py`),
+which:
+
+1. refuses any slug with no registered adapter — the server is the authority,
+   so the UI and the backend cannot disagree about what can collect;
+2. validates the credential shape against the adapter's own model, returning a
+   clear 400 rather than letting the worker crash later;
+3. **encrypts with AES-256-GCM** (`crypto.py`) and stores only the ciphertext
+   in `integrations.credentials_encrypted`;
+4. upserts the org's `integrations` row on `(org_id, catalog_slug)`, so
+   reconnecting updates in place instead of duplicating;
+5. enqueues the first `background_jobs` sync — a privileged write with no
+   client insert policy, which is precisely why this step lives on the server.
+
+The organisation comes from the caller's verified token, never the request
+body, so a client cannot connect an integration into another tenant. The
+browser holds credential values only for the life of the form, sends them once
+over TLS, and clears them as soon as the request resolves — nothing reaches
+localStorage, the query cache or the URL. Error paths deliberately return the
+server's own message and never echo submitted input.
+
+**Sync now** on a connected source queues another run via
+`POST /v1/integrations/{id}/sync`.
 - **Disconnect** soft-deletes the row. **Findings already collected are
   retained** — disconnecting a source must not erase the evidence trail it
   produced (EU AI Act Art. 12).
@@ -141,8 +162,18 @@ normalized fields above.
 - Tabs are URL-addressable: `/integrations` (catalogue),
   `/integrations?tab=connectors`, `/integrations?tab=webhooks`.
 - Adding an adapter means: implement it under `sentinel/integrations/`, register
-  it in `registry.py`, and flip that row's `adapter_status` to `available`. The
-  registry docstring states the two must agree; the worker enforces it.
+  it in `registry.py`, add its connect form to `dashboard/src/integrations/`,
+  and flip that row's `adapter_status` to `available`. The registry docstring
+  states the two must agree; the worker and the connect endpoint both enforce
+  it. `GET /v1/integrations/available` returns the server's own answer so the
+  UI can cross-check.
+- **Why AWS and Azure cannot be connected yet:** they are catalogued, not
+  adapted. Making either connectable is the four steps above — the adapter is
+  the work, not the form. The catalogue entry already records what evidence
+  each would carry and how it would be pulled.
+- The backend requires `SENTINEL_CREDENTIAL_KEY` (credential encryption) and a
+  database URL; without either, connect returns a clear 503 rather than
+  storing anything.
 - Counts in the UI header are derived from the rows, never hard-coded, so the
   page cannot advertise a number the catalogue does not contain.
 
