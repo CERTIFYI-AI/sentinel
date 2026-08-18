@@ -19,15 +19,31 @@ import {
 const riskAssessmentAgent: AgentHandler = async (ctx: AgentContext): Promise<AgentResult> => {
   const p = ctx.event.payload as any
   if (!p?.modelId) return { status: 'skipped' }
-  const { data: risk } = await ctx.supabase.from('risks').insert({
-    org_id: ctx.event.org_id,
-    title: `Auto: ${p.modelName ?? p.modelId} — Initial AI Model Risk`,
-    category: 'AI Model Risk',
-    severity: p.riskTier <= 2 ? 'HIGH' : 'MEDIUM',
-    status: 'OPEN', source: 'edge-agent',
+  // LIVE risks schema (verified against the project, not inferred): text id
+  // (default), tenant_id text (org uuid — the resolver is NULL under the
+  // service role, so set it explicitly), the risk is named in `name` (there is
+  // NO title/org_id/category/status), severity and likelihood are integers,
+  // risk_level is Title Case text. Provenance columns are the platform
+  // invariant for agent-generated records. The 2026-08-25 mesh audit found the
+  // deployed agents targeting the imagined title/category/status shape and
+  // swallowing the insert error — executions said "succeeded" while zero rows
+  // landed. Errors are now returned as `failed` with the database's message.
+  const high = p.riskTier <= 2 || p.severity === 'CRITICAL' || p.severity === 'HIGH'
+  const { data: risk, error } = await ctx.supabase.from('risks').insert({
+    tenant_id: ctx.event.org_id,
+    name: `Auto: ${p.modelName ?? p.modelId} — initial AI model risk`,
+    description: `Registered model entered the estate; baseline risk record opened by the governance mesh (event ${ctx.event.id}).`,
+    categories: ['AI Model Risk'],
+    likelihood: high ? 4 : 3,
+    severity: high ? 4 : 3,
+    risk_level: high ? 'High' : 'Medium',
+    mitigation_status: 'Not Started',
+    source: 'auto-agent', auto_generated: true,
     related_entity_type: 'model', related_entity_id: p.modelId,
+    source_event_id: ctx.event.id,
   }).select().single()
-  await ctx.emit('RISK_CREATED', 'edge-risk-agent', { riskId: risk?.id, modelId: p.modelId, severity: p.riskTier <= 2 ? 'HIGH' : 'MEDIUM' })
+  if (error) return { status: 'failed', error: `risks insert: ${error.message}` }
+  await ctx.emit('RISK_CREATED', 'edge-risk-agent', { riskId: risk?.id, modelId: p.modelId, severity: high ? 'HIGH' : 'MEDIUM' })
   return { status: 'succeeded', output: { riskId: risk?.id } }
 }
 Object.defineProperty(riskAssessmentAgent, 'name', { value: 'RiskAssessmentAgent' })
@@ -36,20 +52,20 @@ const hitlAgent: AgentHandler = async (ctx: AgentContext): Promise<AgentResult> 
   const p = ctx.event.payload as any
   const highRisk = p.riskTier <= 2 || p.severity === 'CRITICAL' || p.severity === 'HIGH'
   if (!highRisk) return { status: 'skipped' }
-  // Real columns only; title is NOT NULL and tenant_id drives the org RLS
-  // policy (service-role writes bypass RLS but reads by the UI do not).
+  // LIVE hitl_reviews columns only (verified): tenant_id (NO org_id), title,
+  // entity_type/entity_id, trigger_reason (NO reason/review_type/
+  // blocks_deployment/metadata/model_id), context jsonb for provenance. tenant_id
+  // drives the org RLS policy the UI reads under.
   const { error } = await ctx.supabase.from('hitl_reviews').insert({
-    org_id: ctx.event.org_id, tenant_id: ctx.event.org_id,
-    entity_type: 'model', entity_id: p.modelId, model_id: p.modelId ?? null,
+    tenant_id: ctx.event.org_id,
     title: `HITL review: ${p.modelName ?? p.modelId ?? ctx.event.event_type}`,
-    reason: `Auto-escalation from ${ctx.event.event_type}`,
-    trigger_reason: `Auto-escalation from ${ctx.event.event_type}`,
-    review_type: 'escalation',
-    priority: p.severity === 'CRITICAL' ? 'critical' : 'high',
-    status: 'pending', blocks_deployment: true,
-    metadata: { created_by: 'EdgeHITLAgent' },
+    entity_type: 'model', entity_id: p.modelId,
+    trigger_reason: `Auto-escalation from ${ctx.event.event_type} (event ${ctx.event.id})`,
+    context: { source: 'auto-agent', auto_generated: true, source_event_id: ctx.event.id, payload: p },
+    priority: p.severity === 'CRITICAL' ? 'P0' : 'P1',
+    status: 'pending',
   })
-  if (error) return { status: 'failed', error: error.message }
+  if (error) return { status: 'failed', error: `hitl_reviews insert: ${error.message}` }
   return { status: 'succeeded' }
 }
 Object.defineProperty(hitlAgent, 'name', { value: 'HITLAgent' })
@@ -61,11 +77,11 @@ const notificationAgent: AgentHandler = async (ctx: AgentContext): Promise<Agent
   ])
   if (!IMPORTANT.has(ctx.event.event_type)) return { status: 'skipped' }
   const p = ctx.event.payload as any
-  // Canonical `notifications` columns (see
-  // 20260828000001_notifications_schema_convergence.sql). This previously wrote
-  // `type`/`body` plus a `severity` column that has never existed in any era of
-  // this table — and did not check the result, so every notification it
-  // produced was discarded in silence. Severity now rides in the message.
+  // Canonical `notifications` columns after the schema convergence
+  // (20260828000001): the reader selects notification_type/entity_type/
+  // entity_id/url_path. `type` defaults to 'info' (its CHECK vocabulary), so
+  // omitting it is safe. Severity rides in the message body. url_path drives the
+  // drawer's deep link to the governed record.
   const { error } = await ctx.supabase.from('notifications').insert({
     org_id: ctx.event.org_id,
     tenant_id: ctx.event.org_id,
@@ -74,6 +90,7 @@ const notificationAgent: AgentHandler = async (ctx: AgentContext): Promise<Agent
     message: JSON.stringify({ severity: p.severity ?? 'INFO', ...p }).slice(0, 500),
     entity_type: p.incidentId ? 'incident' : p.modelId ? 'model' : 'event',
     entity_id: (p.incidentId as string) ?? (p.modelId as string) ?? null,
+    url_path: p.modelId ? `/models/inventory/${p.modelId}` : p.incidentId ? `/risk/incidents?open=${p.incidentId}` : null,
     is_read: false,
   })
   // Fail loudly: a dropped governance notification is a missed escalation.

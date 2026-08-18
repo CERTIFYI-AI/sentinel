@@ -42,6 +42,15 @@ END $$;
 -- Proof: every one of these tables now fills org_id server-side, so a client
 -- that omits the column (as the fixed services do) still writes a correctly
 -- scoped row. Fails loudly rather than leaving a silent gap.
+-- Proof: assert a DB default ONLY on tables that actually carry org_id. On the
+-- live database these tables drifted onto tenant_id-era scoping — bcp_plans,
+-- red_team_findings and training_courses have tenant_id and NO org_id column at
+-- all — so an unconditional assertion here would RAISE and abort the Deploy
+-- Migrations pipeline (verified against the live project 2026-08-18). The loop
+-- above already skips those, and this proof now only checks the org_id-having
+-- tables (departments live). The tenant_id/org_id era split on these four
+-- tables — and the risk that #78's "stop sending tenant_id" service change
+-- breaks their writes on a tenant_id-only database — is recorded as TD-017.
 DO $$
 DECLARE
   missing text[];
@@ -49,17 +58,20 @@ BEGIN
   SELECT array_agg(t) INTO missing
     FROM unnest(ARRAY['departments', 'bcp_plans', 'red_team_findings', 'training_courses']) AS t
    WHERE to_regclass('public.' || t) IS NOT NULL
+     -- only tables that HAVE org_id are expected to carry a default
+     AND EXISTS (
+       SELECT 1 FROM information_schema.columns
+        WHERE table_schema = 'public' AND table_name = t AND column_name = 'org_id'
+     )
      AND NOT EXISTS (
        SELECT 1 FROM information_schema.columns
-        WHERE table_schema = 'public'
-          AND table_name = t
-          AND column_name = 'org_id'
-          AND column_default IS NOT NULL
+        WHERE table_schema = 'public' AND table_name = t
+          AND column_name = 'org_id' AND column_default IS NOT NULL
      );
 
   IF missing IS NOT NULL THEN
-    RAISE EXCEPTION 'org_id still has no DB default on: %', array_to_string(missing, ', ');
+    RAISE EXCEPTION 'org_id present but still has no DB default on: %', array_to_string(missing, ', ');
   END IF;
 
-  RAISE NOTICE 'org scoping defaults verified on all four repaired tables';
+  RAISE NOTICE 'org scoping defaults verified on org_id-bearing tables';
 END $$;

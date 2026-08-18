@@ -64,10 +64,17 @@ BEGIN
     EXECUTE format('DROP POLICY IF EXISTS ws01_org_read ON public.%I', t);
     EXECUTE format('DROP POLICY IF EXISTS %I ON public.%I', t||'_catalog_read', t);
 
+    -- Resolver: public.current_user_org_id(). The live database evolved onto
+    -- this resolver and never carried auth.current_org_id() forward, so keying
+    -- the policy on the auth-schema function fails on live with "function
+    -- auth.current_org_id() does not exist" — which would abort the Deploy
+    -- Migrations pipeline at this migration. Both resolvers return the same
+    -- value (the caller's org from user_profiles); current_user_org_id() is the
+    -- one that exists everywhere. See TD-016.
     EXECUTE format($f$
       CREATE POLICY %I ON public.%I
         FOR SELECT TO authenticated
-        USING (org_id = %L::uuid OR org_id = auth.current_org_id())
+        USING (org_id = %L::uuid OR org_id = current_user_org_id())
     $f$, t||'_catalog_read', t, sys_org);
   END LOOP;
 END $$;

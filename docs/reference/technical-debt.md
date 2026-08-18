@@ -667,7 +667,7 @@ statement of record (15 full catalogs + 13 reference-coverage frameworks).
 
 ---
 
-## TD-015 — `frameworks` exists in two incompatible schemas (slug-keyed vs uuid-keyed)
+## TD-016 — `frameworks` exists in two incompatible schemas (slug-keyed vs uuid-keyed)
 
 **Owner:** Platform team · **Raised:** 2026-08-18 · **Severity:** P1 ·
 **Status:** Open (live unblocked; the migration chain still forks).
@@ -716,6 +716,43 @@ from-zero replay produces the shape production actually runs. Until then any
 migration touching `frameworks` must be written to tolerate both, and — the
 rule this cost us — **a catalog/interlink claim must be verified against the
 live database, not only against a replayed one.**
+
+---
+
+## TD-017 — `tenant_id`/`org_id` era split on four operational tables
+
+**Owner:** Platform team · **Raised:** 2026-08-18 · **Severity:** P1 ·
+**Status:** Open.
+
+### What
+
+`bcp_plans`, `red_team_findings` and `training_courses` are scoped by
+**`tenant_id`** on the live database and have **no `org_id` column at all**;
+`departments` has `org_id`. PR #78 ("4 repaired write paths") changed the
+services for these four to *stop sending `tenant_id`* and rely on an `org_id`
+DB default, and `20260827000001` sets that default. Both assume the `org_id`
+era. On live only `departments` matches; the other three are still
+`tenant_id`-scoped.
+
+### Why it matters
+
+- `20260827000001`'s original proof block `RAISE`d on the three `org_id`-less
+  tables, which would abort the Deploy Migrations pipeline. Made tolerant
+  (assert only on `org_id`-bearing tables) so the pipeline survives.
+- **The live risk remains:** once the #78 frontend deploys, create/edit on
+  Business Continuity, Red Team Findings and Training Courses will send neither
+  `tenant_id` (removed) nor a resolvable `org_id` (no such column), so those
+  writes fail on a `tenant_id`-only database. Verified the column shapes against
+  the live project on 2026-08-18.
+
+### To close
+
+Converge these four tables onto one scoping column. Either add `org_id`
+(nullable, default `current_user_org_id()`, backfilled from `tenant_id`) and
+keep #78's service change, or revert #78 for the three `tenant_id` tables. This
+is the same class as TD-016: the committed chain and the live database disagree
+on schema, and only a live query reveals it. Decide the canonical scoping column
+platform-wide and reconcile in one pass rather than table by table.
 
 ---
 
