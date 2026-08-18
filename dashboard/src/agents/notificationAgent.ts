@@ -11,24 +11,23 @@ const IMPORTANT = new Set<string>([
 export async function notificationAgent(ctx: AgentContext): Promise<AgentResult> {
   if (!IMPORTANT.has(ctx.event.event_type)) return { status: 'skipped' }
   const p = ctx.event.payload as Record<string, unknown>
-  // Live notifications columns: org_id, title, message, type, source_module,
-  // entity_ref, action_url, is_read. `type` is CHECK-constrained to a SEVERITY
-  // vocabulary (info/success/warning/error/critical) — NOT an event name — so
-  // the event name travels in source_module, matching the edge dispatcher.
-  // The previous shape (notification_type/entity_type/entity_id/url_path/
-  // tenant_id/user_id) matched no column and every insert was lost.
-  const sev = String(p.severity ?? '').toUpperCase()
-  const type = sev === 'CRITICAL' ? 'critical' : sev === 'HIGH' ? 'error'
-    : sev === 'MEDIUM' ? 'warning' : 'info'
+  // Real notifications columns only (tenant_id/title/message/notification_type/
+  // entity_*/is_read from core_grc; url_path from phase-4). The previous shape
+  // (type/severity/body/link) matched no column and every insert was lost.
   await safeInsert('notifications', {
     org_id: ctx.orgId,
-    type,
-    source_module: `governance-mesh:${ctx.event.event_type}`,
+    tenant_id: ctx.orgId,
+    // Explicit broadcast marker: the org-broadcast read policy
+    // (notifications_org_broadcast_read) makes user_id='system' rows readable
+    // org-wide — never rely on the column default here.
+    user_id: 'system',
+    notification_type: ctx.event.event_type,
     title: `${ctx.event.event_type.replace(/_/g,' ')} — ${p.modelName ?? p.title ?? p.summary ?? 'auto'}`,
     message: JSON.stringify(p).slice(0, 500),
-    entity_ref: (p.incidentId as string) ?? (p.modelId as string) ?? null,
-    action_url: p.modelId ? `/models/inventory/${p.modelId}` : p.incidentId ? `/risk/incidents?open=${p.incidentId}` : null,
+    entity_type: p.incidentId ? 'incident' : p.modelId ? 'model' : 'event',
+    entity_id: (p.incidentId as string) ?? (p.modelId as string) ?? null,
     is_read: false,
+    url_path: p.modelId ? `/models/inventory/${p.modelId}` : p.incidentId ? `/risk/incidents?open=${p.incidentId}` : null,
   })
   return { status: 'succeeded' }
 }

@@ -1,7 +1,6 @@
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { fromDB, mutateDB, getTenantId } from '@/lib/dataSource'
+import { fromDB, mutateDB } from '@/lib/dataSource'
 
-const TENANT_ID = getTenantId()
 
 export async function fetchAllRedTeamFindings(filters: Record<string,any> = {}) {
   if (!isSupabaseConfigured()) return []
@@ -27,7 +26,7 @@ export async function fetchRedTeamFindingsById(id: string) {
 export async function upsertRedTeamFindings(record: any) {
   if (!isSupabaseConfigured()) return record
   try {
-    const { data, error } = await supabase.from('red_team_findings').upsert({ ...record, tenant_id: TENANT_ID }).select().single()
+    const { data, error } = await supabase.from('red_team_findings').upsert(record).select().single()
     if (error) throw error
     return data
   } catch (e) { console.warn('[redTeamFindingsService] upsert:', e); return record }

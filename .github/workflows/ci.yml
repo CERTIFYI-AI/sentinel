@@ -101,6 +101,14 @@ jobs:
         run: pytest tests/ -q
       - name: Migration replay check
         run: python3 scripts/check_migration_replay.py
+      # The "What's new" and "User guide" panels render generated data. If the
+      # committed output falls behind CHANGELOG.md / docs/modules/, the app
+      # would show a stale version or document a module that has moved — the
+      # exact drift these generators exist to prevent.
+      - name: Generated panel data is current
+        run: |
+          python3 scripts/gen_release_notes.py --check
+          python3 scripts/gen_module_guides.py --check
 
   security:
     runs-on: ubuntu-latest

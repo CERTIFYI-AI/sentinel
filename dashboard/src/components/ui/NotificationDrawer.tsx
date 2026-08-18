@@ -22,7 +22,6 @@ export interface NotificationRow {
   title: string
   message: string | null
   notificationType: string
-  severity: string
   entityType: string | null
   entityId: string | null
   urlPath: string | null
@@ -35,15 +34,10 @@ function mapRow(r: any): NotificationRow {
     id: r.id,
     title: r.title ?? '(untitled notification)',
     message: r.message ?? null,
-    // Live columns: `type` is a SEVERITY vocabulary (info/success/warning/
-    // error/critical) and the event name travels in `source_module`; there is
-    // no notification_type/entity_type/entity_id/url_path. Selecting the
-    // imagined names made every load fail with "column ... does not exist".
-    notificationType: r.source_module ?? r.type ?? 'info',
-    severity: r.type ?? 'info',
-    entityType: null,
-    entityId: r.entity_ref ?? null,
-    urlPath: r.action_url ?? null,
+    notificationType: r.notification_type ?? 'info',
+    entityType: r.entity_type ?? null,
+    entityId: r.entity_id ?? null,
+    urlPath: r.url_path ?? null,
     isRead: r.is_read ?? false,
     createdAt: r.created_at,
   }
@@ -55,7 +49,7 @@ async function fetchNotifications(limit: number): Promise<NotificationRow[]> {
   }
   const { data, error } = await supabase
     .from('notifications')
-    .select('id, title, message, type, source_module, entity_ref, is_read, action_url, created_at')
+    .select('id, title, message, notification_type, entity_type, entity_id, is_read, url_path, created_at')
     .order('created_at', { ascending: false })
     .limit(limit)
   if (error) throw new Error(`Could not load notifications: ${error.message}`)
@@ -109,14 +103,9 @@ export function useNotificationsData(limit = 100) {
 
 // ── Presentation helpers ─────────────────────────────────────────────────────
 
-/** Tone from the stored value. `type` is the severity vocabulary
- *  (info/success/warning/error/critical); `source_module` carries the mesh
- *  event name (e.g. "governance-mesh:INCIDENT_CREATED"). Both are matched so a
- *  row tones correctly whichever of the two it was written with. */
+/** Tone derived from the stored notification_type (mesh event types). */
 export function notificationTone(type: string): 'critical' | 'warning' | 'info' {
-  const t = (type ?? '').toUpperCase()
-  if (/^CRITICAL$|^ERROR$/.test(t)) return 'critical'
-  if (/^WARNING$/.test(t)) return 'warning'
+  const t = type.toUpperCase()
   if (/INCIDENT|CONTAINMENT|KILL|REGULATOR/.test(t)) return 'critical'
   if (/RISK|HITL|EXCEEDED|DRIFT|OVERDUE/.test(t)) return 'warning'
   return 'info'

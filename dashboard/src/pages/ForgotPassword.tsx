@@ -174,23 +174,12 @@ export default function ForgotPassword() {
           </div>
         )}
 
-        {/* Bottom security badges */}
-        <div className="mt-6 flex items-center justify-center gap-4">
-          <div className="flex items-center gap-1.5 text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>
-            <Lock size={10} style={{ color: 'hsl(var(--brand))' }} />
-            SOC 2 Type II
-          </div>
-          <span style={{ color: 'hsl(var(--border))' }}>·</span>
-          <div className="flex items-center gap-1.5 text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>
-            <ShieldCheck size={10} style={{ color: 'hsl(var(--brand))' }} />
-            End-to-end encrypted
-          </div>
-          <span style={{ color: 'hsl(var(--border))' }}>·</span>
-          <div className="flex items-center gap-1.5 text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>
-            <ShieldCheck size={10} style={{ color: 'hsl(var(--brand))' }} />
-            GDPR Compliant
-          </div>
-        </div>
+        {/* "SOC 2 Type II" and "GDPR Compliant" badges stood here. Neither
+            certification is held, and "GDPR Compliant" is not a certification
+            anyone issues. Reduced to the one claim that is true. */}
+        <p className="mt-6 text-center text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>
+          Reset links are single-use and time-limited · encrypted in transit
+        </p>
       </div>
     </div>
   );

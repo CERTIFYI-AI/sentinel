@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import {
-
   Eye, EyeSlash, ShieldCheck, CheckCircle, Lock, ArrowRight,
 } from '@phosphor-icons/react';
+import { TERMS_URL, PRIVACY_URL, EXTERNAL_LINK_PROPS } from '@/lib/legal';
 
 const FEATURES = [
   'Real-time AI governance across all deployed models',
@@ -79,31 +79,31 @@ function BrandPanel() {
 
       {/* Bottom testimonial */}
       <div className="relative z-10">
-        <blockquote className="border-l-2 pl-4" style={{ borderColor: 'hsl(var(--brand))' }}>
-          <p className="text-sm italic leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>
-            "Sentinel cut our EU AI Act readiness timeline from 18 months to 6 weeks. It's the compliance backbone for every AI system we ship."
-          </p>
-          <footer className="mt-2 text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>
-            — CISO, Fortune 500 Financial Services Firm
-          </footer>
-        </blockquote>
+        {/* A fabricated testimonial ("CISO, Fortune 500 Financial Services
+            Firm") and three unearned trust badges (SOC 2 Type II, ISO 27001,
+            GDPR Compliant) stood here. No such customer statement exists and
+            no such certification is held, so all four were invented assurance
+            on the front door of a compliance product. Replaced with what is
+            actually true and verifiable. See docs/legal/README.md. */}
+        <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>
+          Govern every AI system you ship — inventory, risk classification,
+          controls, evidence and incidents — against the frameworks your
+          auditors actually ask about.
+        </p>
 
-        <div className="mt-6 flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>
-            <Lock size={10} style={{ color: 'hsl(var(--brand))' }} />
-            SOC 2 Type II
-          </div>
-          <span style={{ color: 'hsl(var(--border))' }}>·</span>
-          <div className="flex items-center gap-1.5 text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>
-            <ShieldCheck size={10} style={{ color: 'hsl(var(--brand))' }} />
-            ISO 27001
-          </div>
-          <span style={{ color: 'hsl(var(--border))' }}>·</span>
-          <div className="flex items-center gap-1.5 text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>
-            <ShieldCheck size={10} style={{ color: 'hsl(var(--brand))' }} />
-            GDPR Compliant
-          </div>
+        <div className="mt-6 flex flex-wrap items-center gap-x-3 gap-y-2">
+          {FRAMEWORKS.map((fw, i) => (
+            <div key={fw} className="flex items-center gap-2">
+              {i > 0 && <span style={{ color: 'hsl(var(--border))' }}>·</span>}
+              <span className="text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>{fw}</span>
+            </div>
+          ))}
         </div>
+        <p className="mt-3 text-[10px] leading-relaxed" style={{ color: 'hsl(var(--text-4))' }}>
+          Frameworks the platform helps you prepare for. Preparing for an audit
+          is not the same as holding a certification, and we do not claim one.
+        </p>
+
       </div>
     </div>
   );
@@ -325,13 +325,16 @@ export default function Login() {
             </Link>
           </p>
 
-          {/* Legal footer */}
+          {/* Legal footer. The links must resolve: agreeing to a document you
+              cannot open is not agreement. Security posture is stated as what
+              we actually do — no certification is claimed, because none is
+              held (see docs/legal/README.md). */}
           <p className="mt-6 text-center text-[11px] leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>
             By signing in you agree to our{' '}
-            <a href="#" className="underline hover:text-[hsl(var(--brand-hover))]" style={{ color: 'hsl(var(--brand))' }}>Terms of Service</a>
+            <a href={TERMS_URL} {...EXTERNAL_LINK_PROPS} className="underline hover:text-[hsl(var(--brand-hover))]" style={{ color: 'hsl(var(--brand))' }}>Terms of Service</a>
             {' '}and{' '}
-            <a href="#" className="underline hover:text-[hsl(var(--brand-hover))]" style={{ color: 'hsl(var(--brand))' }}>Privacy Policy</a>.
-            <br />Protected by AES-256 encryption · SOC 2 Type II certified
+            <a href={PRIVACY_URL} {...EXTERNAL_LINK_PROPS} className="underline hover:text-[hsl(var(--brand-hover))]" style={{ color: 'hsl(var(--brand))' }}>Privacy Policy</a>.
+            <br />Encrypted in transit with TLS · tenant isolation enforced in the database
           </p>
         </div>
       </div>
