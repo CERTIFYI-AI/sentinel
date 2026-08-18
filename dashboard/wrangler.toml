@@ -3,6 +3,26 @@ name = "sentinel"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
+# Custom domain for the production app: https://1shield-oss.certifyi.ai
+#
+# Declared here rather than clicked once in the Cloudflare dashboard, so the
+# hostname is reviewable, diffable and reproducible like everything else in
+# this repo — and so a fresh account can be stood up from the tree.
+#
+# PREREQUISITE: `certifyi.ai` must be a zone on the SAME Cloudflare account
+# this Worker deploys to. Cloudflare creates the DNS record and the TLS
+# certificate itself for a custom domain; it cannot do that for a zone it does
+# not hold. If the zone is absent, `wrangler deploy` fails with a hostname
+# error — delete this block to restore the previous behaviour, nothing else
+# depends on it.
+#
+# ADDITIVE, not a cutover: the workers.dev subdomain keeps serving unless it is
+# disabled separately, so sentinel.hello-fbb.workers.dev stays reachable and
+# existing links do not break the moment this lands.
+[[routes]]
+pattern = "1shield-oss.certifyi.ai"
+custom_domain = true
+
 [vars]
 SUPABASE_URL = ""
 SUPABASE_SERVICE_ROLE_KEY = ""

@@ -1475,8 +1475,16 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 34,
+  "entryCount": 35,
   "entries": [
+    {
+      "type": "feat",
+      "scope": "deploy",
+      "summary": "serve the dashboard at **`1shield-oss.certifyi.ai`**. Declared as a `custom_domain` route in `dashboard/wrangler.toml` rather than clicked once in a dashboard, so the hostname is reviewable and a fresh account can be stood up from the tree. **Additive, not a cutover** — the workers.dev subdomain keeps serving unless disabled separately, so existing links do not break the moment this lands. Also fixes the two places that would have quietly kept pointing at the old origin: the Playwright `baseURL` (E2E would have gone on testing workers.dev) and the DR runbook's `/healthz` check, which is worse than useless if it probes the wrong host mid-incident. Ticks the \"move to custom domain\" item that had been sitting unchecked in `dashboard/docs/DEPLOYMENT.md`. **Prerequisite: `certifyi.ai` must be a zone on the same Cloudflare account** — Cloudflare mints the DNS record and certificate itself for a custom domain and cannot do so for a zone it does not hold; if it is absent `wrangler deploy` fails on the hostname, and deleting the `[[routes]]` block restores the previous behaviour with nothing else depending on it",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "docs",
       "scope": "audit",
