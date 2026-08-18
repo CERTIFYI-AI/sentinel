@@ -7653,9 +7653,9 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
           "A catalogued-only product still shows its full operator prose — what it",
           "evidences, how evidence is pulled, what it maps to, connection steps — because",
           "that is genuinely useful for deciding which sources to prioritise.",
-          "### Enable / disable",
-          "Connect creates the org's integrations row carrying catalog_slug; the",
-          "server-side worker picks the job up from there. The row starts as"
+          "### Enable / disable — where you fill in credentials",
+          "Connect opens a form built from the provider's own",
+          "IntegrationConfig.credentialFields (e.g. GitHub asks for an access token, an"
         ],
         "dataProcess": [],
         "interlinks": [

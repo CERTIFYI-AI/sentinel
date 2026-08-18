@@ -368,7 +368,7 @@ export interface Evidence {
   description: string; fileSize: string;
 }
 export const EVIDENCE: Evidence[] = [
-  { id: 'EV-001', title: 'Bias Monitoring Report — Jan 2026', source: 'Drata', framework: 'EU AI Act', control: 'Art. 10 — Data Governance', type: 'Report', status: 'synced', lastSync: '2026-03-15', owner: 'Maria Santos', description: 'Monthly bias monitoring report covering all production models.', fileSize: '2.4 MB' },
+  { id: 'EV-001', title: 'Bias Monitoring Report — Jan 2026', source: 'Automated evidence collection', framework: 'EU AI Act', control: 'Art. 10 — Data Governance', type: 'Report', status: 'synced', lastSync: '2026-03-15', owner: 'Maria Santos', description: 'Monthly bias monitoring report covering all production models.', fileSize: '2.4 MB' },
   { id: 'EV-002', title: 'SHAP Explainability Report', source: 'Cobalt.io', framework: 'EU AI Act', control: 'Art. 13 — Transparency', type: 'Report', status: 'synced', lastSync: '2026-03-10', owner: 'Raj Gupta', description: 'SHAP-based model explainability analysis for high-risk systems.', fileSize: '1.8 MB' },
   { id: 'EV-003', title: 'Human Oversight Log Q1 2026', source: 'KeyGate Identity', framework: 'EU AI Act', control: 'Art. 14 — Human Oversight', type: 'Log', status: 'synced', lastSync: '2026-03-01', owner: 'James Patel', description: 'Quarterly human-in-the-loop review records for automated decisions.', fileSize: '890 KB' },
   { id: 'EV-004', title: 'Fraud Model Validation v2.1', source: 'Internal', framework: 'NIST AI RMF', control: 'MEASURE 2.6 — Bias', type: 'Validation', status: 'synced', lastSync: '2026-02-28', owner: 'David Kim', description: 'Independent validation report for Fraud Detection Engine v2.1.', fileSize: '3.1 MB' },

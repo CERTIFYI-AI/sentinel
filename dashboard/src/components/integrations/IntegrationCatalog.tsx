@@ -19,6 +19,7 @@
 // from what the catalogue actually contains.
 
 import { useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   MagnifyingGlass, Plugs, CheckCircle, Info, LinkSimple, Prohibit,
@@ -38,6 +39,8 @@ import {
   type CatalogEntryWithState,
 } from '@/hooks/useIntegrationCatalog'
 import { countByStatus, rankFindings } from '@/services/integrationFindingsService'
+import { ConnectForm } from './ConnectForm'
+import { resyncIntegration } from '@/services/integrationConnectService'
 import {
   adapterStatusLabel,
   isConnectable,
@@ -182,12 +185,23 @@ function CollectedEvidence({ integrationId }: { integrationId: string }) {
 
 export function IntegrationCatalog({ canManage }: { canManage: boolean }) {
   const { rows, isLoading, isError, error } = useCatalogWithConnections()
-  const { connect, disconnect } = useCatalogConnection()
+  // `connect` is intentionally unused here: connecting now goes through the
+  // backend (credentials must be encrypted server-side), so the hook's direct
+  // row-create path is reserved for callers that do not collect credentials.
+  const { disconnect } = useCatalogConnection()
+  const qc = useQueryClient()
+  const refresh = () => {
+    qc.invalidateQueries({ queryKey: ['integrations'] })
+    qc.invalidateQueries({ queryKey: ['integration_catalog'] })
+  }
 
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<string | null>(null)
   const [open, setOpen] = useState<CatalogEntryWithState | null>(null)
   const [confirmDisconnect, setConfirmDisconnect] = useState<CatalogEntryWithState | null>(null)
+  // Shown only after the operator chooses to connect, so the sheet stays
+  // readable for the far more common case of just browsing the catalogue.
+  const [showForm, setShowForm] = useState(false)
 
   const entries = useMemo<CatalogEntry[]>(() => rows.map(r => r.entry), [rows])
   const counts = useMemo(() => countByCategory(entries), [entries])
@@ -299,7 +313,15 @@ export function IntegrationCatalog({ canManage }: { canManage: boolean }) {
       )}
 
       {/* Detail + connect/disconnect */}
-      <Sheet open={Boolean(open)} onOpenChange={o => !o && setOpen(null)}>
+      <Sheet
+        open={Boolean(open)}
+        onOpenChange={o => {
+          if (!o) {
+            setOpen(null)
+            setShowForm(false) // never leave a credential form mounted
+          }
+        }}
+      >
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
           {open && (
             <>
@@ -411,29 +433,39 @@ export function IntegrationCatalog({ canManage }: { canManage: boolean }) {
                       </span>
                     </div>
                   ) : open.connected ? (
-                    <Button
-                      variant="outline"
-                      disabled={!canManage || disconnect.isPending}
-                      onClick={() => setConfirmDisconnect(open)}
-                    >
-                      Disconnect
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        disabled={!canManage}
+                        onClick={() =>
+                          resyncIntegration(open.connected!.id)
+                            .then(r => toast.success(r.message))
+                            .catch((e: any) => toast.error(e?.message ?? 'Could not queue a sync'))
+                        }
+                      >
+                        Sync now
+                      </Button>
+                      <Button
+                        variant="outline"
+                        disabled={!canManage || disconnect.isPending}
+                        onClick={() => setConfirmDisconnect(open)}
+                      >
+                        Disconnect
+                      </Button>
+                    </div>
+                  ) : showForm ? (
+                    <ConnectForm
+                      slug={open.entry.slug}
+                      displayName={open.entry.name}
+                      onConnected={() => {
+                        setShowForm(false)
+                        setOpen(null)
+                        refresh()
+                      }}
+                      onCancel={() => setShowForm(false)}
+                    />
                   ) : (
-                    <Button
-                      disabled={!canManage || connect.isPending}
-                      onClick={() =>
-                        connect.mutate(open.entry, {
-                          onSuccess: () => {
-                            toast.success(
-                              `${open.entry.name} linked — add credentials to start collecting.`,
-                            )
-                            setOpen(null)
-                          },
-                          onError: (e: any) =>
-                            toast.error(e?.message ?? 'Could not connect this integration'),
-                        })
-                      }
-                    >
+                    <Button disabled={!canManage} onClick={() => setShowForm(true)}>
                       <Plugs size={14} className="mr-1.5" />
                       Connect
                     </Button>

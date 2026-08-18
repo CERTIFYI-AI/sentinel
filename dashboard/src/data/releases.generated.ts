@@ -1475,8 +1475,32 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 17,
+  "entryCount": 20,
   "entries": [
+    {
+      "type": "feat",
+      "scope": "integrations",
+      "summary": "a real connect flow — this is where you fill in credentials. Connect now opens a form built from the provider's own `credentialFields` (GitHub: access token, organization, optional Enterprise base URL) and posts to the new **`POST /v1/integrations/connect`** (`sentinel/integrations/api.py`), which refuses any slug with no registered adapter, validates the credential shape against the adapter's own model, **encrypts with AES-256-GCM** and stores only ciphertext, upserts on `(org_id, catalog_slug)` so reconnecting updates in place, and enqueues the first `background_jobs` sync — a privileged write with no client insert policy, which is why it belongs on the server. The org comes from the caller's verified token, never the request body. The browser holds credential values only for the life of the form, sends them once over TLS and clears them on resolve; nothing reaches localStorage, the query cache or the URL, and error paths never echo submitted input. Adds `POST /v1/integrations/{id}/sync` and a **Sync now** action. 11 new backend tests assert the security invariants — one of which **caught a real bug before merge**: the registry raises `LookupError` and the handler caught `KeyError` (its subclass), so an unknown slug would have surfaced as a 500 instead of a clean 400",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "fix",
+      "scope": "catalog",
+      "summary": "remove third-party GRC vendor references from the integration catalogue. 163 rows' `docs_hint` sent operators to a **competitor's help centre** — rendered in-product as \"Provider docs: Vanta Help Center → … help.vanta.com/…\" — which is not the provider's documentation, advertises another GRC vendor inside our own product, and makes our catalogue look derived from theirs. `20260829000002` clears every such pointer (cleared, not rewritten: we hold no verified per-product doc URLs for 219 products and inventing 163 would be fabricated data) and removes `drata`/`secureframe` as catalogue entries, guarded so a product any tenant has actually connected is never deleted. The genuinely useful operator prose — `why_needed`, `evidence_pull`, `connect_steps`, `evidence_mapping` — is untouched. Catalogue is now 217 products, verified clean and idempotent. Also replaces a competitor name used as an evidence `source` in demo seed data",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "fix",
+      "scope": "write-paths",
+      "summary": "close the last three instances of the broken-scoping bug class. `attackSurfaceService`, `ethicsReportsService` and `policyFirewallService` each sent `tenant_id` on upsert to tables that have no such column — the three TD-015 named as most likely, all confirmed against a real Postgres. Every save on Attack Surface, Ethics Reports and Policy Firewall failed at the API boundary. All three tables already carry an `org_id` DB default, so no migration was needed: the services now send only the record. Proven both ways against the real schema — the old shape is rejected for the missing column, the new one inserts with `org_id` filled server-side",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "fix",
       "scope": "demo-data",
