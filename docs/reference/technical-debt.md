@@ -633,25 +633,44 @@ does not exist, these send too little. Fix is one migration adding
 ## TD-018 — `ai_models`, `use_cases` and `datasets` changes are not audit-logged
 
 **Owner:** Compliance + Platform · **Raised:** 2026-08-18 · **Severity:** P1 ·
-**Status:** Open, **re-verified unchanged** on 2026-08-18 — still 23 write-capable
-destinations with neither mechanism, and still zero triggers and zero
-`logAction` calls on `ai_models`, `use_cases` and `datasets`. Found by
+**Status:** `ai_models` **resolved 2026-08-18** (migration
+`20260902000001_audit_trigger_ai_models_art12.sql`, applied and verified live);
+`use_cases` / `datasets` / `risks` **still open, blocked on schema unification**
+(below), alongside the other ~19 write-capable destinations that use neither
+mechanism. Found by
 [`platform-audit-2026-08-18.md`](platform-audit-2026-08-18.md) §F3.
 
-The platform audits state changes two ways — `logAction` in the app and
-`fn_audit_trigger` in the database — and 23 of 93 write-capable menu
-destinations use **neither**. Three matter most: `ai_models` (the canonical
-model id-space), `use_cases` and `datasets` have no audit trigger, and
-`modelService.ts` / `useCaseService.ts` / `datasetService.ts` contain no
-`logAction` call. Registering or deleting an AI model therefore leaves no audit
-record with an actor.
+The platform audits state changes two ways — `logAction` in the app and a DB
+trigger — and 23 of 93 write-capable menu destinations use **neither**. Four
+matter most: `ai_models` (the canonical model id-space), `use_cases`,
+`datasets` and `risks` had no audit trigger, and `modelService.ts` /
+`useCaseService.ts` / `datasetService.ts` contain no `logAction` call.
+Registering or deleting an AI model therefore left no audit record with an
+actor.
 
-Note the near-miss that hides it: `model_inventory` **is** trigger-audited,
-`ai_models` is not, and `ai_models` is the table the product actually uses.
+**Correction after checking the live project.** The original note assumed a
+shared `fn_audit_trigger` already existed and could be bolted on "in three
+lines". That is false on the live database: **no** function anywhere writes
+into `audit_log`, and `model_inventory` is **not** trigger-audited either (its
+trigger lives only in an old migration that never reached live). So the fix was
+to write the audit-trigger function for real.
 
-EU AI Act Art. 12 and the repo's own Gate 4 both require the record. Attaching
-`fn_audit_trigger` to the three tables is a three-line migration; the remaining
-20 destinations need triage.
+**Fixed for `ai_models`.** Migration `20260902000001` adds a reusable
+`public.fn_audit_governed()` (`SECURITY DEFINER`, append-only into `audit_log`,
+org_id copied off the changed row, actor from the caller's JWT) and attaches it
+to `ai_models` as `after insert/update/delete`. It is non-duplicative:
+`modelService.ts` makes no `logAction` call, so this is the only trail for
+model changes. The function no-ops unless `org_id` and `id` resolve to uuids —
+a deliberate guard so it cannot leak across tenants if mis-attached.
+
+**Why `use_cases` / `datasets` / `risks` are NOT yet covered.** Those three are
+scoped by a legacy **`tenant_id text`** column, not the `org_id uuid` /
+`current_user_org_id()` model that `audit_log` uses. There is no reliable
+row-level `org_id` to write, so `fn_audit_governed`'s guard would drop every
+row — silent non-compliance, worse than an honest gap. The real prerequisite is
+migrating these tables onto `org_id`; only then can the same trigger attach.
+That schema-unification task is the remaining open work here. The other ~19
+write-capable destinations still need triage.
 
 ---
 

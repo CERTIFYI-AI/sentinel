@@ -99,11 +99,14 @@ where a real gap exists it is named, not hidden.
 | Art. 14 | **Human oversight over autonomous action** — the mesh pauses production models / opens risks | [Risk Register](../modules/risk-register.md) auto-agent path + the governance mesh (`autoPauseAgent`, `containmentAgent`) | **Partial — the model-pause/containment path is autonomous and not yet gated on a `/hitl` record; documented as the priority Art. 14 gap** |
 
 > **Assessor note.** Three real gaps are stated above rather than smoothed over:
-> (1) the core registries (`ai_models`, `use_cases`, `datasets`, `risks`) are not
-> yet audit-logged (**TD-018**); (2) the autonomous model-pause / containment
-> cascade has no documented human-oversight checkpoint tied to `/hitl`; (3) the
-> Risk Register's manual-create dialog cannot set interlink ids. These are the
-> compliance backlog, tracked in [`technical-debt.md`](../reference/technical-debt.md).
+> (1) **`ai_models` is now DB-trigger audit-logged** (migration `20260902000001`,
+> `fn_audit_governed`), closing the highest-value part of **TD-018**; the sibling
+> registries `use_cases` / `datasets` / `risks` remain un-audited because they are
+> still on a legacy `tenant_id text` scope and must move to `org_id` first (see
+> TD-018); (2) the autonomous model-pause / containment cascade has no documented
+> human-oversight checkpoint tied to `/hitl`; (3) the Risk Register's manual-create
+> dialog cannot set interlink ids. These are the compliance backlog, tracked in
+> [`technical-debt.md`](../reference/technical-debt.md).
 
 ---
 
