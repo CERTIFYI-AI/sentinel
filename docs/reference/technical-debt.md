@@ -973,3 +973,65 @@ platform-wide and reconcile in one pass rather than table by table.
 | — | RoPA on `ropa_table` demo table (GDPR Art. 30 register) | 2026-08-16 |
 | — | TIA on `tia_table` demo table (GDPR Chapter V) | 2026-08-16 |
 | — | Compliance Controls on demo table while 385 real rows sat unused | 2026-08-16 |
+
+---
+
+## TD-020 — Live database has diverged from the repo migration lineage
+
+**Owner:** Platform · **Raised:** 2026-08-18 · **Severity:** P1 (deploy safety) ·
+**Status:** Open. Found while unblocking the four "shipped, waiting on migrations"
+features (integration connection modes, AWS/Azure adapters, org settings, AI Brain).
+
+**What.** The live project (`vhparvughsygyknblkzt`) no longer matches the schema
+the repo migrations describe. Concrete, verified divergences:
+
+- `organizations` RLS on live is a single `organizations_isolation`
+  (`FOR ALL TO public USING (id = get_user_org_id())`). Migration
+  `20260901000003_organization_settings_writable.sql` instead assumes a
+  SELECT-only `ws02_org_self_read` policy and references
+  `auth.current_org_id()`, `auth.has_permission()` and a `rbac_permissions`
+  table — **none of which exist on live**. Applying it as-is would error, and
+  even if the functions existed it would add a *second* permissive UPDATE
+  policy over `organizations_isolation` (the TD-000 defect class).
+- The org-scoping helper on live is `get_user_org_id()` (reads
+  `user_profiles.org_id` by `auth.uid()`), not `auth.current_org_id()`.
+- Same family as the audit-trigger discovery (TD-018): the repo assumed a
+  shared `fn_audit_trigger`/`model_inventory` audit that live never had.
+
+**Why it matters.** `supabase db push` / the "Deploy Migrations" workflow
+applies *every* unapplied repo migration in order. Against this live DB that
+would re-run already-applied migrations and **halt on `20260901000003`** when it
+hits the missing `auth.*` objects — a partial, aborted push. The three
+repository secrets (`SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_REF`,
+`SUPABASE_DB_PASSWORD`) enable that workflow; wiring them up is useful for
+*future* clean migrations but must not be used to bulk-push the current backlog
+until the lineage is reconciled.
+
+**What was done instead (2026-08-18).** The three genuinely-pending, live-safe
+migrations were reviewed against live's actual schema and applied individually
+via the Supabase management API, each verified after:
+`20260901000002` (integration `connection_mode` + manual-holds-no-credentials
+guard), `20260830000001` (aws/azure catalogue → `beta`), `20260905000001`
+(pgvector + `policy_knowledge_base` + `ai_compliance_verdicts` +
+`match_policy_chunks`). `20260901000003` was **not** applied — see below.
+
+**Open sub-items.**
+1. **Reconcile the migration lineage** so `db push` is safe: decide whether live
+   converges onto the repo (add the `auth.*` helpers + `rbac_permissions`) or
+   the repo is rebased onto live's `get_user_org_id()` reality. Until then,
+   apply migrations individually and reviewed, never bulk-push.
+2. **Org-edit privilege gap.** On live, `organizations_isolation` is `FOR ALL`,
+   so **any** authenticated org member can rename the organisation (proven with
+   a rolled-back RLS probe: `org_update_rows=1` as a non-privileged member).
+   The repo intended admin-only (`org.update`). This is within-tenant (not a
+   TD-000 cross-tenant breach) so lower severity, but it is a real posture gap.
+   The safe fix is an **additive RESTRICTIVE `FOR UPDATE` policy** gated on the
+   live admin check (`is_org_admin()`), which AND-combines without touching the
+   load-bearing read policy — deferred pending a product decision on whether org
+   edits should be admin-only, and confirmation that real operators carry the
+   admin flag (else it locks them out).
+3. **AI Brain runtime key.** The schema/RPC are live, but retrieval + LLM-judge
+   run in `sentinel/services/embedding_service.py` /
+   `compliance_evaluator.py` and only produce results when that worker runs with
+   `OPENAI_API_KEY`. The DB layer is ready; the pipeline is not "on" until the
+   key is present wherever the evaluator executes.
