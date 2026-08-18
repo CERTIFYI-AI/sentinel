@@ -38,6 +38,16 @@ export interface IntegrationRecord {
   connectedAt?: string | null
   ownerName?: string
   config: Record<string, unknown>
+  /**
+   * Links this org instance to its `integration_catalog` row. Null for the
+   * hand-created connectors that predate the catalogue; set whenever an
+   * instance is created by connecting a catalogue entry.
+   */
+  catalogSlug?: string | null
+  /** Outcome of the last server-side sync run. */
+  lastRunStatus?: 'success' | 'error' | 'partial' | 'running' | null
+  /** Error text from the last failed run, for an honest status line. */
+  lastRunError?: string | null
   createdAt?: string
   updatedAt?: string
 }
@@ -58,6 +68,9 @@ function fromRow(r: Record<string, any>): IntegrationRecord {
     connectedAt: r.connected_at ?? null,
     ownerName: r.owner_name ?? undefined,
     config: (r.config ?? {}) as Record<string, unknown>,
+    catalogSlug: r.catalog_slug ?? null,
+    lastRunStatus: r.last_run_status ?? null,
+    lastRunError: r.last_run_error ?? null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   }
@@ -78,6 +91,9 @@ function toRow(i: Partial<IntegrationRecord>): Record<string, any> {
   if (i.connectedAt !== undefined) row.connected_at = i.connectedAt || null
   if (i.ownerName !== undefined) row.owner_name = i.ownerName ?? null
   if (i.config !== undefined) row.config = i.config
+  if (i.catalogSlug !== undefined) row.catalog_slug = i.catalogSlug ?? null
+  if (i.lastRunStatus !== undefined) row.last_run_status = i.lastRunStatus ?? null
+  if (i.lastRunError !== undefined) row.last_run_error = i.lastRunError ?? null
   return row
 }
 

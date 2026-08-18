@@ -22,6 +22,8 @@ import { useControls } from '../../hooks/queries/useControls';
 import { useControlTests } from '../../hooks/useComplianceGroup';
 import { useControlAssurance, type AssuranceSource } from '../../hooks/useControlAssurance';
 import { useControlCatalogEntry } from '../../hooks/useFrameworkCatalog';
+import { useControlEvidence } from '@/hooks/useIntegrationCatalog';
+import { rankFindings, countByStatus, evidencePosture } from '@/services/integrationFindingsService';
 import { useModelsData } from '../../hooks/useModelsData';
 import { useRisksData } from '../../hooks/useRisksData';
 import { usePolicies } from '../../hooks/queries/usePolicies';
@@ -124,6 +126,10 @@ export default function ControlDetail() {
   const controlsQuery = useControls();
   const testsQuery = useControlTests(id);
   const assuranceQuery = useControlAssurance(id);
+  // Automated evidence collected by connected integrations, mapped to this
+  // control server-side. Kept separate from controls.status: a machine finding
+  // is a signal about the control, not the owner's assertion about it.
+  const evidenceQuery = useControlEvidence(id ?? null);
   const { models } = useModelsData();
   const { risks } = useRisksData();
   const policiesQuery = usePolicies();
@@ -224,6 +230,7 @@ export default function ControlDetail() {
         <TabsList style={{ borderRadius: 0, background: 'hsl(var(--bg-muted))' }}>
           <TabsTrigger value="overview" style={{ borderRadius: 0 }}>Overview</TabsTrigger>
           <TabsTrigger value="testing" style={{ borderRadius: 0 }}>Test History ({tests.length})</TabsTrigger>
+          <TabsTrigger value="evidence" style={{ borderRadius: 0 }}>Automated Evidence ({evidenceQuery.data.length})</TabsTrigger>
           <TabsTrigger value="interlinks" style={{ borderRadius: 0 }}>Interlinks</TabsTrigger>
         </TabsList>
 
@@ -367,6 +374,92 @@ export default function ControlDetail() {
         </TabsContent>
 
         {/* Interlinks — the control's place in the platform graph */}
+        <TabsContent value="evidence" className="mt-4">
+          <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
+                Automated evidence
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {evidenceQuery.isLoading ? (
+                <div className="space-y-2 animate-pulse" aria-busy="true">
+                  {[0, 1, 2].map((i) => (
+                    <div key={i} className="h-12" style={{ background: 'hsl(var(--bg-sunken))' }} />
+                  ))}
+                </div>
+              ) : evidenceQuery.isError ? (
+                <p className="text-xs py-2" style={{ color: 'hsl(var(--s-er-tx))' }}>
+                  Could not load automated evidence: {evidenceQuery.error?.message}
+                </p>
+              ) : evidenceQuery.data.length === 0 ? (
+                <div className="py-3">
+                  <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                    No automated evidence has been collected for this control yet. Connect an
+                    evidence source in Integrations, or attach evidence manually in the vault.
+                  </p>
+                  <InterlinkChip label="Integrations" to="/integrations" />
+                </div>
+              ) : (
+                <>
+                  {(() => {
+                    const counts = countByStatus(evidenceQuery.data);
+                    const posture = evidencePosture(evidenceQuery.data);
+                    return (
+                      <p className="text-xs mb-3" style={{ color: 'hsl(var(--text-3))' }}>
+                        {/* Null posture renders an em dash, never a verdict. */}
+                        Posture: <strong>{posture ?? '—'}</strong> · {counts.PASSED} passed ·{' '}
+                        {counts.FAILED} failed · {counts.WARNING} warning
+                      </p>
+                    );
+                  })()}
+                  <div className="space-y-2">
+                    {rankFindings(evidenceQuery.data).map((f) => (
+                      <div
+                        key={f.id}
+                        className="border p-2.5"
+                        style={{ borderColor: 'hsl(var(--border))' }}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <span className="text-[13px] font-medium" style={{ color: 'hsl(var(--text-1))' }}>
+                            {f.title}
+                          </span>
+                          <span
+                            className="text-[10px] font-semibold px-1.5 py-0.5 uppercase tracking-wider flex-shrink-0"
+                            style={{
+                              color:
+                                f.status === 'FAILED'
+                                  ? 'hsl(var(--s-er-tx))'
+                                  : f.status === 'WARNING'
+                                  ? 'hsl(var(--s-wa-tx))'
+                                  : f.status === 'PASSED'
+                                  ? 'hsl(var(--s-ok-tx))'
+                                  : 'hsl(var(--text-4))',
+                            }}
+                          >
+                            {f.status}
+                          </span>
+                        </div>
+                        <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>
+                          {f.description}
+                        </p>
+                        {f.status !== 'PASSED' && f.remediation && (
+                          <p className="text-xs mt-1.5" style={{ color: 'hsl(var(--text-2))' }}>
+                            <strong>Remediation:</strong> {f.remediation}
+                          </p>
+                        )}
+                        <p className="text-[10px] font-mono mt-1.5" style={{ color: 'hsl(var(--text-4))' }}>
+                          {f.checkId} · {f.checkCategory} · {f.severity}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="interlinks" className="mt-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>

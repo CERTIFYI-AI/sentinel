@@ -10,6 +10,7 @@
 // sha256 digest is persisted.
 
 import { useMemo, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { toast } from 'sonner'
 import {
   ArrowsClockwise, Broadcast, Copy, Plugs, Plus, Warning,
@@ -28,6 +29,7 @@ import { FormDialog, Field } from '@/components/evals/FormDialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
 import { useIntegrations, useWebhooks } from '@/hooks/useIntegrations'
+import { IntegrationCatalog } from '@/components/integrations/IntegrationCatalog'
 import { useRBAC } from '@/hooks/useRBAC'
 import {
   INTEGRATION_CATEGORIES,
@@ -86,7 +88,25 @@ export default function IntegrationsPage() {
   const integrations = useIntegrations()
   const webhooks = useWebhooks()
 
-  const [tab, setTab] = useState('connectors')
+  // Tab state lives in the URL (?tab=), matching the repo's deep-link
+  // convention — so a link can point straight at the catalogue, and a reload
+  // or a shared link lands where the reader expects instead of resetting.
+  const [searchParams, setSearchParams] = useSearchParams()
+  const TABS = ['catalog', 'connectors', 'webhooks'] as const
+  const paramTab = searchParams.get('tab')
+  const tab = (TABS as readonly string[]).includes(paramTab ?? '') ? (paramTab as string) : 'catalog'
+  const setTab = (next: string) => {
+    setSearchParams(
+      prev => {
+        const p = new URLSearchParams(prev)
+        // The default tab stays clean in the URL; only a non-default is pinned.
+        if (next === 'catalog') p.delete('tab')
+        else p.set('tab', next)
+        return p
+      },
+      { replace: true },
+    )
+  }
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<IntegrationRecord | null>(null)
   const [form, setForm] = useState<Partial<IntegrationRecord>>(EMPTY)
@@ -203,9 +223,19 @@ export default function IntegrationsPage() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
+          <TabsTrigger value="catalog">Catalog</TabsTrigger>
           <TabsTrigger value="connectors">Connectors</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
         </TabsList>
+
+        {/* The published catalogue of evidence sources, and the enable/disable
+            path for the ones that actually ship an adapter. Before this tab
+            existed the catalogue was rows in a table nothing read. */}
+        <TabsContent value="catalog" className="mt-4">
+          <Card className="p-4">
+            <IntegrationCatalog canManage={can('create')} />
+          </Card>
+        </TabsContent>
 
         <TabsContent value="connectors" className="mt-4">
           <Card className="p-4">

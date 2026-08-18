@@ -1475,8 +1475,40 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 13,
+  "entryCount": 17,
   "entries": [
+    {
+      "type": "fix",
+      "scope": "demo-data",
+      "summary": "the eight seeded connector rows named individual people as accountable owners of production-sounding systems — the core banking feed, the credit bureau extract, the Nepal Rastra Bank supervisory return — with **no marker saying they were demonstration data**, making them indistinguishable on screen from real records. That failed the platform's own compliance gate twice: \"no personal data in seeds or fixtures\", and \"demo data stays fictional and labeled as such\". `20260829000001` replaces every owner with a ROLE label, suffixes each name \"(Demo)\", and marks `config.demo_seed = true` so they are identifiable and removable like every other demo record. Scoped to the eight seeded ids in the demo org — a tenant's own connectors are never rewritten, verified against a real Postgres alongside a control row that must stay untouched. Idempotent (no double suffix on re-run) and self-verifying: it raises if any seeded row still names a person or lacks the marker",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "feat",
+      "scope": "ci",
+      "summary": "add the **Deploy Migrations** workflow — the missing half of the deploy pipeline. `deploy-dashboard.yml` shipped the frontend on every push to main while **nothing applied the schema**, so merged work that depended on a migration was live in the bundle and absent from the database; empty catalogues and \"column does not exist\" errors all traced back to this one gap. The new workflow runs the static replay check first (catching an ordering mistake before touching the live database), then `supabase db push`, guarded by a concurrency group so two pushes cannot race mid-apply, with a *dry run* option that lists what is pending and changes nothing. It stops with a clear message listing exactly which of the three required secrets is missing rather than failing obscurely part-way through",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "feat",
+      "scope": "integrations",
+      "summary": "tabs on `/integrations` are URL-addressable (`?tab=connectors`, `?tab=webhooks`), matching the repo's deep-link convention, so a link can point at a specific tab and a reload lands where the reader expects. The catalogue is the default and stays clean in the URL",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "feat",
+      "scope": "integrations",
+      "summary": "surface the 219-product evidence catalogue and wire the evidence chain to controls. `integration_catalog` (219 rows), `integration_findings`, `control_finding_evidence` and `background_jobs` had **zero readers** anywhere in the app or edge functions — the platform had a real collection pipeline, a real control-mapping engine, and no way for a user to reach any of it; `/integrations` showed only hand-created connector records from a separate, older table. Adds a **Catalog** tab: all 219 sources with category filters and search across the operator prose (so \"which of these evidences MFA?\" is answerable), each stating its adapter status honestly. **Connect is rendered only for a product that ships an adapter** — exactly one (`github`) today — and a catalogued-only entry says why it cannot be connected while still showing what it would evidence, how it is pulled and what it maps to. `isConnectable()` is the single gate and mirrors the server, which refuses slugs absent from its registry. Connect creates the org `integrations` row carrying `catalog_slug` (status `configuring` — linked, not yet collecting; credentials stay server-side, AES-256-GCM, never in the browser); disconnect soft-deletes but **retains findings**, since disconnecting a source must not erase the evidence trail (Art. 12). Both audit-logged. New **Automated Evidence** tab on `ControlDetail` lists the findings mapped to that control with posture, counts and remediation — deliberately separate from `controls.status`, because a machine finding is a signal about a control, not the owner's assertion about it. Reverse view on each connected source shows what it has actually collected, worst-first, or an honest \"nothing collected yet\". New `docs/modules/integration-catalog.md`; 21 new unit tests (322 total) including the capability gate that stops a catalogued-only product ever offering Connect",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "chore",
       "scope": "replay-check",
