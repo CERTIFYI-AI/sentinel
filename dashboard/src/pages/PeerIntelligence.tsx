@@ -14,7 +14,7 @@ import {
   Users, ShieldCheck, TrendUp, Warning, Brain,
   Globe, ChartBar, Trophy, ArrowUp, ArrowDown, Minus,
 } from '@phosphor-icons/react';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useOrgName } from '../hooks/useOrganization';
 import { useChartTheme } from '../hooks/useChartTheme';
 
 const SECTOR_PERCENTILES = [
@@ -80,7 +80,7 @@ function MetricTile({ label, value, icon: Icon, highlight }: { label: string; va
 }
 
 export default function PeerIntelligence() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const ct = useChartTheme();
   const [tab, setTab] = useState('overview');
   // The illustrative layout is opt-in and watermarked; never the default.

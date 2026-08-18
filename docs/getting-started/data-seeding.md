@@ -10,7 +10,11 @@ Our seed data is packaged directly inside the migration chain. Specifically, our
 
 ## What's Included in the Seed?
 
-When a fresh instance of the database is created, the seed data provisions **Sentinel Financial Corp**, our canonical demo organisation. This includes:
+When a fresh instance of the database is created, the seed data provisions a
+canonical demo organisation — seeded as **Demo Tenant**
+(`00000000-0000-0000-0000-000000000001`). Its name is a row in
+`organizations`, not a constant in the app: rename it in **Settings → General**
+and every screen, report and generated narrative follows. This includes:
 
 1. **Users & Roles**: 6 pre-configured users demonstrating each RBAC role (Admin, Chief Risk Officer, Compliance Officer, AI Engineer, Auditor, Data Scientist).
 2. **AI Models**: 6 simulated AI models across various risk tiers (e.g., Low, Medium, High, Critical).

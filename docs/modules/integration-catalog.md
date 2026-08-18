@@ -7,6 +7,8 @@ instances), `integration_findings`, `control_finding_evidence` ·
 `dashboard/src/services/integrationFindingsService.ts` ·
 **Hook:** `dashboard/src/hooks/useIntegrationCatalog.ts` ·
 **Code:** `dashboard/src/components/integrations/IntegrationCatalog.tsx`,
+`dashboard/src/components/integrations/ConnectDialog.tsx`,
+`dashboard/src/integrations/connectionProfiles.ts`,
 `dashboard/src/pages/controls/ControlDetail.tsx` (Automated Evidence tab) ·
 **Server:** `sentinel/integrations/` (registry, worker, crypto, control mapping),
 `sentinel/integrations/{github,aws,azure}/adapter.py`
@@ -38,7 +40,7 @@ the same class of defect as an unearned certification badge.
 | --- | --- | --- |
 | `available` | Adapter ships; connecting starts real collection | Green badge, **Connect** |
 | `beta` | Adapter exists, not production-ready | Amber badge, **Connect** |
-| `catalogued` | Reference only — no adapter, collects nothing | Neutral badge, **no Connect**, with the reason |
+| `catalogued` | Reference only — no adapter, collects nothing | Neutral badge, **Monitor this source** |
 
 `isConnectable()` is the single gate, unit-tested, and it mirrors the server:
 the Python worker refuses a slug absent from its registry
@@ -61,39 +63,113 @@ A catalogued-only product still shows its full operator prose — what it
 evidences, how evidence is pulled, what it maps to, connection steps — because
 that is genuinely useful for deciding which sources to prioritise.
 
-### Enable / disable — where you fill in credentials
+### Two connection modes
 
-**Connect** opens a form built from the provider's own
+`isConnectable` decides whether a product can *collect*. It does not decide
+whether a product can be *recorded*, and conflating the two left 216 of 219
+catalogue entries as dead ends: prose, and nowhere to put anything.
+
+Every product now opens the same modal (`ConnectDialog`), and
+`buildConnectionProfile` picks which of two it is.
+
+| | `automated` | `monitored` |
+| --- | --- | --- |
+| When | `adapter_status` is `available` or `beta` | anything else |
+| Fields | the adapter's own credential contract | the source's identity, owner, cadence, evidence location |
+| Secrets | AES-256-GCM encrypted server-side | **none asked for, none stored** |
+| On save | first sync queued | nothing queued |
+| Row | `status='configuring'`, `connection_mode='automated'` | `status='monitored'`, `connection_mode='manual'` |
+| Card | green **Connected** | neutral **Monitored** |
+
+The obvious alternative — render a credential form on all 219 — is the thing
+this design refuses. Taking a token for a product with no adapter stores a
+secret nothing can ever use, and an operator who supplied one would reasonably
+believe collection had started. A monitored source makes the opposite promise
+and keeps it: it says, in the dialog, on the card and in the record, that
+nothing is pulling from it.
+
+What a monitored source *is* worth is the part a spreadsheet usually holds:
+a named accountable owner and a review cadence, both **required**, against a
+catalogued source in the same id-space as everything else. That is the state
+ISO/IEC 42001 §9.1 and EU AI Act Art. 12 actually turn on.
+
+**Where the monitored fields come from.** The scope field is keyed on the
+catalogue row's own `category` (cloud → account/subscription, code →
+organisation, identity → tenant URL, …), and the access-method choices are
+parsed out of the row's own `evidence_pull` prose — offered only when the row
+names more than one. Nothing in the profile asserts a product-specific API fact
+the catalogue does not already state, so no product gets invented
+documentation. `connectionProfiles.test.ts` asserts the whole matrix, including
+that **no catalogued product is ever handed a `password` field**.
+
+Three guards keep the modes from blurring:
+
+- `integrations_manual_holds_no_credentials` — a CHECK constraint; a manual row
+  carrying a credential blob is rejected by the database, not by a code path.
+- The daily `pg_cron` enqueue requires `connection_mode = 'automated'`. Without
+  it a manual row marked `connected` would queue a job the worker can only fail
+  five times over. Proven: the same predicate without the guard returns that
+  row, with it returns none.
+- `connect` over a previously monitored row promotes it to `automated`, so a
+  source that gains an adapter is relabelled rather than left misdescribed.
+
+### Connect — where you fill in credentials
+
+**Connect** opens `ConnectDialog` with the provider's own
 `IntegrationConfig.credentialFields` — GitHub asks for an access token, an
 organization and an optional Enterprise base URL; AWS asks for an access key
 pair and region, optionally a role to assume; Azure asks for the four values of
-an Entra ID app registration. Submitting it posts to
-**`POST /v1/integrations/connect`** (`sentinel/integrations/api.py`), which:
+an Entra ID app registration. Submitting invokes the **`integrations-connect`
+Supabase Edge Function** with `action: "connect"`, which:
 
-1. refuses any slug with no registered adapter — the server is the authority,
-   so the UI and the backend cannot disagree about what can collect;
-2. validates the credential shape against the adapter's own model, returning a
-   clear 400 rather than letting the worker crash later;
-3. **encrypts with AES-256-GCM** (`crypto.py`) and stores only the ciphertext
+1. refuses any slug whose `adapter_status` is not `available`/`beta` — the
+   server is the authority, so the UI and the backend cannot disagree about
+   what can collect;
+2. **encrypts with AES-256-GCM** into the exact `{v, nonce, ciphertext}` blob
+   `sentinel/integrations/crypto.py` decrypts, and stores only the ciphertext
    in `integrations.credentials_encrypted`;
-4. upserts the org's `integrations` row on `(org_id, catalog_slug)`, so
-   reconnecting updates in place instead of duplicating;
-5. enqueues the first `background_jobs` sync — a privileged write with no
+3. upserts the org's `integrations` row on `(org_id, catalog_slug)`, so
+   reconnecting updates in place instead of duplicating, and sets
+   `connection_mode='automated'`;
+4. enqueues the first `background_jobs` sync — a privileged write with no
    client insert policy, which is precisely why this step lives on the server.
 
-The organisation comes from the caller's verified token, never the request
-body, so a client cannot connect an integration into another tenant. The
-browser holds credential values only for the life of the form, sends them once
-over TLS, and clears them as soon as the request resolves — nothing reaches
+The credential *shape* is no longer validated at submit time: the adapters are
+Python and the function is Deno, so a wrongly-shaped credential surfaces as
+`last_run_error` on the first sync rather than as a form error. The dialog says
+so rather than leaving the operator to discover it (2026-08-18 re-audit, N2).
+
+The organisation comes from the caller's verified JWT, never the request body,
+so a client cannot connect an integration into another tenant. The browser
+holds credential values only for the life of the dialog, sends them once over
+TLS, and clears them as soon as the request resolves — nothing reaches
 localStorage, the query cache or the URL. Error paths deliberately return the
 server's own message and never echo submitted input.
 
-**Sync now** on a connected source queues another run via
-`POST /v1/integrations/{id}/sync`.
-- **Disconnect** soft-deletes the row. **Findings already collected are
-  retained** — disconnecting a source must not erase the evidence trail it
-  produced (EU AI Act Art. 12).
-- Both write an audit entry via `logAction`.
+### Monitor this source — where you record what we cannot pull
+
+**Monitor this source** opens the same modal with `action: "register"` fields.
+The function refuses any key matching `token|secret|password|credential|…`
+outright rather than silently dropping it, so a future UI mistake is visible
+instead of quietly storing a secret in the org-readable `config` column. Owner
+and cadence are required server-side as well as client-side. Nothing is
+encrypted because nothing secret is accepted, and no job is queued.
+
+Registering over an existing **automated** connection returns 409 rather than
+downgrading it — that would stop real collection on somebody else's
+integration.
+
+**Sync now** queues another run (`action: "sync"`). It is offered only on an
+automated source, and the server refuses it for a manual one and for a product
+whose adapter was later withdrawn (2026-08-18 re-audit, N3). A monitored source
+gets **Update monitoring details** instead — an action that can actually
+succeed.
+
+- **Disconnect** / **Stop monitoring** soft-deletes the row. **Findings already
+  collected are retained** — disconnecting a source must not erase the evidence
+  trail it produced (EU AI Act Art. 12).
+- All of them write an audit entry via `logAction`, with the actor resolved in
+  the browser because the edge function writes under the service role.
 
 ### Shipped adapters
 
@@ -189,6 +265,15 @@ implemented; it surfaces the contradiction so a person resolves it.
 | `tier` | `tier` | 1 = adapter shipped, 2 = planned, 3 = catalogued |
 | `adapterStatus` | `adapter_status` | `available` \| `beta` \| `catalogued` |
 
+### `integrations` (added by `20260901000002`)
+
+| Field | Column | Notes |
+| --- | --- | --- |
+| `connectionMode` | `connection_mode` | `automated` \| `manual`. Defaults to `automated`; rows predating the column were written by the connect path and are automated by construction |
+| `status` | `status` | gains `monitored`, the resting state of a manual row. Deliberately not `connected` — the sync cron enqueues on that value |
+| — | `owner_name` | The accountable owner of a monitored source (existing column, newly required for that path) |
+| — | `config` | The monitored source's recorded details. Org-readable, which is why the server rejects secret-looking keys |
+
 ### `IntegrationFinding` (from `integration_findings`)
 
 | Field | Column | Notes |
@@ -206,7 +291,12 @@ normalized fields above.
 
 ## Interlinks
 
-- **Catalog → org instance.** Joined on `catalog_slug`, never on name.
+- **Catalog → org instance.** Joined on `catalog_slug`, never on name, with a
+  real foreign key (`integrations_catalog_slug_fkey`) behind it. Verified on a
+  from-zero replay: `total = 2, resolves = 2` for every row carrying a slug.
+- **Monitored source → its owner.** A manual registration cannot be saved
+  without an accountable owner and a review cadence, so it is never a record
+  nobody is answerable for.
 - **Integration → findings.** The detail sheet shows what the source has
   actually collected, worst-first, or an honest "nothing collected yet".
 - **Control → evidence.** `ControlDetail` gains an **Automated Evidence** tab
@@ -217,14 +307,22 @@ normalized fields above.
 
 ## Compliance
 
-- **EU AI Act Art. 12 (record-keeping).** Connect and disconnect are audit-
-  logged; findings survive disconnection.
+- **EU AI Act Art. 12 (record-keeping).** Connect, register and disconnect are
+  audit-logged with a real actor; findings survive disconnection. The audit
+  entry for a connect records **which credential fields were supplied, never
+  their values**.
 - **EU AI Act Art. 14 (human oversight).** Automated evidence is presented as a
   signal for a person to act on, never as an automatic control state change.
 - **ISO/IEC 42001 §9.1 / §9.2.** Continuous monitoring evidence feeding the
-  control register, with provenance (which source, which check, when).
+  control register, with provenance (which source, which check, when). A source
+  the platform cannot pull from is not left out of the AIMS: it is registered
+  with an owner and a documented review interval, and is counted separately
+  from automated coverage so the two are never added together.
 - **Data minimisation.** Credentials never reach the browser; raw provider
-  payloads are not rendered.
+  payloads are not rendered. A monitored source accepts no secret at all — the
+  edge function rejects a secret-looking key rather than storing it in the
+  org-readable `config` column, and a database CHECK constraint refuses a
+  manual row that carries a credential blob.
 
 ## Operations
 
@@ -252,10 +350,27 @@ normalized fields above.
   database URL; without either, connect returns a clear 503 rather than
   storing anything.
 - Counts in the UI header are derived from the rows, never hard-coded, so the
-  page cannot advertise a number the catalogue does not contain.
+  page cannot advertise a number the catalogue does not contain. **Collecting**
+  and **Monitored manually** are separate figures on `/integrations` for the
+  same reason: summing them would overstate automated coverage.
+- When an adapter ships for a product some orgs already monitor manually,
+  nothing needs migrating: **Connect** on that row promotes it to
+  `connection_mode='automated'` and the recorded owner and cadence stay on it.
 
 ## History
 
+- **2026-09-01** — Every catalogue product became actionable. Opening any of
+  the 219 entries now leads to a modal with fields appropriate to that product;
+  before this, 216 of them were prose with nowhere to put anything. The three
+  with adapters are unchanged. The rest get a **monitored** registration —
+  scope, accountable owner, review cadence, evidence location — that takes no
+  credential and queues no sync, so the platform gains real governance state
+  without claiming a collection capability it does not have. Backed by
+  `connection_mode` on `integrations`, a CHECK constraint that refuses a manual
+  row holding credentials, and a `connection_mode = 'automated'` guard on the
+  daily sync cron (without it, a manual row marked `connected` enqueues a job
+  the worker can only fail). Also closes re-audit finding **N3**: `sync` now
+  gates on `adapter_status` the way `connect` always did.
 - **2026-08-30** — AWS and Microsoft Azure became connectable. Both were
   catalogued only, so the product showed "no adapter ships for this product
   yet" on the two most-asked-for evidence sources. Adds a 14-check AWS adapter

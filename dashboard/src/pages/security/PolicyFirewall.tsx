@@ -20,7 +20,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
 } from 'recharts';
 import { formatDate } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useFirewall } from '../../hooks/useSecurityGroup';
 import type { FirewallRecord } from '../../services/securityGroupService';
@@ -68,7 +68,7 @@ const EMPTY_RULE: FirewallRecord = {
 };
 
 export default function PolicyFirewall() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const ct = useChartTheme();
 
   const { items: rules, isLoading, error, save, remove, isSaving } = useFirewall();

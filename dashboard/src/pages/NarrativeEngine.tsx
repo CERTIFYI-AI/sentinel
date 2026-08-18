@@ -27,14 +27,14 @@ import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { TableSkeleton, ErrorState } from '@/components/evals/states'
-import { useSettingsStore } from '@/stores/settingsStore'
+import { useOrgName } from '@/hooks/useOrganization'
 import { fetchGovernanceFacts } from '@/services/governanceFactsService'
 import {
   composeNarrative, NARRATIVE_AUDIENCES, AUDIENCE_LABEL, type NarrativeAudience,
 } from '@/services/narrativeComposer'
 
 export default function NarrativeEngine() {
-  const { orgName } = useSettingsStore()
+  const orgName = useOrgName()
   const [audience, setAudience] = useState<NarrativeAudience>('board')
   const [edited, setEdited] = useState<string | null>(null)
 

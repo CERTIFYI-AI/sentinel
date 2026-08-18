@@ -24,7 +24,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import { severityColor, statusColor, formatDate } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useThreats } from '../../hooks/useSecurityGroup';
 import type { ThreatRecord } from '../../services/securityGroupService';
@@ -63,7 +63,7 @@ const prettyStatus = (s?: string) => {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function ThreatFeed() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const ct = useChartTheme();
   const { items: threats, isLoading, error, save, remove, isSaving } = useThreats();
   const { models } = useModelsData();

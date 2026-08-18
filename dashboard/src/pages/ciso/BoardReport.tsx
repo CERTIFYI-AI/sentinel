@@ -44,7 +44,7 @@ import { EmptyState } from '../../components/ui/EmptyState';
 import ErrorState from '../../components/ui/ErrorState';
 import { DataTable, type Column } from '../../components/ui/DataTable';
 
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useModelsData } from '../../hooks/useModelsData';
 import { useRisksData } from '../../hooks/useRisksData';
 import { useIncidentData } from '../../hooks/useIncidentData';
@@ -244,7 +244,7 @@ const SECTIONS = [
 
 export function BoardReportBody() {
   const navigate = useNavigate();
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
 
   // Stable for the lifetime of the render session so every figure and the
   // exported provenance block share one "as of" instant.
@@ -378,7 +378,7 @@ export function BoardReportBody() {
 
   // ── Export — a real file, with provenance, then an audit-log entry ─────────
   const provenanceRows = () => ([
-    { Section: 'Provenance', Metric: 'Organisation', Value: orgName, Source: 'settings' },
+    { Section: 'Provenance', Metric: 'Organisation', Value: orgName, Source: 'organizations' },
     { Section: 'Provenance', Metric: 'Reporting period', Value: period.label, Source: 'derived at render' },
     { Section: 'Provenance', Metric: 'Data as of', Value: generatedAt.toISOString(), Source: 'export time' },
     { Section: 'Provenance', Metric: 'Source tables', Value: 'ai_models; risks; incidents; frameworks; controls; bias_audits', Source: 'org-scoped (RLS)' },
@@ -872,7 +872,7 @@ export function BoardReportBody() {
 // ── Standalone page (/ciso/report) ───────────────────────────────────────────
 
 export default function BoardReport() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   return (
     <div className="space-y-6">
       <PageHeader

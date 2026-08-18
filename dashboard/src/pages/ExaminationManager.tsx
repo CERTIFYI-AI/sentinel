@@ -14,7 +14,7 @@ import {
   ArrowRight, MagnifyingGlass, FolderOpen, ShieldCheck, Gavel,
   DownloadSimple, Upload, Plus, Eye, Siren,
 } from '@phosphor-icons/react';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useOrgName } from '../hooks/useOrganization';
 import { useChartTheme } from '../hooks/useChartTheme';
 
 
@@ -149,7 +149,7 @@ function docStatusStyle(s: DocRequest['status']) {
 }
 
 export default function ExaminationManager() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const [tab, setTab] = useState('examinations');
   const [search, setSearch] = useState('');
   const [responseDialog, setResponseDialog] = useState<DocRequest | null>(null);

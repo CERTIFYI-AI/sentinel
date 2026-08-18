@@ -12,7 +12,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   use: {
-    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "https://sentinel.hello-fbb.workers.dev",
+    baseURL: process.env.PLAYWRIGHT_BASE_URL ?? "https://1shield-oss.certifyi.ai",
     trace: "on-first-retry",
   },
   projects: [

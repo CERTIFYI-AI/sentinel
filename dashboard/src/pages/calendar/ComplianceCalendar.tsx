@@ -26,7 +26,7 @@ import {
   CalendarBlank, Export, List, GridFour, Warning, Clock,
   CaretLeft, CaretRight, Plus, Trash, PencilSimple,
 } from '@phosphor-icons/react';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useCalendar } from '../../hooks/useComplianceGroup';
 import type { CalendarEventRecord } from '../../services/complianceOpsService';
 import { exportCsv } from '../../lib/exportUtils';
@@ -92,7 +92,7 @@ function SourceBadge({ e }: { e: CalendarEventRecord }) {
 }
 
 export default function ComplianceCalendar() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const navigate = useNavigate();
   const { items, isLoading, error, save, remove, isSaving } = useCalendar();
 

@@ -27,12 +27,12 @@ export interface User {
   id: string; name: string; email: string; role: string; department: string; avatar: string;
 }
 export const USERS: User[] = [
-  { id: 'U-001', name: 'Sarah Chen', email: 'sarah.chen@sentinel-grc.com', role: 'CISO', department: 'Security', avatar: 'SC' },
-  { id: 'U-002', name: 'James Patel', email: 'james.patel@sentinel-grc.com', role: 'VP Compliance', department: 'Compliance', avatar: 'JP' },
-  { id: 'U-003', name: 'Maria Santos', email: 'maria.santos@sentinel-grc.com', role: 'ML Engineer', department: 'AI/ML', avatar: 'MS' },
-  { id: 'U-004', name: 'David Kim', email: 'david.kim@sentinel-grc.com', role: 'Risk Analyst', department: 'Risk', avatar: 'DK' },
-  { id: 'U-005', name: 'Emma Wilson', email: 'emma.wilson@sentinel-grc.com', role: 'Auditor', department: 'Audit', avatar: 'EW' },
-  { id: 'U-006', name: 'Raj Gupta', email: 'raj.gupta@sentinel-grc.com', role: 'Model Risk Mgr', department: 'AI/ML', avatar: 'RG' },
+  { id: 'U-001', name: 'Sarah Chen', email: 'sarah.chen@certifyi.ai', role: 'CISO', department: 'Security', avatar: 'SC' },
+  { id: 'U-002', name: 'James Patel', email: 'james.patel@certifyi.ai', role: 'VP Compliance', department: 'Compliance', avatar: 'JP' },
+  { id: 'U-003', name: 'Maria Santos', email: 'maria.santos@certifyi.ai', role: 'ML Engineer', department: 'AI/ML', avatar: 'MS' },
+  { id: 'U-004', name: 'David Kim', email: 'david.kim@certifyi.ai', role: 'Risk Analyst', department: 'Risk', avatar: 'DK' },
+  { id: 'U-005', name: 'Emma Wilson', email: 'emma.wilson@certifyi.ai', role: 'Auditor', department: 'Audit', avatar: 'EW' },
+  { id: 'U-006', name: 'Raj Gupta', email: 'raj.gupta@certifyi.ai', role: 'Model Risk Mgr', department: 'AI/ML', avatar: 'RG' },
 ];
 
 export interface BiasAudit {
@@ -454,14 +454,14 @@ export interface AttackSurfaceAsset {
   description: string; openPorts: number;
 }
 export const ATTACK_SURFACE: AttackSurfaceAsset[] = [
-  { id: 'AS-001', name: 'app.sentinel-grc.com', type: 'Web Application', exposure: 'public', risk: 'medium', protocol: 'HTTPS', lastScanned: '2026-03-28', status: 'monitored', owner: 'Sarah Chen', description: 'Primary GRC platform web application.', openPorts: 2 },
-  { id: 'AS-002', name: 'api.sentinel-grc.com', type: 'API Gateway', exposure: 'public', risk: 'high', protocol: 'HTTPS/REST', lastScanned: '2026-03-28', status: 'monitored', owner: 'Maria Santos', description: 'Model inference and platform API gateway.', openPorts: 1 },
+  { id: 'AS-001', name: 'app.example.com', type: 'Web Application', exposure: 'public', risk: 'medium', protocol: 'HTTPS', lastScanned: '2026-03-28', status: 'monitored', owner: 'Sarah Chen', description: 'Primary GRC platform web application.', openPorts: 2 },
+  { id: 'AS-002', name: 'api.example.com', type: 'API Gateway', exposure: 'public', risk: 'high', protocol: 'HTTPS/REST', lastScanned: '2026-03-28', status: 'monitored', owner: 'Maria Santos', description: 'Model inference and platform API gateway.', openPorts: 1 },
   { id: 'AS-003', name: 'mlops-prod.internal', type: 'ML Pipeline', exposure: 'internal', risk: 'high', protocol: 'gRPC', lastScanned: '2026-03-25', status: 'monitored', owner: 'Maria Santos', description: 'Production ML operations pipeline and model registry.', openPorts: 3 },
   { id: 'AS-004', name: 'data-warehouse.internal', type: 'Data Store', exposure: 'internal', risk: 'critical', protocol: 'PostgreSQL', lastScanned: '2026-03-28', status: 'monitored', owner: 'David Kim', description: 'Primary data warehouse with PII datasets.', openPorts: 1 },
-  { id: 'AS-005', name: 'vendor-portal.sentinel-grc.com', type: 'Web Application', exposure: 'public', risk: 'medium', protocol: 'HTTPS', lastScanned: '2026-03-20', status: 'monitored', owner: 'James Patel', description: 'Vendor self-service portal for questionnaire responses.', openPorts: 2 },
-  { id: 'AS-006', name: 'admin.sentinel-grc.com', type: 'Admin Panel', exposure: 'restricted', risk: 'critical', protocol: 'HTTPS', lastScanned: '2026-03-28', status: 'monitored', owner: 'Sarah Chen', description: 'Administrative control panel with elevated privileges.', openPorts: 1 },
-  { id: 'AS-007', name: 'cdn.sentinel-grc.com', type: 'CDN', exposure: 'public', risk: 'low', protocol: 'HTTPS', lastScanned: '2026-03-15', status: 'monitored', owner: 'Maria Santos', description: 'Content delivery network for static assets.', openPorts: 1 },
-  { id: 'AS-008', name: 'monitoring.sentinel-grc.com', type: 'Monitoring', exposure: 'internal', risk: 'medium', protocol: 'HTTPS', lastScanned: '2026-03-28', status: 'monitored', owner: 'Sarah Chen', description: 'Observability and monitoring dashboard.', openPorts: 2 },
+  { id: 'AS-005', name: 'vendor-portal.example.com', type: 'Web Application', exposure: 'public', risk: 'medium', protocol: 'HTTPS', lastScanned: '2026-03-20', status: 'monitored', owner: 'James Patel', description: 'Vendor self-service portal for questionnaire responses.', openPorts: 2 },
+  { id: 'AS-006', name: 'admin.example.com', type: 'Admin Panel', exposure: 'restricted', risk: 'critical', protocol: 'HTTPS', lastScanned: '2026-03-28', status: 'monitored', owner: 'Sarah Chen', description: 'Administrative control panel with elevated privileges.', openPorts: 1 },
+  { id: 'AS-007', name: 'cdn.example.com', type: 'CDN', exposure: 'public', risk: 'low', protocol: 'HTTPS', lastScanned: '2026-03-15', status: 'monitored', owner: 'Maria Santos', description: 'Content delivery network for static assets.', openPorts: 1 },
+  { id: 'AS-008', name: 'monitoring.example.com', type: 'Monitoring', exposure: 'internal', risk: 'medium', protocol: 'HTTPS', lastScanned: '2026-03-28', status: 'monitored', owner: 'Sarah Chen', description: 'Observability and monitoring dashboard.', openPorts: 2 },
 ];
 
 // ── Trust Engine Data ──────────────────────────

@@ -82,6 +82,42 @@ export async function connectIntegration(input: {
   }
 }
 
+/**
+ * Register a catalogue product the platform cannot yet collect from.
+ *
+ * This is the other 216 products' path. It stores NO credential and queues NO
+ * sync — what it creates is a governed source with an accountable owner and a
+ * review cadence, which is real state an auditor can act on. Rendering a
+ * credential form here instead would take a secret nothing could ever use.
+ *
+ * Throws on failure, like every other write in this file, so the dialog shows
+ * the server's own message rather than a success the database never saw.
+ */
+export async function registerMonitoredSource(input: {
+  catalogSlug: string
+  name?: string
+  details: Record<string, string>
+}): Promise<ConnectResult> {
+  ensureConfigured()
+  const { data, error } = await supabase!.functions.invoke(FUNCTION, {
+    body: {
+      action: 'register',
+      catalog_slug: input.catalogSlug,
+      name: input.name,
+      details: input.details,
+    },
+  })
+  if (error) {
+    throw new Error(await messageFromError(error, 'Could not register the source. Nothing was stored.'))
+  }
+  return {
+    integrationId: String(data.integration_id),
+    status: String(data.status ?? 'monitored'),
+    jobId: null,
+    message: String(data.message ?? 'Source registered.'),
+  }
+}
+
 /** Queue another sync for an already-connected integration. */
 export async function resyncIntegration(integrationId: string): Promise<ConnectResult> {
   ensureConfigured()

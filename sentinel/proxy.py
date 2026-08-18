@@ -196,6 +196,10 @@ def create_app() -> FastAPI:
     # Integration connect/sync surface. Local import for the same reason as
     # auth_router: it imports back into this module for tenant resolution.
     from sentinel.integrations.api import router as integrations_router  # noqa: PLC0415
+    # Agent tool-call authorization. Local import for the same reason: it
+    # reuses the integrations router's tenant resolution, which imports back
+    # into this module.
+    from sentinel.gateway.api import router as gateway_router  # noqa: PLC0415
     from sentinel.api.dashboard_router import router as dashboard_router  # noqa: PLC0415
     from sentinel.api.compliance_router import router as compliance_router  # noqa: PLC0415
     from sentinel.api.approval_router import router as approval_router  # noqa: PLC0415
@@ -211,6 +215,7 @@ def create_app() -> FastAPI:
 
     app.include_router(auth_router)
     app.include_router(integrations_router)
+    app.include_router(gateway_router)
     app.include_router(policy_router, prefix="/api/v1/policies", tags=["policies"])
     app.include_router(dashboard_router, prefix="/dashboard")
     app.include_router(compliance_router)

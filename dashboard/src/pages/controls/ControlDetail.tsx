@@ -27,7 +27,7 @@ import { rankFindings, countByStatus, evidencePosture } from '@/services/integra
 import { useModelsData } from '../../hooks/useModelsData';
 import { useRisksData } from '../../hooks/useRisksData';
 import { usePolicies } from '../../hooks/queries/usePolicies';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import type { ControlRecord } from '../../services/controlService';
 
 const formatDate = (d?: string | null) => {
@@ -121,7 +121,7 @@ function ScoreCircle({ score, size = 100 }: { score: number; size?: number }) {
 export default function ControlDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
 
   const controlsQuery = useControls();
   const testsQuery = useControlTests(id);

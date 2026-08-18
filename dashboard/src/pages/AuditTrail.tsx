@@ -28,7 +28,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../components/ui/s
 import { PageSkeleton } from '../components/ui/PageSkeleton';
 import { PageHeader } from '@/components/ui/PageHeader';
 import { FilterBar } from '@/components/ui/FilterBar';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useOrgName } from '../hooks/useOrganization';
 import { useAuditLogData, type AuditLogRecord } from '@/hooks/useAuditLogData';
 
 // ── Module badge styling (fallback for unlisted modules) ─────────────────────
@@ -131,7 +131,7 @@ function JsonBlock({ label, value, tone }: {
 
 export default function AuditTrail() {
   const { logs, isLoading, error } = useAuditLogData();
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const [searchParams, setSearchParams] = useSearchParams();
   // ?module=<x> deep-links a pre-filtered view (platform pattern: dismissible
   // chip below); it seeds the module filter and stays in the URL until

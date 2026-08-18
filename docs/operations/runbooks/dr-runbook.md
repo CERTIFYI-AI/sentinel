@@ -32,7 +32,7 @@
 ```
 1. wrangler rollback --env production --deployment-id <prev-id>
    (Find deployment ID: wrangler deployments list)
-2. Verify: curl -I https://sentinel.hello-fbb.workers.dev/healthz
+2. Verify: curl -I https://1shield-oss.certifyi.ai/healthz
 3. If worker crashed: wrangler tail --env production (inspect logs)
 ```
 

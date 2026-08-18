@@ -18,7 +18,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip,
   ResponsiveContainer, PieChart, Pie, Cell, Legend,
 } from 'recharts';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useOrgName } from '../hooks/useOrganization';
 import { useChartTheme } from '../hooks/useChartTheme';
 import { useAuthStore } from '../store/authStore';
 import { StatCardRow } from '../components/ui/StatCardRow';
@@ -59,7 +59,7 @@ function PillLink({ label, onClick }: { label: string; onClick: () => void }) {
 }
 
 export default function ModelRiskCommittee() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const ct = useChartTheme();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();

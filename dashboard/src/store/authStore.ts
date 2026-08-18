@@ -75,18 +75,21 @@ export const useAuthStore = create<AuthState>()(
 
       login: async (email: string, password: string) => {
         // ── Demo bypass (no Supabase required) ───────────────────────────
+        // `organization` here is a label on the local demo session only. The
+        // authoritative name is `organizations.name`, read through
+        // useOrgName() — nothing in the UI renders this field as the org name.
         const DEMO_USERS: Record<string, User> = {
-          'admin@sentinel-grc.com': {
+          'admin@certifyi.ai': {
             id: 'demo-ciso-001',
-            email: 'admin@sentinel-grc.com',
+            email: 'admin@certifyi.ai',
             name: 'Alex Rivera',
             role: 'ciso',
             tenant: 'default',
             organization: 'Sentinel AI',
           },
-          'auditor@sentinel-grc.com': {
+          'auditor@certifyi.ai': {
             id: 'demo-auditor-001',
-            email: 'auditor@sentinel-grc.com',
+            email: 'auditor@certifyi.ai',
             name: 'Jordan Lee',
             role: 'auditor',
             tenant: 'default',

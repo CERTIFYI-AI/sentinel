@@ -133,6 +133,11 @@ export function useCatalogConnection() {
       if (!isConnectable(entry)) {
         // Defence in depth: the UI hides the affordance, and the server-side
         // worker refuses unknown slugs. This makes the rule explicit here too.
+        //
+        // This is the COLLECTING path. A product with no adapter is not a dead
+        // end — it is registered as a monitored source through
+        // `registerMonitoredSource`, which takes no credential and queues no
+        // sync. That path deliberately does not come through here.
         throw new Error(
           `${entry.name} is catalogued for reference only — no adapter ships for it yet, so it cannot collect evidence.`,
         )

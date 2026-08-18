@@ -45,12 +45,16 @@ const CATEGORY_LABEL: Record<IntegrationCategory, string> = {
 }
 
 const STATUSES: [IntegrationStatus, string][] = [
-  ['connected', 'Connected'], ['degraded', 'Degraded'], ['error', 'Error'],
-  ['disconnected', 'Disconnected'], ['configuring', 'Configuring'],
+  ['connected', 'Connected'], ['monitored', 'Monitored'], ['degraded', 'Degraded'],
+  ['error', 'Error'], ['disconnected', 'Disconnected'], ['configuring', 'Configuring'],
 ]
 
 const statusTone: Record<IntegrationStatus, string> = {
   connected: 'bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]',
+  // Neutral, not green: a monitored source is recorded and owned, but nothing
+  // is collecting from it. Reading as "healthy" would be the fabricated
+  // capability this whole mode exists to avoid.
+  monitored: 'bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-2))]',
   degraded: 'bg-[hsl(var(--s-wn-bg))] text-[hsl(var(--s-wn-tx))]',
   error: 'bg-[hsl(var(--s-er-bg))] text-[hsl(var(--s-er-tx))]',
   disconnected: 'bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]',
@@ -164,6 +168,7 @@ export default function IntegrationsPage() {
 
   const stats = useMemo(() => ({
     connected: integrations.data.filter((i) => i.status === 'connected').length,
+    monitored: integrations.data.filter((i) => i.connectionMode === 'manual').length,
     attention: integrations.data.filter((i) => i.status === 'error' || i.status === 'degraded').length,
     inbound: integrations.data.filter((i) => i.direction !== 'outbound').length,
     hooks: webhooks.data.filter((w) => w.isActive).length,
@@ -213,8 +218,12 @@ export default function IntegrationsPage() {
       />
 
       <Card className="mb-4">
-        <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-4">
-          <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Connected</p><p className="font-mono text-xl font-bold text-[hsl(var(--s-ok-tx))]">{stats.connected}</p></div>
+        <CardContent className="grid grid-cols-2 gap-4 p-4 sm:grid-cols-5">
+          <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Collecting</p><p className="font-mono text-xl font-bold text-[hsl(var(--s-ok-tx))]">{stats.connected}</p></div>
+          {/* Counted separately from "Collecting" on purpose: a monitored
+              source is owned and reviewed but nothing pulls from it, and
+              folding the two together would overstate automated coverage. */}
+          <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Monitored manually</p><p className="font-mono text-xl font-bold">{stats.monitored}</p></div>
           <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Need attention</p><p className="font-mono text-xl font-bold text-[hsl(var(--s-er-tx))]">{stats.attention}</p></div>
           <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Ingesting data</p><p className="font-mono text-xl font-bold">{stats.inbound}</p></div>
           <div><p className="text-[11px] uppercase tracking-wide text-[hsl(var(--text-4))]">Active webhooks</p><p className="font-mono text-xl font-bold">{stats.hooks}</p></div>

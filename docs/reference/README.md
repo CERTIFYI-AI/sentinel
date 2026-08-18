@@ -14,6 +14,7 @@ exact value, name or definition.
 | [technical-debt.md](technical-debt.md) | The debt register — every accepted shortcut, with an owner |
 | [production-readiness.md](production-readiness.md) | The standing readiness verdict |
 | [platform-audit-2026-08-18.md](platform-audit-2026-08-18.md) | Modules / features / DB / interlinks audit against a real Postgres replay |
+| [platform-audit-2026-08-18b.md](platform-audit-2026-08-18b.md) | Re-audit: which of those findings closed, and what the $0-infra move cost |
 | [platform-interlink-audit-2026-08-17.md](platform-interlink-audit-2026-08-17.md) | Earlier interlink audit against the live project |
 
 ## Related

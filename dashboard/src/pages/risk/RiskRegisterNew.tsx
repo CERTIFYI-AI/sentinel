@@ -27,7 +27,7 @@ import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Checkbox } from '../../components/ui/checkbox';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useRisksData, type RiskRecord } from '../../hooks/useRisksData';
 import { useModelsData } from '../../hooks/useModelsData';
 import { useIncidents, useRemediations, useFinancialRisks, useHitlReviews } from '../../hooks/useRiskIncidents';
@@ -376,7 +376,7 @@ function MiniMatrix({ likelihood, impact }: { likelihood: number; impact: number
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function RiskRegisterNew() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const { risks: records, isLoading, error, saveRisk, removeRisk, isSaving } = useRisksData();
   const [searchParams, setSearchParams] = useSearchParams();
   const [search, setSearch] = useState('');

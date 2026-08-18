@@ -29,7 +29,7 @@ import {
   BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
 } from 'recharts';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useModelsData } from '../../hooks/useModelsData';
 import { useRisksData } from '../../hooks/useRisksData';
@@ -76,7 +76,7 @@ function scoreColor(s: number) {
 type TabKey = 'overview' | 'report' | 'metrics' | 'roi';
 
 export default function CisoDashboard() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const navigate = useNavigate();
   const [params, setParams] = useSearchParams();
 

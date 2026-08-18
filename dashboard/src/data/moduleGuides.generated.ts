@@ -52,13 +52,13 @@ export interface GuideCollection {
 }
 
 /** Menu destinations covered by the guide. */
-export const GUIDE_TOTAL_ENTRIES = 134
+export const GUIDE_TOTAL_ENTRIES = 135
 
 /** Destinations backed by an authored module doc. */
-export const GUIDE_DOCUMENTED_ENTRIES = 134
+export const GUIDE_DOCUMENTED_ENTRIES = 135
 
 /** Module docs available in docs/modules/. */
-export const MODULE_DOCS_AVAILABLE = 93
+export const MODULE_DOCS_AVAILABLE = 95
 
 export const GUIDE_COLLECTIONS: GuideCollection[] = [
   {
@@ -2475,8 +2475,8 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
   {
     "id": "trust-engine-gateways",
     "title": "TRUST ENGINE & GATEWAYS",
-    "entryCount": 14,
-    "documentedCount": 14,
+    "entryCount": 15,
+    "documentedCount": 15,
     "entries": [
       {
         "label": "Runtime Trust",
@@ -3970,6 +3970,192 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
             "input_schema",
             "jsonb",
             "JSON Schema of accepted arguments"
+          ]
+        ],
+        "noDocReason": null
+      },
+      {
+        "label": "Policy Decisions",
+        "route": "/mcp-gateway/decisions",
+        "parentLabel": "MCP Servers",
+        "hasDoc": true,
+        "docPath": "docs/modules/mcp-gateway-enforcement.md",
+        "title": "MCP Gateway — tool-call enforcement",
+        "purpose": "Decide whether a given agent may invoke a given tool, refuse it when policy says no, pause it when a human must approve, and leave a durable record of every one of those decisions.",
+        "why": "mcp_tools already carried a complete authorization policy — approval_state, requires_hitl, side_effects, risk_tier, scopes, allowed_agent_ids — and nothing read any of it at call time. Operators could set a tool to \"blocked\", grant it to two agents and mark it as requiring human review, and an agent could still call it, because those fields were captured, rendered and audited as intent with no runtime behind them. That was the widest gap in the platform between what it claims and what it enforces. This module closes it, and does so at the layer where agent traffic already arrives by design — n",
+        "how": [
+          "### The decision, in order",
+          "sentinel/gateway/policy.py::evaluate is pure — no database, no clock, no I/O",
+          "— so the rules can be tested exhaustively and read in one sitting. Checks run",
+          "cheapest-and-most-absolute first, first failure wins:",
+          "| # | Check | Refusal | HTTP |",
+          "Three orderings in that table are deliberate and worth keeping:",
+          "Authorization precedes rate limiting. An agent with no grant must be told",
+          "that, not told to slow down — a 429 on a call that would never be permitted",
+          "invites a retry loop against a wall.",
+          "Human approval is evaluated last. There is no point queueing a reviewer",
+          "for something policy would refuse anyway; their attention is the scarcest",
+          "resource in the loop."
+        ],
+        "dataProcess": [],
+        "interlinks": [
+          "Decision → tool. /mcp-gateway/tools?open=<id>, resolved by id.",
+          "Decision → agent. /agents?open=<id>; an unregistered caller renders",
+          "\"Unregistered\", never a raw identifier.",
+          "Decision → human review. A pending decision links to /hitl.",
+          "Tool → decisions. The tool catalogue carries an Enforcement column",
+          "with live counts, linking to the filtered feed. \"No calls yet\" is rendered",
+          "distinctly from zero refusals — never asked is not the same as never refused.",
+          "Overview → decisions. The posture card counts real decisions rather than",
+          "mcp_tools.invocations_30d, a stored column nothing maintains.",
+          "Before this module, /mcp-gateway, /mcp-gateway/servers and",
+          "/mcp-gateway/tools had no cross-module link in or out (recorded in the",
+          "2026-08-18 audit, §F7). They now reach agents, HITL and each other."
+        ],
+        "compliance": [
+          "EU AI Act Art. 12 (record-keeping). Every decision is a dated row with",
+          "its cause; refusals are retained precisely because they leave no other trace.",
+          "EU AI Act Art. 14 (human oversight). requires_hitl produces a real,",
+          "queued review with the decision linked to it — oversight as a path, not a",
+          "checkbox.",
+          "ISO/IEC 42001 §8.1 (operational control), §9.1 (monitoring). Agent",
+          "autonomy is bounded by a policy that is evaluated, not merely declared, and",
+          "its operation is measured from its own records.",
+          "Data minimisation. Arguments are hashed, never stored. The decisions",
+          "table has no client insert policy: a browser able to write a decision would",
+          "make the evidence worthless."
+        ],
+        "operations": [
+          "The endpoint is POST /v1/gateway/authorize, called by an agent runtime",
+          "before the tool call. It requires the same bearer token as the rest of",
+          "the API, and the organisation comes from that token — never from the body.",
+          "Without SUPABASE_DB_URL / DATABASE_URL the endpoint returns a clear 503",
+          "rather than allowing calls it cannot record.",
+          "A tool from another tenant reads as unknown_tool: the same answer as one",
+          "that does not exist, which is the answer that leaks the least.",
+          "Rate limits count allowed decisions only. Counting denials would let a"
+        ],
+        "fields": [
+          [
+            "1",
+            "the agent is registered in this org",
+            "unknown_agent",
+            "401"
+          ],
+          [
+            "2",
+            "the tool exists in this org",
+            "unknown_tool",
+            "404"
+          ],
+          [
+            "3",
+            "the tool's server is not blocked",
+            "server_blocked",
+            "403"
+          ],
+          [
+            "4",
+            "the tool is approved",
+            "tool_blocked / tool_not_approved",
+            "403"
+          ],
+          [
+            "5",
+            "the agent holds a grant",
+            "agent_not_granted",
+            "403"
+          ],
+          [
+            "5b",
+            "the server state is approved or restricted",
+            "server_restricted",
+            "403"
+          ],
+          [
+            "6",
+            "the agent is inside the tool's rate limit",
+            "rate_limited",
+            "429"
+          ],
+          [
+            "7",
+            "the tool does not require a human",
+            "approval_required → pending",
+            "202"
+          ],
+          [
+            "8",
+            "—",
+            "allowed",
+            "200"
+          ],
+          [
+            "Field",
+            "Column",
+            "Notes"
+          ],
+          [
+            "agentId",
+            "agent_id",
+            "FK to agents; NULL when the caller was unknown"
+          ],
+          [
+            "agentRef",
+            "agent_ref",
+            "What the caller presented, kept verbatim so an unknown agent stays traceable"
+          ],
+          [
+            "toolId / serverId",
+            "same",
+            "FK; NULL when the tool was unknown"
+          ],
+          [
+            "toolRef",
+            "tool_ref",
+            "Tool name at decision time, or the raw id when unknown"
+          ],
+          [
+            "decision",
+            "decision",
+            "allowed \\",
+            "denied \\",
+            "pending_approval"
+          ],
+          [
+            "reasonCode",
+            "reason_code",
+            "Stable machine code — the UI groups on this"
+          ],
+          [
+            "reason",
+            "reason",
+            "Operator-facing prose; may be reworded freely"
+          ],
+          [
+            "hitlItemId",
+            "hitl_item_id",
+            "The human review this decision raised"
+          ],
+          [
+            "invocationId",
+            "invocation_id",
+            "Correlates an allowed decision to the call it produced"
+          ],
+          [
+            "—",
+            "request_fingerprint",
+            "SHA-256 of arguments. Never surfaced in the UI"
+          ],
+          [
+            "Field",
+            "Column",
+            "Notes"
+          ],
+          [
+            "—",
+            "rate_limit_per_hour",
+            "Per agent, rolling hour. NULL = unlimited, 0 = never"
           ]
         ],
         "noDocReason": null
@@ -9436,24 +9622,32 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         ],
         "dataProcess": [],
         "interlinks": [
-          "Catalog → org instance. Joined on catalog_slug, never on name.",
+          "Catalog → org instance. Joined on catalog_slug, never on name, with a",
+          "real foreign key (integrations_catalog_slug_fkey) behind it. Verified on a",
+          "from-zero replay: total = 2, resolves = 2 for every row carrying a slug.",
+          "Monitored source → its owner. A manual registration cannot be saved",
+          "without an accountable owner and a review cadence, so it is never a record",
+          "nobody is answerable for.",
           "Integration → findings. The detail sheet shows what the source has",
           "actually collected, worst-first, or an honest \"nothing collected yet\".",
           "Control → evidence. ControlDetail gains an Automated Evidence tab",
           "listing the findings mapped to that control, with posture, counts and",
           "remediation.",
-          "Control → Integrations. A control with no automated evidence links to",
-          "/integrations so the reader can connect a source."
+          "Control → Integrations. A control with no automated evidence links to"
         ],
         "compliance": [
-          "EU AI Act Art. 12 (record-keeping). Connect and disconnect are audit-",
-          "logged; findings survive disconnection.",
+          "EU AI Act Art. 12 (record-keeping). Connect, register and disconnect are",
+          "audit-logged with a real actor; findings survive disconnection. The audit",
+          "entry for a connect records **which credential fields were supplied, never",
+          "their values**.",
           "EU AI Act Art. 14 (human oversight). Automated evidence is presented as a",
           "signal for a person to act on, never as an automatic control state change.",
           "ISO/IEC 42001 §9.1 / §9.2. Continuous monitoring evidence feeding the",
-          "control register, with provenance (which source, which check, when).",
-          "Data minimisation. Credentials never reach the browser; raw provider",
-          "payloads are not rendered."
+          "control register, with provenance (which source, which check, when). A source",
+          "the platform cannot pull from is not left out of the AIMS: it is registered",
+          "with an owner and a documented review interval, and is counted separately",
+          "from automated coverage so the two are never added together.",
+          "Data minimisation. Credentials never reach the browser; raw provider"
         ],
         "operations": [
           "The catalogue is seeded by migration",
@@ -9479,7 +9673,37 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
           [
             "catalogued",
             "Reference only — no adapter, collects nothing",
-            "Neutral badge, no Connect, with the reason"
+            "Neutral badge, Monitor this source"
+          ],
+          [
+            "When",
+            "adapter_status is available or beta",
+            "anything else"
+          ],
+          [
+            "Fields",
+            "the adapter's own credential contract",
+            "the source's identity, owner, cadence, evidence location"
+          ],
+          [
+            "Secrets",
+            "AES-256-GCM encrypted server-side",
+            "none asked for, none stored"
+          ],
+          [
+            "On save",
+            "first sync queued",
+            "nothing queued"
+          ],
+          [
+            "Row",
+            "status='configuring', connection_mode='automated'",
+            "status='monitored', connection_mode='manual'"
+          ],
+          [
+            "Card",
+            "green Connected",
+            "neutral Monitored"
           ],
           [
             "github",
@@ -9558,36 +9782,6 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
             "aws.kms.key_rotation",
             "secret_management",
             "Automatic rotation on customer-managed symmetric keys"
-          ],
-          [
-            "aws.guardduty.enabled",
-            "incident_response",
-            "An enabled detector, not merely a present one"
-          ],
-          [
-            "aws.backup.plans",
-            "backup_recovery",
-            "AWS Backup plans (says plainly that service-native backups are invisible to it)"
-          ],
-          [
-            "azure.entra.conditional_access_mfa",
-            "mfa_enforcement",
-            "An enabled Conditional Access policy with an MFA grant control"
-          ],
-          [
-            "azure.rbac.owner_assignments",
-            "least_privilege",
-            "Share of role assignments granting Owner"
-          ],
-          [
-            "azure.storage.public_blob_access",
-            "access_control",
-            "allowBlobPublicAccess (absence is not read as disabled)"
-          ],
-          [
-            "azure.storage.https_only",
-            "encryption_in_transit",
-            "Secure transfer required, minimum TLS 1.2"
           ]
         ],
         "noDocReason": null

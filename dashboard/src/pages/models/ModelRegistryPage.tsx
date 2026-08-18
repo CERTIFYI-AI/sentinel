@@ -22,7 +22,7 @@ import {
 import { recordToModel, modelToRecord } from '@/lib/modelMapping';
 import { logModelActivity } from '@/services/modelDetailService';
 import { useAuthStore } from '../../store/authStore';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 
 import { useChartTheme } from '../../hooks/useChartTheme';
 
@@ -89,7 +89,7 @@ function resolveLifecycleIndex(status: string): number {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function ModelRegistryPage() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const ct = useChartTheme();
   const navigate = useNavigate();
   const actor = useAuthStore(s => s.user?.name || s.user?.email || 'You');

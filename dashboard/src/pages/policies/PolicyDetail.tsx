@@ -25,7 +25,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { PageHeader } from '../../components/ui/PageHeader';
 import { InterlinkChip } from '@/components/ui/InterlinkChip';
 import { FormDialog, Field } from '@/components/evals/FormDialog';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useAuthStore } from '../../stores/authStore';
 import {
   usePolicies, useUpsertPolicy, useSubmitPolicyForApproval,
@@ -84,7 +84,7 @@ function parseVersionContent(raw?: string | null): any {
 export default function PolicyDetail() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const { user } = useAuthStore();
   const qc = useQueryClient();
 

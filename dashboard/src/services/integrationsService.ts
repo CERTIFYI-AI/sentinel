@@ -13,7 +13,20 @@
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { logAction } from '../lib/auditLogger'
 
-export type IntegrationStatus = 'connected' | 'degraded' | 'error' | 'disconnected' | 'configuring'
+// 'monitored' is the resting state of a manually-registered source: recorded
+// and owned, collecting nothing automatically. It is deliberately NOT
+// 'connected' — the daily sync cron enqueues on that value, and a job for a
+// source with no adapter can only fail.
+export type IntegrationStatus =
+  'connected' | 'degraded' | 'error' | 'disconnected' | 'configuring' | 'monitored'
+
+/**
+ * How this integration gets its evidence.
+ *   automated  an adapter collects from stored, encrypted credentials
+ *   manual     a registered source with an accountable owner and a review
+ *              cadence; holds no credentials and collects nothing on its own
+ */
+export type IntegrationConnectionMode = 'automated' | 'manual'
 export type IntegrationHealth = 'passing' | 'degraded' | 'failing' | 'unknown'
 export type IntegrationDirection = 'inbound' | 'outbound' | 'bidirectional'
 
@@ -29,6 +42,7 @@ export interface IntegrationRecord {
   provider?: string
   category: IntegrationCategory
   status: IntegrationStatus
+  connectionMode: IntegrationConnectionMode
   authMethod?: string
   description?: string
   dataFlows: string[]
@@ -59,6 +73,9 @@ function fromRow(r: Record<string, any>): IntegrationRecord {
     provider: r.provider ?? undefined,
     category: (r.category ?? 'other') as IntegrationCategory,
     status: (r.status ?? 'configuring') as IntegrationStatus,
+    // Rows created before this column existed are automated by construction:
+    // the connect path was the only writer.
+    connectionMode: (r.connection_mode ?? 'automated') as IntegrationConnectionMode,
     authMethod: r.auth_method ?? undefined,
     description: r.description ?? undefined,
     dataFlows: Array.isArray(r.data_flows) ? r.data_flows : [],
@@ -82,6 +99,7 @@ function toRow(i: Partial<IntegrationRecord>): Record<string, any> {
   if (i.provider !== undefined) row.provider = i.provider ?? null
   if (i.category !== undefined) row.category = i.category
   if (i.status !== undefined) row.status = i.status
+  if (i.connectionMode !== undefined) row.connection_mode = i.connectionMode
   if (i.authMethod !== undefined) row.auth_method = i.authMethod ?? null
   if (i.description !== undefined) row.description = i.description ?? null
   if (i.dataFlows !== undefined) row.data_flows = i.dataFlows

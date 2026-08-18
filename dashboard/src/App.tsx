@@ -165,6 +165,7 @@ const AiPlayground = lazy(() => import('./pages/ai-gateway/Playground'));
 const McpOverview = lazy(() => import('./pages/mcp-gateway/Overview'));
 const McpServers = lazy(() => import('./pages/mcp-gateway/Servers'));
 const McpToolCatalog = lazy(() => import('./pages/mcp-gateway/ToolCatalog'));
+const McpPolicyDecisions = lazy(() => import('./pages/mcp-gateway/PolicyDecisions'));
 
 // ============================================================================── 5 Enterprise Command Modules ─────────────────────────────────────────────
 const ModelRiskCommittee = lazy(() => import('./pages/ModelRiskCommittee'));
@@ -620,6 +621,7 @@ export default function App() {
             <Route path="/mcp-gateway" element={<Suspense fallback={<Loading />}><McpOverview /></Suspense>} />
             <Route path="/mcp-gateway/overview" element={<Navigate to="/mcp-gateway" replace />} />
             <Route path="/mcp-gateway/servers" element={<Suspense fallback={<Loading />}><McpServers /></Suspense>} />
+            <Route path="/mcp-gateway/decisions" element={<Suspense fallback={<Loading />}><McpPolicyDecisions /></Suspense>} />
             <Route path="/mcp-gateway/tools" element={<Suspense fallback={<Loading />}><McpToolCatalog /></Suspense>} />
             <Route path="/mcp-gateway/keys" element={<Navigate to="/agent-iam" replace />} />
             <Route path="/mcp-gateway/logs" element={<Navigate to="/trust-engine/tools" replace />} />

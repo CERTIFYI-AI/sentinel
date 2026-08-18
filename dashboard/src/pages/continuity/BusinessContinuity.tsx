@@ -27,7 +27,7 @@ import {
 } from '../../components/ui/dialog';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { toast } from 'sonner';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -254,7 +254,7 @@ function daysUntil(dateStr: string): number {
 // ═════════════════════════════════════════════════════════════════════════════
 
 export default function BusinessContinuity() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const { items: liveItems, isLoading, error, refetch, save, remove } = useBcpPlansData();
   // V8 re-audit: the page previously fell back to the hardcoded BCP_PLANS
   // array whenever the table was empty — fabricated plans presented as the

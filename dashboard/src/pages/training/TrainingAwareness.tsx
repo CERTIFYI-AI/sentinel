@@ -26,7 +26,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter,
 } from '../../components/ui/dialog';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -141,7 +141,7 @@ function CompletionBar({ pct }: { pct: number | null }) {
 // MAIN COMPONENT
 // ═════════════════════════════════════════════════════════════════════════════
 export default function TrainingAwareness() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const { items: liveItems, isLoading, error, refetch, save, remove } = useTrainingData();
   // Real rows only — an empty table renders an honest empty state, never the
   // old fabricated course catalogue.

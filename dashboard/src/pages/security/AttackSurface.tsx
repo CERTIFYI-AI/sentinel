@@ -27,7 +27,7 @@ import {
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import { severityColor, statusColor, formatDate } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useAssets } from '../../hooks/useSecurityGroup';
 import type { AssetRecord } from '../../services/securityGroupService';
@@ -105,7 +105,7 @@ const EMPTY_ASSET: AssetForm = {
 
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function AttackSurface() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const ct = useChartTheme();
   const { items: assets, isLoading, error, save, remove, isSaving } = useAssets();
   const { models } = useModelsData();

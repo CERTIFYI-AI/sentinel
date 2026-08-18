@@ -22,7 +22,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
 } from 'recharts';
 import { severityColor, formatDate } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useScans, useVulns } from '../../hooks/useSecurityGroup';
 import type { ScanRecord } from '../../services/securityGroupService';
@@ -70,7 +70,7 @@ const EMPTY_SCAN: ScanForm = {
 const SLA_DAYS: Record<string, number> = { critical: 14, high: 30, medium: 60, low: 90 };
 
 export default function ScanCenter() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const ct = useChartTheme();
 
   const { items: scans, isLoading: scansLoading, error: scansError, save, remove, isSaving } = useScans();

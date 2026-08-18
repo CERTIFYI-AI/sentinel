@@ -22,7 +22,7 @@ import {
   FileText, MagnifyingGlass, Export, Plus, Clock, CheckCircle, Warning,
   PencilSimple, Trash, X, ArrowSquareOut, UploadSimple,
 } from '@phosphor-icons/react';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { toast } from 'sonner';
 import { fetchDocuments, saveDocument, deleteDocument, type DocumentRecord } from '../../services/documentService';
 import { uploadFile } from '@/lib/storage';
@@ -126,7 +126,7 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function DocumentManagement() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const { items: docs, isLoading, error, save, remove, isSaving } = useDocuments();
   const { models } = useModelsData();
   const { data: policies = [] } = usePolicies();
