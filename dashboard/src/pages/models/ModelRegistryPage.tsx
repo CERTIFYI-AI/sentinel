@@ -33,7 +33,8 @@ interface ToastMsg { id: number; text: string; type: 'success' | 'error' | 'info
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function fairnessColor(score: number, threshold = 85) {
+function fairnessColor(score: number | null, threshold = 85) {
+  if (score == null) return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-4))' };  // unmeasured — neutral, not "failing"
   if (score < 75) return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))' };
   if (score < threshold) return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))' };
   return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))' };
@@ -154,7 +155,7 @@ export default function ModelRegistryPage() {
   const exportCsv = useCallback(() => {
     const cols: Array<[string, (m: Model) => string]> = [
       ['ID', m => m.id], ['Name', m => m.name], ['Type', m => m.type], ['Version', m => m.version],
-      ['Risk Tier', m => m.riskTier], ['Fairness %', m => String(m.fairnessScore)],
+      ['Risk Tier', m => m.riskTier], ['Fairness %', m => m.fairnessScore == null ? '—' : String(m.fairnessScore)],
       ['Drift', m => m.driftStatus], ['Status', m => m.status], ['Owner', m => m.owner],
       ['Last Validated', m => m.lastValidated],
     ];
@@ -332,7 +333,7 @@ export default function ModelRegistryPage() {
                         <td className="px-4 py-3">{riskTierBadge(m.riskTier)}</td>
                         <td className="px-4 py-3">
                           <Badge style={{ background: fc.bg, color: fc.text, borderRadius: 0, fontSize: 11, fontWeight: 600 }}>
-                            {m.fairnessScore}%
+                            {m.fairnessScore == null ? '—' : `${m.fairnessScore}%`}
                           </Badge>
                         </td>
                         <td className="px-4 py-3">{driftBadge(m.driftStatus)}</td>
@@ -583,7 +584,7 @@ function RegisterModelForm({ onSubmit, nextId }: { onSubmit: (m: Model) => void;
     if (!canSubmit) return;
     const newModel: Model = {
       id: nextId, name, version, type: modelType, owner: businessOwner, status: 'development',
-      riskTier: isHighRisk ? 'high' : riskTier, fairnessScore: 0, driftStatus: 'stable',
+      riskTier: isHighRisk ? 'high' : riskTier, fairnessScore: null, driftStatus: 'stable',
       lastValidated: '', framework: 'EU AI Act', department, description: intendedUse || name,
       accuracy: 0, latencyMs: 0, monthlyInferences: '0', euAiActArticle: isHighRisk ? 'Annex III' : 'Art. 52',
       biasMetrics: [], performanceHistory: [], guardrails: [], complianceMapping: [],

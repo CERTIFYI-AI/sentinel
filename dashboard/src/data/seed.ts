@@ -44,7 +44,7 @@ export interface BiasAudit {
 // ── Models ─────────────────────────────────────
 export interface Model {
   id: string; name: string; version: string; type: string; owner: string; status: ModelStatus;
-  riskTier: 'high' | 'limited' | 'minimal' | 'unacceptable'; fairnessScore: number;
+  riskTier: 'high' | 'limited' | 'minimal' | 'unacceptable'; fairnessScore: number | null;
   driftStatus: 'stable' | 'warning' | 'critical'; lastValidated: string; framework: string;
   department: string; description: string; accuracy: number; latencyMs: number;
   monthlyInferences: string; euAiActArticle: string;

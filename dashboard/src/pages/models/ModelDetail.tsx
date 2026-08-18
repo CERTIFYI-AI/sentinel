@@ -572,8 +572,10 @@ function ModelDetailView({ model }: { model: Model }) {
                 } />
                 <InfoRow label="EU AI Act Article" value={model.euAiActArticle} />
                 <InfoRow label="Monthly Inferences" value={model.monthlyInferences} />
-                <InfoRow label="Fairness Score" value={`${model.fairnessScore}%`} badge={
-                  model.fairnessScore < 80
+                <InfoRow label="Fairness Score" value={model.fairnessScore == null ? '—' : `${model.fairnessScore}%`} badge={
+                  model.fairnessScore == null
+                    ? undefined
+                    : model.fairnessScore < 80
                     ? <Badge style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))', border: '1px solid hsl(var(--s-er-br))', borderRadius: 0, fontSize: 9 }}>BELOW THRESHOLD</Badge>
                     : <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', border: '1px solid hsl(var(--s-ok-br))', borderRadius: 0, fontSize: 9 }}>COMPLIANT</Badge>
                 } />
@@ -769,7 +771,7 @@ function ModelDetailView({ model }: { model: Model }) {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
               <KpiTile label="Accuracy" value={`${model.accuracy}%`} color={model.accuracy > 90 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<ChartLine size={16} />} />
               <KpiTile label="Latency p99" value={`${model.latencyMs}ms`} color={model.latencyMs < 200 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<Gauge size={16} />} />
-              <KpiTile label="Fairness Score" value={`${model.fairnessScore}%`} color={model.fairnessScore > 80 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))'} icon={<Scales size={16} />} />
+              <KpiTile label="Fairness Score" value={model.fairnessScore == null ? '—' : `${model.fairnessScore}%`} color={model.fairnessScore == null ? 'hsl(var(--text-4))' : model.fairnessScore > 80 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))'} icon={<Scales size={16} />} />
               <KpiTile label="Monthly Inferences" value={model.monthlyInferences} color="hsl(var(--brand))" icon={<Robot size={16} />} />
             </div>
 

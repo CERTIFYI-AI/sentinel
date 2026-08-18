@@ -29,7 +29,7 @@ If the registry is absent or wired to a demo table, every downstream link dangle
 
 **Risk tier.** The DB `risk_tier` enum `{critical, high, medium, low, minimal}` maps to the UI tier `{unacceptable, high, limited, minimal}` (`DB_RISK_TO_UI` / `UI_RISK_TO_DB`). Registering as "High-Risk AI System (Annex III)" forces the tier to `high`; an unknown tier defaults to `limited`.
 
-**Derived vs. stored.** The four metric tiles (Total, Production, Drift Alerts, High-Risk) and the filtered count are computed client-side from the loaded rows — they are not stored aggregates. Per-model `fairnessScore`, `accuracy`, `latencyMs`, `monthlyInferences` and `driftStatus` are **not** part of the registry list's stored telemetry: `recordToModel` defaults `fairnessScore` to `0`, `accuracy`/`latencyMs` to `0`, `monthlyInferences` to `—`, and `driftStatus` to `stable` when the columns are null. On the detail page these are replaced by live analytics (`useModelAnalytics`, realtime) where telemetry exists. Treat a `0`/`stable` on a freshly-registered model as **unmeasured, not measured** (see the gap in **Operations**).
+**Derived vs. stored.** The four metric tiles (Total, Production, Drift Alerts, High-Risk) and the filtered count are computed client-side from the loaded rows — they are not stored aggregates. Per-model `fairnessScore`, `accuracy`, `latencyMs`, `monthlyInferences` and `driftStatus` are **not** part of the registry list's stored telemetry: `recordToModel` preserves a null `fairnessScore` as unmeasured (renders `—`), and defaults `accuracy`/`latencyMs` to `0`, `monthlyInferences` to `—`, and `driftStatus` to `stable` when the columns are null. On the detail page these are replaced by live analytics (`useModelAnalytics`, realtime) where telemetry exists. Treat a `0`/`stable` on a freshly-registered model as **unmeasured, not measured** (see the gap in **Operations**).
 
 ## Features — full breakdown
 
@@ -61,7 +61,7 @@ If the registry is absent or wired to a demo table, every downstream link dangle
 | Type | `type` ← `model_type` (enum → label) | `—` when `model_type` is null |
 | Version | `version` ← `version` | `—` |
 | Risk Tier | `riskTier` ← `risk_tier` (enum map) | defaults to `limited` if unmapped |
-| Fairness % | `fairnessScore` ← `fairness_score` | **renders `0%` when null** — a known deviation from the "null → —" rule (see Operations) |
+| Fairness % | `fairnessScore` ← `fairness_score` | Null (unmeasured) is preserved and renders `—` with a neutral badge — never a red `0%` |
 | Drift | `driftStatus` ← `drift_status` | defaults to `stable` when null |
 | Status | `status` ← `lifecycle_stage` (map) + lifecycle stepper | unknown stage → `development` |
 | Owner | `owner` ← `business_owner` ?? `technical_owner` | `—` |
@@ -96,7 +96,7 @@ Grounded in the real `ai_models` DDL: `supabase/migrations/007_replay_baseline.s
 | is_regulated | boolean | — | Regulated-system flag |
 | risk_score | numeric | — | Quantitative risk score |
 | trust_score | numeric | — | Trust score |
-| fairness_score | numeric | — | Shown as Fairness %; **null currently renders `0`, not `—`** (deviation, see Operations) |
+| fairness_score | numeric | — | Shown as Fairness %; null is preserved as unmeasured and renders `—` (not `0`) |
 | drift_status | text | — | `DEFAULT 'stable'`; UI maps unknown → `stable` |
 | drift_score | numeric | — | Numeric drift measure |
 | paused_reason | text | — | Set by the autonomous mesh when a model is paused |
@@ -147,6 +147,6 @@ select
 - **Realtime.** The list is not realtime — React Query with `staleTime` 30 s, invalidated on mutation. The detail Performance data *is* push-updated via a Supabase Realtime channel (`useModelAnalytics`).
 - **Known debt / gaps to track:**
   - **TD-018** — `ai_models` writes are not audit-logged (P1, open). See `docs/reference/technical-debt.md`.
-  - **Fairness `0` vs `—`** — `recordToModel` defaults null `fairness_score` to `0`, so an unmeasured model shows `0%` in the list and is flagged "BELOW THRESHOLD" on the detail Model Card. This deviates from the platform rule that null renders `—`; a freshly-registered model with no fairness telemetry should read `—`/"not measured", not `0`. Flagged as a real UI gap.
+  - **Fairness `—` for unmeasured (FIXED)** — `recordToModel` now preserves a null `fairness_score` as `null`, so an unmeasured model renders `—` (neutral) in the list, CSV export, and on the detail Model Card + KPI tile — no longer a red `0% BELOW THRESHOLD`. Note `accuracy`/`latencyMs` still default to `0` when unmeasured — a smaller remaining deviation to close next.
   - **Unmeasured metrics** — `accuracy`, `latencyMs` default to `0` and `monthlyInferences` to `—` on the list view; the detail page substitutes live analytics where telemetry exists. Do not read these list defaults as measured values.
   - **TS/DDL drift** — `ModelRecord` declares `deployment_env`, `updated_at`, `is_active`, `requires_human_oversight` that are not in the repo `ai_models` DDL (they exist on the legacy `model_inventory` table). Reconcile the type with the schema, or add the columns via migration, before relying on them.

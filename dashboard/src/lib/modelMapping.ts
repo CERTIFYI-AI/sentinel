@@ -48,7 +48,7 @@ export function recordToModel(r: ModelRecord): Model {
     // over-count the "Production" KPI and mislabel new models. Default to dev.
     status: LIFECYCLE_TO_STATUS[stage] ?? 'development',
     riskTier: DB_RISK_TO_UI[tier] ?? 'limited',
-    fairnessScore: r.fairness_score ?? 0,
+    fairnessScore: r.fairness_score ?? null,  // preserve "unmeasured" — never coerce to a real-looking 0%
     driftStatus: (DRIFT_STATES as readonly string[]).includes(drift) ? (drift as Model['driftStatus']) : 'stable',
     lastValidated: (r.updated_at ?? r.created_at ?? '').slice(0, 10),
     framework: r.framework ?? (meta.euAiActArticle ? 'EU AI Act' : '—'),
