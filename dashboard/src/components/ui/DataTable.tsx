@@ -96,12 +96,18 @@ export function DataTable<T extends Record<string, any>>({
           <thead>
             <tr className="bg-raised border-b border-[hsl(var(--border))]">
               {columns.map(col => (
-                <th key={col.key} className={cn("px-4 py-2.5 text-left text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider", col.sortable && "cursor-pointer select-none hover:text-[hsl(var(--text-2))]", col.className)}
-                  onClick={() => col.sortable && toggleSort(col.key)}>
-                  <span className="flex items-center gap-1">
-                    {col.header}
-                    {col.sortable && sortKey === col.key && (sortDir === "asc" ? <CaretUp size={12}/> : <CaretDown size={12}/>)}
-                  </span>
+                <th key={col.key}
+                  aria-sort={col.sortable ? (sortKey === col.key ? (sortDir === "asc" ? "ascending" : "descending") : "none") : undefined}
+                  className={cn("px-4 py-2.5 text-left text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider", col.className)}>
+                  {col.sortable ? (
+                    <button type="button" onClick={() => toggleSort(col.key)}
+                      className="flex items-center gap-1 uppercase tracking-wider select-none hover:text-[hsl(var(--text-2))] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[hsl(var(--brand))]">
+                      {col.header}
+                      {sortKey === col.key && (sortDir === "asc" ? <CaretUp size={12}/> : <CaretDown size={12}/>)}
+                    </button>
+                  ) : (
+                    <span className="flex items-center gap-1">{col.header}</span>
+                  )}
                 </th>
               ))}
               {hasActions && <th className="px-4 py-2.5 text-right text-xs font-medium text-[hsl(var(--text-4))] uppercase tracking-wider w-28">Actions</th>}
@@ -120,7 +126,7 @@ export function DataTable<T extends Record<string, any>>({
                 ))}
                 {hasActions && (
                   <td className="px-3 py-2 text-right">
-                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 transition-opacity">
                       {actions ? actions(row) : (<>
                         {onView && <button onClick={e => { e.stopPropagation(); onView(row) }} className="p-1.5 hover:bg-surface text-[hsl(var(--text-4))] hover:text-[hsl(var(--brand))] transition-colors" title="View"><Eye size={16} weight="duotone"/></button>}
                         {onEdit && <button onClick={e => { e.stopPropagation(); onEdit(row) }} className="p-1.5 hover:bg-surface text-[hsl(var(--text-4))] hover:text-[hsl(var(--text-1))] transition-colors" title="Edit"><PencilSimple size={16} weight="duotone"/></button>}

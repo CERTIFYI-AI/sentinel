@@ -13,7 +13,7 @@
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-f38020?style=flat-square&logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
 
-[**Live Demo**](https://sentinel.certifyi.ai) · [**Documentation**](./docs/) · [**Report a Bug**](https://github.com/CERTIFYI-AI/sentinel/issues/new?template=bug_report.md) · [**Request a Feature**](https://github.com/CERTIFYI-AI/sentinel/issues/new?template=feature_request.md)
+[**Live Demo**](https://1shield-oss.certifyi.ai) · [**Documentation**](./docs/) · [**Report a Bug**](https://github.com/CERTIFYI-AI/sentinel/issues/new?template=bug_report.md) · [**Request a Feature**](https://github.com/CERTIFYI-AI/sentinel/issues/new?template=feature_request.md)
 
 </div>
 
@@ -80,6 +80,31 @@ graph TD
 - **Edge:** Cloudflare Workers (tenant, RBAC and audit middleware; rate limiting)
 - **Database:** Supabase Postgres with org-scoped Row-Level Security; Realtime channels for live dashboards
 - **Auth:** Supabase Auth; role resolution from `user_profiles` server-side; RBAC permission catalog in `packages/rbac`
+
+**Deployment topology — two tiers, matched to workload** (full detail: [`docs/architecture/deployment-topology.md`](./docs/architecture/deployment-topology.md))
+
+| Tier | Runs on | Why |
+|---|---|---|
+| **Control-plane** — dashboard, integration connect, evidence worker, governance mesh, migrations | Cloudflare Worker · Supabase Edge Functions · scheduled GitHub Actions · Supabase Postgres | Infrequent / event-driven / off the request hot path → serverless, **$0** |
+| **Data-plane** — the enforcement gateway (`POST /v1/chat/completions`, `sentinel.proxy:app`) | One always-on host + Redis ([runbook](./docs/operations/gateway-deployment.md)) | Inline on every LLM call, streams, holds rate-limit state → needs a real process |
+
+The dashboard talks to Supabase directly (org-scoped RLS), so most of the product needs no always-on backend; only the inline trust gateway does.
+
+---
+
+## Continuous GRC — the evidence loop
+
+Governance is not a quarterly snapshot here; it runs continuously. A tenant connects an evidence source (GitHub, AWS, Azure — credentials AES-256-GCM-encrypted server-side, never in the browser), and from then on:
+
+```
+integration_catalog → connect (edge fn) → background_jobs queue
+   → sync worker runs the provider adapter → integration_findings
+   → ControlMapper maps findings to framework controls → control_finding_evidence
+   → recompute posture → a PASSED→FAILED transition is an event on the mesh bus
+   → the mesh opens/updates the linked risk and (by model tier) raises HITL
+```
+
+Each control shows its **automated evidence** (passing / failing checks, worst-first) beside the owner's manual assertion — the two are deliberately distinct. Disconnecting a source **retains** its findings, because disconnecting must not erase the evidence trail (EU AI Act Art. 12). Roadmap and current state: [`docs/reference/continuous-evidence-roadmap.md`](./docs/reference/continuous-evidence-roadmap.md).
 
 ---
 
@@ -374,6 +399,8 @@ representative sample of controls (not the full 936-control DB catalog above):
 ## Contributing
 
 We welcome contributions — see [`CONTRIBUTING.md`](./CONTRIBUTING.md). Commits require DCO sign-off (`git commit -s`).
+
+**Every PR passes a mandatory four-role review — QA/QC → UI/UX → Documentation → Compliance — run in order and recorded in the PR.** This is binding for a one-line change as much as a feature; it is how a regulated-industry product stays honest. Copy the checklist from [`docs/contributing/MANDATORY_REVIEW_PROCESS.md`](./docs/contributing/MANDATORY_REVIEW_PROCESS.md) into your PR (full rationale in [`review-process.md`](./docs/contributing/review-process.md)). New modules need a deep-dive guide in [`docs/modules/`](./docs/modules/) written to the [standard template](./docs/modules/_TEMPLATE.md).
 
 **Current priorities:** per-tenant catalog provisioning (copy the reference catalog into a new org on signup) · framework-control ↔ evidence auto-mapping · server-enforced RBAC rollout · SSO/SAML flow completion · E2E coverage across high-risk modules.
 

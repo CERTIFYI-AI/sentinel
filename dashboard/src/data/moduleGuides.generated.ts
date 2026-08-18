@@ -58,7 +58,7 @@ export const GUIDE_TOTAL_ENTRIES = 135
 export const GUIDE_DOCUMENTED_ENTRIES = 135
 
 /** Module docs available in docs/modules/. */
-export const MODULE_DOCS_AVAILABLE = 94
+export const MODULE_DOCS_AVAILABLE = 95
 
 export const GUIDE_COLLECTIONS: GuideCollection[] = [
   {
@@ -317,36 +317,194 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/model-inventory.md",
-        "title": "Model Inventory & Lifecycle",
-        "purpose": "The model registry of record: every model (first-party, fine-tuned, third-party) with provenance, intended use, risk tier, owners, approvals, deployments, and post-market monitoring.",
-        "why": "",
-        "how": [],
-        "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "title": "Model Registry",
+        "purpose": "The Model Registry is Sentinel's system of record for every AI model the organisation builds, fine-tunes, or buys. Each row is one governed model keyed by ai_models.id (a uuid) — the single, canonical id-space that every other module in the platform links to. The screen lets a governance owner register, search, filter, export, edit, and retire models, and open any model's full governance passport.",
+        "why": "ai_models is the platform's canonical governed entity. Risk tiering, impact assessments (AIIA), Model Risk Committee reviews, HITL reviews, incidents, the prompt registry, the Trust Engine runtime, cost/telemetry and performance monitoring all reference a model by its ai_models.id and resolve the display name at render time. Without a registry there is no id to link to, and the \"one platform, one id-space\" invariant (CLAUDE.md First principle #2) collapses into name-matching. In compliance terms the registry discharges the provider's duty to maintain an inventory of AI systems and their techni",
+        "how": [
+          "Records. A model is a row in ai_models. The list is read by modelService.fetchAllModels (ordered by created_at desc) through the useModelsData React Query hook (staleTime 30 s; the cache invalidates on every mutation). The raw row is translated to the rich UI Model view-shape by recordToModel in dashboard/src/lib/modelMapping.ts; writes translate back via modelToRecord.",
+          "Create. \"Register Model\" opens RegisterModelForm. On submit the page calls saveModel(modelToRecord(newModel)) with no id, so the database generates the uuid (gen_random_uuid()) and fills org_id from its get_org_id() default — the client never sends a scoping column. A new insert also fires the MODEL_REGISTERED governance event on governanceBus (source ai-inventory): the autonomous mesh opens the initial risk, maps controls, and raises a HITL review where the tier demands it. That cascade is deliberately fire-and-forget and never rethrown — an agent failure must not roll back the user's save; its outcomes are observable in Agent Control / governance_events, not in the save result.",
+          "Edit / delete. \"Edit\" opens EditModelForm and calls saveModel({ ...modelToRecord(updated), id }) (id present ⇒ update). \"Delete\" opens a ConfirmDialog and calls deleteModel(id). All writes throw on failure; the dialog closes and a toast fires only after the promise resolves — a failed write shows a real error toast (\"Failed to register/update/remove model\") and no success.",
+          "Lifecycle & status. The stored lifecycle_stage is mapped to a UI status of production | staging | development | retired (LIFECYCLE_TO_STATUS). An unknown or empty stage deliberately defaults to development, never production, so the Production KPI is not over-counted. Each row renders a five-step lifecycle stepper (Development → Staging → Production → Deprecated → Retired) with the active stage highlighted.",
+          "Risk tier. The DB risk_tier enum {critical, high, medium, low, minimal} maps to the UI tier {unacceptable, high, limited, minimal} (DB_RISK_TO_UI / UI_RISK_TO_DB). Registering as \"High-Risk AI System (Annex III)\" forces the tier to high; an unknown tier defaults to limited.",
+          "Derived vs. stored. The four metric tiles (Total, Production, Drift Alerts, High-Risk) and the filtered count are computed client-side from the loaded rows — they are not stored aggregates. Per-model fairnessScore, accuracy, latencyMs, monthlyInferences and driftStatus are not part of the registry list's stored telemetry: recordToModel defaults fairnessScore to 0, accuracy/latencyMs to 0, monthlyInferences to —, and driftStatus to stable when the columns are null. On the detail page these are replaced by live analytics (useModelAnalytics, realtime) where telemetry exists. Treat a 0/stable on a freshly-registered model as unmeasured, not measured (see the gap in Operations)."
         ],
-        "operations": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Every interlink uses the ?model=<uuid> deep-link convention (a filtered list with a dismissible chip) or the /models/inventory/:id detail route; ids resolve to a display name, and an unresolvable id shows \"Unavailable\" (never a raw uuid).",
+          "Outbound — from a model record (mostly on the detail page):",
+          "Governance cards → /ai-risk-tiering?model=, /aiia?model=, /mrc?model=, /performance-monitoring?model=, /model-efficiency?model=, /genai-risks?model=, /trust-engine?model=.",
+          "Runtime & Operations rows → /models/lifecycle?model=, /prompt-registry?model=, /trust-engine/costs?model=, /trust-engine/fallback?model=, /trust-engine/tools?model=, /ai-gateway/playground?model=.",
+          "Risk & Security backlink cards (reverse interlinks read live via useModelBacklinks) → /risks?model=, /incidents?model=, plus HITL reviews, financial-risk quantifications, security threats, red-team findings and arena runs that reference the model.",
+          "On insert, the MODEL_REGISTERED governance event (source ai-inventory) fans out to the autonomous mesh (initial risk, control mapping, HITL) — an outbound governance cascade rather than a UI link.",
+          "Inbound — the registry is reachable from:",
+          "Command palette entry \"Model Registry\" → /models/inventory.",
+          "Any module that deep-links a specific model → /models/inventory/:id (e.g. KnowledgeGraph.tsx, CisoDashboard.tsx), and every ?model= chip elsewhere resolves its label from ai_models.",
+          "The list row itself → detail passport.",
+          "Interlink proof. The reverse-link cards prove total == resolves by counting source rows whose model_id resolves to an ai_models.id. A representative proof query (run per-tenant against the live DB; not executed in this doc-writing session — run before merge per Gate 1):",
+          "_total must equal _resolve for the module to pass the interlink gate."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 11 / Annex IV (technical documentation): the detail Model Card exports an Annex IV package and a Model Card (JSON). Maps to docs/compliance/eu-ai-act-mapping.md (Art. 11 \"Technical documentation → Audit chain + evidence export\", Implemented).",
+          "EU AI Act — Art. 12 (record-keeping): the registry is the anchor for traceability. Honest gap (TD-018): ai_models has no fn_audit_trigger and modelService.ts makes no logAction call, so registering, editing, or deleting a model writes no audit record with an actor. The near-miss is that the legacy model_inventory table is trigger-audited while ai_models — the table the product actually uses — is not. This is an open P1 (docs/reference/technical-debt.md TD-018); it must be closed to satisfy the mapping's Art. 12 \"Implemented\" claim and the repo's own Gate 4. Note: some detail-page actions (linking a document, saving an alert config, initiating a review, exporting a package) do log to model_activity with the real actor — but the core registry writes do not.",
+          "EU AI Act — Art. 9 (risk management): the Drift Alerts banner surfaces the obligation when a model shows drift.",
+          "EU AI Act — Art. 14 (human oversight): registration captures the human-oversight flag, forced on for Annex III high-risk systems.",
+          "ISO/IEC 42001 — the registry is the AI-system lifecycle system of record, aligning with the AIMS lifecycle controls (A.6.2.x in docs/compliance/iso-42001-mapping.md). Honest gap: there is currently no dedicated ai_models / Model Registry row in the ISO mapping doc; this module should be added there rather than left implied.",
+          "NIST AI RMF — MAP (inventory and context establishment) and GOVERN (accountable owners). Honest gap: not yet formally recorded in a compliance mapping doc; mark as to-be-mapped rather than claimed."
+        ],
+        "operations": [
+          "Seeding / backfill. Demo models are seeded by the 202608xx demo migrations with fictional, labelled data; no personal data in fixtures. org_id is filled DB-side.",
+          "Empty state. Honest — \"No models registered yet\" with a Register CTA; filtered-empty shows \"No models match your filters.\"",
+          "Writes throw. upsertModel / deleteModel throw on config/RLS/CHECK/network failure; the UI shows a real error toast and the dialog stays open. Success toasts fire only after the promise resolves.",
+          "Realtime. The list is not realtime — React Query with staleTime 30 s, invalidated on mutation. The detail Performance data is push-updated via a Supabase Realtime channel (useModelAnalytics).",
+          "Known debt / gaps to track:",
+          "TD-018 — ai_models writes are not audit-logged (P1, open). See docs/reference/technical-debt.md.",
+          "Fairness 0 vs — — recordToModel defaults null fairness_score to 0, so an unmeasured model shows 0% in the list and is flagged \"BELOW THRESHOLD\" on the detail Model Card. This deviates from the platform rule that null renders —; a freshly-registered model with no fairness telemetry should read —/\"not measured\", not 0. Flagged as a real UI gap.",
+          "Unmeasured metrics — accuracy, latencyMs default to 0 and monthlyInferences to — on the list view; the detail page substitutes live analytics where telemetry exists. Do not read these list defaults as measured values."
+        ],
         "fields": [
           [
-            "EU AI Act Art.9, 11, 13, 16–21, 72–73",
-            "Risk management, technical documentation, transparency, provider obligations, post-market monitoring, incident reporting"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "ISO/IEC 42001 6.1.3, A.6, A.8",
-            "AI risk and impact assessment, system lifecycle, data for AI systems"
+            "id",
+            "uuid",
+            "pk",
+            "DEFAULT gen_random_uuid(); the canonical model id-space — every module stores this, never a name or MDL-xxx"
           ],
           [
-            "NIST AI RMF GOVERN, MAP, MEASURE, MANAGE",
-            "Full lifecycle"
+            "org_id",
+            "uuid",
+            "auto",
+            "DEFAULT get_org_id(); made NOT NULL + RLS-scoped by the tenancy sweep — never set by the client"
           ],
           [
-            "SR 11-7 / OCC 2011-12",
-            "Model risk management (financial services)"
+            "name",
+            "text",
+            "yes (UI)",
+            "Display name; resolved at render, never shown as a uuid"
           ],
           [
-            "ISO/IEC 23894",
-            "AI risk management guidance"
+            "slug",
+            "text",
+            "—",
+            "Derived by modelToRecord (slugify(name-version))"
+          ],
+          [
+            "description",
+            "text",
+            "—",
+            "Intended-use / description; renders —/empty when null"
+          ],
+          [
+            "model_type",
+            "text",
+            "—",
+            "Enum {llm, classification, regression, nlp, vision, multimodal, rl, other} → human label"
+          ],
+          [
+            "provider",
+            "text",
+            "—",
+            "e.g. OpenAI, Internal"
+          ],
+          [
+            "version",
+            "text",
+            "—",
+            "— when null"
+          ],
+          [
+            "lifecycle_stage",
+            "text",
+            "—",
+            "Mapped to UI status; empty/unknown → development"
+          ],
+          [
+            "risk_tier",
+            "text",
+            "—",
+            "Enum {critical, high, medium, low, minimal} ⇄ UI {unacceptable, high, limited, minimal}"
+          ],
+          [
+            "use_case",
+            "text",
+            "—",
+            "Free-text use-case label on the row"
+          ],
+          [
+            "business_owner",
+            "text",
+            "—",
+            "Primary owner shown in the list (falls back to technical_owner)"
+          ],
+          [
+            "technical_owner",
+            "text",
+            "—",
+            "ML/eng lead"
+          ],
+          [
+            "framework",
+            "text",
+            "—",
+            "e.g. \"EU AI Act\"; — when null"
+          ],
+          [
+            "eu_ai_act_category",
+            "text",
+            "—",
+            "EU AI Act category label"
+          ],
+          [
+            "is_regulated",
+            "boolean",
+            "—",
+            "Regulated-system flag"
+          ],
+          [
+            "risk_score",
+            "numeric",
+            "—",
+            "Quantitative risk score"
+          ],
+          [
+            "trust_score",
+            "numeric",
+            "—",
+            "Trust score"
+          ],
+          [
+            "fairness_score",
+            "numeric",
+            "—",
+            "Shown as Fairness %; null currently renders 0, not — (deviation, see Operations)"
+          ],
+          [
+            "drift_status",
+            "text",
+            "—",
+            "DEFAULT 'stable'; UI maps unknown → stable"
+          ],
+          [
+            "drift_score",
+            "numeric",
+            "—",
+            "Numeric drift measure"
+          ],
+          [
+            "paused_reason",
+            "text",
+            "—",
+            "Set by the autonomous mesh when a model is paused"
+          ],
+          [
+            "paused_at",
+            "timestamptz",
+            "—",
+            "When the model was paused"
           ]
         ],
         "noDocReason": null
@@ -357,36 +515,194 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": "Model Registry",
         "hasDoc": true,
         "docPath": "docs/modules/model-inventory.md",
-        "title": "Model Inventory & Lifecycle",
-        "purpose": "The model registry of record: every model (first-party, fine-tuned, third-party) with provenance, intended use, risk tier, owners, approvals, deployments, and post-market monitoring.",
-        "why": "",
-        "how": [],
-        "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "title": "Model Registry",
+        "purpose": "The Model Registry is Sentinel's system of record for every AI model the organisation builds, fine-tunes, or buys. Each row is one governed model keyed by ai_models.id (a uuid) — the single, canonical id-space that every other module in the platform links to. The screen lets a governance owner register, search, filter, export, edit, and retire models, and open any model's full governance passport.",
+        "why": "ai_models is the platform's canonical governed entity. Risk tiering, impact assessments (AIIA), Model Risk Committee reviews, HITL reviews, incidents, the prompt registry, the Trust Engine runtime, cost/telemetry and performance monitoring all reference a model by its ai_models.id and resolve the display name at render time. Without a registry there is no id to link to, and the \"one platform, one id-space\" invariant (CLAUDE.md First principle #2) collapses into name-matching. In compliance terms the registry discharges the provider's duty to maintain an inventory of AI systems and their techni",
+        "how": [
+          "Records. A model is a row in ai_models. The list is read by modelService.fetchAllModels (ordered by created_at desc) through the useModelsData React Query hook (staleTime 30 s; the cache invalidates on every mutation). The raw row is translated to the rich UI Model view-shape by recordToModel in dashboard/src/lib/modelMapping.ts; writes translate back via modelToRecord.",
+          "Create. \"Register Model\" opens RegisterModelForm. On submit the page calls saveModel(modelToRecord(newModel)) with no id, so the database generates the uuid (gen_random_uuid()) and fills org_id from its get_org_id() default — the client never sends a scoping column. A new insert also fires the MODEL_REGISTERED governance event on governanceBus (source ai-inventory): the autonomous mesh opens the initial risk, maps controls, and raises a HITL review where the tier demands it. That cascade is deliberately fire-and-forget and never rethrown — an agent failure must not roll back the user's save; its outcomes are observable in Agent Control / governance_events, not in the save result.",
+          "Edit / delete. \"Edit\" opens EditModelForm and calls saveModel({ ...modelToRecord(updated), id }) (id present ⇒ update). \"Delete\" opens a ConfirmDialog and calls deleteModel(id). All writes throw on failure; the dialog closes and a toast fires only after the promise resolves — a failed write shows a real error toast (\"Failed to register/update/remove model\") and no success.",
+          "Lifecycle & status. The stored lifecycle_stage is mapped to a UI status of production | staging | development | retired (LIFECYCLE_TO_STATUS). An unknown or empty stage deliberately defaults to development, never production, so the Production KPI is not over-counted. Each row renders a five-step lifecycle stepper (Development → Staging → Production → Deprecated → Retired) with the active stage highlighted.",
+          "Risk tier. The DB risk_tier enum {critical, high, medium, low, minimal} maps to the UI tier {unacceptable, high, limited, minimal} (DB_RISK_TO_UI / UI_RISK_TO_DB). Registering as \"High-Risk AI System (Annex III)\" forces the tier to high; an unknown tier defaults to limited.",
+          "Derived vs. stored. The four metric tiles (Total, Production, Drift Alerts, High-Risk) and the filtered count are computed client-side from the loaded rows — they are not stored aggregates. Per-model fairnessScore, accuracy, latencyMs, monthlyInferences and driftStatus are not part of the registry list's stored telemetry: recordToModel defaults fairnessScore to 0, accuracy/latencyMs to 0, monthlyInferences to —, and driftStatus to stable when the columns are null. On the detail page these are replaced by live analytics (useModelAnalytics, realtime) where telemetry exists. Treat a 0/stable on a freshly-registered model as unmeasured, not measured (see the gap in Operations)."
         ],
-        "operations": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Every interlink uses the ?model=<uuid> deep-link convention (a filtered list with a dismissible chip) or the /models/inventory/:id detail route; ids resolve to a display name, and an unresolvable id shows \"Unavailable\" (never a raw uuid).",
+          "Outbound — from a model record (mostly on the detail page):",
+          "Governance cards → /ai-risk-tiering?model=, /aiia?model=, /mrc?model=, /performance-monitoring?model=, /model-efficiency?model=, /genai-risks?model=, /trust-engine?model=.",
+          "Runtime & Operations rows → /models/lifecycle?model=, /prompt-registry?model=, /trust-engine/costs?model=, /trust-engine/fallback?model=, /trust-engine/tools?model=, /ai-gateway/playground?model=.",
+          "Risk & Security backlink cards (reverse interlinks read live via useModelBacklinks) → /risks?model=, /incidents?model=, plus HITL reviews, financial-risk quantifications, security threats, red-team findings and arena runs that reference the model.",
+          "On insert, the MODEL_REGISTERED governance event (source ai-inventory) fans out to the autonomous mesh (initial risk, control mapping, HITL) — an outbound governance cascade rather than a UI link.",
+          "Inbound — the registry is reachable from:",
+          "Command palette entry \"Model Registry\" → /models/inventory.",
+          "Any module that deep-links a specific model → /models/inventory/:id (e.g. KnowledgeGraph.tsx, CisoDashboard.tsx), and every ?model= chip elsewhere resolves its label from ai_models.",
+          "The list row itself → detail passport.",
+          "Interlink proof. The reverse-link cards prove total == resolves by counting source rows whose model_id resolves to an ai_models.id. A representative proof query (run per-tenant against the live DB; not executed in this doc-writing session — run before merge per Gate 1):",
+          "_total must equal _resolve for the module to pass the interlink gate."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 11 / Annex IV (technical documentation): the detail Model Card exports an Annex IV package and a Model Card (JSON). Maps to docs/compliance/eu-ai-act-mapping.md (Art. 11 \"Technical documentation → Audit chain + evidence export\", Implemented).",
+          "EU AI Act — Art. 12 (record-keeping): the registry is the anchor for traceability. Honest gap (TD-018): ai_models has no fn_audit_trigger and modelService.ts makes no logAction call, so registering, editing, or deleting a model writes no audit record with an actor. The near-miss is that the legacy model_inventory table is trigger-audited while ai_models — the table the product actually uses — is not. This is an open P1 (docs/reference/technical-debt.md TD-018); it must be closed to satisfy the mapping's Art. 12 \"Implemented\" claim and the repo's own Gate 4. Note: some detail-page actions (linking a document, saving an alert config, initiating a review, exporting a package) do log to model_activity with the real actor — but the core registry writes do not.",
+          "EU AI Act — Art. 9 (risk management): the Drift Alerts banner surfaces the obligation when a model shows drift.",
+          "EU AI Act — Art. 14 (human oversight): registration captures the human-oversight flag, forced on for Annex III high-risk systems.",
+          "ISO/IEC 42001 — the registry is the AI-system lifecycle system of record, aligning with the AIMS lifecycle controls (A.6.2.x in docs/compliance/iso-42001-mapping.md). Honest gap: there is currently no dedicated ai_models / Model Registry row in the ISO mapping doc; this module should be added there rather than left implied.",
+          "NIST AI RMF — MAP (inventory and context establishment) and GOVERN (accountable owners). Honest gap: not yet formally recorded in a compliance mapping doc; mark as to-be-mapped rather than claimed."
+        ],
+        "operations": [
+          "Seeding / backfill. Demo models are seeded by the 202608xx demo migrations with fictional, labelled data; no personal data in fixtures. org_id is filled DB-side.",
+          "Empty state. Honest — \"No models registered yet\" with a Register CTA; filtered-empty shows \"No models match your filters.\"",
+          "Writes throw. upsertModel / deleteModel throw on config/RLS/CHECK/network failure; the UI shows a real error toast and the dialog stays open. Success toasts fire only after the promise resolves.",
+          "Realtime. The list is not realtime — React Query with staleTime 30 s, invalidated on mutation. The detail Performance data is push-updated via a Supabase Realtime channel (useModelAnalytics).",
+          "Known debt / gaps to track:",
+          "TD-018 — ai_models writes are not audit-logged (P1, open). See docs/reference/technical-debt.md.",
+          "Fairness 0 vs — — recordToModel defaults null fairness_score to 0, so an unmeasured model shows 0% in the list and is flagged \"BELOW THRESHOLD\" on the detail Model Card. This deviates from the platform rule that null renders —; a freshly-registered model with no fairness telemetry should read —/\"not measured\", not 0. Flagged as a real UI gap.",
+          "Unmeasured metrics — accuracy, latencyMs default to 0 and monthlyInferences to — on the list view; the detail page substitutes live analytics where telemetry exists. Do not read these list defaults as measured values."
+        ],
         "fields": [
           [
-            "EU AI Act Art.9, 11, 13, 16–21, 72–73",
-            "Risk management, technical documentation, transparency, provider obligations, post-market monitoring, incident reporting"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "ISO/IEC 42001 6.1.3, A.6, A.8",
-            "AI risk and impact assessment, system lifecycle, data for AI systems"
+            "id",
+            "uuid",
+            "pk",
+            "DEFAULT gen_random_uuid(); the canonical model id-space — every module stores this, never a name or MDL-xxx"
           ],
           [
-            "NIST AI RMF GOVERN, MAP, MEASURE, MANAGE",
-            "Full lifecycle"
+            "org_id",
+            "uuid",
+            "auto",
+            "DEFAULT get_org_id(); made NOT NULL + RLS-scoped by the tenancy sweep — never set by the client"
           ],
           [
-            "SR 11-7 / OCC 2011-12",
-            "Model risk management (financial services)"
+            "name",
+            "text",
+            "yes (UI)",
+            "Display name; resolved at render, never shown as a uuid"
           ],
           [
-            "ISO/IEC 23894",
-            "AI risk management guidance"
+            "slug",
+            "text",
+            "—",
+            "Derived by modelToRecord (slugify(name-version))"
+          ],
+          [
+            "description",
+            "text",
+            "—",
+            "Intended-use / description; renders —/empty when null"
+          ],
+          [
+            "model_type",
+            "text",
+            "—",
+            "Enum {llm, classification, regression, nlp, vision, multimodal, rl, other} → human label"
+          ],
+          [
+            "provider",
+            "text",
+            "—",
+            "e.g. OpenAI, Internal"
+          ],
+          [
+            "version",
+            "text",
+            "—",
+            "— when null"
+          ],
+          [
+            "lifecycle_stage",
+            "text",
+            "—",
+            "Mapped to UI status; empty/unknown → development"
+          ],
+          [
+            "risk_tier",
+            "text",
+            "—",
+            "Enum {critical, high, medium, low, minimal} ⇄ UI {unacceptable, high, limited, minimal}"
+          ],
+          [
+            "use_case",
+            "text",
+            "—",
+            "Free-text use-case label on the row"
+          ],
+          [
+            "business_owner",
+            "text",
+            "—",
+            "Primary owner shown in the list (falls back to technical_owner)"
+          ],
+          [
+            "technical_owner",
+            "text",
+            "—",
+            "ML/eng lead"
+          ],
+          [
+            "framework",
+            "text",
+            "—",
+            "e.g. \"EU AI Act\"; — when null"
+          ],
+          [
+            "eu_ai_act_category",
+            "text",
+            "—",
+            "EU AI Act category label"
+          ],
+          [
+            "is_regulated",
+            "boolean",
+            "—",
+            "Regulated-system flag"
+          ],
+          [
+            "risk_score",
+            "numeric",
+            "—",
+            "Quantitative risk score"
+          ],
+          [
+            "trust_score",
+            "numeric",
+            "—",
+            "Trust score"
+          ],
+          [
+            "fairness_score",
+            "numeric",
+            "—",
+            "Shown as Fairness %; null currently renders 0, not — (deviation, see Operations)"
+          ],
+          [
+            "drift_status",
+            "text",
+            "—",
+            "DEFAULT 'stable'; UI maps unknown → stable"
+          ],
+          [
+            "drift_score",
+            "numeric",
+            "—",
+            "Numeric drift measure"
+          ],
+          [
+            "paused_reason",
+            "text",
+            "—",
+            "Set by the autonomous mesh when a model is paused"
+          ],
+          [
+            "paused_at",
+            "timestamptz",
+            "—",
+            "When the model was paused"
           ]
         ],
         "noDocReason": null
@@ -397,36 +713,194 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": "Model Registry",
         "hasDoc": true,
         "docPath": "docs/modules/model-inventory.md",
-        "title": "Model Inventory & Lifecycle",
-        "purpose": "The model registry of record: every model (first-party, fine-tuned, third-party) with provenance, intended use, risk tier, owners, approvals, deployments, and post-market monitoring.",
-        "why": "",
-        "how": [],
-        "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "title": "Model Registry",
+        "purpose": "The Model Registry is Sentinel's system of record for every AI model the organisation builds, fine-tunes, or buys. Each row is one governed model keyed by ai_models.id (a uuid) — the single, canonical id-space that every other module in the platform links to. The screen lets a governance owner register, search, filter, export, edit, and retire models, and open any model's full governance passport.",
+        "why": "ai_models is the platform's canonical governed entity. Risk tiering, impact assessments (AIIA), Model Risk Committee reviews, HITL reviews, incidents, the prompt registry, the Trust Engine runtime, cost/telemetry and performance monitoring all reference a model by its ai_models.id and resolve the display name at render time. Without a registry there is no id to link to, and the \"one platform, one id-space\" invariant (CLAUDE.md First principle #2) collapses into name-matching. In compliance terms the registry discharges the provider's duty to maintain an inventory of AI systems and their techni",
+        "how": [
+          "Records. A model is a row in ai_models. The list is read by modelService.fetchAllModels (ordered by created_at desc) through the useModelsData React Query hook (staleTime 30 s; the cache invalidates on every mutation). The raw row is translated to the rich UI Model view-shape by recordToModel in dashboard/src/lib/modelMapping.ts; writes translate back via modelToRecord.",
+          "Create. \"Register Model\" opens RegisterModelForm. On submit the page calls saveModel(modelToRecord(newModel)) with no id, so the database generates the uuid (gen_random_uuid()) and fills org_id from its get_org_id() default — the client never sends a scoping column. A new insert also fires the MODEL_REGISTERED governance event on governanceBus (source ai-inventory): the autonomous mesh opens the initial risk, maps controls, and raises a HITL review where the tier demands it. That cascade is deliberately fire-and-forget and never rethrown — an agent failure must not roll back the user's save; its outcomes are observable in Agent Control / governance_events, not in the save result.",
+          "Edit / delete. \"Edit\" opens EditModelForm and calls saveModel({ ...modelToRecord(updated), id }) (id present ⇒ update). \"Delete\" opens a ConfirmDialog and calls deleteModel(id). All writes throw on failure; the dialog closes and a toast fires only after the promise resolves — a failed write shows a real error toast (\"Failed to register/update/remove model\") and no success.",
+          "Lifecycle & status. The stored lifecycle_stage is mapped to a UI status of production | staging | development | retired (LIFECYCLE_TO_STATUS). An unknown or empty stage deliberately defaults to development, never production, so the Production KPI is not over-counted. Each row renders a five-step lifecycle stepper (Development → Staging → Production → Deprecated → Retired) with the active stage highlighted.",
+          "Risk tier. The DB risk_tier enum {critical, high, medium, low, minimal} maps to the UI tier {unacceptable, high, limited, minimal} (DB_RISK_TO_UI / UI_RISK_TO_DB). Registering as \"High-Risk AI System (Annex III)\" forces the tier to high; an unknown tier defaults to limited.",
+          "Derived vs. stored. The four metric tiles (Total, Production, Drift Alerts, High-Risk) and the filtered count are computed client-side from the loaded rows — they are not stored aggregates. Per-model fairnessScore, accuracy, latencyMs, monthlyInferences and driftStatus are not part of the registry list's stored telemetry: recordToModel defaults fairnessScore to 0, accuracy/latencyMs to 0, monthlyInferences to —, and driftStatus to stable when the columns are null. On the detail page these are replaced by live analytics (useModelAnalytics, realtime) where telemetry exists. Treat a 0/stable on a freshly-registered model as unmeasured, not measured (see the gap in Operations)."
         ],
-        "operations": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Every interlink uses the ?model=<uuid> deep-link convention (a filtered list with a dismissible chip) or the /models/inventory/:id detail route; ids resolve to a display name, and an unresolvable id shows \"Unavailable\" (never a raw uuid).",
+          "Outbound — from a model record (mostly on the detail page):",
+          "Governance cards → /ai-risk-tiering?model=, /aiia?model=, /mrc?model=, /performance-monitoring?model=, /model-efficiency?model=, /genai-risks?model=, /trust-engine?model=.",
+          "Runtime & Operations rows → /models/lifecycle?model=, /prompt-registry?model=, /trust-engine/costs?model=, /trust-engine/fallback?model=, /trust-engine/tools?model=, /ai-gateway/playground?model=.",
+          "Risk & Security backlink cards (reverse interlinks read live via useModelBacklinks) → /risks?model=, /incidents?model=, plus HITL reviews, financial-risk quantifications, security threats, red-team findings and arena runs that reference the model.",
+          "On insert, the MODEL_REGISTERED governance event (source ai-inventory) fans out to the autonomous mesh (initial risk, control mapping, HITL) — an outbound governance cascade rather than a UI link.",
+          "Inbound — the registry is reachable from:",
+          "Command palette entry \"Model Registry\" → /models/inventory.",
+          "Any module that deep-links a specific model → /models/inventory/:id (e.g. KnowledgeGraph.tsx, CisoDashboard.tsx), and every ?model= chip elsewhere resolves its label from ai_models.",
+          "The list row itself → detail passport.",
+          "Interlink proof. The reverse-link cards prove total == resolves by counting source rows whose model_id resolves to an ai_models.id. A representative proof query (run per-tenant against the live DB; not executed in this doc-writing session — run before merge per Gate 1):",
+          "_total must equal _resolve for the module to pass the interlink gate."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 11 / Annex IV (technical documentation): the detail Model Card exports an Annex IV package and a Model Card (JSON). Maps to docs/compliance/eu-ai-act-mapping.md (Art. 11 \"Technical documentation → Audit chain + evidence export\", Implemented).",
+          "EU AI Act — Art. 12 (record-keeping): the registry is the anchor for traceability. Honest gap (TD-018): ai_models has no fn_audit_trigger and modelService.ts makes no logAction call, so registering, editing, or deleting a model writes no audit record with an actor. The near-miss is that the legacy model_inventory table is trigger-audited while ai_models — the table the product actually uses — is not. This is an open P1 (docs/reference/technical-debt.md TD-018); it must be closed to satisfy the mapping's Art. 12 \"Implemented\" claim and the repo's own Gate 4. Note: some detail-page actions (linking a document, saving an alert config, initiating a review, exporting a package) do log to model_activity with the real actor — but the core registry writes do not.",
+          "EU AI Act — Art. 9 (risk management): the Drift Alerts banner surfaces the obligation when a model shows drift.",
+          "EU AI Act — Art. 14 (human oversight): registration captures the human-oversight flag, forced on for Annex III high-risk systems.",
+          "ISO/IEC 42001 — the registry is the AI-system lifecycle system of record, aligning with the AIMS lifecycle controls (A.6.2.x in docs/compliance/iso-42001-mapping.md). Honest gap: there is currently no dedicated ai_models / Model Registry row in the ISO mapping doc; this module should be added there rather than left implied.",
+          "NIST AI RMF — MAP (inventory and context establishment) and GOVERN (accountable owners). Honest gap: not yet formally recorded in a compliance mapping doc; mark as to-be-mapped rather than claimed."
+        ],
+        "operations": [
+          "Seeding / backfill. Demo models are seeded by the 202608xx demo migrations with fictional, labelled data; no personal data in fixtures. org_id is filled DB-side.",
+          "Empty state. Honest — \"No models registered yet\" with a Register CTA; filtered-empty shows \"No models match your filters.\"",
+          "Writes throw. upsertModel / deleteModel throw on config/RLS/CHECK/network failure; the UI shows a real error toast and the dialog stays open. Success toasts fire only after the promise resolves.",
+          "Realtime. The list is not realtime — React Query with staleTime 30 s, invalidated on mutation. The detail Performance data is push-updated via a Supabase Realtime channel (useModelAnalytics).",
+          "Known debt / gaps to track:",
+          "TD-018 — ai_models writes are not audit-logged (P1, open). See docs/reference/technical-debt.md.",
+          "Fairness 0 vs — — recordToModel defaults null fairness_score to 0, so an unmeasured model shows 0% in the list and is flagged \"BELOW THRESHOLD\" on the detail Model Card. This deviates from the platform rule that null renders —; a freshly-registered model with no fairness telemetry should read —/\"not measured\", not 0. Flagged as a real UI gap.",
+          "Unmeasured metrics — accuracy, latencyMs default to 0 and monthlyInferences to — on the list view; the detail page substitutes live analytics where telemetry exists. Do not read these list defaults as measured values."
+        ],
         "fields": [
           [
-            "EU AI Act Art.9, 11, 13, 16–21, 72–73",
-            "Risk management, technical documentation, transparency, provider obligations, post-market monitoring, incident reporting"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "ISO/IEC 42001 6.1.3, A.6, A.8",
-            "AI risk and impact assessment, system lifecycle, data for AI systems"
+            "id",
+            "uuid",
+            "pk",
+            "DEFAULT gen_random_uuid(); the canonical model id-space — every module stores this, never a name or MDL-xxx"
           ],
           [
-            "NIST AI RMF GOVERN, MAP, MEASURE, MANAGE",
-            "Full lifecycle"
+            "org_id",
+            "uuid",
+            "auto",
+            "DEFAULT get_org_id(); made NOT NULL + RLS-scoped by the tenancy sweep — never set by the client"
           ],
           [
-            "SR 11-7 / OCC 2011-12",
-            "Model risk management (financial services)"
+            "name",
+            "text",
+            "yes (UI)",
+            "Display name; resolved at render, never shown as a uuid"
           ],
           [
-            "ISO/IEC 23894",
-            "AI risk management guidance"
+            "slug",
+            "text",
+            "—",
+            "Derived by modelToRecord (slugify(name-version))"
+          ],
+          [
+            "description",
+            "text",
+            "—",
+            "Intended-use / description; renders —/empty when null"
+          ],
+          [
+            "model_type",
+            "text",
+            "—",
+            "Enum {llm, classification, regression, nlp, vision, multimodal, rl, other} → human label"
+          ],
+          [
+            "provider",
+            "text",
+            "—",
+            "e.g. OpenAI, Internal"
+          ],
+          [
+            "version",
+            "text",
+            "—",
+            "— when null"
+          ],
+          [
+            "lifecycle_stage",
+            "text",
+            "—",
+            "Mapped to UI status; empty/unknown → development"
+          ],
+          [
+            "risk_tier",
+            "text",
+            "—",
+            "Enum {critical, high, medium, low, minimal} ⇄ UI {unacceptable, high, limited, minimal}"
+          ],
+          [
+            "use_case",
+            "text",
+            "—",
+            "Free-text use-case label on the row"
+          ],
+          [
+            "business_owner",
+            "text",
+            "—",
+            "Primary owner shown in the list (falls back to technical_owner)"
+          ],
+          [
+            "technical_owner",
+            "text",
+            "—",
+            "ML/eng lead"
+          ],
+          [
+            "framework",
+            "text",
+            "—",
+            "e.g. \"EU AI Act\"; — when null"
+          ],
+          [
+            "eu_ai_act_category",
+            "text",
+            "—",
+            "EU AI Act category label"
+          ],
+          [
+            "is_regulated",
+            "boolean",
+            "—",
+            "Regulated-system flag"
+          ],
+          [
+            "risk_score",
+            "numeric",
+            "—",
+            "Quantitative risk score"
+          ],
+          [
+            "trust_score",
+            "numeric",
+            "—",
+            "Trust score"
+          ],
+          [
+            "fairness_score",
+            "numeric",
+            "—",
+            "Shown as Fairness %; null currently renders 0, not — (deviation, see Operations)"
+          ],
+          [
+            "drift_status",
+            "text",
+            "—",
+            "DEFAULT 'stable'; UI maps unknown → stable"
+          ],
+          [
+            "drift_score",
+            "numeric",
+            "—",
+            "Numeric drift measure"
+          ],
+          [
+            "paused_reason",
+            "text",
+            "—",
+            "Set by the autonomous mesh when a model is paused"
+          ],
+          [
+            "paused_at",
+            "timestamptz",
+            "—",
+            "When the model was paused"
           ]
         ],
         "noDocReason": null
@@ -1101,37 +1575,202 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/ai-risk-tiering.md",
         "title": "AI Risk Tiering",
-        "purpose": "Classify every AI use case by regulatory risk tier to route it to the correct governance pathway.",
-        "why": "",
+        "purpose": "Classify every AI system against the EU AI Act's four-tier risk model — Unacceptable, High, Limited, Minimal — and record the basis for that decision, the obligations it triggers, and the person accountable for it. It is the gateway that routes each system to the correct governance pathway.",
+        "why": "EU AI Act Article 6 (with Annex III) is the foundational obligation of the whole regulation: it decides *whether a system is regulated at all and how hard*. Everything downstream — the Article 9 risk-management system, Article 10 data governance, Article 11 technical documentation, Article 12 logging, Article 14 human oversight — is conditional on a system first being classified High-risk. Article 5 sits above this: a prohibited practice cannot be placed on the EU market at any price. Article 50 transparency duties attach to the Limited tier (chatbots, synthetic content, undisclosed GPAI). Mis",
         "how": [
-          "Prohibited → High → Limited → Minimal, plus GPAI and GPAI-systemic. Tier drives required controls, HITL SLA, evidence cadence, DPIA/FRIA need, and regulator-filing scope."
+          "A record is created through a three-step wizard (\"Classify System\"):",
+          "1. System selection. Choose a registry model (ai_models.id) or enter a",
+          "free-text system name, plus intended use case, an optional linked use case",
+          "(use_cases.id), affected users, review-due date, the classifier/owner",
+          "(required), and fundamental-rights notes.",
+          "2. Classification questionnaire (the TieringInput). Article 5 prohibited",
+          "practices (multi-select), Annex III high-risk categories (multi-select), and",
+          "five yes/no questions: automated decision affecting fundamental rights,",
+          "interacts with people, generates synthetic content, is GPAI, discloses AI",
+          "use. The computed tier updates live as answers change.",
+          "3. Review & confirm. Shows the final tier, resolved system name, basis",
+          "sentence, and the applicable obligations before the write."
         ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "interlinks": [
+          "Both directions are wired through metadata ids, resolved to names at render.",
+          "Outbound → Model Registry. Each classification stores metadata.model_id",
+          "(an ai_models.id). The table's system pill and the Linked-Model tab's \"View",
+          "Full Model Record\" navigate to /models/<uuid>. Unresolvable ids render",
+          "\"Unavailable\", never a raw uuid.",
+          "Outbound → Use Cases. Optional metadata.use_case_id (a use_cases.id)",
+          "renders as a pill in the Linked-Model tab, navigating to /use-cases/<uuid>.",
+          "Inbound ← Model Detail. The Governance card on /models/:id",
+          "(ModelDetail.tsx line ~599) shows the model's current tier via",
+          "useModelGovernance() and deep-links to /ai-risk-tiering?model=<uuid>,",
+          "which pre-filters this list to that model with a dismissible chip.",
+          "Inbound ← Overview / Command Palette / Setup checklist. The Overview"
         ],
-        "operations": [],
+        "compliance": [
+          "EU AI Act — this module is the direct implementation of Article 5",
+          "(prohibited practices → Unacceptable), Article 6 + Annex III (High-risk",
+          "classification), and Article 50 (transparency → Limited). The obligations",
+          "it attaches to a High-risk record cite Art. 9–15 verbatim.",
+          "⚠️ Mapping gap (real, not invented). As of this writing the module is",
+          "NOT yet mapped in docs/compliance/eu-ai-act-mapping.md. That document",
+          "maps Art. 9, 10, 12, 13, 14, 15 to downstream modules but has **no row for",
+          "Article 5, Article 6, or Annex III risk classification** and does not name",
+          "this module. (The Art. 6 / 7 row at line 103 is GDPR Art. 6/7 consent, a",
+          "different framework.) Likewise docs/compliance/iso-42001-mapping.md maps",
+          "6.1.2 AI risk assessment to \"Trust score pipeline\" and **6.1.3 AI risk",
+          "treatment to \"Circuit breaker cascade\" — not** to this tiering module,"
+        ],
+        "operations": [
+          "Seeding / backfill. Demo rows are inserted by",
+          "supabase/migrations/20260813000015_seed_aiia_modules.sql (six fictional",
+          "systems across all tiers) with on conflict (id) do nothing; a further seed",
+          "in 20260816000005_seed_nepal_assess_validate.sql also touches the table.",
+          "All demo data is fictional and org-scoped.",
+          "Empty state. With no rows the table shows \"No classifications yet —",
+          "classify your first AI system.\"; with a non-matching search it shows \"No",
+          "classifications match your search.\" Loading shows a spinner row; error shows"
+        ],
         "fields": [
           [
-            "EU AI Act Art.5–7 + Annex III",
-            "Prohibited / High-risk classification"
+            "1",
+            "Any Article 5 prohibited practice selected",
+            "Unacceptable",
+            "1.0",
+            "\"Prohibited under Article 5 — must not be placed on the EU market.\""
           ],
           [
-            "EU AI Act Art.51–55",
-            "GPAI systemic risk"
+            "2",
+            "Any Annex III category or affects fundamental rights",
+            "High",
+            "0.8",
+            "The 7 HIGH_RISK_OBLIGATIONS (Art. 9–15)"
           ],
           [
-            "NIST AI RMF MAP 5.1",
-            "AI system impact categorised"
+            "3",
+            "Interacts with humans or generates synthetic content or (GPAI and not disclosed)",
+            "Limited",
+            "0.35",
+            "\"Transparency / AI-use disclosure (Art. 50)\""
           ],
           [
-            "ISO/IEC 42001 6.1.3",
-            "AI risk assessment"
+            "4",
+            "None of the above",
+            "Minimal",
+            "0.1",
+            "none"
           ],
           [
-            "Canada AIDA / UK pro-innovation",
-            "National tiering"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
+          ],
+          [
+            "id",
+            "uuid",
+            "pk",
+            "gen_random_uuid() default"
+          ],
+          [
+            "org_id",
+            "uuid",
+            "auto",
+            "DB default current_user_org_id() (set in 20260813000004_aiia_wiring_foundation.sql); never set client-side"
+          ],
+          [
+            "system_id",
+            "uuid",
+            "—",
+            "Registry model id when a model was picked; normalized '' → null on write"
+          ],
+          [
+            "system_name",
+            "text",
+            "yes",
+            "Resolved model name or free-text; the required \"system\" value in the wizard"
+          ],
+          [
+            "risk_tier",
+            "text",
+            "yes",
+            "unacceptable \\",
+            "high \\",
+            "limited \\",
+            "minimal; defaults to limited in fromRow if absent"
+          ],
+          [
+            "risk_score",
+            "numeric",
+            "—",
+            "1.0 / 0.8 / 0.35 / 0.1 from the engine; renders — when null, .toFixed(2) otherwise"
+          ],
+          [
+            "use_case",
+            "text",
+            "—",
+            "Free-text intended purpose; — when empty"
+          ],
+          [
+            "affected_users",
+            "text",
+            "—",
+            "e.g. \"Loan applicants (EU)\"; — when empty"
+          ],
+          [
+            "fundamental_rights_impact",
+            "text",
+            "—",
+            "Notes; — when empty"
+          ],
+          [
+            "classification_basis",
+            "text",
+            "—",
+            "Engine-generated justification sentence; — when empty"
+          ],
+          [
+            "classifier",
+            "text",
+            "yes",
+            "Owner/classifier name (required in wizard)"
+          ],
+          [
+            "classified_at",
+            "timestamptz",
+            "—",
+            "Set to now() on create; list is ordered by this desc, nulls last"
+          ],
+          [
+            "review_due_at",
+            "timestamptz",
+            "—",
+            "Optional review date; — when null"
+          ],
+          [
+            "status",
+            "text",
+            "—",
+            "draft \\",
+            "in_review \\",
+            "approved; defaults to draft"
+          ],
+          [
+            "metadata",
+            "jsonb",
+            "—",
+            "Holds model_id, use_case_id, annexIII[], obligations[], gpai"
+          ],
+          [
+            "created_at",
+            "timestamptz",
+            "auto",
+            "now() default"
+          ],
+          [
+            "updated_at",
+            "timestamptz",
+            "auto",
+            "Set by toRow on every write (live column)"
           ]
         ],
         "noDocReason": null
@@ -1845,32 +2484,121 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/trust-engine.md",
-        "title": "Trust Engine",
-        "purpose": "Real-time composite scoring of every AI interaction (request, response, policy decisions, HITL outcomes, eval results) to surface live reliability and compliance posture — the \"Trust Layer\" promise.",
-        "why": "",
-        "how": [],
-        "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "title": "Trust Engine (Runtime Trust)",
+        "purpose": "The Trust Engine is Sentinel's runtime trust layer: the inline enforcement point that sits between an application's LLM calls and the model provider, plus the dashboard that visualises what that enforcement did. It exists in two halves that share one id-space — a data-plane gateway that rate-limits, sanitizes, circuit-breaks, proxies and audits every inference in real time, and a set of dashboard screens that render the tables the gateway (and its batch/telemetry feeds) write: trust policies, live inference traces, guardrail events, cost and token usage, fallback failovers, agent tool calls, a",
+        "why": "This is the product's core value proposition. A governance platform that only documents models after the fact cannot stop a bad inference; the Trust Engine is the control that acts while the request is in flight. The runtime obligations it discharges: EU AI Act Art. 9 (risk management) — the circuit breaker and trust-scoring cascade keep a failing or unsafe model from serving traffic unchecked. EU AI Act Art. 10 (data governance) — the prompt sanitizer strips PII and detects prompt injection before anything is logged or sent to the provider (data minimisation, Art. 10.3). EU AI Act Art. 12 (re",
+        "how": [
+          "### Runtime data-plane — POST /v1/chat/completions (sentinel/proxy.py)",
+          "The gateway is an always-on FastAPI process (it cannot be serverless — it holds a warm Redis pool, runs a Python policy stack, streams responses, and calls providers; see docs/architecture/deployment-topology.md). Each inference walks a fixed pipeline:",
+          "1. Tenant resolve — the Bearer JWT is decoded and verified against SECRET_KEY; the tenant_id claim loads a TenantConfig from the tenants store. Any failure is a 401.",
+          "2. Rate limit — a 60-second sliding window in Redis (sentinel:ratelimit:<tenant>, sorted-set + zcard), default 1000 req/min. Over the limit is a 429. If Redis is unreachable the gateway fails open (allow-all) rather than dropping traffic.",
+          "3. Sanitize — sanitizer.sanitize(prompt, tenant) strips PII and runs embedding-based prompt-injection detection against seeded injection vectors. If it blocks, the request returns HTTP 400 INJECTION_DETECTED and a blocked audit entry is written (trust_score 0, intervention BLOCKED) before returning. Otherwise the last user message is replaced with the sanitized text — so raw PII never reaches the provider or the logs.",
+          "4. Circuit breaker / provider routing — circuit_breaker.call(...) wraps the provider call (litellm.acompletion against tenant.primary_model, so OpenAI / Anthropic / local models share one code path). A provider exception returns HTTP 502 and writes an error audit entry.",
+          "5. Audit — a hash-chained AuditEntryInput (prompt hash, response hash, trust_score, intervention_level, cost_usd, latency_ms) is appended via auditor.log as a background task. The chain is append-only by design; this is the Art. 12 / ISO 9.1 record.",
+          "6. Compliance evaluation — ComplianceEngine.evaluate(...) runs against the audit entry as a background task.",
+          "7. Metrics + telemetry — Prometheus counters increment, and a best-effort background task writes per-inference telemetry to model_performance_metrics (feeds the Model Detail \"Performance\" tab). Telemetry failures are swallowed so they can never affect request handling.",
+          "Prompt and response are stored only as SHA-256 digests, never plaintext.",
+          "### Dashboard control-plane",
+          "The seven screens are React Query views over the real org-scoped tables, following the modelService conventions: direct Supabase calls, camelCase↔snake_case mapping, reads and writes throw on failure so the UI renders a real error state and a success toast fires only after the write resolves. Models, policies and agents are keyed by uuid and resolved to display names at render time (Unavailable when a name cannot be resolved, never a raw uuid). The Live Traces screen additionally opens a Supabase Realtime INSERT subscription and shows a \"Live\"/\"Not connected\" badge reflecting the actual channel state."
         ],
-        "operations": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Every relation is keyed by ai_models.id (uuid) and resolved to a name at render.",
+          "Outbound",
+          "Every screen → Model registry (/models/inventory/:id) via model uuid pills.",
+          "Live Traces → Guardrails (/trust-engine/guardrails?policy=<uuid>) for the evaluated policy.",
+          "Guardrails → Incident Response (incidents row created on escalate) and → Live Traces (/trust-engine/traces?model=<uuid>).",
+          "Tool Monitor → Incident Response (incidents on escalate) and → Agent IAM (/agent-iam).",
+          "Fallback Failovers → Live Traces by trace_id / trace_ref.",
+          "Runtime gateway → model_performance_metrics (per-inference telemetry) → Model Detail → Performance tab.",
+          "Config → Keys Vault (/security/keys) for secrets and Audit Log (/audit-trail) for every save.",
+          "Inbound",
+          "Model Detail deep-links into these screens with ?model=<uuid> (traces, guardrails, costs, fallback, tools, policies), each rendering a dismissible filter chip.",
+          "trust_policies are referenced by live_traces.policy_id and guardrail_events.policy_id; a policy referenced by recorded traces/events cannot be deleted (deactivate instead) — surfaced as a friendly service error."
+        ],
+        "compliance": [
+          "The audit found this module \"mapped loosely,\" and that is accurate. Neither docs/compliance/eu-ai-act-mapping.md nor docs/compliance/iso-42001-mapping.md contains a row naming the Trust Engine / Runtime Trust module or its tables. What the mapping tables cite are the runtime gateway's layers described generically, not the dashboard screens:",
+          "EU AI Act — Art. 9 \"Trust score + circuit breaker\", Art. 10 \"PII sanitizer + verifier\", Art. 12 \"Immutable audit log\", Art. 14 \"HITL queue + review UI\", Art. 15 \"Fact-checker + NLI verifier\", Art. 62 \"Continuous audit logging\" — all marked Implemented, but attributed to sentinel/proxy.py layers, with no link back to /trust-engine/* or to live_traces / guardrail_events / trust_policies.",
+          "ISO/IEC 42001 — 6.1.2 \"Trust score pipeline\", 6.1.3 \"Circuit breaker cascade\", 8.4 \"Proxy middleware\", 9.1 \"Audit hash chain\", A.8.3 \"PII sanitizer\", A.8.4 \"Immutable audit chain\" — again the gateway layers, not the module.",
+          "NIST AI RMF — the previous thin doc asserted MEASURE 3.1–3.3; no NIST mapping document exists in docs/compliance/, so that citation is unbacked and should be treated as a claim, not a mapping.",
+          "Real, defensible coverage today: the runtime pipeline genuinely implements Art. 10 (sanitize before log/provider), Art. 12 / ISO 9.1 (SHA-256 hash-chained append-only audit via auditor.log), Art. 9 (rate-limit + circuit breaker), and the dashboard genuinely implements the Art. 14 human-oversight path (guardrail ack by a named user; escalation to a real incidents record; the route_hitl policy action). Config saves and policy/rule CRUD write to the platform Audit Log via logAction (Art. 12 attributability). Secrets are stored as digests (Art. 15 / GDPR Art. 32), never plaintext.",
+          "Gap to close (recommended): add explicit rows to both mapping documents that name this module and its tables — e.g. Art. 9 → trust_policies + circuit breaker; Art. 12 → live_traces + hash chain; Art. 14 → guardrail_events ack/escalate; ISO A.6.2.6 (operation monitoring) → the Live Traces / Cost / Fallback screens — and either add a NIST AI RMF mapping doc or drop the MEASURE 3.x claim. Until then the module's compliance posture is implemented in code but under-documented in the mapping — mark it Partial on the mapping line, not Implemented."
+        ],
+        "operations": [
+          "Seeding / backfill. 20260814000011_trust_runtime_seeds.sql provides coherent demo rows for the demo org (00000000-…-0001), all keyed to real ai_models uuids, idempotent. The agents table is empty (Agent Control not seeded), so agent_id is left null and only agent_name is populated on tool/trace/event rows.",
+          "Empty states. Every screen has an honest empty state (no traces, no events, no usage, no policies, no fallbacks, no tool calls). Trust Index and all rate/latency KPIs render — (not 0) when there is nothing to measure.",
+          "Realtime. Only Live Traces subscribes (Supabase Realtime INSERT); the badge reflects the true channel state. The other screens are React Query reads that invalidate on mutation.",
+          "Common errors (writes throw). Deleting a referenced policy → \"This policy is referenced by recorded traces or guardrail events and cannot be deleted. Deactivate it instead.\" Ack without a session → \"Sign in required to acknowledge events.\" Invalid rule condition → \"Condition is not valid JSON: …\". Provider failure at the gateway → HTTP 502; injection → HTTP 400 INJECTION_DETECTED; over rate limit → HTTP 429.",
+          "Fail-open rate limit. If Redis is down the gateway allows all traffic (availability over throttling) — a deliberate posture worth noting for a threat model.",
+          "Retention. live_traces shows most-recent 100 per query; cost_token_usage is a daily ledger; audit entries are append-only and never deleted.",
+          "Known debt. Span-level trace instrumentation is not yet ingested (labelled in the trace sheet). Fallback → HITL review is disabled pending a backend. live_traces.policy_id / guardrail_events.policy_id are text, not uuid FKs. Three partially-overlapping Python surfaces (proxy:app, main:app, the connect edge function) can drift — TD-019 in docs/reference/technical-debt.md. The compliance-mapping gap above should be recorded there with an owner."
+        ],
         "fields": [
           [
-            "NIST AI RMF MEASURE 3.1–3.3",
-            "Trustworthiness characteristics measured"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "EU AI Act Art.13, 15",
-            "Transparency + accuracy/robustness"
+            "id",
+            "uuid",
+            "pk",
+            "the only key"
           ],
           [
-            "ISO/IEC 42001 A.6.2.6",
-            "Operation monitoring"
+            "org_id",
+            "uuid",
+            "auto",
+            "DB default current_user_org_id()"
           ],
           [
-            "ISO/IEC 25012",
-            "Data quality"
+            "policy_ref",
+            "text",
+            "—",
+            "display ref (POL-… seeds, TP-### UI-created); never a key"
+          ],
+          [
+            "name / type / action / severity",
+            "text",
+            "—",
+            "action ∈ block/warn/redact/route_hitl/log"
+          ],
+          [
+            "condition_json",
+            "jsonb",
+            "—",
+            "policy condition; null → not shown"
+          ],
+          [
+            "threshold",
+            "numeric",
+            "—",
+            "null → —"
+          ],
+          [
+            "is_active",
+            "boolean",
+            "—",
+            "active policies evaluate live traffic"
+          ],
+          [
+            "linked_models",
+            "text[]",
+            "—",
+            "canonical ai_models.id uuids; resolved at render; \"Unavailable\" if unresolved"
+          ],
+          [
+            "framework_ref",
+            "text",
+            "—",
+            "e.g. \"GDPR Art. 5\"; null → —"
+          ],
+          [
+            "triggers_7d / block_rate / avg_latency_ms",
+            "numeric",
+            "—",
+            "telemetry aggregates; avg_latency_ms null → —"
           ]
         ],
         "noDocReason": null
@@ -1881,32 +2609,121 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/trust-engine.md",
-        "title": "Trust Engine",
-        "purpose": "Real-time composite scoring of every AI interaction (request, response, policy decisions, HITL outcomes, eval results) to surface live reliability and compliance posture — the \"Trust Layer\" promise.",
-        "why": "",
-        "how": [],
-        "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "title": "Trust Engine (Runtime Trust)",
+        "purpose": "The Trust Engine is Sentinel's runtime trust layer: the inline enforcement point that sits between an application's LLM calls and the model provider, plus the dashboard that visualises what that enforcement did. It exists in two halves that share one id-space — a data-plane gateway that rate-limits, sanitizes, circuit-breaks, proxies and audits every inference in real time, and a set of dashboard screens that render the tables the gateway (and its batch/telemetry feeds) write: trust policies, live inference traces, guardrail events, cost and token usage, fallback failovers, agent tool calls, a",
+        "why": "This is the product's core value proposition. A governance platform that only documents models after the fact cannot stop a bad inference; the Trust Engine is the control that acts while the request is in flight. The runtime obligations it discharges: EU AI Act Art. 9 (risk management) — the circuit breaker and trust-scoring cascade keep a failing or unsafe model from serving traffic unchecked. EU AI Act Art. 10 (data governance) — the prompt sanitizer strips PII and detects prompt injection before anything is logged or sent to the provider (data minimisation, Art. 10.3). EU AI Act Art. 12 (re",
+        "how": [
+          "### Runtime data-plane — POST /v1/chat/completions (sentinel/proxy.py)",
+          "The gateway is an always-on FastAPI process (it cannot be serverless — it holds a warm Redis pool, runs a Python policy stack, streams responses, and calls providers; see docs/architecture/deployment-topology.md). Each inference walks a fixed pipeline:",
+          "1. Tenant resolve — the Bearer JWT is decoded and verified against SECRET_KEY; the tenant_id claim loads a TenantConfig from the tenants store. Any failure is a 401.",
+          "2. Rate limit — a 60-second sliding window in Redis (sentinel:ratelimit:<tenant>, sorted-set + zcard), default 1000 req/min. Over the limit is a 429. If Redis is unreachable the gateway fails open (allow-all) rather than dropping traffic.",
+          "3. Sanitize — sanitizer.sanitize(prompt, tenant) strips PII and runs embedding-based prompt-injection detection against seeded injection vectors. If it blocks, the request returns HTTP 400 INJECTION_DETECTED and a blocked audit entry is written (trust_score 0, intervention BLOCKED) before returning. Otherwise the last user message is replaced with the sanitized text — so raw PII never reaches the provider or the logs.",
+          "4. Circuit breaker / provider routing — circuit_breaker.call(...) wraps the provider call (litellm.acompletion against tenant.primary_model, so OpenAI / Anthropic / local models share one code path). A provider exception returns HTTP 502 and writes an error audit entry.",
+          "5. Audit — a hash-chained AuditEntryInput (prompt hash, response hash, trust_score, intervention_level, cost_usd, latency_ms) is appended via auditor.log as a background task. The chain is append-only by design; this is the Art. 12 / ISO 9.1 record.",
+          "6. Compliance evaluation — ComplianceEngine.evaluate(...) runs against the audit entry as a background task.",
+          "7. Metrics + telemetry — Prometheus counters increment, and a best-effort background task writes per-inference telemetry to model_performance_metrics (feeds the Model Detail \"Performance\" tab). Telemetry failures are swallowed so they can never affect request handling.",
+          "Prompt and response are stored only as SHA-256 digests, never plaintext.",
+          "### Dashboard control-plane",
+          "The seven screens are React Query views over the real org-scoped tables, following the modelService conventions: direct Supabase calls, camelCase↔snake_case mapping, reads and writes throw on failure so the UI renders a real error state and a success toast fires only after the write resolves. Models, policies and agents are keyed by uuid and resolved to display names at render time (Unavailable when a name cannot be resolved, never a raw uuid). The Live Traces screen additionally opens a Supabase Realtime INSERT subscription and shows a \"Live\"/\"Not connected\" badge reflecting the actual channel state."
         ],
-        "operations": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Every relation is keyed by ai_models.id (uuid) and resolved to a name at render.",
+          "Outbound",
+          "Every screen → Model registry (/models/inventory/:id) via model uuid pills.",
+          "Live Traces → Guardrails (/trust-engine/guardrails?policy=<uuid>) for the evaluated policy.",
+          "Guardrails → Incident Response (incidents row created on escalate) and → Live Traces (/trust-engine/traces?model=<uuid>).",
+          "Tool Monitor → Incident Response (incidents on escalate) and → Agent IAM (/agent-iam).",
+          "Fallback Failovers → Live Traces by trace_id / trace_ref.",
+          "Runtime gateway → model_performance_metrics (per-inference telemetry) → Model Detail → Performance tab.",
+          "Config → Keys Vault (/security/keys) for secrets and Audit Log (/audit-trail) for every save.",
+          "Inbound",
+          "Model Detail deep-links into these screens with ?model=<uuid> (traces, guardrails, costs, fallback, tools, policies), each rendering a dismissible filter chip.",
+          "trust_policies are referenced by live_traces.policy_id and guardrail_events.policy_id; a policy referenced by recorded traces/events cannot be deleted (deactivate instead) — surfaced as a friendly service error."
+        ],
+        "compliance": [
+          "The audit found this module \"mapped loosely,\" and that is accurate. Neither docs/compliance/eu-ai-act-mapping.md nor docs/compliance/iso-42001-mapping.md contains a row naming the Trust Engine / Runtime Trust module or its tables. What the mapping tables cite are the runtime gateway's layers described generically, not the dashboard screens:",
+          "EU AI Act — Art. 9 \"Trust score + circuit breaker\", Art. 10 \"PII sanitizer + verifier\", Art. 12 \"Immutable audit log\", Art. 14 \"HITL queue + review UI\", Art. 15 \"Fact-checker + NLI verifier\", Art. 62 \"Continuous audit logging\" — all marked Implemented, but attributed to sentinel/proxy.py layers, with no link back to /trust-engine/* or to live_traces / guardrail_events / trust_policies.",
+          "ISO/IEC 42001 — 6.1.2 \"Trust score pipeline\", 6.1.3 \"Circuit breaker cascade\", 8.4 \"Proxy middleware\", 9.1 \"Audit hash chain\", A.8.3 \"PII sanitizer\", A.8.4 \"Immutable audit chain\" — again the gateway layers, not the module.",
+          "NIST AI RMF — the previous thin doc asserted MEASURE 3.1–3.3; no NIST mapping document exists in docs/compliance/, so that citation is unbacked and should be treated as a claim, not a mapping.",
+          "Real, defensible coverage today: the runtime pipeline genuinely implements Art. 10 (sanitize before log/provider), Art. 12 / ISO 9.1 (SHA-256 hash-chained append-only audit via auditor.log), Art. 9 (rate-limit + circuit breaker), and the dashboard genuinely implements the Art. 14 human-oversight path (guardrail ack by a named user; escalation to a real incidents record; the route_hitl policy action). Config saves and policy/rule CRUD write to the platform Audit Log via logAction (Art. 12 attributability). Secrets are stored as digests (Art. 15 / GDPR Art. 32), never plaintext.",
+          "Gap to close (recommended): add explicit rows to both mapping documents that name this module and its tables — e.g. Art. 9 → trust_policies + circuit breaker; Art. 12 → live_traces + hash chain; Art. 14 → guardrail_events ack/escalate; ISO A.6.2.6 (operation monitoring) → the Live Traces / Cost / Fallback screens — and either add a NIST AI RMF mapping doc or drop the MEASURE 3.x claim. Until then the module's compliance posture is implemented in code but under-documented in the mapping — mark it Partial on the mapping line, not Implemented."
+        ],
+        "operations": [
+          "Seeding / backfill. 20260814000011_trust_runtime_seeds.sql provides coherent demo rows for the demo org (00000000-…-0001), all keyed to real ai_models uuids, idempotent. The agents table is empty (Agent Control not seeded), so agent_id is left null and only agent_name is populated on tool/trace/event rows.",
+          "Empty states. Every screen has an honest empty state (no traces, no events, no usage, no policies, no fallbacks, no tool calls). Trust Index and all rate/latency KPIs render — (not 0) when there is nothing to measure.",
+          "Realtime. Only Live Traces subscribes (Supabase Realtime INSERT); the badge reflects the true channel state. The other screens are React Query reads that invalidate on mutation.",
+          "Common errors (writes throw). Deleting a referenced policy → \"This policy is referenced by recorded traces or guardrail events and cannot be deleted. Deactivate it instead.\" Ack without a session → \"Sign in required to acknowledge events.\" Invalid rule condition → \"Condition is not valid JSON: …\". Provider failure at the gateway → HTTP 502; injection → HTTP 400 INJECTION_DETECTED; over rate limit → HTTP 429.",
+          "Fail-open rate limit. If Redis is down the gateway allows all traffic (availability over throttling) — a deliberate posture worth noting for a threat model.",
+          "Retention. live_traces shows most-recent 100 per query; cost_token_usage is a daily ledger; audit entries are append-only and never deleted.",
+          "Known debt. Span-level trace instrumentation is not yet ingested (labelled in the trace sheet). Fallback → HITL review is disabled pending a backend. live_traces.policy_id / guardrail_events.policy_id are text, not uuid FKs. Three partially-overlapping Python surfaces (proxy:app, main:app, the connect edge function) can drift — TD-019 in docs/reference/technical-debt.md. The compliance-mapping gap above should be recorded there with an owner."
+        ],
         "fields": [
           [
-            "NIST AI RMF MEASURE 3.1–3.3",
-            "Trustworthiness characteristics measured"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "EU AI Act Art.13, 15",
-            "Transparency + accuracy/robustness"
+            "id",
+            "uuid",
+            "pk",
+            "the only key"
           ],
           [
-            "ISO/IEC 42001 A.6.2.6",
-            "Operation monitoring"
+            "org_id",
+            "uuid",
+            "auto",
+            "DB default current_user_org_id()"
           ],
           [
-            "ISO/IEC 25012",
-            "Data quality"
+            "policy_ref",
+            "text",
+            "—",
+            "display ref (POL-… seeds, TP-### UI-created); never a key"
+          ],
+          [
+            "name / type / action / severity",
+            "text",
+            "—",
+            "action ∈ block/warn/redact/route_hitl/log"
+          ],
+          [
+            "condition_json",
+            "jsonb",
+            "—",
+            "policy condition; null → not shown"
+          ],
+          [
+            "threshold",
+            "numeric",
+            "—",
+            "null → —"
+          ],
+          [
+            "is_active",
+            "boolean",
+            "—",
+            "active policies evaluate live traffic"
+          ],
+          [
+            "linked_models",
+            "text[]",
+            "—",
+            "canonical ai_models.id uuids; resolved at render; \"Unavailable\" if unresolved"
+          ],
+          [
+            "framework_ref",
+            "text",
+            "—",
+            "e.g. \"GDPR Art. 5\"; null → —"
+          ],
+          [
+            "triggers_7d / block_rate / avg_latency_ms",
+            "numeric",
+            "—",
+            "telemetry aggregates; avg_latency_ms null → —"
           ]
         ],
         "noDocReason": null
@@ -1917,32 +2734,121 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/trust-engine.md",
-        "title": "Trust Engine",
-        "purpose": "Real-time composite scoring of every AI interaction (request, response, policy decisions, HITL outcomes, eval results) to surface live reliability and compliance posture — the \"Trust Layer\" promise.",
-        "why": "",
-        "how": [],
-        "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "title": "Trust Engine (Runtime Trust)",
+        "purpose": "The Trust Engine is Sentinel's runtime trust layer: the inline enforcement point that sits between an application's LLM calls and the model provider, plus the dashboard that visualises what that enforcement did. It exists in two halves that share one id-space — a data-plane gateway that rate-limits, sanitizes, circuit-breaks, proxies and audits every inference in real time, and a set of dashboard screens that render the tables the gateway (and its batch/telemetry feeds) write: trust policies, live inference traces, guardrail events, cost and token usage, fallback failovers, agent tool calls, a",
+        "why": "This is the product's core value proposition. A governance platform that only documents models after the fact cannot stop a bad inference; the Trust Engine is the control that acts while the request is in flight. The runtime obligations it discharges: EU AI Act Art. 9 (risk management) — the circuit breaker and trust-scoring cascade keep a failing or unsafe model from serving traffic unchecked. EU AI Act Art. 10 (data governance) — the prompt sanitizer strips PII and detects prompt injection before anything is logged or sent to the provider (data minimisation, Art. 10.3). EU AI Act Art. 12 (re",
+        "how": [
+          "### Runtime data-plane — POST /v1/chat/completions (sentinel/proxy.py)",
+          "The gateway is an always-on FastAPI process (it cannot be serverless — it holds a warm Redis pool, runs a Python policy stack, streams responses, and calls providers; see docs/architecture/deployment-topology.md). Each inference walks a fixed pipeline:",
+          "1. Tenant resolve — the Bearer JWT is decoded and verified against SECRET_KEY; the tenant_id claim loads a TenantConfig from the tenants store. Any failure is a 401.",
+          "2. Rate limit — a 60-second sliding window in Redis (sentinel:ratelimit:<tenant>, sorted-set + zcard), default 1000 req/min. Over the limit is a 429. If Redis is unreachable the gateway fails open (allow-all) rather than dropping traffic.",
+          "3. Sanitize — sanitizer.sanitize(prompt, tenant) strips PII and runs embedding-based prompt-injection detection against seeded injection vectors. If it blocks, the request returns HTTP 400 INJECTION_DETECTED and a blocked audit entry is written (trust_score 0, intervention BLOCKED) before returning. Otherwise the last user message is replaced with the sanitized text — so raw PII never reaches the provider or the logs.",
+          "4. Circuit breaker / provider routing — circuit_breaker.call(...) wraps the provider call (litellm.acompletion against tenant.primary_model, so OpenAI / Anthropic / local models share one code path). A provider exception returns HTTP 502 and writes an error audit entry.",
+          "5. Audit — a hash-chained AuditEntryInput (prompt hash, response hash, trust_score, intervention_level, cost_usd, latency_ms) is appended via auditor.log as a background task. The chain is append-only by design; this is the Art. 12 / ISO 9.1 record.",
+          "6. Compliance evaluation — ComplianceEngine.evaluate(...) runs against the audit entry as a background task.",
+          "7. Metrics + telemetry — Prometheus counters increment, and a best-effort background task writes per-inference telemetry to model_performance_metrics (feeds the Model Detail \"Performance\" tab). Telemetry failures are swallowed so they can never affect request handling.",
+          "Prompt and response are stored only as SHA-256 digests, never plaintext.",
+          "### Dashboard control-plane",
+          "The seven screens are React Query views over the real org-scoped tables, following the modelService conventions: direct Supabase calls, camelCase↔snake_case mapping, reads and writes throw on failure so the UI renders a real error state and a success toast fires only after the write resolves. Models, policies and agents are keyed by uuid and resolved to display names at render time (Unavailable when a name cannot be resolved, never a raw uuid). The Live Traces screen additionally opens a Supabase Realtime INSERT subscription and shows a \"Live\"/\"Not connected\" badge reflecting the actual channel state."
         ],
-        "operations": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Every relation is keyed by ai_models.id (uuid) and resolved to a name at render.",
+          "Outbound",
+          "Every screen → Model registry (/models/inventory/:id) via model uuid pills.",
+          "Live Traces → Guardrails (/trust-engine/guardrails?policy=<uuid>) for the evaluated policy.",
+          "Guardrails → Incident Response (incidents row created on escalate) and → Live Traces (/trust-engine/traces?model=<uuid>).",
+          "Tool Monitor → Incident Response (incidents on escalate) and → Agent IAM (/agent-iam).",
+          "Fallback Failovers → Live Traces by trace_id / trace_ref.",
+          "Runtime gateway → model_performance_metrics (per-inference telemetry) → Model Detail → Performance tab.",
+          "Config → Keys Vault (/security/keys) for secrets and Audit Log (/audit-trail) for every save.",
+          "Inbound",
+          "Model Detail deep-links into these screens with ?model=<uuid> (traces, guardrails, costs, fallback, tools, policies), each rendering a dismissible filter chip.",
+          "trust_policies are referenced by live_traces.policy_id and guardrail_events.policy_id; a policy referenced by recorded traces/events cannot be deleted (deactivate instead) — surfaced as a friendly service error."
+        ],
+        "compliance": [
+          "The audit found this module \"mapped loosely,\" and that is accurate. Neither docs/compliance/eu-ai-act-mapping.md nor docs/compliance/iso-42001-mapping.md contains a row naming the Trust Engine / Runtime Trust module or its tables. What the mapping tables cite are the runtime gateway's layers described generically, not the dashboard screens:",
+          "EU AI Act — Art. 9 \"Trust score + circuit breaker\", Art. 10 \"PII sanitizer + verifier\", Art. 12 \"Immutable audit log\", Art. 14 \"HITL queue + review UI\", Art. 15 \"Fact-checker + NLI verifier\", Art. 62 \"Continuous audit logging\" — all marked Implemented, but attributed to sentinel/proxy.py layers, with no link back to /trust-engine/* or to live_traces / guardrail_events / trust_policies.",
+          "ISO/IEC 42001 — 6.1.2 \"Trust score pipeline\", 6.1.3 \"Circuit breaker cascade\", 8.4 \"Proxy middleware\", 9.1 \"Audit hash chain\", A.8.3 \"PII sanitizer\", A.8.4 \"Immutable audit chain\" — again the gateway layers, not the module.",
+          "NIST AI RMF — the previous thin doc asserted MEASURE 3.1–3.3; no NIST mapping document exists in docs/compliance/, so that citation is unbacked and should be treated as a claim, not a mapping.",
+          "Real, defensible coverage today: the runtime pipeline genuinely implements Art. 10 (sanitize before log/provider), Art. 12 / ISO 9.1 (SHA-256 hash-chained append-only audit via auditor.log), Art. 9 (rate-limit + circuit breaker), and the dashboard genuinely implements the Art. 14 human-oversight path (guardrail ack by a named user; escalation to a real incidents record; the route_hitl policy action). Config saves and policy/rule CRUD write to the platform Audit Log via logAction (Art. 12 attributability). Secrets are stored as digests (Art. 15 / GDPR Art. 32), never plaintext.",
+          "Gap to close (recommended): add explicit rows to both mapping documents that name this module and its tables — e.g. Art. 9 → trust_policies + circuit breaker; Art. 12 → live_traces + hash chain; Art. 14 → guardrail_events ack/escalate; ISO A.6.2.6 (operation monitoring) → the Live Traces / Cost / Fallback screens — and either add a NIST AI RMF mapping doc or drop the MEASURE 3.x claim. Until then the module's compliance posture is implemented in code but under-documented in the mapping — mark it Partial on the mapping line, not Implemented."
+        ],
+        "operations": [
+          "Seeding / backfill. 20260814000011_trust_runtime_seeds.sql provides coherent demo rows for the demo org (00000000-…-0001), all keyed to real ai_models uuids, idempotent. The agents table is empty (Agent Control not seeded), so agent_id is left null and only agent_name is populated on tool/trace/event rows.",
+          "Empty states. Every screen has an honest empty state (no traces, no events, no usage, no policies, no fallbacks, no tool calls). Trust Index and all rate/latency KPIs render — (not 0) when there is nothing to measure.",
+          "Realtime. Only Live Traces subscribes (Supabase Realtime INSERT); the badge reflects the true channel state. The other screens are React Query reads that invalidate on mutation.",
+          "Common errors (writes throw). Deleting a referenced policy → \"This policy is referenced by recorded traces or guardrail events and cannot be deleted. Deactivate it instead.\" Ack without a session → \"Sign in required to acknowledge events.\" Invalid rule condition → \"Condition is not valid JSON: …\". Provider failure at the gateway → HTTP 502; injection → HTTP 400 INJECTION_DETECTED; over rate limit → HTTP 429.",
+          "Fail-open rate limit. If Redis is down the gateway allows all traffic (availability over throttling) — a deliberate posture worth noting for a threat model.",
+          "Retention. live_traces shows most-recent 100 per query; cost_token_usage is a daily ledger; audit entries are append-only and never deleted.",
+          "Known debt. Span-level trace instrumentation is not yet ingested (labelled in the trace sheet). Fallback → HITL review is disabled pending a backend. live_traces.policy_id / guardrail_events.policy_id are text, not uuid FKs. Three partially-overlapping Python surfaces (proxy:app, main:app, the connect edge function) can drift — TD-019 in docs/reference/technical-debt.md. The compliance-mapping gap above should be recorded there with an owner."
+        ],
         "fields": [
           [
-            "NIST AI RMF MEASURE 3.1–3.3",
-            "Trustworthiness characteristics measured"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "EU AI Act Art.13, 15",
-            "Transparency + accuracy/robustness"
+            "id",
+            "uuid",
+            "pk",
+            "the only key"
           ],
           [
-            "ISO/IEC 42001 A.6.2.6",
-            "Operation monitoring"
+            "org_id",
+            "uuid",
+            "auto",
+            "DB default current_user_org_id()"
           ],
           [
-            "ISO/IEC 25012",
-            "Data quality"
+            "policy_ref",
+            "text",
+            "—",
+            "display ref (POL-… seeds, TP-### UI-created); never a key"
+          ],
+          [
+            "name / type / action / severity",
+            "text",
+            "—",
+            "action ∈ block/warn/redact/route_hitl/log"
+          ],
+          [
+            "condition_json",
+            "jsonb",
+            "—",
+            "policy condition; null → not shown"
+          ],
+          [
+            "threshold",
+            "numeric",
+            "—",
+            "null → —"
+          ],
+          [
+            "is_active",
+            "boolean",
+            "—",
+            "active policies evaluate live traffic"
+          ],
+          [
+            "linked_models",
+            "text[]",
+            "—",
+            "canonical ai_models.id uuids; resolved at render; \"Unavailable\" if unresolved"
+          ],
+          [
+            "framework_ref",
+            "text",
+            "—",
+            "e.g. \"GDPR Art. 5\"; null → —"
+          ],
+          [
+            "triggers_7d / block_rate / avg_latency_ms",
+            "numeric",
+            "—",
+            "telemetry aggregates; avg_latency_ms null → —"
           ]
         ],
         "noDocReason": null
@@ -1953,32 +2859,121 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/trust-engine.md",
-        "title": "Trust Engine",
-        "purpose": "Real-time composite scoring of every AI interaction (request, response, policy decisions, HITL outcomes, eval results) to surface live reliability and compliance posture — the \"Trust Layer\" promise.",
-        "why": "",
-        "how": [],
-        "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "title": "Trust Engine (Runtime Trust)",
+        "purpose": "The Trust Engine is Sentinel's runtime trust layer: the inline enforcement point that sits between an application's LLM calls and the model provider, plus the dashboard that visualises what that enforcement did. It exists in two halves that share one id-space — a data-plane gateway that rate-limits, sanitizes, circuit-breaks, proxies and audits every inference in real time, and a set of dashboard screens that render the tables the gateway (and its batch/telemetry feeds) write: trust policies, live inference traces, guardrail events, cost and token usage, fallback failovers, agent tool calls, a",
+        "why": "This is the product's core value proposition. A governance platform that only documents models after the fact cannot stop a bad inference; the Trust Engine is the control that acts while the request is in flight. The runtime obligations it discharges: EU AI Act Art. 9 (risk management) — the circuit breaker and trust-scoring cascade keep a failing or unsafe model from serving traffic unchecked. EU AI Act Art. 10 (data governance) — the prompt sanitizer strips PII and detects prompt injection before anything is logged or sent to the provider (data minimisation, Art. 10.3). EU AI Act Art. 12 (re",
+        "how": [
+          "### Runtime data-plane — POST /v1/chat/completions (sentinel/proxy.py)",
+          "The gateway is an always-on FastAPI process (it cannot be serverless — it holds a warm Redis pool, runs a Python policy stack, streams responses, and calls providers; see docs/architecture/deployment-topology.md). Each inference walks a fixed pipeline:",
+          "1. Tenant resolve — the Bearer JWT is decoded and verified against SECRET_KEY; the tenant_id claim loads a TenantConfig from the tenants store. Any failure is a 401.",
+          "2. Rate limit — a 60-second sliding window in Redis (sentinel:ratelimit:<tenant>, sorted-set + zcard), default 1000 req/min. Over the limit is a 429. If Redis is unreachable the gateway fails open (allow-all) rather than dropping traffic.",
+          "3. Sanitize — sanitizer.sanitize(prompt, tenant) strips PII and runs embedding-based prompt-injection detection against seeded injection vectors. If it blocks, the request returns HTTP 400 INJECTION_DETECTED and a blocked audit entry is written (trust_score 0, intervention BLOCKED) before returning. Otherwise the last user message is replaced with the sanitized text — so raw PII never reaches the provider or the logs.",
+          "4. Circuit breaker / provider routing — circuit_breaker.call(...) wraps the provider call (litellm.acompletion against tenant.primary_model, so OpenAI / Anthropic / local models share one code path). A provider exception returns HTTP 502 and writes an error audit entry.",
+          "5. Audit — a hash-chained AuditEntryInput (prompt hash, response hash, trust_score, intervention_level, cost_usd, latency_ms) is appended via auditor.log as a background task. The chain is append-only by design; this is the Art. 12 / ISO 9.1 record.",
+          "6. Compliance evaluation — ComplianceEngine.evaluate(...) runs against the audit entry as a background task.",
+          "7. Metrics + telemetry — Prometheus counters increment, and a best-effort background task writes per-inference telemetry to model_performance_metrics (feeds the Model Detail \"Performance\" tab). Telemetry failures are swallowed so they can never affect request handling.",
+          "Prompt and response are stored only as SHA-256 digests, never plaintext.",
+          "### Dashboard control-plane",
+          "The seven screens are React Query views over the real org-scoped tables, following the modelService conventions: direct Supabase calls, camelCase↔snake_case mapping, reads and writes throw on failure so the UI renders a real error state and a success toast fires only after the write resolves. Models, policies and agents are keyed by uuid and resolved to display names at render time (Unavailable when a name cannot be resolved, never a raw uuid). The Live Traces screen additionally opens a Supabase Realtime INSERT subscription and shows a \"Live\"/\"Not connected\" badge reflecting the actual channel state."
         ],
-        "operations": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Every relation is keyed by ai_models.id (uuid) and resolved to a name at render.",
+          "Outbound",
+          "Every screen → Model registry (/models/inventory/:id) via model uuid pills.",
+          "Live Traces → Guardrails (/trust-engine/guardrails?policy=<uuid>) for the evaluated policy.",
+          "Guardrails → Incident Response (incidents row created on escalate) and → Live Traces (/trust-engine/traces?model=<uuid>).",
+          "Tool Monitor → Incident Response (incidents on escalate) and → Agent IAM (/agent-iam).",
+          "Fallback Failovers → Live Traces by trace_id / trace_ref.",
+          "Runtime gateway → model_performance_metrics (per-inference telemetry) → Model Detail → Performance tab.",
+          "Config → Keys Vault (/security/keys) for secrets and Audit Log (/audit-trail) for every save.",
+          "Inbound",
+          "Model Detail deep-links into these screens with ?model=<uuid> (traces, guardrails, costs, fallback, tools, policies), each rendering a dismissible filter chip.",
+          "trust_policies are referenced by live_traces.policy_id and guardrail_events.policy_id; a policy referenced by recorded traces/events cannot be deleted (deactivate instead) — surfaced as a friendly service error."
+        ],
+        "compliance": [
+          "The audit found this module \"mapped loosely,\" and that is accurate. Neither docs/compliance/eu-ai-act-mapping.md nor docs/compliance/iso-42001-mapping.md contains a row naming the Trust Engine / Runtime Trust module or its tables. What the mapping tables cite are the runtime gateway's layers described generically, not the dashboard screens:",
+          "EU AI Act — Art. 9 \"Trust score + circuit breaker\", Art. 10 \"PII sanitizer + verifier\", Art. 12 \"Immutable audit log\", Art. 14 \"HITL queue + review UI\", Art. 15 \"Fact-checker + NLI verifier\", Art. 62 \"Continuous audit logging\" — all marked Implemented, but attributed to sentinel/proxy.py layers, with no link back to /trust-engine/* or to live_traces / guardrail_events / trust_policies.",
+          "ISO/IEC 42001 — 6.1.2 \"Trust score pipeline\", 6.1.3 \"Circuit breaker cascade\", 8.4 \"Proxy middleware\", 9.1 \"Audit hash chain\", A.8.3 \"PII sanitizer\", A.8.4 \"Immutable audit chain\" — again the gateway layers, not the module.",
+          "NIST AI RMF — the previous thin doc asserted MEASURE 3.1–3.3; no NIST mapping document exists in docs/compliance/, so that citation is unbacked and should be treated as a claim, not a mapping.",
+          "Real, defensible coverage today: the runtime pipeline genuinely implements Art. 10 (sanitize before log/provider), Art. 12 / ISO 9.1 (SHA-256 hash-chained append-only audit via auditor.log), Art. 9 (rate-limit + circuit breaker), and the dashboard genuinely implements the Art. 14 human-oversight path (guardrail ack by a named user; escalation to a real incidents record; the route_hitl policy action). Config saves and policy/rule CRUD write to the platform Audit Log via logAction (Art. 12 attributability). Secrets are stored as digests (Art. 15 / GDPR Art. 32), never plaintext.",
+          "Gap to close (recommended): add explicit rows to both mapping documents that name this module and its tables — e.g. Art. 9 → trust_policies + circuit breaker; Art. 12 → live_traces + hash chain; Art. 14 → guardrail_events ack/escalate; ISO A.6.2.6 (operation monitoring) → the Live Traces / Cost / Fallback screens — and either add a NIST AI RMF mapping doc or drop the MEASURE 3.x claim. Until then the module's compliance posture is implemented in code but under-documented in the mapping — mark it Partial on the mapping line, not Implemented."
+        ],
+        "operations": [
+          "Seeding / backfill. 20260814000011_trust_runtime_seeds.sql provides coherent demo rows for the demo org (00000000-…-0001), all keyed to real ai_models uuids, idempotent. The agents table is empty (Agent Control not seeded), so agent_id is left null and only agent_name is populated on tool/trace/event rows.",
+          "Empty states. Every screen has an honest empty state (no traces, no events, no usage, no policies, no fallbacks, no tool calls). Trust Index and all rate/latency KPIs render — (not 0) when there is nothing to measure.",
+          "Realtime. Only Live Traces subscribes (Supabase Realtime INSERT); the badge reflects the true channel state. The other screens are React Query reads that invalidate on mutation.",
+          "Common errors (writes throw). Deleting a referenced policy → \"This policy is referenced by recorded traces or guardrail events and cannot be deleted. Deactivate it instead.\" Ack without a session → \"Sign in required to acknowledge events.\" Invalid rule condition → \"Condition is not valid JSON: …\". Provider failure at the gateway → HTTP 502; injection → HTTP 400 INJECTION_DETECTED; over rate limit → HTTP 429.",
+          "Fail-open rate limit. If Redis is down the gateway allows all traffic (availability over throttling) — a deliberate posture worth noting for a threat model.",
+          "Retention. live_traces shows most-recent 100 per query; cost_token_usage is a daily ledger; audit entries are append-only and never deleted.",
+          "Known debt. Span-level trace instrumentation is not yet ingested (labelled in the trace sheet). Fallback → HITL review is disabled pending a backend. live_traces.policy_id / guardrail_events.policy_id are text, not uuid FKs. Three partially-overlapping Python surfaces (proxy:app, main:app, the connect edge function) can drift — TD-019 in docs/reference/technical-debt.md. The compliance-mapping gap above should be recorded there with an owner."
+        ],
         "fields": [
           [
-            "NIST AI RMF MEASURE 3.1–3.3",
-            "Trustworthiness characteristics measured"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "EU AI Act Art.13, 15",
-            "Transparency + accuracy/robustness"
+            "id",
+            "uuid",
+            "pk",
+            "the only key"
           ],
           [
-            "ISO/IEC 42001 A.6.2.6",
-            "Operation monitoring"
+            "org_id",
+            "uuid",
+            "auto",
+            "DB default current_user_org_id()"
           ],
           [
-            "ISO/IEC 25012",
-            "Data quality"
+            "policy_ref",
+            "text",
+            "—",
+            "display ref (POL-… seeds, TP-### UI-created); never a key"
+          ],
+          [
+            "name / type / action / severity",
+            "text",
+            "—",
+            "action ∈ block/warn/redact/route_hitl/log"
+          ],
+          [
+            "condition_json",
+            "jsonb",
+            "—",
+            "policy condition; null → not shown"
+          ],
+          [
+            "threshold",
+            "numeric",
+            "—",
+            "null → —"
+          ],
+          [
+            "is_active",
+            "boolean",
+            "—",
+            "active policies evaluate live traffic"
+          ],
+          [
+            "linked_models",
+            "text[]",
+            "—",
+            "canonical ai_models.id uuids; resolved at render; \"Unavailable\" if unresolved"
+          ],
+          [
+            "framework_ref",
+            "text",
+            "—",
+            "e.g. \"GDPR Art. 5\"; null → —"
+          ],
+          [
+            "triggers_7d / block_rate / avg_latency_ms",
+            "numeric",
+            "—",
+            "telemetry aggregates; avg_latency_ms null → —"
           ]
         ],
         "noDocReason": null
@@ -1989,32 +2984,121 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/trust-engine.md",
-        "title": "Trust Engine",
-        "purpose": "Real-time composite scoring of every AI interaction (request, response, policy decisions, HITL outcomes, eval results) to surface live reliability and compliance posture — the \"Trust Layer\" promise.",
-        "why": "",
-        "how": [],
-        "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "title": "Trust Engine (Runtime Trust)",
+        "purpose": "The Trust Engine is Sentinel's runtime trust layer: the inline enforcement point that sits between an application's LLM calls and the model provider, plus the dashboard that visualises what that enforcement did. It exists in two halves that share one id-space — a data-plane gateway that rate-limits, sanitizes, circuit-breaks, proxies and audits every inference in real time, and a set of dashboard screens that render the tables the gateway (and its batch/telemetry feeds) write: trust policies, live inference traces, guardrail events, cost and token usage, fallback failovers, agent tool calls, a",
+        "why": "This is the product's core value proposition. A governance platform that only documents models after the fact cannot stop a bad inference; the Trust Engine is the control that acts while the request is in flight. The runtime obligations it discharges: EU AI Act Art. 9 (risk management) — the circuit breaker and trust-scoring cascade keep a failing or unsafe model from serving traffic unchecked. EU AI Act Art. 10 (data governance) — the prompt sanitizer strips PII and detects prompt injection before anything is logged or sent to the provider (data minimisation, Art. 10.3). EU AI Act Art. 12 (re",
+        "how": [
+          "### Runtime data-plane — POST /v1/chat/completions (sentinel/proxy.py)",
+          "The gateway is an always-on FastAPI process (it cannot be serverless — it holds a warm Redis pool, runs a Python policy stack, streams responses, and calls providers; see docs/architecture/deployment-topology.md). Each inference walks a fixed pipeline:",
+          "1. Tenant resolve — the Bearer JWT is decoded and verified against SECRET_KEY; the tenant_id claim loads a TenantConfig from the tenants store. Any failure is a 401.",
+          "2. Rate limit — a 60-second sliding window in Redis (sentinel:ratelimit:<tenant>, sorted-set + zcard), default 1000 req/min. Over the limit is a 429. If Redis is unreachable the gateway fails open (allow-all) rather than dropping traffic.",
+          "3. Sanitize — sanitizer.sanitize(prompt, tenant) strips PII and runs embedding-based prompt-injection detection against seeded injection vectors. If it blocks, the request returns HTTP 400 INJECTION_DETECTED and a blocked audit entry is written (trust_score 0, intervention BLOCKED) before returning. Otherwise the last user message is replaced with the sanitized text — so raw PII never reaches the provider or the logs.",
+          "4. Circuit breaker / provider routing — circuit_breaker.call(...) wraps the provider call (litellm.acompletion against tenant.primary_model, so OpenAI / Anthropic / local models share one code path). A provider exception returns HTTP 502 and writes an error audit entry.",
+          "5. Audit — a hash-chained AuditEntryInput (prompt hash, response hash, trust_score, intervention_level, cost_usd, latency_ms) is appended via auditor.log as a background task. The chain is append-only by design; this is the Art. 12 / ISO 9.1 record.",
+          "6. Compliance evaluation — ComplianceEngine.evaluate(...) runs against the audit entry as a background task.",
+          "7. Metrics + telemetry — Prometheus counters increment, and a best-effort background task writes per-inference telemetry to model_performance_metrics (feeds the Model Detail \"Performance\" tab). Telemetry failures are swallowed so they can never affect request handling.",
+          "Prompt and response are stored only as SHA-256 digests, never plaintext.",
+          "### Dashboard control-plane",
+          "The seven screens are React Query views over the real org-scoped tables, following the modelService conventions: direct Supabase calls, camelCase↔snake_case mapping, reads and writes throw on failure so the UI renders a real error state and a success toast fires only after the write resolves. Models, policies and agents are keyed by uuid and resolved to display names at render time (Unavailable when a name cannot be resolved, never a raw uuid). The Live Traces screen additionally opens a Supabase Realtime INSERT subscription and shows a \"Live\"/\"Not connected\" badge reflecting the actual channel state."
         ],
-        "operations": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Every relation is keyed by ai_models.id (uuid) and resolved to a name at render.",
+          "Outbound",
+          "Every screen → Model registry (/models/inventory/:id) via model uuid pills.",
+          "Live Traces → Guardrails (/trust-engine/guardrails?policy=<uuid>) for the evaluated policy.",
+          "Guardrails → Incident Response (incidents row created on escalate) and → Live Traces (/trust-engine/traces?model=<uuid>).",
+          "Tool Monitor → Incident Response (incidents on escalate) and → Agent IAM (/agent-iam).",
+          "Fallback Failovers → Live Traces by trace_id / trace_ref.",
+          "Runtime gateway → model_performance_metrics (per-inference telemetry) → Model Detail → Performance tab.",
+          "Config → Keys Vault (/security/keys) for secrets and Audit Log (/audit-trail) for every save.",
+          "Inbound",
+          "Model Detail deep-links into these screens with ?model=<uuid> (traces, guardrails, costs, fallback, tools, policies), each rendering a dismissible filter chip.",
+          "trust_policies are referenced by live_traces.policy_id and guardrail_events.policy_id; a policy referenced by recorded traces/events cannot be deleted (deactivate instead) — surfaced as a friendly service error."
+        ],
+        "compliance": [
+          "The audit found this module \"mapped loosely,\" and that is accurate. Neither docs/compliance/eu-ai-act-mapping.md nor docs/compliance/iso-42001-mapping.md contains a row naming the Trust Engine / Runtime Trust module or its tables. What the mapping tables cite are the runtime gateway's layers described generically, not the dashboard screens:",
+          "EU AI Act — Art. 9 \"Trust score + circuit breaker\", Art. 10 \"PII sanitizer + verifier\", Art. 12 \"Immutable audit log\", Art. 14 \"HITL queue + review UI\", Art. 15 \"Fact-checker + NLI verifier\", Art. 62 \"Continuous audit logging\" — all marked Implemented, but attributed to sentinel/proxy.py layers, with no link back to /trust-engine/* or to live_traces / guardrail_events / trust_policies.",
+          "ISO/IEC 42001 — 6.1.2 \"Trust score pipeline\", 6.1.3 \"Circuit breaker cascade\", 8.4 \"Proxy middleware\", 9.1 \"Audit hash chain\", A.8.3 \"PII sanitizer\", A.8.4 \"Immutable audit chain\" — again the gateway layers, not the module.",
+          "NIST AI RMF — the previous thin doc asserted MEASURE 3.1–3.3; no NIST mapping document exists in docs/compliance/, so that citation is unbacked and should be treated as a claim, not a mapping.",
+          "Real, defensible coverage today: the runtime pipeline genuinely implements Art. 10 (sanitize before log/provider), Art. 12 / ISO 9.1 (SHA-256 hash-chained append-only audit via auditor.log), Art. 9 (rate-limit + circuit breaker), and the dashboard genuinely implements the Art. 14 human-oversight path (guardrail ack by a named user; escalation to a real incidents record; the route_hitl policy action). Config saves and policy/rule CRUD write to the platform Audit Log via logAction (Art. 12 attributability). Secrets are stored as digests (Art. 15 / GDPR Art. 32), never plaintext.",
+          "Gap to close (recommended): add explicit rows to both mapping documents that name this module and its tables — e.g. Art. 9 → trust_policies + circuit breaker; Art. 12 → live_traces + hash chain; Art. 14 → guardrail_events ack/escalate; ISO A.6.2.6 (operation monitoring) → the Live Traces / Cost / Fallback screens — and either add a NIST AI RMF mapping doc or drop the MEASURE 3.x claim. Until then the module's compliance posture is implemented in code but under-documented in the mapping — mark it Partial on the mapping line, not Implemented."
+        ],
+        "operations": [
+          "Seeding / backfill. 20260814000011_trust_runtime_seeds.sql provides coherent demo rows for the demo org (00000000-…-0001), all keyed to real ai_models uuids, idempotent. The agents table is empty (Agent Control not seeded), so agent_id is left null and only agent_name is populated on tool/trace/event rows.",
+          "Empty states. Every screen has an honest empty state (no traces, no events, no usage, no policies, no fallbacks, no tool calls). Trust Index and all rate/latency KPIs render — (not 0) when there is nothing to measure.",
+          "Realtime. Only Live Traces subscribes (Supabase Realtime INSERT); the badge reflects the true channel state. The other screens are React Query reads that invalidate on mutation.",
+          "Common errors (writes throw). Deleting a referenced policy → \"This policy is referenced by recorded traces or guardrail events and cannot be deleted. Deactivate it instead.\" Ack without a session → \"Sign in required to acknowledge events.\" Invalid rule condition → \"Condition is not valid JSON: …\". Provider failure at the gateway → HTTP 502; injection → HTTP 400 INJECTION_DETECTED; over rate limit → HTTP 429.",
+          "Fail-open rate limit. If Redis is down the gateway allows all traffic (availability over throttling) — a deliberate posture worth noting for a threat model.",
+          "Retention. live_traces shows most-recent 100 per query; cost_token_usage is a daily ledger; audit entries are append-only and never deleted.",
+          "Known debt. Span-level trace instrumentation is not yet ingested (labelled in the trace sheet). Fallback → HITL review is disabled pending a backend. live_traces.policy_id / guardrail_events.policy_id are text, not uuid FKs. Three partially-overlapping Python surfaces (proxy:app, main:app, the connect edge function) can drift — TD-019 in docs/reference/technical-debt.md. The compliance-mapping gap above should be recorded there with an owner."
+        ],
         "fields": [
           [
-            "NIST AI RMF MEASURE 3.1–3.3",
-            "Trustworthiness characteristics measured"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "EU AI Act Art.13, 15",
-            "Transparency + accuracy/robustness"
+            "id",
+            "uuid",
+            "pk",
+            "the only key"
           ],
           [
-            "ISO/IEC 42001 A.6.2.6",
-            "Operation monitoring"
+            "org_id",
+            "uuid",
+            "auto",
+            "DB default current_user_org_id()"
           ],
           [
-            "ISO/IEC 25012",
-            "Data quality"
+            "policy_ref",
+            "text",
+            "—",
+            "display ref (POL-… seeds, TP-### UI-created); never a key"
+          ],
+          [
+            "name / type / action / severity",
+            "text",
+            "—",
+            "action ∈ block/warn/redact/route_hitl/log"
+          ],
+          [
+            "condition_json",
+            "jsonb",
+            "—",
+            "policy condition; null → not shown"
+          ],
+          [
+            "threshold",
+            "numeric",
+            "—",
+            "null → —"
+          ],
+          [
+            "is_active",
+            "boolean",
+            "—",
+            "active policies evaluate live traffic"
+          ],
+          [
+            "linked_models",
+            "text[]",
+            "—",
+            "canonical ai_models.id uuids; resolved at render; \"Unavailable\" if unresolved"
+          ],
+          [
+            "framework_ref",
+            "text",
+            "—",
+            "e.g. \"GDPR Art. 5\"; null → —"
+          ],
+          [
+            "triggers_7d / block_rate / avg_latency_ms",
+            "numeric",
+            "—",
+            "telemetry aggregates; avg_latency_ms null → —"
           ]
         ],
         "noDocReason": null
@@ -2025,32 +3109,121 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/trust-engine.md",
-        "title": "Trust Engine",
-        "purpose": "Real-time composite scoring of every AI interaction (request, response, policy decisions, HITL outcomes, eval results) to surface live reliability and compliance posture — the \"Trust Layer\" promise.",
-        "why": "",
-        "how": [],
-        "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "title": "Trust Engine (Runtime Trust)",
+        "purpose": "The Trust Engine is Sentinel's runtime trust layer: the inline enforcement point that sits between an application's LLM calls and the model provider, plus the dashboard that visualises what that enforcement did. It exists in two halves that share one id-space — a data-plane gateway that rate-limits, sanitizes, circuit-breaks, proxies and audits every inference in real time, and a set of dashboard screens that render the tables the gateway (and its batch/telemetry feeds) write: trust policies, live inference traces, guardrail events, cost and token usage, fallback failovers, agent tool calls, a",
+        "why": "This is the product's core value proposition. A governance platform that only documents models after the fact cannot stop a bad inference; the Trust Engine is the control that acts while the request is in flight. The runtime obligations it discharges: EU AI Act Art. 9 (risk management) — the circuit breaker and trust-scoring cascade keep a failing or unsafe model from serving traffic unchecked. EU AI Act Art. 10 (data governance) — the prompt sanitizer strips PII and detects prompt injection before anything is logged or sent to the provider (data minimisation, Art. 10.3). EU AI Act Art. 12 (re",
+        "how": [
+          "### Runtime data-plane — POST /v1/chat/completions (sentinel/proxy.py)",
+          "The gateway is an always-on FastAPI process (it cannot be serverless — it holds a warm Redis pool, runs a Python policy stack, streams responses, and calls providers; see docs/architecture/deployment-topology.md). Each inference walks a fixed pipeline:",
+          "1. Tenant resolve — the Bearer JWT is decoded and verified against SECRET_KEY; the tenant_id claim loads a TenantConfig from the tenants store. Any failure is a 401.",
+          "2. Rate limit — a 60-second sliding window in Redis (sentinel:ratelimit:<tenant>, sorted-set + zcard), default 1000 req/min. Over the limit is a 429. If Redis is unreachable the gateway fails open (allow-all) rather than dropping traffic.",
+          "3. Sanitize — sanitizer.sanitize(prompt, tenant) strips PII and runs embedding-based prompt-injection detection against seeded injection vectors. If it blocks, the request returns HTTP 400 INJECTION_DETECTED and a blocked audit entry is written (trust_score 0, intervention BLOCKED) before returning. Otherwise the last user message is replaced with the sanitized text — so raw PII never reaches the provider or the logs.",
+          "4. Circuit breaker / provider routing — circuit_breaker.call(...) wraps the provider call (litellm.acompletion against tenant.primary_model, so OpenAI / Anthropic / local models share one code path). A provider exception returns HTTP 502 and writes an error audit entry.",
+          "5. Audit — a hash-chained AuditEntryInput (prompt hash, response hash, trust_score, intervention_level, cost_usd, latency_ms) is appended via auditor.log as a background task. The chain is append-only by design; this is the Art. 12 / ISO 9.1 record.",
+          "6. Compliance evaluation — ComplianceEngine.evaluate(...) runs against the audit entry as a background task.",
+          "7. Metrics + telemetry — Prometheus counters increment, and a best-effort background task writes per-inference telemetry to model_performance_metrics (feeds the Model Detail \"Performance\" tab). Telemetry failures are swallowed so they can never affect request handling.",
+          "Prompt and response are stored only as SHA-256 digests, never plaintext.",
+          "### Dashboard control-plane",
+          "The seven screens are React Query views over the real org-scoped tables, following the modelService conventions: direct Supabase calls, camelCase↔snake_case mapping, reads and writes throw on failure so the UI renders a real error state and a success toast fires only after the write resolves. Models, policies and agents are keyed by uuid and resolved to display names at render time (Unavailable when a name cannot be resolved, never a raw uuid). The Live Traces screen additionally opens a Supabase Realtime INSERT subscription and shows a \"Live\"/\"Not connected\" badge reflecting the actual channel state."
         ],
-        "operations": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Every relation is keyed by ai_models.id (uuid) and resolved to a name at render.",
+          "Outbound",
+          "Every screen → Model registry (/models/inventory/:id) via model uuid pills.",
+          "Live Traces → Guardrails (/trust-engine/guardrails?policy=<uuid>) for the evaluated policy.",
+          "Guardrails → Incident Response (incidents row created on escalate) and → Live Traces (/trust-engine/traces?model=<uuid>).",
+          "Tool Monitor → Incident Response (incidents on escalate) and → Agent IAM (/agent-iam).",
+          "Fallback Failovers → Live Traces by trace_id / trace_ref.",
+          "Runtime gateway → model_performance_metrics (per-inference telemetry) → Model Detail → Performance tab.",
+          "Config → Keys Vault (/security/keys) for secrets and Audit Log (/audit-trail) for every save.",
+          "Inbound",
+          "Model Detail deep-links into these screens with ?model=<uuid> (traces, guardrails, costs, fallback, tools, policies), each rendering a dismissible filter chip.",
+          "trust_policies are referenced by live_traces.policy_id and guardrail_events.policy_id; a policy referenced by recorded traces/events cannot be deleted (deactivate instead) — surfaced as a friendly service error."
+        ],
+        "compliance": [
+          "The audit found this module \"mapped loosely,\" and that is accurate. Neither docs/compliance/eu-ai-act-mapping.md nor docs/compliance/iso-42001-mapping.md contains a row naming the Trust Engine / Runtime Trust module or its tables. What the mapping tables cite are the runtime gateway's layers described generically, not the dashboard screens:",
+          "EU AI Act — Art. 9 \"Trust score + circuit breaker\", Art. 10 \"PII sanitizer + verifier\", Art. 12 \"Immutable audit log\", Art. 14 \"HITL queue + review UI\", Art. 15 \"Fact-checker + NLI verifier\", Art. 62 \"Continuous audit logging\" — all marked Implemented, but attributed to sentinel/proxy.py layers, with no link back to /trust-engine/* or to live_traces / guardrail_events / trust_policies.",
+          "ISO/IEC 42001 — 6.1.2 \"Trust score pipeline\", 6.1.3 \"Circuit breaker cascade\", 8.4 \"Proxy middleware\", 9.1 \"Audit hash chain\", A.8.3 \"PII sanitizer\", A.8.4 \"Immutable audit chain\" — again the gateway layers, not the module.",
+          "NIST AI RMF — the previous thin doc asserted MEASURE 3.1–3.3; no NIST mapping document exists in docs/compliance/, so that citation is unbacked and should be treated as a claim, not a mapping.",
+          "Real, defensible coverage today: the runtime pipeline genuinely implements Art. 10 (sanitize before log/provider), Art. 12 / ISO 9.1 (SHA-256 hash-chained append-only audit via auditor.log), Art. 9 (rate-limit + circuit breaker), and the dashboard genuinely implements the Art. 14 human-oversight path (guardrail ack by a named user; escalation to a real incidents record; the route_hitl policy action). Config saves and policy/rule CRUD write to the platform Audit Log via logAction (Art. 12 attributability). Secrets are stored as digests (Art. 15 / GDPR Art. 32), never plaintext.",
+          "Gap to close (recommended): add explicit rows to both mapping documents that name this module and its tables — e.g. Art. 9 → trust_policies + circuit breaker; Art. 12 → live_traces + hash chain; Art. 14 → guardrail_events ack/escalate; ISO A.6.2.6 (operation monitoring) → the Live Traces / Cost / Fallback screens — and either add a NIST AI RMF mapping doc or drop the MEASURE 3.x claim. Until then the module's compliance posture is implemented in code but under-documented in the mapping — mark it Partial on the mapping line, not Implemented."
+        ],
+        "operations": [
+          "Seeding / backfill. 20260814000011_trust_runtime_seeds.sql provides coherent demo rows for the demo org (00000000-…-0001), all keyed to real ai_models uuids, idempotent. The agents table is empty (Agent Control not seeded), so agent_id is left null and only agent_name is populated on tool/trace/event rows.",
+          "Empty states. Every screen has an honest empty state (no traces, no events, no usage, no policies, no fallbacks, no tool calls). Trust Index and all rate/latency KPIs render — (not 0) when there is nothing to measure.",
+          "Realtime. Only Live Traces subscribes (Supabase Realtime INSERT); the badge reflects the true channel state. The other screens are React Query reads that invalidate on mutation.",
+          "Common errors (writes throw). Deleting a referenced policy → \"This policy is referenced by recorded traces or guardrail events and cannot be deleted. Deactivate it instead.\" Ack without a session → \"Sign in required to acknowledge events.\" Invalid rule condition → \"Condition is not valid JSON: …\". Provider failure at the gateway → HTTP 502; injection → HTTP 400 INJECTION_DETECTED; over rate limit → HTTP 429.",
+          "Fail-open rate limit. If Redis is down the gateway allows all traffic (availability over throttling) — a deliberate posture worth noting for a threat model.",
+          "Retention. live_traces shows most-recent 100 per query; cost_token_usage is a daily ledger; audit entries are append-only and never deleted.",
+          "Known debt. Span-level trace instrumentation is not yet ingested (labelled in the trace sheet). Fallback → HITL review is disabled pending a backend. live_traces.policy_id / guardrail_events.policy_id are text, not uuid FKs. Three partially-overlapping Python surfaces (proxy:app, main:app, the connect edge function) can drift — TD-019 in docs/reference/technical-debt.md. The compliance-mapping gap above should be recorded there with an owner."
+        ],
         "fields": [
           [
-            "NIST AI RMF MEASURE 3.1–3.3",
-            "Trustworthiness characteristics measured"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "EU AI Act Art.13, 15",
-            "Transparency + accuracy/robustness"
+            "id",
+            "uuid",
+            "pk",
+            "the only key"
           ],
           [
-            "ISO/IEC 42001 A.6.2.6",
-            "Operation monitoring"
+            "org_id",
+            "uuid",
+            "auto",
+            "DB default current_user_org_id()"
           ],
           [
-            "ISO/IEC 25012",
-            "Data quality"
+            "policy_ref",
+            "text",
+            "—",
+            "display ref (POL-… seeds, TP-### UI-created); never a key"
+          ],
+          [
+            "name / type / action / severity",
+            "text",
+            "—",
+            "action ∈ block/warn/redact/route_hitl/log"
+          ],
+          [
+            "condition_json",
+            "jsonb",
+            "—",
+            "policy condition; null → not shown"
+          ],
+          [
+            "threshold",
+            "numeric",
+            "—",
+            "null → —"
+          ],
+          [
+            "is_active",
+            "boolean",
+            "—",
+            "active policies evaluate live traffic"
+          ],
+          [
+            "linked_models",
+            "text[]",
+            "—",
+            "canonical ai_models.id uuids; resolved at render; \"Unavailable\" if unresolved"
+          ],
+          [
+            "framework_ref",
+            "text",
+            "—",
+            "e.g. \"GDPR Art. 5\"; null → —"
+          ],
+          [
+            "triggers_7d / block_rate / avg_latency_ms",
+            "numeric",
+            "—",
+            "telemetry aggregates; avg_latency_ms null → —"
           ]
         ],
         "noDocReason": null
@@ -2993,32 +4166,121 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/trust-engine.md",
-        "title": "Trust Engine",
-        "purpose": "Real-time composite scoring of every AI interaction (request, response, policy decisions, HITL outcomes, eval results) to surface live reliability and compliance posture — the \"Trust Layer\" promise.",
-        "why": "",
-        "how": [],
-        "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "title": "Trust Engine (Runtime Trust)",
+        "purpose": "The Trust Engine is Sentinel's runtime trust layer: the inline enforcement point that sits between an application's LLM calls and the model provider, plus the dashboard that visualises what that enforcement did. It exists in two halves that share one id-space — a data-plane gateway that rate-limits, sanitizes, circuit-breaks, proxies and audits every inference in real time, and a set of dashboard screens that render the tables the gateway (and its batch/telemetry feeds) write: trust policies, live inference traces, guardrail events, cost and token usage, fallback failovers, agent tool calls, a",
+        "why": "This is the product's core value proposition. A governance platform that only documents models after the fact cannot stop a bad inference; the Trust Engine is the control that acts while the request is in flight. The runtime obligations it discharges: EU AI Act Art. 9 (risk management) — the circuit breaker and trust-scoring cascade keep a failing or unsafe model from serving traffic unchecked. EU AI Act Art. 10 (data governance) — the prompt sanitizer strips PII and detects prompt injection before anything is logged or sent to the provider (data minimisation, Art. 10.3). EU AI Act Art. 12 (re",
+        "how": [
+          "### Runtime data-plane — POST /v1/chat/completions (sentinel/proxy.py)",
+          "The gateway is an always-on FastAPI process (it cannot be serverless — it holds a warm Redis pool, runs a Python policy stack, streams responses, and calls providers; see docs/architecture/deployment-topology.md). Each inference walks a fixed pipeline:",
+          "1. Tenant resolve — the Bearer JWT is decoded and verified against SECRET_KEY; the tenant_id claim loads a TenantConfig from the tenants store. Any failure is a 401.",
+          "2. Rate limit — a 60-second sliding window in Redis (sentinel:ratelimit:<tenant>, sorted-set + zcard), default 1000 req/min. Over the limit is a 429. If Redis is unreachable the gateway fails open (allow-all) rather than dropping traffic.",
+          "3. Sanitize — sanitizer.sanitize(prompt, tenant) strips PII and runs embedding-based prompt-injection detection against seeded injection vectors. If it blocks, the request returns HTTP 400 INJECTION_DETECTED and a blocked audit entry is written (trust_score 0, intervention BLOCKED) before returning. Otherwise the last user message is replaced with the sanitized text — so raw PII never reaches the provider or the logs.",
+          "4. Circuit breaker / provider routing — circuit_breaker.call(...) wraps the provider call (litellm.acompletion against tenant.primary_model, so OpenAI / Anthropic / local models share one code path). A provider exception returns HTTP 502 and writes an error audit entry.",
+          "5. Audit — a hash-chained AuditEntryInput (prompt hash, response hash, trust_score, intervention_level, cost_usd, latency_ms) is appended via auditor.log as a background task. The chain is append-only by design; this is the Art. 12 / ISO 9.1 record.",
+          "6. Compliance evaluation — ComplianceEngine.evaluate(...) runs against the audit entry as a background task.",
+          "7. Metrics + telemetry — Prometheus counters increment, and a best-effort background task writes per-inference telemetry to model_performance_metrics (feeds the Model Detail \"Performance\" tab). Telemetry failures are swallowed so they can never affect request handling.",
+          "Prompt and response are stored only as SHA-256 digests, never plaintext.",
+          "### Dashboard control-plane",
+          "The seven screens are React Query views over the real org-scoped tables, following the modelService conventions: direct Supabase calls, camelCase↔snake_case mapping, reads and writes throw on failure so the UI renders a real error state and a success toast fires only after the write resolves. Models, policies and agents are keyed by uuid and resolved to display names at render time (Unavailable when a name cannot be resolved, never a raw uuid). The Live Traces screen additionally opens a Supabase Realtime INSERT subscription and shows a \"Live\"/\"Not connected\" badge reflecting the actual channel state."
         ],
-        "operations": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Every relation is keyed by ai_models.id (uuid) and resolved to a name at render.",
+          "Outbound",
+          "Every screen → Model registry (/models/inventory/:id) via model uuid pills.",
+          "Live Traces → Guardrails (/trust-engine/guardrails?policy=<uuid>) for the evaluated policy.",
+          "Guardrails → Incident Response (incidents row created on escalate) and → Live Traces (/trust-engine/traces?model=<uuid>).",
+          "Tool Monitor → Incident Response (incidents on escalate) and → Agent IAM (/agent-iam).",
+          "Fallback Failovers → Live Traces by trace_id / trace_ref.",
+          "Runtime gateway → model_performance_metrics (per-inference telemetry) → Model Detail → Performance tab.",
+          "Config → Keys Vault (/security/keys) for secrets and Audit Log (/audit-trail) for every save.",
+          "Inbound",
+          "Model Detail deep-links into these screens with ?model=<uuid> (traces, guardrails, costs, fallback, tools, policies), each rendering a dismissible filter chip.",
+          "trust_policies are referenced by live_traces.policy_id and guardrail_events.policy_id; a policy referenced by recorded traces/events cannot be deleted (deactivate instead) — surfaced as a friendly service error."
+        ],
+        "compliance": [
+          "The audit found this module \"mapped loosely,\" and that is accurate. Neither docs/compliance/eu-ai-act-mapping.md nor docs/compliance/iso-42001-mapping.md contains a row naming the Trust Engine / Runtime Trust module or its tables. What the mapping tables cite are the runtime gateway's layers described generically, not the dashboard screens:",
+          "EU AI Act — Art. 9 \"Trust score + circuit breaker\", Art. 10 \"PII sanitizer + verifier\", Art. 12 \"Immutable audit log\", Art. 14 \"HITL queue + review UI\", Art. 15 \"Fact-checker + NLI verifier\", Art. 62 \"Continuous audit logging\" — all marked Implemented, but attributed to sentinel/proxy.py layers, with no link back to /trust-engine/* or to live_traces / guardrail_events / trust_policies.",
+          "ISO/IEC 42001 — 6.1.2 \"Trust score pipeline\", 6.1.3 \"Circuit breaker cascade\", 8.4 \"Proxy middleware\", 9.1 \"Audit hash chain\", A.8.3 \"PII sanitizer\", A.8.4 \"Immutable audit chain\" — again the gateway layers, not the module.",
+          "NIST AI RMF — the previous thin doc asserted MEASURE 3.1–3.3; no NIST mapping document exists in docs/compliance/, so that citation is unbacked and should be treated as a claim, not a mapping.",
+          "Real, defensible coverage today: the runtime pipeline genuinely implements Art. 10 (sanitize before log/provider), Art. 12 / ISO 9.1 (SHA-256 hash-chained append-only audit via auditor.log), Art. 9 (rate-limit + circuit breaker), and the dashboard genuinely implements the Art. 14 human-oversight path (guardrail ack by a named user; escalation to a real incidents record; the route_hitl policy action). Config saves and policy/rule CRUD write to the platform Audit Log via logAction (Art. 12 attributability). Secrets are stored as digests (Art. 15 / GDPR Art. 32), never plaintext.",
+          "Gap to close (recommended): add explicit rows to both mapping documents that name this module and its tables — e.g. Art. 9 → trust_policies + circuit breaker; Art. 12 → live_traces + hash chain; Art. 14 → guardrail_events ack/escalate; ISO A.6.2.6 (operation monitoring) → the Live Traces / Cost / Fallback screens — and either add a NIST AI RMF mapping doc or drop the MEASURE 3.x claim. Until then the module's compliance posture is implemented in code but under-documented in the mapping — mark it Partial on the mapping line, not Implemented."
+        ],
+        "operations": [
+          "Seeding / backfill. 20260814000011_trust_runtime_seeds.sql provides coherent demo rows for the demo org (00000000-…-0001), all keyed to real ai_models uuids, idempotent. The agents table is empty (Agent Control not seeded), so agent_id is left null and only agent_name is populated on tool/trace/event rows.",
+          "Empty states. Every screen has an honest empty state (no traces, no events, no usage, no policies, no fallbacks, no tool calls). Trust Index and all rate/latency KPIs render — (not 0) when there is nothing to measure.",
+          "Realtime. Only Live Traces subscribes (Supabase Realtime INSERT); the badge reflects the true channel state. The other screens are React Query reads that invalidate on mutation.",
+          "Common errors (writes throw). Deleting a referenced policy → \"This policy is referenced by recorded traces or guardrail events and cannot be deleted. Deactivate it instead.\" Ack without a session → \"Sign in required to acknowledge events.\" Invalid rule condition → \"Condition is not valid JSON: …\". Provider failure at the gateway → HTTP 502; injection → HTTP 400 INJECTION_DETECTED; over rate limit → HTTP 429.",
+          "Fail-open rate limit. If Redis is down the gateway allows all traffic (availability over throttling) — a deliberate posture worth noting for a threat model.",
+          "Retention. live_traces shows most-recent 100 per query; cost_token_usage is a daily ledger; audit entries are append-only and never deleted.",
+          "Known debt. Span-level trace instrumentation is not yet ingested (labelled in the trace sheet). Fallback → HITL review is disabled pending a backend. live_traces.policy_id / guardrail_events.policy_id are text, not uuid FKs. Three partially-overlapping Python surfaces (proxy:app, main:app, the connect edge function) can drift — TD-019 in docs/reference/technical-debt.md. The compliance-mapping gap above should be recorded there with an owner."
+        ],
         "fields": [
           [
-            "NIST AI RMF MEASURE 3.1–3.3",
-            "Trustworthiness characteristics measured"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "EU AI Act Art.13, 15",
-            "Transparency + accuracy/robustness"
+            "id",
+            "uuid",
+            "pk",
+            "the only key"
           ],
           [
-            "ISO/IEC 42001 A.6.2.6",
-            "Operation monitoring"
+            "org_id",
+            "uuid",
+            "auto",
+            "DB default current_user_org_id()"
           ],
           [
-            "ISO/IEC 25012",
-            "Data quality"
+            "policy_ref",
+            "text",
+            "—",
+            "display ref (POL-… seeds, TP-### UI-created); never a key"
+          ],
+          [
+            "name / type / action / severity",
+            "text",
+            "—",
+            "action ∈ block/warn/redact/route_hitl/log"
+          ],
+          [
+            "condition_json",
+            "jsonb",
+            "—",
+            "policy condition; null → not shown"
+          ],
+          [
+            "threshold",
+            "numeric",
+            "—",
+            "null → —"
+          ],
+          [
+            "is_active",
+            "boolean",
+            "—",
+            "active policies evaluate live traffic"
+          ],
+          [
+            "linked_models",
+            "text[]",
+            "—",
+            "canonical ai_models.id uuids; resolved at render; \"Unavailable\" if unresolved"
+          ],
+          [
+            "framework_ref",
+            "text",
+            "—",
+            "e.g. \"GDPR Art. 5\"; null → —"
+          ],
+          [
+            "triggers_7d / block_rate / avg_latency_ms",
+            "numeric",
+            "—",
+            "telemetry aggregates; avg_latency_ms null → —"
           ]
         ],
         "noDocReason": null
@@ -3657,46 +4919,220 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/risk-register.md",
-        "title": "Risk Register & Risk Matrix",
-        "purpose": "Central register of enterprise, information-security, privacy, operational, AI, and third-party risks with inherent/residual scoring, treatment plans, ownership, and review cadence.",
-        "why": "",
+        "title": "Risk Register",
+        "purpose": "The Risk Register is the central inventory of AI, model, data, operational, compliance, security and third-party risks for one organisation. It is the platform's primary risk artefact: every risk carries a likelihood, an impact, a derived score with a band, a treatment/mitigation state, an owner and a review cadence, and links out to the models, controls, incidents, remediation plans, human-oversight reviews and financial quantifications that surround it.",
+        "why": "This module discharges EU AI Act Article 9 — the risk management system: the obligation to establish, document, and maintain over the lifecycle a continuous process that identifies, analyses, evaluates and treats the risks a high-risk AI system poses, with the results kept as an auditable record. It also supports **ISO/IEC 42001 clauses 6.1.2 (AI risk assessment) and 6.1.3 (AI risk treatment) and the NIST AI RMF MAP / MEASURE / MANAGE** functions. Without a live register there is no evidence that risks were ever identified, scored, assigned to an owner, or driven to closure — the first thing a",
         "how": [
-          "Identify → Analyse → Evaluate → Treat (Accept / Mitigate / Transfer / Avoid) → Monitor → Review. Risks linked to Assets, Models, Vendors, Findings, Incidents, and Controls."
+          "A risk enters the register two ways.",
+          "1. Manually. A user clicks Add Risk, fills the dialog (title, category,",
+          "owner, likelihood, impact, description are required), and saves. The write",
+          "goes through useRisksData.saveRisk → riskService.upsertRisk, which upserts",
+          "the risks table. The service dual-writes canonical + legacy column pairs",
+          "(title/name, category/categories, impact/severity,",
+          "status/mitigation_status, owner/action_owner, mitigation/",
+          "mitigation_plan) so every reader era sees the same value, and mints a",
+          "business code RSK-<year>-<nnnnn> for new rows so the register never shows a",
+          "raw id as identity. tenant_id is never set by the client — the DB",
+          "default current_user_org_id()::text scopes the row",
+          "(20260814000008_risks_tenant_default.sql)."
         ],
-        "dataProcess": [
-          "Register: public.risks (uuid PK, tenant-scoped RLS risks_org_scoped); service riskService.ts, hook useRisksData. The live-only columns (categories, deadline, risk_score) are now versioned in 20260819000001_risk_incidents_canonical.sql.",
-          "Risk Matrix reads the SAME rows (no parallel register); Financial Risk quantifications live in public.financial_risks (see financial-risk.md).",
-          "Interlinks: linked_model_ids → model chips (/models/inventory/:id), linked_incident_ids → /risk/incidents?open=, linked_control_ids → /controls/:id; ?model=<uuid> deep-link filter."
+        "dataProcess": [],
+        "interlinks": [
+          "Both directions, resolved to names at render (raw ids never shown; \"Unavailable\"",
+          "when unresolved).",
+          "Outbound (from a risk):",
+          "Models — linked_model_ids → /models/inventory/:id pills (table + Overview tab).",
+          "Incidents — linked_incident_ids → /risk/incidents?open=<id>, merged",
+          "with incidents.linked_risk_ids so the seam works whichever side wrote it.",
+          "Controls — linked_control_ids → /controls/:id (Controls tab).",
+          "Remediation — remediation_plans.risk_id = this → /remediation-tracker?open=<id> (Remediation tab).",
+          "HITL — hitl_reviews.linked_risk_id = this → /hitl/:id (HITL tab).",
+          "Financial — financial_risks.linked_risk_id = this (text key) → /financial-risk?open=<id> (Financial tab).",
+          "Audit — History tab links to /audit-trail.",
+          "Inbound (reaching the register):"
         ],
-        "interlinks": [],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Article 9 (risk management system): this is the primary Art. 9",
+          "artefact. Honest gap: in docs/compliance/eu-ai-act-mapping.md the Art. 9",
+          "rows point to Tasks, Eval Techniques, MCP Gateway and DPIA — the Risk",
+          "Register is not yet its own mapped module row. The 2026-08 compliance audit",
+          "recorded it as \"mapped loosely\" only. This doc should be added as the",
+          "explicit Art. 9 register row; until then the mapping under-represents the",
+          "register's role.",
+          "EU AI Act — Article 14 (human oversight): satisfied at the data layer —",
+          "auto_generated, source, related_entity_* and source_event_id let a human",
+          "identify and override an agent decision; the HITL tab exposes the review path.",
+          "EU AI Act — Article 12 (record-keeping / audit logging): gap. The",
+          "register does not call logAction on create/edit/delete — no logAction"
         ],
-        "operations": [],
+        "operations": [
+          "Empty state: honest — \"No risks recorded yet\" with an Add-Risk prompt;",
+          "filtered-empty is a distinct \"No risks match your filters\".",
+          "Seeding: demo risks are seeded canonically",
+          "(20260820000006_seed_risk_register_canonical.sql) and carry a",
+          "metadata.demo_seed marker; earlier seeds that populated org_id but not",
+          "tenant_id are healed in the canonical migration.",
+          "Errors (writes throw): Supabase misconfig → `\"Supabase is not configured —",
+          "risk data is unavailable\"` (a hard error state, never a fake-empty register);"
+        ],
         "fields": [
           [
-            "ISO 31000:2018",
-            "Risk management principles and process"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "ISO/IEC 27005:2022",
-            "Information security risk management"
+            "id",
+            "text",
+            "pk",
+            "DB default gen_random_uuid()::text; not a uuid id-space"
           ],
           [
-            "ISO/IEC 23894:2023",
-            "AI risk management"
+            "tenant_id",
+            "text",
+            "auto",
+            "Org scope; DB default current_user_org_id()::text — never set client-side; RLS risks_org_scoped"
           ],
           [
-            "ISO/IEC 42001 6.1",
-            "AI risk assessment + treatment"
+            "risk_id",
+            "text",
+            "—",
+            "Business code (e.g. RSK-2026-00042); display identity, mapped to RiskItem.riskId"
           ],
           [
-            "NIST AI RMF MAP + MEASURE + MANAGE",
-            "Identify, assess, manage"
+            "title / name",
+            "text",
+            "yes",
+            "title is NOT NULL; service dual-writes both"
           ],
           [
-            "COSO ERM",
-            "Enterprise risk"
+            "description",
+            "text",
+            "yes (UI)",
+            "UI requires; column nullable"
+          ],
+          [
+            "category / categories",
+            "text · text[]",
+            "—",
+            "Service writes both; read prefers category, falls back to categories[0]"
+          ],
+          [
+            "likelihood",
+            "int 1–5",
+            "—",
+            "CHECK 1–5, base default 1"
+          ],
+          [
+            "impact",
+            "int 1–5",
+            "—",
+            "Canonical column; base table default 1"
+          ],
+          [
+            "severity",
+            "int 1–5",
+            "—",
+            "Legacy alias of impact; agents write severity, service dual-writes"
+          ],
+          [
+            "score",
+            "int",
+            "generated",
+            "likelihood * GREATEST(impact, severity) STORED (base table)"
+          ],
+          [
+            "risk_score",
+            "int",
+            "—",
+            "Canonical stored score written by the UI (likelihood × impact)"
+          ],
+          [
+            "risk_level",
+            "text",
+            "—",
+            "`critical",
+            "high",
+            "medium",
+            "low`; agents set from severity band"
+          ],
+          [
+            "status / mitigation_status",
+            "text",
+            "—",
+            "`open",
+            "assessed",
+            "in_progress",
+            "mitigated",
+            "accepted",
+            "closed`"
+          ],
+          [
+            "treatment",
+            "text",
+            "—",
+            "`accept",
+            "mitigate",
+            "transfer",
+            "avoid`; null = \"Not decided\""
+          ],
+          [
+            "owner / action_owner",
+            "text",
+            "yes (UI)",
+            "Dual-written; \"Unassigned\" when blank"
+          ],
+          [
+            "mitigation_plan",
+            "text",
+            "—",
+            "Treatment plan free text (UI mitigation)"
+          ],
+          [
+            "applicable_frameworks",
+            "text[]",
+            "—",
+            "Framework references; renders — when empty"
+          ],
+          [
+            "residual_likelihood / residual_impact",
+            "int 1–5",
+            "—",
+            "Nullable; residual score derived as their product"
+          ],
+          [
+            "deadline",
+            "date",
+            "—",
+            "Treatment deadline; drives Overdue"
+          ],
+          [
+            "next_review_date",
+            "date",
+            "—",
+            "Drives Review overdue"
+          ],
+          [
+            "review_frequency",
+            "text",
+            "—",
+            "`monthly",
+            "quarterly",
+            "semiannual",
+            "annual`"
+          ],
+          [
+            "is_escalated",
+            "bool",
+            "—",
+            "Default false; red flag + escalated filter"
+          ],
+          [
+            "escalation_reason",
+            "text",
+            "—",
+            "Shown only when escalated"
           ]
         ],
         "noDocReason": null
@@ -3707,46 +5143,220 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/risk-register.md",
-        "title": "Risk Register & Risk Matrix",
-        "purpose": "Central register of enterprise, information-security, privacy, operational, AI, and third-party risks with inherent/residual scoring, treatment plans, ownership, and review cadence.",
-        "why": "",
+        "title": "Risk Register",
+        "purpose": "The Risk Register is the central inventory of AI, model, data, operational, compliance, security and third-party risks for one organisation. It is the platform's primary risk artefact: every risk carries a likelihood, an impact, a derived score with a band, a treatment/mitigation state, an owner and a review cadence, and links out to the models, controls, incidents, remediation plans, human-oversight reviews and financial quantifications that surround it.",
+        "why": "This module discharges EU AI Act Article 9 — the risk management system: the obligation to establish, document, and maintain over the lifecycle a continuous process that identifies, analyses, evaluates and treats the risks a high-risk AI system poses, with the results kept as an auditable record. It also supports **ISO/IEC 42001 clauses 6.1.2 (AI risk assessment) and 6.1.3 (AI risk treatment) and the NIST AI RMF MAP / MEASURE / MANAGE** functions. Without a live register there is no evidence that risks were ever identified, scored, assigned to an owner, or driven to closure — the first thing a",
         "how": [
-          "Identify → Analyse → Evaluate → Treat (Accept / Mitigate / Transfer / Avoid) → Monitor → Review. Risks linked to Assets, Models, Vendors, Findings, Incidents, and Controls."
+          "A risk enters the register two ways.",
+          "1. Manually. A user clicks Add Risk, fills the dialog (title, category,",
+          "owner, likelihood, impact, description are required), and saves. The write",
+          "goes through useRisksData.saveRisk → riskService.upsertRisk, which upserts",
+          "the risks table. The service dual-writes canonical + legacy column pairs",
+          "(title/name, category/categories, impact/severity,",
+          "status/mitigation_status, owner/action_owner, mitigation/",
+          "mitigation_plan) so every reader era sees the same value, and mints a",
+          "business code RSK-<year>-<nnnnn> for new rows so the register never shows a",
+          "raw id as identity. tenant_id is never set by the client — the DB",
+          "default current_user_org_id()::text scopes the row",
+          "(20260814000008_risks_tenant_default.sql)."
         ],
-        "dataProcess": [
-          "Register: public.risks (uuid PK, tenant-scoped RLS risks_org_scoped); service riskService.ts, hook useRisksData. The live-only columns (categories, deadline, risk_score) are now versioned in 20260819000001_risk_incidents_canonical.sql.",
-          "Risk Matrix reads the SAME rows (no parallel register); Financial Risk quantifications live in public.financial_risks (see financial-risk.md).",
-          "Interlinks: linked_model_ids → model chips (/models/inventory/:id), linked_incident_ids → /risk/incidents?open=, linked_control_ids → /controls/:id; ?model=<uuid> deep-link filter."
+        "dataProcess": [],
+        "interlinks": [
+          "Both directions, resolved to names at render (raw ids never shown; \"Unavailable\"",
+          "when unresolved).",
+          "Outbound (from a risk):",
+          "Models — linked_model_ids → /models/inventory/:id pills (table + Overview tab).",
+          "Incidents — linked_incident_ids → /risk/incidents?open=<id>, merged",
+          "with incidents.linked_risk_ids so the seam works whichever side wrote it.",
+          "Controls — linked_control_ids → /controls/:id (Controls tab).",
+          "Remediation — remediation_plans.risk_id = this → /remediation-tracker?open=<id> (Remediation tab).",
+          "HITL — hitl_reviews.linked_risk_id = this → /hitl/:id (HITL tab).",
+          "Financial — financial_risks.linked_risk_id = this (text key) → /financial-risk?open=<id> (Financial tab).",
+          "Audit — History tab links to /audit-trail.",
+          "Inbound (reaching the register):"
         ],
-        "interlinks": [],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Article 9 (risk management system): this is the primary Art. 9",
+          "artefact. Honest gap: in docs/compliance/eu-ai-act-mapping.md the Art. 9",
+          "rows point to Tasks, Eval Techniques, MCP Gateway and DPIA — the Risk",
+          "Register is not yet its own mapped module row. The 2026-08 compliance audit",
+          "recorded it as \"mapped loosely\" only. This doc should be added as the",
+          "explicit Art. 9 register row; until then the mapping under-represents the",
+          "register's role.",
+          "EU AI Act — Article 14 (human oversight): satisfied at the data layer —",
+          "auto_generated, source, related_entity_* and source_event_id let a human",
+          "identify and override an agent decision; the HITL tab exposes the review path.",
+          "EU AI Act — Article 12 (record-keeping / audit logging): gap. The",
+          "register does not call logAction on create/edit/delete — no logAction"
         ],
-        "operations": [],
+        "operations": [
+          "Empty state: honest — \"No risks recorded yet\" with an Add-Risk prompt;",
+          "filtered-empty is a distinct \"No risks match your filters\".",
+          "Seeding: demo risks are seeded canonically",
+          "(20260820000006_seed_risk_register_canonical.sql) and carry a",
+          "metadata.demo_seed marker; earlier seeds that populated org_id but not",
+          "tenant_id are healed in the canonical migration.",
+          "Errors (writes throw): Supabase misconfig → `\"Supabase is not configured —",
+          "risk data is unavailable\"` (a hard error state, never a fake-empty register);"
+        ],
         "fields": [
           [
-            "ISO 31000:2018",
-            "Risk management principles and process"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "ISO/IEC 27005:2022",
-            "Information security risk management"
+            "id",
+            "text",
+            "pk",
+            "DB default gen_random_uuid()::text; not a uuid id-space"
           ],
           [
-            "ISO/IEC 23894:2023",
-            "AI risk management"
+            "tenant_id",
+            "text",
+            "auto",
+            "Org scope; DB default current_user_org_id()::text — never set client-side; RLS risks_org_scoped"
           ],
           [
-            "ISO/IEC 42001 6.1",
-            "AI risk assessment + treatment"
+            "risk_id",
+            "text",
+            "—",
+            "Business code (e.g. RSK-2026-00042); display identity, mapped to RiskItem.riskId"
           ],
           [
-            "NIST AI RMF MAP + MEASURE + MANAGE",
-            "Identify, assess, manage"
+            "title / name",
+            "text",
+            "yes",
+            "title is NOT NULL; service dual-writes both"
           ],
           [
-            "COSO ERM",
-            "Enterprise risk"
+            "description",
+            "text",
+            "yes (UI)",
+            "UI requires; column nullable"
+          ],
+          [
+            "category / categories",
+            "text · text[]",
+            "—",
+            "Service writes both; read prefers category, falls back to categories[0]"
+          ],
+          [
+            "likelihood",
+            "int 1–5",
+            "—",
+            "CHECK 1–5, base default 1"
+          ],
+          [
+            "impact",
+            "int 1–5",
+            "—",
+            "Canonical column; base table default 1"
+          ],
+          [
+            "severity",
+            "int 1–5",
+            "—",
+            "Legacy alias of impact; agents write severity, service dual-writes"
+          ],
+          [
+            "score",
+            "int",
+            "generated",
+            "likelihood * GREATEST(impact, severity) STORED (base table)"
+          ],
+          [
+            "risk_score",
+            "int",
+            "—",
+            "Canonical stored score written by the UI (likelihood × impact)"
+          ],
+          [
+            "risk_level",
+            "text",
+            "—",
+            "`critical",
+            "high",
+            "medium",
+            "low`; agents set from severity band"
+          ],
+          [
+            "status / mitigation_status",
+            "text",
+            "—",
+            "`open",
+            "assessed",
+            "in_progress",
+            "mitigated",
+            "accepted",
+            "closed`"
+          ],
+          [
+            "treatment",
+            "text",
+            "—",
+            "`accept",
+            "mitigate",
+            "transfer",
+            "avoid`; null = \"Not decided\""
+          ],
+          [
+            "owner / action_owner",
+            "text",
+            "yes (UI)",
+            "Dual-written; \"Unassigned\" when blank"
+          ],
+          [
+            "mitigation_plan",
+            "text",
+            "—",
+            "Treatment plan free text (UI mitigation)"
+          ],
+          [
+            "applicable_frameworks",
+            "text[]",
+            "—",
+            "Framework references; renders — when empty"
+          ],
+          [
+            "residual_likelihood / residual_impact",
+            "int 1–5",
+            "—",
+            "Nullable; residual score derived as their product"
+          ],
+          [
+            "deadline",
+            "date",
+            "—",
+            "Treatment deadline; drives Overdue"
+          ],
+          [
+            "next_review_date",
+            "date",
+            "—",
+            "Drives Review overdue"
+          ],
+          [
+            "review_frequency",
+            "text",
+            "—",
+            "`monthly",
+            "quarterly",
+            "semiannual",
+            "annual`"
+          ],
+          [
+            "is_escalated",
+            "bool",
+            "—",
+            "Default false; red flag + escalated filter"
+          ],
+          [
+            "escalation_reason",
+            "text",
+            "—",
+            "Shown only when escalated"
           ]
         ],
         "noDocReason": null
@@ -3757,46 +5367,220 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/risk-register.md",
-        "title": "Risk Register & Risk Matrix",
-        "purpose": "Central register of enterprise, information-security, privacy, operational, AI, and third-party risks with inherent/residual scoring, treatment plans, ownership, and review cadence.",
-        "why": "",
+        "title": "Risk Register",
+        "purpose": "The Risk Register is the central inventory of AI, model, data, operational, compliance, security and third-party risks for one organisation. It is the platform's primary risk artefact: every risk carries a likelihood, an impact, a derived score with a band, a treatment/mitigation state, an owner and a review cadence, and links out to the models, controls, incidents, remediation plans, human-oversight reviews and financial quantifications that surround it.",
+        "why": "This module discharges EU AI Act Article 9 — the risk management system: the obligation to establish, document, and maintain over the lifecycle a continuous process that identifies, analyses, evaluates and treats the risks a high-risk AI system poses, with the results kept as an auditable record. It also supports **ISO/IEC 42001 clauses 6.1.2 (AI risk assessment) and 6.1.3 (AI risk treatment) and the NIST AI RMF MAP / MEASURE / MANAGE** functions. Without a live register there is no evidence that risks were ever identified, scored, assigned to an owner, or driven to closure — the first thing a",
         "how": [
-          "Identify → Analyse → Evaluate → Treat (Accept / Mitigate / Transfer / Avoid) → Monitor → Review. Risks linked to Assets, Models, Vendors, Findings, Incidents, and Controls."
+          "A risk enters the register two ways.",
+          "1. Manually. A user clicks Add Risk, fills the dialog (title, category,",
+          "owner, likelihood, impact, description are required), and saves. The write",
+          "goes through useRisksData.saveRisk → riskService.upsertRisk, which upserts",
+          "the risks table. The service dual-writes canonical + legacy column pairs",
+          "(title/name, category/categories, impact/severity,",
+          "status/mitigation_status, owner/action_owner, mitigation/",
+          "mitigation_plan) so every reader era sees the same value, and mints a",
+          "business code RSK-<year>-<nnnnn> for new rows so the register never shows a",
+          "raw id as identity. tenant_id is never set by the client — the DB",
+          "default current_user_org_id()::text scopes the row",
+          "(20260814000008_risks_tenant_default.sql)."
         ],
-        "dataProcess": [
-          "Register: public.risks (uuid PK, tenant-scoped RLS risks_org_scoped); service riskService.ts, hook useRisksData. The live-only columns (categories, deadline, risk_score) are now versioned in 20260819000001_risk_incidents_canonical.sql.",
-          "Risk Matrix reads the SAME rows (no parallel register); Financial Risk quantifications live in public.financial_risks (see financial-risk.md).",
-          "Interlinks: linked_model_ids → model chips (/models/inventory/:id), linked_incident_ids → /risk/incidents?open=, linked_control_ids → /controls/:id; ?model=<uuid> deep-link filter."
+        "dataProcess": [],
+        "interlinks": [
+          "Both directions, resolved to names at render (raw ids never shown; \"Unavailable\"",
+          "when unresolved).",
+          "Outbound (from a risk):",
+          "Models — linked_model_ids → /models/inventory/:id pills (table + Overview tab).",
+          "Incidents — linked_incident_ids → /risk/incidents?open=<id>, merged",
+          "with incidents.linked_risk_ids so the seam works whichever side wrote it.",
+          "Controls — linked_control_ids → /controls/:id (Controls tab).",
+          "Remediation — remediation_plans.risk_id = this → /remediation-tracker?open=<id> (Remediation tab).",
+          "HITL — hitl_reviews.linked_risk_id = this → /hitl/:id (HITL tab).",
+          "Financial — financial_risks.linked_risk_id = this (text key) → /financial-risk?open=<id> (Financial tab).",
+          "Audit — History tab links to /audit-trail.",
+          "Inbound (reaching the register):"
         ],
-        "interlinks": [],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Article 9 (risk management system): this is the primary Art. 9",
+          "artefact. Honest gap: in docs/compliance/eu-ai-act-mapping.md the Art. 9",
+          "rows point to Tasks, Eval Techniques, MCP Gateway and DPIA — the Risk",
+          "Register is not yet its own mapped module row. The 2026-08 compliance audit",
+          "recorded it as \"mapped loosely\" only. This doc should be added as the",
+          "explicit Art. 9 register row; until then the mapping under-represents the",
+          "register's role.",
+          "EU AI Act — Article 14 (human oversight): satisfied at the data layer —",
+          "auto_generated, source, related_entity_* and source_event_id let a human",
+          "identify and override an agent decision; the HITL tab exposes the review path.",
+          "EU AI Act — Article 12 (record-keeping / audit logging): gap. The",
+          "register does not call logAction on create/edit/delete — no logAction"
         ],
-        "operations": [],
+        "operations": [
+          "Empty state: honest — \"No risks recorded yet\" with an Add-Risk prompt;",
+          "filtered-empty is a distinct \"No risks match your filters\".",
+          "Seeding: demo risks are seeded canonically",
+          "(20260820000006_seed_risk_register_canonical.sql) and carry a",
+          "metadata.demo_seed marker; earlier seeds that populated org_id but not",
+          "tenant_id are healed in the canonical migration.",
+          "Errors (writes throw): Supabase misconfig → `\"Supabase is not configured —",
+          "risk data is unavailable\"` (a hard error state, never a fake-empty register);"
+        ],
         "fields": [
           [
-            "ISO 31000:2018",
-            "Risk management principles and process"
+            "Field",
+            "Type",
+            "Req.",
+            "Notes"
           ],
           [
-            "ISO/IEC 27005:2022",
-            "Information security risk management"
+            "id",
+            "text",
+            "pk",
+            "DB default gen_random_uuid()::text; not a uuid id-space"
           ],
           [
-            "ISO/IEC 23894:2023",
-            "AI risk management"
+            "tenant_id",
+            "text",
+            "auto",
+            "Org scope; DB default current_user_org_id()::text — never set client-side; RLS risks_org_scoped"
           ],
           [
-            "ISO/IEC 42001 6.1",
-            "AI risk assessment + treatment"
+            "risk_id",
+            "text",
+            "—",
+            "Business code (e.g. RSK-2026-00042); display identity, mapped to RiskItem.riskId"
           ],
           [
-            "NIST AI RMF MAP + MEASURE + MANAGE",
-            "Identify, assess, manage"
+            "title / name",
+            "text",
+            "yes",
+            "title is NOT NULL; service dual-writes both"
           ],
           [
-            "COSO ERM",
-            "Enterprise risk"
+            "description",
+            "text",
+            "yes (UI)",
+            "UI requires; column nullable"
+          ],
+          [
+            "category / categories",
+            "text · text[]",
+            "—",
+            "Service writes both; read prefers category, falls back to categories[0]"
+          ],
+          [
+            "likelihood",
+            "int 1–5",
+            "—",
+            "CHECK 1–5, base default 1"
+          ],
+          [
+            "impact",
+            "int 1–5",
+            "—",
+            "Canonical column; base table default 1"
+          ],
+          [
+            "severity",
+            "int 1–5",
+            "—",
+            "Legacy alias of impact; agents write severity, service dual-writes"
+          ],
+          [
+            "score",
+            "int",
+            "generated",
+            "likelihood * GREATEST(impact, severity) STORED (base table)"
+          ],
+          [
+            "risk_score",
+            "int",
+            "—",
+            "Canonical stored score written by the UI (likelihood × impact)"
+          ],
+          [
+            "risk_level",
+            "text",
+            "—",
+            "`critical",
+            "high",
+            "medium",
+            "low`; agents set from severity band"
+          ],
+          [
+            "status / mitigation_status",
+            "text",
+            "—",
+            "`open",
+            "assessed",
+            "in_progress",
+            "mitigated",
+            "accepted",
+            "closed`"
+          ],
+          [
+            "treatment",
+            "text",
+            "—",
+            "`accept",
+            "mitigate",
+            "transfer",
+            "avoid`; null = \"Not decided\""
+          ],
+          [
+            "owner / action_owner",
+            "text",
+            "yes (UI)",
+            "Dual-written; \"Unassigned\" when blank"
+          ],
+          [
+            "mitigation_plan",
+            "text",
+            "—",
+            "Treatment plan free text (UI mitigation)"
+          ],
+          [
+            "applicable_frameworks",
+            "text[]",
+            "—",
+            "Framework references; renders — when empty"
+          ],
+          [
+            "residual_likelihood / residual_impact",
+            "int 1–5",
+            "—",
+            "Nullable; residual score derived as their product"
+          ],
+          [
+            "deadline",
+            "date",
+            "—",
+            "Treatment deadline; drives Overdue"
+          ],
+          [
+            "next_review_date",
+            "date",
+            "—",
+            "Drives Review overdue"
+          ],
+          [
+            "review_frequency",
+            "text",
+            "—",
+            "`monthly",
+            "quarterly",
+            "semiannual",
+            "annual`"
+          ],
+          [
+            "is_escalated",
+            "bool",
+            "—",
+            "Default false; red flag + escalated filter"
+          ],
+          [
+            "escalation_reason",
+            "text",
+            "—",
+            "Shown only when escalated"
           ]
         ],
         "noDocReason": null

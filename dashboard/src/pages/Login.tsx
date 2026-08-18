@@ -34,7 +34,7 @@ function BrandPanel() {
       <div className="relative z-10">
         {/* Logo */}
         <img
-          src="https://dignep.com.np/wp-content/uploads/2026/03/sentinel_logo.svg"
+          src="https://dignep.com.np/wp-content/uploads/2026/08/sentinel_logo.svg"
           alt="Sentinel AI"
           className="h-9 w-auto mb-12"
           onError={e => { (e.target as HTMLImageElement).src = '/sentinel-icon.svg'; (e.target as HTMLImageElement).className = 'h-9 w-9 mb-12'; }}

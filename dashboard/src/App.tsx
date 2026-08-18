@@ -57,8 +57,6 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const TrustEngineDashboard = lazy(() => import('./pages/trust-engine/TrustEngineDashboard'));
 const LiveTraceFeed = lazy(() => import('./pages/trust-engine/LiveTraceFeed'));
 const GuardrailActivity = lazy(() => import('./pages/trust-engine/GuardrailActivity'));
-// Retired 2026-08-25 (route redirects to /export): read the reporting_table demo table.
-// const Reporting = lazy(() => import("./pages/reporting/Reporting"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const CostTokenDashboard = lazy(() => import('./pages/trust-engine/CostTokenDashboard'));
 const FallbackLog = lazy(() => import('./pages/trust-engine/FallbackLog'));
