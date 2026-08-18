@@ -135,7 +135,11 @@ normalized fields above.
   (`20260825000002_seed_integration_catalog.sql`) and is global reference data:
   readable by any signed-in user, writable only by the service role. **If the
   Catalog tab shows "Catalogue not available", migrations have not been applied
-  to that database.**
+  to that database.** Apply them with the **Deploy Migrations** workflow
+  (`.github/workflows/deploy-migrations.yml`) — run it manually with *dry run*
+  first to see what is pending — or locally with `supabase db push`.
+- Tabs are URL-addressable: `/integrations` (catalogue),
+  `/integrations?tab=connectors`, `/integrations?tab=webhooks`.
 - Adding an adapter means: implement it under `sentinel/integrations/`, register
   it in `registry.py`, and flip that row's `adapter_status` to `available`. The
   registry docstring states the two must agree; the worker enforces it.

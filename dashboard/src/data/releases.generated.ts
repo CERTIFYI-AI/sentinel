@@ -1475,8 +1475,32 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 14,
+  "entryCount": 17,
   "entries": [
+    {
+      "type": "fix",
+      "scope": "demo-data",
+      "summary": "the eight seeded connector rows named individual people as accountable owners of production-sounding systems — the core banking feed, the credit bureau extract, the Nepal Rastra Bank supervisory return — with **no marker saying they were demonstration data**, making them indistinguishable on screen from real records. That failed the platform's own compliance gate twice: \"no personal data in seeds or fixtures\", and \"demo data stays fictional and labeled as such\". `20260829000001` replaces every owner with a ROLE label, suffixes each name \"(Demo)\", and marks `config.demo_seed = true` so they are identifiable and removable like every other demo record. Scoped to the eight seeded ids in the demo org — a tenant's own connectors are never rewritten, verified against a real Postgres alongside a control row that must stay untouched. Idempotent (no double suffix on re-run) and self-verifying: it raises if any seeded row still names a person or lacks the marker",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "feat",
+      "scope": "ci",
+      "summary": "add the **Deploy Migrations** workflow — the missing half of the deploy pipeline. `deploy-dashboard.yml` shipped the frontend on every push to main while **nothing applied the schema**, so merged work that depended on a migration was live in the bundle and absent from the database; empty catalogues and \"column does not exist\" errors all traced back to this one gap. The new workflow runs the static replay check first (catching an ordering mistake before touching the live database), then `supabase db push`, guarded by a concurrency group so two pushes cannot race mid-apply, with a *dry run* option that lists what is pending and changes nothing. It stops with a clear message listing exactly which of the three required secrets is missing rather than failing obscurely part-way through",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "feat",
+      "scope": "integrations",
+      "summary": "tabs on `/integrations` are URL-addressable (`?tab=connectors`, `?tab=webhooks`), matching the repo's deep-link convention, so a link can point at a specific tab and a reload lands where the reader expects. The catalogue is the default and stays clean in the URL",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "feat",
       "scope": "integrations",
