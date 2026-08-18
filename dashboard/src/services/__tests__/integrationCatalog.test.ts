@@ -17,8 +17,13 @@ import {
   countByCategory,
   connectableCount,
   filterCatalog,
+  reconcileWithServer,
+  sanitizeDocsHint,
+  sanitizeConnectSteps,
+  COMPETITOR_GRC_SLUGS,
   type CatalogEntry,
 } from '../integrationCatalogService'
+import { INTEGRATIONS, getIntegrationConfig } from '@/integrations'
 import {
   rankFindings,
   evidencePosture,
@@ -186,5 +191,158 @@ describe('findings helpers', () => {
   it('counts by status with every key present', () => {
     const counts = countByStatus([finding({ status: 'FAILED' }), finding({ status: 'PASSED' })])
     expect(counts).toEqual({ PASSED: 1, FAILED: 1, WARNING: 0, NOT_AVAILABLE: 0 })
+  })
+})
+
+
+describe('third-party GRC references', () => {
+  // The seeded catalogue pointed 163 rows at a competitor's help centre, and a
+  // migration clears them. This mirror exists because the frontend and the
+  // database deploy separately: without it the text survives every frontend
+  // release until someone remembers to run migrations.
+  it('drops a docs hint naming a competing GRC platform', () => {
+    expect(
+      sanitizeDocsHint(
+        "Vanta Help Center → Cloud / Infrastructure → search exact product 'AWS'. "
+        + 'https://help.vanta.com/en/collections/18953623-cloud-providers',
+      ),
+    ).toBeNull()
+    expect(sanitizeDocsHint('Drata integration guide')).toBeNull()
+    expect(sanitizeDocsHint('See Secureframe for details')).toBeNull()
+  })
+
+  it('keeps a genuine provider documentation pointer', () => {
+    expect(sanitizeDocsHint('https://docs.github.com')).toBe('https://docs.github.com')
+    expect(sanitizeDocsHint('AWS IAM User Guide → MFA')).toBe('AWS IAM User Guide → MFA')
+  })
+
+  it('treats blank and missing hints alike so the UI omits the line', () => {
+    expect(sanitizeDocsHint(null)).toBeNull()
+    expect(sanitizeDocsHint(undefined)).toBeNull()
+    expect(sanitizeDocsHint('   ')).toBeNull()
+  })
+
+  it('rewrites a connection step that sends the operator to another product', () => {
+    // Three seeded rows instructed the reader to enter the key "in Vanta" —
+    // an instruction someone may actually follow, not merely a reference.
+    expect(
+      sanitizeConnectSteps('Add Anthropic Organization Admin API Token (Read-only) in Vanta.'),
+    ).toBe('Add Anthropic Organization Admin API Token (Read-only) in Sentinel.')
+    expect(
+      sanitizeConnectSteps('Provide API Service Key or configure automated webhook export to Vanta ingestion queue.'),
+    ).toBe('Provide API Service Key or configure automated webhook export to the Sentinel evidence ingestion queue.')
+  })
+
+  it('leaves every other connection step exactly as written', () => {
+    // The provider-specific facts in these steps come from the source
+    // workbook; rewriting them would be inventing instructions.
+    const steps = '1) Admin opens Integrations. 2) Grants least-privilege read scope.'
+    expect(sanitizeConnectSteps(steps)).toBe(steps)
+    expect(sanitizeConnectSteps(null)).toBeNull()
+    expect(sanitizeConnectSteps('  ')).toBeNull()
+  })
+
+  it('lists the competitor slugs the catalogue must not carry', () => {
+    expect(COMPETITOR_GRC_SLUGS).toContain('vanta')
+    expect(COMPETITOR_GRC_SLUGS).toContain('drata')
+    // Real evidence sources must never be caught by the same net.
+    expect(COMPETITOR_GRC_SLUGS).not.toContain('github')
+    expect(COMPETITOR_GRC_SLUGS).not.toContain('aws')
+  })
+})
+
+describe('connect forms', () => {
+  // A shipped adapter with no form renders a "packaging gap" message instead
+  // of fields, so the registry is asserted rather than assumed.
+  it('ships a form for each cloud provider the server accepts', () => {
+    expect(INTEGRATIONS.map(i => i.id).sort()).toEqual(['aws', 'github', 'microsoft_azure'])
+  })
+
+  it('keys Azure by its catalogue slug, not by "azure"', () => {
+    // One id-space: integration_catalog.slug is `microsoft_azure`, and a form
+    // registered under `azure` would never be found for the catalogue entry.
+    expect(getIntegrationConfig('microsoft_azure')?.name).toBe('Microsoft Azure')
+    expect(getIntegrationConfig('azure')).toBeUndefined()
+  })
+
+  it('collects a credential for every required AWS and Azure field', () => {
+    for (const id of ['aws', 'microsoft_azure']) {
+      const config = getIntegrationConfig(id)!
+      expect(config.credentialFields.length).toBeGreaterThan(0)
+      for (const field of config.credentialFields) {
+        expect(field.id).toMatch(/^[a-z_]+$/)
+        expect(field.label.length).toBeGreaterThan(0)
+        expect(field.helpText, `${id}.${field.id} needs help text`).toBeTruthy()
+      }
+    }
+  })
+
+  it('masks every secret-bearing field', () => {
+    // A secret rendered as type="text" is shoulder-surfable and offered to
+    // autofill; the type is the only thing stopping that.
+    for (const config of INTEGRATIONS) {
+      for (const field of config.credentialFields) {
+        if (/secret|token|password|key$/.test(field.id) && field.id !== 'access_key_id') {
+          expect(field.type, `${config.id}.${field.id}`).toBe('password')
+        }
+      }
+    }
+  })
+})
+
+
+describe('reconcileWithServer', () => {
+  // The catalogue's adapter_status is set by a migration; the registry lives
+  // in Python. They deploy separately, so they drift, and the server is the
+  // one that actually accepts or rejects a connect request.
+  it('leaves the catalogue alone when the backend is unreachable', () => {
+    const entries = [entry({ slug: 'aws', adapterStatus: 'catalogued' })]
+    // null means "no information", not "nothing is connectable".
+    expect(reconcileWithServer(entries, null)).toBe(entries)
+  })
+
+  it('offers Connect when the server ships an adapter the catalogue has not been told about', () => {
+    const [row] = reconcileWithServer(
+      [entry({ slug: 'aws', adapterStatus: 'catalogued' })],
+      ['github', 'aws'],
+    )
+    expect(row.adapterStatus).toBe('beta')
+    expect(isConnectable(row)).toBe(true)
+  })
+
+  it('never promotes straight to available on the strength of the registry alone', () => {
+    // The registry proves an adapter exists, not that it is production-ready.
+    const [row] = reconcileWithServer(
+      [entry({ slug: 'microsoft_azure', adapterStatus: 'catalogued' })],
+      ['microsoft_azure'],
+    )
+    expect(row.adapterStatus).not.toBe('available')
+  })
+
+  it('withdraws Connect when the server has no adapter for it', () => {
+    const [row] = reconcileWithServer(
+      [entry({ slug: 'okta', adapterStatus: 'available' })],
+      ['github'],
+    )
+    expect(row.adapterStatus).toBe('catalogued')
+    expect(isConnectable(row)).toBe(false)
+  })
+
+  it('leaves an agreeing entry untouched', () => {
+    const rows = [entry({ slug: 'github', adapterStatus: 'available' })]
+    const [row] = reconcileWithServer(rows, ['github'])
+    expect(row).toBe(rows[0])
+  })
+
+  it('keeps connectableCount honest after reconciliation', () => {
+    const rows = reconcileWithServer(
+      [
+        entry({ slug: 'github', adapterStatus: 'available' }),
+        entry({ slug: 'aws', adapterStatus: 'catalogued' }),
+        entry({ slug: 'okta', adapterStatus: 'beta' }),
+      ],
+      ['github', 'aws'],
+    )
+    expect(connectableCount(rows)).toBe(2)
   })
 })

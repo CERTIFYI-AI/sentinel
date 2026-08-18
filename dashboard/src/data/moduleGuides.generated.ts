@@ -7642,7 +7642,7 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "docPath": "docs/modules/integration-catalog.md",
         "title": "Integration Catalog & Collected Evidence",
         "purpose": "Browse the published catalogue of evidence sources, enable the ones that can actually collect, and see the evidence they produce mapped onto the org's controls.",
-        "why": "The catalogue held 219 products and nothing in the product read it. The evidence tables behind it — integration_findings, control_finding_evidence, background_jobs — had zero readers too. So the platform had a real collection pipeline, a real control-mapping engine, and no way for a user to reach any of it. This module closes that gap. It also carries an honesty obligation. Of the 219 catalogued products, exactly one (github) ships an adapter. Rendering a Connect button on all 219 would promise evidence collection that cannot happen — the same class of defect as an unearned certification badge",
+        "why": "The catalogue held 219 products and nothing in the product read it. The evidence tables behind it — integration_findings, control_finding_evidence, background_jobs — had zero readers too. So the platform had a real collection pipeline, a real control-mapping engine, and no way for a user to reach any of it. This module closes that gap. It also carries an honesty obligation. Of the 217 catalogued products, three ship an adapter today — github, aws and microsoft_azure. Rendering a Connect button on all 217 would promise evidence collection that cannot happen — the same class of defect as an unea",
         "how": [
           "### Three states, stated plainly",
           "| adapter_status | Meaning | UI |",
@@ -7650,12 +7650,12 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
           "the Python worker refuses a slug absent from its registry",
           "(sentinel/integrations/registry.py), so client and server agree by",
           "construction rather than by comment.",
-          "A catalogued-only product still shows its full operator prose — what it",
-          "evidences, how evidence is pulled, what it maps to, connection steps — because",
-          "that is genuinely useful for deciding which sources to prioritise.",
-          "### Enable / disable — where you fill in credentials",
-          "Connect opens a form built from the provider's own",
-          "IntegrationConfig.credentialFields (e.g. GitHub asks for an access token, an"
+          "The server is the tiebreaker. adapter_status is set by a migration and the",
+          "registry lives in Python; the two deploy separately, so they drift.",
+          "reconcileWithServer() folds GET /v1/integrations/available over the",
+          "catalogue before it renders: a product the server ships but the catalogue calls",
+          "catalogued becomes connectable (as beta, never available — the registry",
+          "proves an adapter exists, not that it is production-ready), and a product the"
         ],
         "dataProcess": [],
         "interlinks": [
@@ -7705,99 +7705,112 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
             "Neutral badge, no Connect, with the reason"
           ],
           [
-            "Field",
-            "Column",
-            "Notes"
+            "github",
+            "available",
+            "PAT / GitHub App",
+            "read:org, repo metadata read, security_events read"
           ],
           [
-            "slug",
-            "slug",
-            "Primary key; the one id-space shared with integrations.catalog_slug"
+            "aws",
+            "beta",
+            "IAM keys, optionally sts:AssumeRole",
+            "AWS-managed SecurityAudit policy"
           ],
           [
-            "name",
-            "name",
-            "Product name"
+            "microsoft_azure",
+            "beta",
+            "Entra ID app registration (client credentials)",
+            "Reader on the subscription; Policy.Read.All on Graph for the MFA check"
           ],
           [
-            "category",
-            "category",
-            "hr, identity, code, cloud, device, security, siem, secrets, cicd, ticketing, training, collaboration, saas, hiring, ai"
+            "aws.iam.root_mfa",
+            "mfa_enforcement",
+            "Root user has an MFA device"
           ],
           [
-            "whyNeeded",
-            "why_needed",
-            "What evidence this source carries"
+            "aws.iam.user_mfa",
+            "mfa_enforcement",
+            "Console users without MFA (programmatic-only users excluded)"
           ],
           [
-            "evidencePull",
-            "evidence_pull",
-            "How evidence is pulled (API / OAuth / SCIM …)"
+            "aws.iam.password_policy",
+            "access_control",
+            "Length, complexity, reuse prevention"
           ],
           [
-            "connectSteps",
-            "connect_steps",
-            "Operator walkthrough"
+            "aws.iam.access_key_age",
+            "access_control",
+            "Active keys older than 90 days (CIS threshold)"
           ],
           [
-            "evidenceMapping",
-            "evidence_mapping",
-            "What maps to which evidence entities"
+            "aws.iam.admin_policy_attachments",
+            "least_privilege",
+            "AdministratorAccess attached directly to users"
           ],
           [
-            "docsHint",
-            "docs_hint",
-            "Provider's own docs"
+            "aws.cloudtrail.multi_region",
+            "audit_logging",
+            "A multi-region trail that is actually logging"
           ],
           [
-            "tier",
-            "tier",
-            "1 = adapter shipped, 2 = planned, 3 = catalogued"
+            "aws.s3.public_access_block",
+            "access_control",
+            "Account-level block, else per bucket"
           ],
           [
-            "adapterStatus",
-            "adapter_status",
-            "available \\",
-            "beta \\",
-            "catalogued"
+            "aws.s3.default_encryption",
+            "encryption_at_rest",
+            "Default SSE per bucket"
           ],
           [
-            "Field",
-            "Column",
-            "Notes"
+            "aws.ec2.ebs_encryption_default",
+            "encryption_at_rest",
+            "Encrypt-new-volumes, per region"
           ],
           [
-            "checkId",
-            "check_id",
-            "Stable, e.g. github.org.mfa_required"
+            "aws.rds.storage_encrypted",
+            "encryption_at_rest",
+            "Instance storage encryption"
           ],
           [
-            "title / description / remediation",
-            "same",
-            "Normalized, operator-facing"
+            "aws.ec2.security_group_ingress",
+            "network_security",
+            "Admin/database ports open to 0.0.0.0/0 or ::/0"
           ],
           [
-            "status",
-            "status",
-            "PASSED \\",
-            "FAILED \\",
-            "WARNING \\",
-            "NOT_AVAILABLE"
+            "aws.kms.key_rotation",
+            "secret_management",
+            "Automatic rotation on customer-managed symmetric keys"
           ],
           [
-            "severity",
-            "severity",
-            "CRITICAL … INFO"
+            "aws.guardduty.enabled",
+            "incident_response",
+            "An enabled detector, not merely a present one"
           ],
           [
-            "checkCategory",
-            "check_category",
-            "Drives the control mapping"
+            "aws.backup.plans",
+            "backup_recovery",
+            "AWS Backup plans (says plainly that service-native backups are invisible to it)"
           ],
           [
-            "collectedAt",
-            "collected_at",
-            "When the check ran"
+            "azure.entra.conditional_access_mfa",
+            "mfa_enforcement",
+            "An enabled Conditional Access policy with an MFA grant control"
+          ],
+          [
+            "azure.rbac.owner_assignments",
+            "least_privilege",
+            "Share of role assignments granting Owner"
+          ],
+          [
+            "azure.storage.public_blob_access",
+            "access_control",
+            "allowBlobPublicAccess (absence is not read as disabled)"
+          ],
+          [
+            "azure.storage.https_only",
+            "encryption_in_transit",
+            "Secure transfer required, minimum TLS 1.2"
           ]
         ],
         "noDocReason": null

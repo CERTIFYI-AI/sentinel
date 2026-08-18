@@ -15,8 +15,10 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   fetchIntegrationCatalog,
   isConnectable,
+  reconcileWithServer,
   type CatalogEntry,
 } from '@/services/integrationCatalogService'
+import { fetchServerAvailableSlugs } from '@/services/integrationConnectService'
 import {
   createIntegration,
   softDeleteIntegration,
@@ -29,15 +31,38 @@ import {
 } from '@/services/integrationFindingsService'
 import { logAction } from '@/lib/auditLogger'
 
-/** The published catalogue of evidence sources. */
+/**
+ * The published catalogue of evidence sources, reconciled against the server.
+ *
+ * Two queries, deliberately: the catalogue row carries the operator prose and
+ * the intended rollout state, while `GET /v1/integrations/available` is the
+ * server's own answer to "what will I accept?". They are maintained in
+ * different places and deploy separately, so the second corrects the first —
+ * see `reconcileWithServer`. The availability probe never blocks or fails the
+ * page: unreachable means "no information", not "nothing is connectable".
+ */
 export function useIntegrationCatalog() {
   const q = useQuery({
     queryKey: ['integration_catalog'],
     queryFn: fetchIntegrationCatalog,
     staleTime: 10 * 60_000, // reference data; refetching it often is waste
   })
+  const available = useQuery({
+    queryKey: ['integration_adapters_available'],
+    queryFn: fetchServerAvailableSlugs,
+    staleTime: 10 * 60_000,
+    // Resolves to null rather than throwing when the backend is absent, so a
+    // retry storm would buy nothing.
+    retry: false,
+  })
+
+  const data = useMemo(
+    () => reconcileWithServer(q.data ?? [], available.data ?? null),
+    [q.data, available.data],
+  )
+
   return {
-    data: q.data ?? [],
+    data,
     isLoading: q.isLoading,
     isError: q.isError,
     error: q.error as Error | null,
