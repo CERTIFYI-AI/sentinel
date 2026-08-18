@@ -56,7 +56,7 @@ export function StatCardRow({ cards, className, loading = false }: StatCardRowPr
       {loading
         ? capped.map((_, i) => <StatCardSkeleton key={i} />)
         : capped.map((card, i) => (
-            <StatCardItem key={i} {...card} />
+            <StatCardItem key={i} index={i} {...card} />
           ))}
     </div>
   )
@@ -71,7 +71,8 @@ function StatCardItem({
   icon,
   href,
   description,
-}: StatCardRowItem) {
+  index = 0,
+}: StatCardRowItem & { index?: number }) {
   const isUp = deltaDir === 'up'
   const isPositive = isPositiveUp ? isUp : !isUp
   const deltaColor = isPositive
@@ -89,8 +90,13 @@ function StatCardItem({
         'border-[hsl(var(--border))] bg-surface',
         'shadow-sm hover:shadow-md transition-shadow duration-150',
         'border-l-4 border-l-[hsl(var(--brand))]',
+        // Staggered entrance. `both` holds the start frame so a card is never
+        // briefly visible before it animates; the delay cascades the row.
+        // Zeroed out under prefers-reduced-motion (see index.css).
+        'animate-fade-in-up',
         href && 'cursor-pointer',
       )}
+      style={{ animationDelay: `${Math.min(index, 3) * 60}ms` }}
       aria-label={ariaLabel}
     >
       <div className="flex items-center justify-between">

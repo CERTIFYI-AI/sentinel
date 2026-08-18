@@ -5,6 +5,25 @@ const config: Config = {
   content: ['./src/**/*.{ts,tsx}'],
   theme: {
     extend: {
+      // Entrance motion for dashboard cards and the bulk-action bar. Kept in
+      // Tailwind rather than pulling in Framer Motion — a fade+rise needs no
+      // 50KB runtime. `motion-reduce:` variants below zero these out for users
+      // who ask for reduced motion (WCAG 2.3.3), which a board-facing product
+      // must respect.
+      keyframes: {
+        'fade-in-up': {
+          '0%': { opacity: '0', transform: 'translateY(6px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'in-up': {
+          '0%': { opacity: '0', transform: 'translateY(8px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+      },
+      animation: {
+        'fade-in-up': 'fade-in-up 0.4s cubic-bezier(0.16,1,0.3,1) both',
+        'in-up': 'in-up 0.18s ease-out both',
+      },
       fontFamily: {
         sans: ['Outfit Variable', 'Outfit', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'monospace'],

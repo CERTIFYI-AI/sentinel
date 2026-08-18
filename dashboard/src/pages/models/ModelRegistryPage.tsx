@@ -1,4 +1,5 @@
 import { useModelsData } from "@/hooks/useModelsData";
+import { downloadCsv } from "@/lib/csv";
 import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -151,24 +152,29 @@ export default function ModelRegistryPage() {
     }
   };
 
-  // CSV export of the (filtered) registry — real file download, not a stub.
+  // CSV export of the (filtered) registry. Routed through downloadCsv, which is
+  // formula-injection-safe: an owner name or model name of "=WEBSERVICE(...)"
+  // — attacker-influenceable text that can arrive from a synced integration —
+  // is neutralised so the auditor's spreadsheet renders it, never runs it
+  // (CWE-1236). The previous inline exporter quoted correctly but did not.
   const exportCsv = useCallback(() => {
-    const cols: Array<[string, (m: Model) => string]> = [
-      ['ID', m => m.id], ['Name', m => m.name], ['Type', m => m.type], ['Version', m => m.version],
-      ['Risk Tier', m => m.riskTier], ['Fairness %', m => m.fairnessScore == null ? '—' : String(m.fairnessScore)],
-      ['Drift', m => m.driftStatus], ['Status', m => m.status], ['Owner', m => m.owner],
-      ['Last Validated', m => m.lastValidated],
-    ];
-    const esc = (v: string) => `"${(v ?? '').replace(/"/g, '""')}"`;
-    const rows = [cols.map(c => c[0]).join(',')].concat(
-      filtered.map(m => cols.map(c => esc(c[1](m))).join(',')),
+    const n = downloadCsv(
+      `model-registry-${new Date().toISOString().slice(0, 10)}`,
+      filtered,
+      [
+        { header: 'ID', value: m => m.id },
+        { header: 'Name', value: m => m.name },
+        { header: 'Type', value: m => m.type },
+        { header: 'Version', value: m => m.version },
+        { header: 'Risk Tier', value: m => m.riskTier },
+        { header: 'Fairness %', value: m => m.fairnessScore == null ? '—' : m.fairnessScore },
+        { header: 'Drift', value: m => m.driftStatus },
+        { header: 'Status', value: m => m.status },
+        { header: 'Owner', value: m => m.owner },
+        { header: 'Last Validated', value: m => m.lastValidated },
+      ],
     );
-    const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `model-registry-${new Date().toISOString().slice(0, 10)}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-    toast(`Exported ${filtered.length} models to CSV`, 'success');
+    toast(`Exported ${n} models to CSV`, 'success');
   }, [filtered, toast]);
 
   // Drift performance data for the detail chart (12 months)

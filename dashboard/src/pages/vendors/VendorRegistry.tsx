@@ -28,6 +28,7 @@ import {
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow'
 import { DataTable, type Column } from '@/components/ui/DataTable'
+import { downloadCsv, type CsvColumn } from '@/lib/csv'
 import { FilterBar } from '@/components/ui/FilterBar'
 import { EmptyState } from '@/components/ui/EmptyState'
 import { ErrorState } from '@/components/ui/ErrorState'
@@ -231,23 +232,29 @@ export default function VendorRegistry() {
     }
   }
 
+  // Shared by the page-level "Export CSV" and the bulk-bar "Export selected".
+  // Routed through downloadCsv, which is formula-injection-safe (CWE-1236) and
+  // quotes every field — the previous inline exporter JSON-stringified only
+  // name/owner (a "=BAD()" name still executed) and left category/tier
+  // unquoted (a comma in a category broke the row).
+  const vendorCsvColumns: CsvColumn<VendorRecord>[] = [
+    { header: 'id', value: (v) => v.id },
+    { header: 'name', value: (v) => v.name ?? '' },
+    { header: 'category', value: (v) => v.category ?? '' },
+    { header: 'risk_tier_label', value: (v) => v.riskTierLabel ?? '' },
+    { header: 'criticality', value: (v) => v.criticality ?? '' },
+    { header: 'score', value: (v) => v.score ?? '' },
+    { header: 'dpa_status', value: (v) => v.dpaStatus ?? '' },
+    { header: 'status', value: (v) => v.status ?? '' },
+    { header: 'business_owner', value: (v) => v.businessOwner ?? '' },
+    { header: 'reassessment_due_at', value: (v) => v.reassessmentDueAt ?? '' },
+  ]
+
+  const exportVendors = (rows: VendorRecord[], scope: string) =>
+    downloadCsv(`vendor-registry-${scope}-${new Date().toISOString().slice(0, 10)}`, rows, vendorCsvColumns)
+
   function handleExport() {
-    const header = [
-      'id', 'name', 'category', 'risk_tier_label', 'criticality', 'score',
-      'dpa_status', 'status', 'business_owner', 'reassessment_due_at',
-    ]
-    const csv = [
-      header.join(','),
-      ...filtered.map((v) => [
-        v.id, JSON.stringify(v.name ?? ''), v.category ?? '', v.riskTierLabel ?? '',
-        v.criticality ?? '', v.score ?? '', v.dpaStatus ?? '', v.status ?? '',
-        JSON.stringify(v.businessOwner ?? ''), v.reassessmentDueAt ?? '',
-      ].join(',')),
-    ].join('\n')
-    const a = document.createElement('a')
-    a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv' }))
-    a.download = `vendor-registry-${new Date().toISOString().slice(0, 10)}.csv`
-    a.click()
+    exportVendors(filtered, 'all')
   }
 
   const columns: Column<VendorRecord>[] = [
@@ -504,6 +511,17 @@ export default function VendorRegistry() {
               data={filtered}
               columns={columns}
               searchKey="name"
+              selectable
+              getRowId={(v) => v.id}
+              bulkActions={(selected, clear) => (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => { exportVendors(selected, 'selection'); clear() }}
+                >
+                  <Export size={14} /> Export {selected.length} to CSV
+                </Button>
+              )}
               onRowClick={(v) => navigate(`/vendors/${v.id}`)}
               onView={(v) => navigate(`/vendors/${v.id}`)}
               onEdit={openEdit}
