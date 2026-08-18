@@ -29,12 +29,21 @@ class TestAdapterGate:
         # Whatever ships, the set must be explicit — never "everything".
         assert len(slugs) < 219, "every catalogue product cannot have an adapter"
 
-    def test_github_ships_an_adapter(self):
-        assert "github" in available_slugs()
+    def test_shipped_adapters(self):
+        # Keep in step with sentinel/integrations/registry.py AND with the
+        # migration that flips `adapter_status` — a slug connectable in one and
+        # not the other is either a dead Connect button or a hidden capability.
+        assert available_slugs() == frozenset({"github", "aws", "microsoft_azure"})
 
     def test_catalogued_only_product_has_no_adapter(self):
-        # AWS is catalogued but no adapter ships; connecting must be refused.
-        assert "aws" not in available_slugs()
+        # Okta is catalogued but no adapter ships; connecting must be refused.
+        assert "okta" not in available_slugs()
+
+    def test_azure_is_keyed_by_its_catalogue_slug(self):
+        # The catalogue row is `microsoft_azure`. Registering it as `azure`
+        # would give a Connect button the server rejects — one id-space.
+        assert "microsoft_azure" in available_slugs()
+        assert "azure" not in available_slugs()
 
     def test_unknown_slug_raises_with_an_explanation(self):
         # The registry raises LookupError. KeyError is a SUBCLASS of it, so an
@@ -103,3 +112,68 @@ class TestNoPlaintextLeak:
         source = inspect.getsource(integrations_api.connect)
         # The row carries the credential blob, so the driver message stays internal.
         assert "Could not save the integration" in source
+
+
+class TestConnectFormMatchesTheAdapter:
+    """The browser form and the server dataclass must agree field for field.
+
+    The backend validates the submitted credential dict against the adapter's
+    own credentials class, so a field the form does not collect — or collects
+    under a different name — is a 400 the operator cannot diagnose. This test
+    reads the TypeScript config directly rather than trusting a comment.
+    """
+
+    @staticmethod
+    def _form_field_ids(config_path: str) -> set[str]:
+        import pathlib
+        import re
+
+        source = pathlib.Path(config_path).read_text()
+        body = source.split("credentialFields:", 1)[1].split("checkCategories:", 1)[0]
+        return set(re.findall(r"^\s*id: '([a-z_]+)'", body, re.MULTILINE))
+
+    @staticmethod
+    def _credential_fields(credentials_cls) -> tuple[set[str], set[str]]:
+        import dataclasses
+
+        fields = dataclasses.fields(credentials_cls)
+        required = {f.name for f in fields if f.default is dataclasses.MISSING}
+        return {f.name for f in fields}, required
+
+    def _assert_parity(self, slug: str, config_path: str) -> None:
+        from sentinel.integrations.registry import get_adapter_class
+
+        _adapter, credentials_cls = get_adapter_class(slug)
+        all_names, required = self._credential_fields(credentials_cls)
+        form = self._form_field_ids(config_path)
+
+        assert form, f"no credentialFields parsed from {config_path}"
+        unknown = form - all_names
+        assert not unknown, f"{slug} form collects fields the adapter ignores: {unknown}"
+        uncollected = required - form
+        assert not uncollected, (
+            f"{slug} adapter requires fields the form never collects: {uncollected}"
+        )
+
+    def test_github_form_matches_its_credentials(self):
+        self._assert_parity("github", "dashboard/src/integrations/github/config.ts")
+
+    def test_aws_form_matches_its_credentials(self):
+        self._assert_parity("aws", "dashboard/src/integrations/aws/config.ts")
+
+    def test_azure_form_matches_its_credentials(self):
+        self._assert_parity("microsoft_azure", "dashboard/src/integrations/azure/config.ts")
+
+    def test_every_shipped_adapter_has_a_connect_form(self):
+        # A registered adapter with no form renders a "packaging gap" message
+        # instead of fields. Catch it here rather than in front of a user.
+        import pathlib
+
+        paths = {
+            "github": "dashboard/src/integrations/github/config.ts",
+            "aws": "dashboard/src/integrations/aws/config.ts",
+            "microsoft_azure": "dashboard/src/integrations/azure/config.ts",
+        }
+        assert set(paths) == set(available_slugs())
+        for slug, path in paths.items():
+            assert pathlib.Path(path).exists(), f"{slug} has no connect form at {path}"

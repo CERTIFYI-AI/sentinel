@@ -250,3 +250,18 @@ catalog** (`framework_controls`) and interlinks it, both ways, to the org
 | Art. 12 | Record-keeping / traceability | The interlink is **derived read-only** from `framework_controls` + `controls` clause references (boundary-token match); the catalog table is seeded by migration and not written by this module, so there is no state-changing action to audit-log here. State changes on the org controls it links are logged by the controls module | N/A — read-only surface |
 | Art. 14 | Human oversight | **N/A — non-autonomous.** The Requirements view is advisory display; it takes no action on the user's behalf | N/A — non-autonomous |
 | — | Never fabricate coverage | Unimplemented published controls read "Not yet implemented"; an unreadable register reads "Implementation status unavailable" (never a fake 0/green); unmatched clauses are left unlinked rather than guessed | N/A — honesty rule, enforced in `frameworkCatalogService.ts` |
+
+## Module Coverage — Cloud Evidence Adapters (AWS, Microsoft Azure)
+
+Two read-only connectors that collect security posture from a cloud account and
+map each finding onto the org's controls (see
+[`docs/modules/integration-catalog.md`](../modules/integration-catalog.md)).
+
+| Article | Obligation | How the adapters relate | Status |
+|---|---|---|---|
+| Art. 12 | Record-keeping — automatically generated logs over the system's lifetime | Every check writes an `integration_findings` row keyed by a stable `check_id` and stamped `collected_at`, so posture is a dated series an auditor can walk, not a screenshot. Connect and disconnect are `logAction`-audited, and **disconnecting retains the findings already collected** — removing a source must not erase the trail it produced | Implemented |
+| Art. 12 | Provenance of an automated observation | Each finding carries the source integration, the check that produced it and the raw provider payload in `result_details`, retained for the audit trail and never rendered verbatim to users | Implemented |
+| Art. 14 | Human oversight — automation informs, it does not decide | `control_finding_evidence` is deliberately separate from `controls.status`. A FAILED cloud check never flips a control a person marked implemented; it surfaces the contradiction for someone to resolve | Implemented |
+| Art. 15 | Accuracy and robustness — a control claim rests on measured state | Posture claims (MFA, encryption at rest, network exposure, log retention) are read from the provider's own API rather than asserted by the operator | Implemented |
+| — | Never fabricate an observation | A permission gap returns **NOT_AVAILABLE**, never PASSED or FAILED: Azure's MFA check without `Policy.Read.All`, AWS bucket encryption behind AccessDenied. A check that cannot see something says so, and a check whose scope is one region says which region | N/A — honesty rule, enforced in both adapters and asserted in `tests/test_aws_adapter.py` / `tests/test_azure_adapter.py` |
+| — | Never overstate maturity | Both ship as `adapter_status = 'beta'` — implemented and unit-tested, not yet validated against a production tenant — and the UI says so on the connect screen | N/A — honesty rule |

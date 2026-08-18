@@ -470,6 +470,14 @@ export function IntegrationCatalog({ canManage }: { canManage: boolean }) {
                       Connect
                     </Button>
                   )}
+                  {open.entry.adapterStatus === 'beta' && (
+                    <p className="text-[11px] text-[hsl(var(--warning))] mt-2 flex gap-1.5">
+                      <Info size={13} className="flex-shrink-0 mt-0.5" />
+                      Beta adapter: every check is implemented and unit-tested, but this
+                      connector has not yet been validated against a production tenant. Read its
+                      first findings before relying on them as audit evidence.
+                    </p>
+                  )}
                   {!canManage && isConnectable(open.entry) && (
                     <p className="text-[11px] text-[hsl(var(--text-4))] mt-2">
                       You do not have permission to change integrations.
