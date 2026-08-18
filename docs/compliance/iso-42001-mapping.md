@@ -47,6 +47,7 @@ Added with the connectivity and gateway build-out (August 2026).
 | A.3.2 | Roles and accountability documented | [Tasks](../modules/tasks.md) (owner per finding); [Eval Techniques](../modules/eval-techniques.md) (owner per method) | Implemented |
 | A.4.2 | Competence | [AI Literacy](../modules/ai-literacy.md) — completion evidence per programme | Implemented |
 | A.4.3 | Awareness | [AI Literacy](../modules/ai-literacy.md); [AI Apps](../modules/ai-apps.md) sanctioned-tool guidance | Implemented |
+| A.6.2.1 | AI system lifecycle — system of record | [Model Inventory](../modules/model-inventory.md) — `ai_models` registry, org-scoped with RLS; DB-trigger audit-logged (migration `20260902000001`, `fn_audit_governed`) | Implemented |
 | A.6.2.2 | AI system objectives, tested against | [Eval Techniques](../modules/eval-techniques.md) — coverage per model | Implemented |
 | A.6.2.4 | Verification and validation planning | [Eval Techniques](../modules/eval-techniques.md) — cadence and due dates; [Playground](../modules/playground.md) — pre-change rehearsal | Implemented |
 | A.6.2.6 | Operation monitoring | [Integrations](../modules/integrations.md) health/sync; [MCP Gateway](../modules/mcp-gateway.md) server health | Implemented |
@@ -73,7 +74,7 @@ Status reported honestly; real gaps are named.
 
 | Control / Clause | Control description | Module & backing | Status |
 | --- | --- | --- | --- |
-| 6.1.2 / A.5.2 | AI risk assessment — classify each system by risk | [Risk Classification](../modules/ai-risk-tiering.md) — `ai_risk_tiering`, `deriveEuTier` | Implemented — audit-logging gap (Art. 12 / [TD-018](../reference/technical-debt.md)) |
+| 6.1.2 / A.5.2 | AI risk assessment — classify each system by risk | [Risk Classification](../modules/ai-risk-tiering.md) — `ai_risk_tiering`, `deriveEuTier` | Implemented — `ai_models` now DB-trigger audit-logged (migration `20260902000001`); sibling registries (`use_cases`, `datasets`, `risks`) remain un-audited (blocked on tenant_id→org_id migration, [TD-018](../reference/technical-debt.md)) |
 | 6.1.2 / 8.2 / A.5.5 | AI risk treatment register — likelihood, severity, mitigation to closure | [Risk Register](../modules/risk-register.md) — `risks` | Implemented — Art. 12 logging gap; manual-create interlinks not settable |
 | 8.4 / A.5.3 | AI system impact assessment | [Impact Assessments](../modules/ai-impact-assessments.md) — AIIA records | Implemented |
 | A.6.2.4 / A.6.2.6 | Operation & monitoring of the AI system at runtime | [Trust Engine](../modules/trust-engine.md) — `sentinel/proxy.py` gateway + trust/guardrail/trace tables | Implemented (runtime); dashboard views partly telemetry |
