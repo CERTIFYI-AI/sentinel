@@ -75,7 +75,7 @@ Every product now opens the same modal (`ConnectDialog`), and
 | | `automated` | `monitored` |
 | --- | --- | --- |
 | When | `adapter_status` is `available` or `beta` | anything else |
-| Fields | the adapter's own credential contract | the source's identity, owner, cadence, evidence location |
+| Fields | the adapter's own credential contract | the product's own identifiers (34 products) or its category shape, plus owner, cadence, evidence location |
 | Secrets | AES-256-GCM encrypted server-side | **none asked for, none stored** |
 | On save | first sync queued | nothing queued |
 | Row | `status='configuring'`, `connection_mode='automated'` | `status='monitored'`, `connection_mode='manual'` |
@@ -93,14 +93,32 @@ a named accountable owner and a review cadence, both **required**, against a
 catalogued source in the same id-space as everything else. That is the state
 ISO/IEC 42001 §9.1 and EU AI Act Art. 12 actually turn on.
 
-**Where the monitored fields come from.** The scope field is keyed on the
-catalogue row's own `category` (cloud → account/subscription, code →
-organisation, identity → tenant URL, …), and the access-method choices are
-parsed out of the row's own `evidence_pull` prose — offered only when the row
-names more than one. Nothing in the profile asserts a product-specific API fact
-the catalogue does not already state, so no product gets invented
-documentation. `connectionProfiles.test.ts` asserts the whole matrix, including
-that **no catalogued product is ever handed a `password` field**.
+**Where the monitored fields come from — two tiers.**
+
+*Tier 1, the product's own profile* (`productProfiles.ts`, 34 products). AWS is
+identified by a 12-digit account number and reached with a cross-account IAM
+role; Zoom by an Account ID from a Server-to-Server OAuth app; Okta by an org
+URL and an SSWS token; Datadog by a **site**, because keys are not portable
+between `datadoghq.com`, `.eu` and the US3/US5 sites. Asking all of them
+"tenant, workspace or account" produced a record nobody could act on — whoever
+eventually built the connection had to go and find out anyway. Each entry
+states how that vendor's own documented integration works, and each slug is
+verified to exist in the seeded catalogue.
+
+*Tier 2, the category shape.* A product with no verified profile falls back to
+its catalogue `category` (cloud → account/subscription, code → organisation,
+identity → tenant URL, …), with access methods parsed from the row's own
+`evidence_pull` prose. That prose is the same generic sentence on most rows, so
+the UI labels it as *"this product's catalogue entry names…"* rather than
+asserting it about the product. Being honestly generic beats being specifically
+wrong, and the long tail gets no invented documentation.
+
+**The specificity does not weaken the secrets rule.** A monitored product still
+has no adapter, so its profile collects identifiers and scope only — never a
+credential. `authMethod` records what the eventual adapter will need, so the
+registration captures the right contract without taking the secret early.
+`connectionProfiles.test.ts` asserts this across **every** profile: no
+`password` field and no secret-shaped id, however specific the product.
 
 Three guards keep the modes from blurring:
 
@@ -359,6 +377,14 @@ normalized fields above.
 
 ## History
 
+- **2026-09-05** — Monitored sources became product-specific. Every one of the
+  216 had been asked the same three questions — "tenant, workspace or account",
+  an owner and a cadence — which is true of nothing in particular.
+  `productProfiles.ts` adds verified identity and auth-method profiles for 34
+  named products (AWS, Zoom, Okta, Datadog, Entra ID, Workday, ServiceNow, …),
+  each slug checked against the seeded catalogue; the rest keep the category
+  shape, labelled as coming from the catalogue rather than asserted about the
+  product. No secret is collected at either tier.
 - **2026-09-01** — Every catalogue product became actionable. Opening any of
   the 219 entries now leads to a modal with fields appropriate to that product;
   before this, 216 of them were prose with nowhere to put anything. The three

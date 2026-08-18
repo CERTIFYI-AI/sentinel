@@ -34,6 +34,7 @@
 
 import type { CatalogEntry } from '@/services/integrationCatalogService'
 import { getIntegrationConfig } from './index'
+import { getProductProfile } from './productProfiles'
 import type { CredentialField } from './types'
 
 export type ConnectionMode = 'automated' | 'monitored'
@@ -60,6 +61,15 @@ export interface ConnectionProfile {
    * registered for it. That is a packaging mistake, not an operator problem.
    */
   packagingGap: boolean
+  /**
+   * True when the monitored fields came from this product's own verified
+   * profile rather than from its category. Drives the UI's "these are the
+   * fields <product> actually uses" line — worth stating, because the generic
+   * fallback deliberately does not claim it.
+   */
+  productSpecific: boolean
+  /** One actionable sentence about how this product is connected, when known. */
+  setupHint?: string
 }
 
 /**
@@ -223,26 +233,45 @@ export function buildConnectionProfile(entry: CatalogEntry): ConnectionProfile {
 
   if (shipsAdapter) {
     const config = getIntegrationConfig(entry.slug)
+    const product = getProductProfile(entry.slug)
     return {
       slug: entry.slug,
       name: entry.name,
       mode: 'automated',
       action: 'connect',
-      authMethods,
+      // The adapter's own contract is authoritative here; the product profile
+      // only contributes the human-readable method and hint.
+      authMethods: product ? [product.authMethod] : authMethods,
       fields: config?.credentialFields ?? [],
       packagingGap: !config,
+      productSpecific: Boolean(config),
+      setupHint: product?.setupHint,
     }
   }
 
-  const scope = SCOPE_FIELD[entry.category] ?? DEFAULT_SCOPE_FIELD
+  // A product's own verified profile wins over the category shape. AWS is
+  // identified by a 12-digit account number, Zoom by an Account ID from a
+  // Server-to-Server OAuth app, Okta by an org URL — asking all three for
+  // "tenant, workspace or account" records something nobody can act on.
+  const product = getProductProfile(entry.slug)
+  const scopeFields = product?.fields ?? [SCOPE_FIELD[entry.category] ?? DEFAULT_SCOPE_FIELD]
+
+  // When we know how this product authenticates, that fact replaces the
+  // catalogue's generic "REST API / OAuth / API key / SCIM depending on
+  // vendor" — which is the same sentence on most rows and so tells an operator
+  // nothing about THIS product.
+  const methods = product ? [product.authMethod] : authMethods
+
   return {
     slug: entry.slug,
     name: entry.name,
     mode: 'monitored',
     action: 'register',
-    authMethods,
-    fields: [scope, ...monitoredCommonFields(authMethods)],
+    authMethods: methods,
+    fields: [...scopeFields, ...monitoredCommonFields(methods)],
     packagingGap: false,
+    productSpecific: Boolean(product),
+    setupHint: product?.setupHint,
   }
 }
 

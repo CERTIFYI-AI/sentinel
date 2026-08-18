@@ -1475,8 +1475,16 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 43,
+  "entryCount": 44,
   "entries": [
+    {
+      "type": "fix",
+      "scope": "integrations",
+      "summary": "**monitored sources stop asking every product the same question.** All 216 catalogue products with no adapter were asked \"tenant, workspace or account\", an owner and a cadence — a field set true of nothing in particular, which produced a record nobody could act on because whoever eventually built the connection had to go and find out the real identifiers anyway. New `productProfiles.ts` carries **34 verified product profiles**: AWS is identified by a 12-digit account number and regions in scope and reached with a cross-account IAM role and external id; Zoom by an Account ID from a **Server-to-Server** OAuth app (not a user-level one, which does not survive an admin changing); Okta by an org URL and an SSWS token; Datadog by a **site**, because keys are not portable between `datadoghq.com`, `.eu` and the US3/US5 sites; Notion records *which pages are shared to the integration*, because a Notion integration sees only those and the evidence scope is otherwise unknowable later. Every slug is verified to exist in the seeded catalogue — a profile for a phantom slug is dead code that never runs and never fails, so it would rot silently. Products without a verified profile keep the category shape and the UI labels that as *\"this product's catalogue entry names…\"* rather than asserting it about the product: being honestly generic beats being specifically wrong, and the long tail gets no invented documentation. **The specificity does not weaken the secrets rule** — a monitored product still has no adapter, so profiles collect identifiers and scope only, with `authMethod` recording what the eventual adapter will need so the contract is captured without taking the secret early; a test asserts no `password` field and no secret-shaped id across every profile",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "feat",
       "scope": "ai-brain",

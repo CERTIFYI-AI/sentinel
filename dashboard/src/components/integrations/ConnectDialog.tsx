@@ -27,7 +27,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { Warning, LockKey, Eye, Plugs } from '@phosphor-icons/react'
+import { Warning, LockKey, Eye, Plugs, Info } from '@phosphor-icons/react'
 
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
@@ -200,7 +200,23 @@ export function ConnectDialog({
           >
             {profile.authMethods.length > 0 && (
               <p className="text-[11px] text-[hsl(var(--text-4))] leading-relaxed">
-                This product’s catalogue entry names: {profile.authMethods.join(' · ')}
+                {profile.productSpecific
+                  // A verified product profile names the one method this
+                  // product actually uses.
+                  ? <><span className="text-[hsl(var(--text-3))]">Authenticates with:</span>{' '}
+                      {profile.authMethods[0]}</>
+                  // The fallback is parsed from the catalogue row's own prose,
+                  // which on most rows is the same generic sentence — so it is
+                  // labelled as coming from the catalogue, not asserted as fact
+                  // about this product.
+                  : <>This product’s catalogue entry names: {profile.authMethods.join(' · ')}</>}
+              </p>
+            )}
+
+            {profile.setupHint && (
+              <p className="flex gap-1.5 text-[11px] text-[hsl(var(--text-4))] leading-relaxed">
+                <Info size={13} className="flex-shrink-0 mt-0.5" />
+                <span>{profile.setupHint}</span>
               </p>
             )}
 
