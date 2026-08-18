@@ -25,7 +25,7 @@ import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useAuthStore } from '../../stores/authStore';
 import { useExceptions, useApprovals } from '../../hooks/useRiskIncidents';
 import type { ExceptionRecord } from '../../services/incidentResponseService';
@@ -198,7 +198,7 @@ const EMPTY_FORM = {
 };
 
 export default function ExceptionManagement() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const { user } = useAuthStore();
   const { items: exceptions, isLoading, error, save, remove, isSaving } = useExceptions();
   // Central approval queue — exceptions surface there as approvals rows, and

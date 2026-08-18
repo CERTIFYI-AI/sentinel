@@ -9,7 +9,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar,
   Legend, ResponsiveContainer,
 } from 'recharts';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useMaturityData } from '../../hooks/useMaturityData';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
@@ -104,7 +104,7 @@ function gapLabel(gap: number): string {
 /* ------------------------------------------------------------------ */
 
 export default function BenchmarkingMaturity() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const ct = useChartTheme();
   const { items: rawItems, isLoading } = useMaturityData();
   const [search, setSearch] = useState('');

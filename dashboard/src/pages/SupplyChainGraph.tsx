@@ -35,7 +35,7 @@ import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCardRow } from '@/components/ui/StatCardRow'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
 import { Button } from '@/components/ui/button'
-import { useSettingsStore } from '../stores/settingsStore'
+import { useOrgName } from '../hooks/useOrganization'
 import { useProvenanceGraph } from '@/hooks/useProvenanceData'
 import { useSupplyChainEntities, type EntityKind } from '@/hooks/useSupplyChainEntities'
 import { isCrossBorder, transferMechanismLabel, type ProvenanceEdge } from '@/services/provenanceService'
@@ -107,7 +107,7 @@ interface CanvasNode {
 }
 
 export default function SupplyChainGraph() {
-  const { orgName } = useSettingsStore()
+  const orgName = useOrgName()
   const nav = useNavigate()
   const svgRef = useRef<SVGSVGElement>(null)
   const [searchParams, setSearchParams] = useSearchParams()

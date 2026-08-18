@@ -1,5 +1,8 @@
 // Licensed to CERTIFYI-AI under the Apache License, Version 2.0.
-// C.2 — Demo data: Sentinel Financial Corp org + 8 personas + realistic data volumes.
+// C.2 — Demo data: 8 personas + realistic data volumes for the demo tenant
+// (org 00000000-...-0001). The organisation's NAME is not set here — it lives
+// in `organizations.name` and is edited in Settings → General, which is the
+// single source of truth the whole product reads through useOrgName().
 // Run: SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... npx tsx scripts/seed-demo-data.ts
 import { createClient } from '@supabase/supabase-js'
 
@@ -33,14 +36,14 @@ const DEPARTMENTS = [
 ]
 
 const PERSONAS = [
-  { email: 'admin@sentinel-grc.com',      name: 'Alex Admin',       role: 'super_admin',     dept: 'IT' },
-  { email: 'ciso@demo.sentinel-grc.com',  name: 'Claire Chen',      role: 'ciso',            dept: 'Security' },
-  { email: 'orgadmin@demo.sentinel-grc.com', name: 'Omar Ahmed',    role: 'ai_governance_lead', dept: 'Compliance' },
-  { email: 'compliance@demo.sentinel-grc.com', name: 'Priya Sharma', role: 'compliance_lead', dept: 'Compliance' },
-  { email: 'auditor@demo.sentinel-grc.com', name: 'James Wilson',   role: 'auditor_external', dept: 'Audit' },
-  { email: 'dpo@demo.sentinel-grc.com',   name: 'Diana Reyes',      role: 'dpo',             dept: 'Privacy' },
-  { email: 'modelowner@demo.sentinel-grc.com', name: 'Kenji Tanaka', role: 'model_owner',    dept: 'Data Science' },
-  { email: 'riskowner@demo.sentinel-grc.com', name: 'Sarah Johnson', role: 'risk_manager',   dept: 'Risk Management' },
+  { email: 'admin@certifyi.ai',      name: 'Alex Admin',       role: 'super_admin',     dept: 'IT' },
+  { email: 'ciso@demo.certifyi.ai',  name: 'Claire Chen',      role: 'ciso',            dept: 'Security' },
+  { email: 'orgadmin@demo.certifyi.ai', name: 'Omar Ahmed',    role: 'ai_governance_lead', dept: 'Compliance' },
+  { email: 'compliance@demo.certifyi.ai', name: 'Priya Sharma', role: 'compliance_lead', dept: 'Compliance' },
+  { email: 'auditor@demo.certifyi.ai', name: 'James Wilson',   role: 'auditor_external', dept: 'Audit' },
+  { email: 'dpo@demo.certifyi.ai',   name: 'Diana Reyes',      role: 'dpo',             dept: 'Privacy' },
+  { email: 'modelowner@demo.certifyi.ai', name: 'Kenji Tanaka', role: 'model_owner',    dept: 'Data Science' },
+  { email: 'riskowner@demo.certifyi.ai', name: 'Sarah Johnson', role: 'risk_manager',   dept: 'Risk Management' },
 ]
 
 const RISK_TITLES = [
@@ -62,7 +65,7 @@ const RISK_TITLES = [
 ]
 
 async function main() {
-  console.log('🌱 Seeding Sentinel Financial Corp demo data...\n')
+  console.log('🌱 Seeding demo data for the demo tenant...\n')
 
   // Risks: 500 records with trend data (N-13 fix)
   const risks = Array.from({ length: 500 }, (_, i) => ({

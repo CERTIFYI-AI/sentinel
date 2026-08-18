@@ -176,8 +176,8 @@ export default function Login() {
                 <p className="text-xs font-semibold mb-1.5" style={{ color: 'hsl(var(--brand))' }}>Demo Access</p>
                 <div className="space-y-0.5">
                   {[
-                    { label: 'CISO', email: 'admin@sentinel-grc.com' },
-                    { label: 'Auditor', email: 'auditor@sentinel-grc.com' },
+                    { label: 'CISO', email: 'admin@certifyi.ai' },
+                    { label: 'Auditor', email: 'auditor@certifyi.ai' },
                   ].map(u => (
                     <button key={u.email} onClick={() => { setEmail(u.email); setPassword('Demo@12345'); setErrors({}); }}
                       className="flex items-center gap-2 text-xs w-full text-left hover:opacity-80 transition-opacity">

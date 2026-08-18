@@ -17,7 +17,7 @@ import type { DnaRecord, ProvenanceStage } from '@/services/modelDnaService';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { Input } from '../../components/ui/input';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { PageHeader } from '../../components/ui/PageHeader';
 
 /* ─── Helpers ─────────────────────────────────────────────────────────── */
@@ -94,7 +94,7 @@ function CopyButton({ text }: { text: string }) {
 /* ─── Main Component ───────────────────────────────────────────────────── */
 export default function ModelDNA() {
   const navigate = useNavigate();
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const { records, isLoading, saveDna, deleteDna } = useModelDnaData();
   const [selectedModelId, setSelectedModelId] = useState('');
   const [tab, setTab] = useState('fingerprint');

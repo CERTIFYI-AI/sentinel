@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/ta
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import { severityColor, statusColor, formatDate } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useVulns } from '../../hooks/useSecurityGroup';
 import type { VulnRecord } from '../../services/securityGroupService';
 import { useModelsData } from '../../hooks/useModelsData';
@@ -47,7 +47,7 @@ function cvssBadge(raw?: string) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function VulnTracker() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const { items: vulns, isLoading, error, save, remove, isSaving } = useVulns();
   const { models } = useModelsData();
   const [searchParams, setSearchParams] = useSearchParams();

@@ -27,7 +27,7 @@ import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { ErrorState } from '../../components/ui/ErrorState';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useCampaigns } from '../../hooks/useSecurityGroup';
 import { useModelsData } from '../../hooks/useModelsData';
 import type { CampaignRecord } from '../../services/securityGroupService';
@@ -98,7 +98,7 @@ function MetricTile({ label, value, variant, icon, sub }: {
 }
 
 export default function RedTeamLab() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const { items, isLoading, error, save, remove, isSaving } = useCampaigns();
   const { models } = useModelsData();
   const [searchParams, setSearchParams] = useSearchParams();

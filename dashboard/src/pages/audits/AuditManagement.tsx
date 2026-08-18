@@ -25,7 +25,7 @@ import {
   ClipboardText, Export, Plus, Eye, Warning, CheckCircle,
   CalendarCheck, User, PencilSimple, Trash, Wrench,
 } from '@phosphor-icons/react';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useAudits, useAuditFindings } from '../../hooks/useComplianceGroup';
 import { useRemediations } from '../../hooks/useRiskIncidents';
 import { useControls } from '../../hooks/queries/useControls';
@@ -119,7 +119,7 @@ const EMPTY_FINDING_FORM: FindingForm = {
 /* ── Component ─────────────────────────────────────────────────────────── */
 
 export default function AuditManagement() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const audits = useAudits();
   const findings = useAuditFindings();
   const remediations = useRemediations();

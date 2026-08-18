@@ -31,7 +31,7 @@ import {
   ArrowSquareOut,
 } from '@phosphor-icons/react';
 import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, CartesianGrid } from 'recharts';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useOrgName } from '../hooks/useOrganization';
 import { useChartTheme } from '../hooks/useChartTheme';
 
 const CATEGORY_COLORS = ['#3b82f6', 'hsl(var(--tag-purple))', 'hsl(var(--r-hi-tx))', 'hsl(var(--s-ok-tx))', '#ec4899', 'hsl(var(--s-in-tx))', 'hsl(var(--s-wn-tx))'];
@@ -63,7 +63,7 @@ const EMPTY_FORM: FormState = {
 
 export default function Policies() {
   const navigate = useNavigate()
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const { user } = useAuthStore();
   const ct = useChartTheme();
   const { data: policies = [], isLoading, error } = usePolicies();

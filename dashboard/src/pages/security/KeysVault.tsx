@@ -20,7 +20,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
 } from 'recharts';
 import { formatDate } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useKeys } from '../../hooks/useSecurityGroup';
 import type { KeyRecord } from '../../services/securityGroupService';
@@ -67,7 +67,7 @@ const EMPTY_CREATE: CreateForm = {
 };
 
 export default function KeysVault() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const ct = useChartTheme();
 
   const { items: keys, isLoading, error, save, rotate, revoke, remove, isSaving } = useKeys();

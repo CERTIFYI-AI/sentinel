@@ -28,7 +28,7 @@ import {
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Tooltip,
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Cell,
 } from 'recharts';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useArena } from '../../hooks/useSecurityGroup';
 import { useModelsData } from '../../hooks/useModelsData';
@@ -99,7 +99,7 @@ function exportCsv(rows: ArenaRecord[], modelName: (id?: string | null) => strin
 }
 
 export default function ModelArena() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const ct = useChartTheme();
   const { items, isLoading, error, save, remove, isSaving } = useArena();
   const { models } = useModelsData();

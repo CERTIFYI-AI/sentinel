@@ -20,7 +20,7 @@ import {
   Plus, PencilSimple, Trash, X,
 } from '@phosphor-icons/react';
 import { severityColor, statusColor, formatDate } from '../data/seed';
-import { useSettingsStore } from '../stores/settingsStore';
+import { useOrgName } from '../hooks/useOrganization';
 import { useRemediations, useIncidents } from '../hooks/useRiskIncidents';
 import { useAuditFindings } from '../hooks/useComplianceGroup';
 import type { RemediationRecord } from '../services/incidentResponseService';
@@ -98,7 +98,7 @@ function recordToForm(r: RemediationRecord): RemForm {
 }
 
 export default function RemediationTracker() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const { items, isLoading, error, save, remove, isSaving } = useRemediations();
   const { items: incidents } = useIncidents();
   const { models } = useModelsData();

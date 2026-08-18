@@ -1,7 +1,7 @@
 # Sentinel AI GRC Platform — Trust Engine Full Audit Report
 ## "The Trust Layer for Production AI"
 
-**Organization:** Sentinel Financial Corp  
+**Organization:** read from `organizations.name` (Settings → General) — the platform ships with no hardcoded company name  
 **Platform:** Certifyi Sentinel — Trust Engine Module  
 **Audit Date:** April 5, 2026  
 **Auditor Role:** Senior AI/ML & GRC Engineer (15+ Years Experience)  

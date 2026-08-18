@@ -58,7 +58,7 @@ export const GUIDE_TOTAL_ENTRIES = 135
 export const GUIDE_DOCUMENTED_ENTRIES = 135
 
 /** Module docs available in docs/modules/. */
-export const MODULE_DOCS_AVAILABLE = 93
+export const MODULE_DOCS_AVAILABLE = 94
 
 export const GUIDE_COLLECTIONS: GuideCollection[] = [
   {
@@ -7838,24 +7838,32 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         ],
         "dataProcess": [],
         "interlinks": [
-          "Catalog → org instance. Joined on catalog_slug, never on name.",
+          "Catalog → org instance. Joined on catalog_slug, never on name, with a",
+          "real foreign key (integrations_catalog_slug_fkey) behind it. Verified on a",
+          "from-zero replay: total = 2, resolves = 2 for every row carrying a slug.",
+          "Monitored source → its owner. A manual registration cannot be saved",
+          "without an accountable owner and a review cadence, so it is never a record",
+          "nobody is answerable for.",
           "Integration → findings. The detail sheet shows what the source has",
           "actually collected, worst-first, or an honest \"nothing collected yet\".",
           "Control → evidence. ControlDetail gains an Automated Evidence tab",
           "listing the findings mapped to that control, with posture, counts and",
           "remediation.",
-          "Control → Integrations. A control with no automated evidence links to",
-          "/integrations so the reader can connect a source."
+          "Control → Integrations. A control with no automated evidence links to"
         ],
         "compliance": [
-          "EU AI Act Art. 12 (record-keeping). Connect and disconnect are audit-",
-          "logged; findings survive disconnection.",
+          "EU AI Act Art. 12 (record-keeping). Connect, register and disconnect are",
+          "audit-logged with a real actor; findings survive disconnection. The audit",
+          "entry for a connect records **which credential fields were supplied, never",
+          "their values**.",
           "EU AI Act Art. 14 (human oversight). Automated evidence is presented as a",
           "signal for a person to act on, never as an automatic control state change.",
           "ISO/IEC 42001 §9.1 / §9.2. Continuous monitoring evidence feeding the",
-          "control register, with provenance (which source, which check, when).",
-          "Data minimisation. Credentials never reach the browser; raw provider",
-          "payloads are not rendered."
+          "control register, with provenance (which source, which check, when). A source",
+          "the platform cannot pull from is not left out of the AIMS: it is registered",
+          "with an owner and a documented review interval, and is counted separately",
+          "from automated coverage so the two are never added together.",
+          "Data minimisation. Credentials never reach the browser; raw provider"
         ],
         "operations": [
           "The catalogue is seeded by migration",
@@ -7881,7 +7889,37 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
           [
             "catalogued",
             "Reference only — no adapter, collects nothing",
-            "Neutral badge, no Connect, with the reason"
+            "Neutral badge, Monitor this source"
+          ],
+          [
+            "When",
+            "adapter_status is available or beta",
+            "anything else"
+          ],
+          [
+            "Fields",
+            "the adapter's own credential contract",
+            "the source's identity, owner, cadence, evidence location"
+          ],
+          [
+            "Secrets",
+            "AES-256-GCM encrypted server-side",
+            "none asked for, none stored"
+          ],
+          [
+            "On save",
+            "first sync queued",
+            "nothing queued"
+          ],
+          [
+            "Row",
+            "status='configuring', connection_mode='automated'",
+            "status='monitored', connection_mode='manual'"
+          ],
+          [
+            "Card",
+            "green Connected",
+            "neutral Monitored"
           ],
           [
             "github",
@@ -7960,36 +7998,6 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
             "aws.kms.key_rotation",
             "secret_management",
             "Automatic rotation on customer-managed symmetric keys"
-          ],
-          [
-            "aws.guardduty.enabled",
-            "incident_response",
-            "An enabled detector, not merely a present one"
-          ],
-          [
-            "aws.backup.plans",
-            "backup_recovery",
-            "AWS Backup plans (says plainly that service-native backups are invisible to it)"
-          ],
-          [
-            "azure.entra.conditional_access_mfa",
-            "mfa_enforcement",
-            "An enabled Conditional Access policy with an MFA grant control"
-          ],
-          [
-            "azure.rbac.owner_assignments",
-            "least_privilege",
-            "Share of role assignments granting Owner"
-          ],
-          [
-            "azure.storage.public_blob_access",
-            "access_control",
-            "allowBlobPublicAccess (absence is not read as disabled)"
-          ],
-          [
-            "azure.storage.https_only",
-            "encryption_in_transit",
-            "Secure transfer required, minimum TLS 1.2"
           ]
         ],
         "noDocReason": null

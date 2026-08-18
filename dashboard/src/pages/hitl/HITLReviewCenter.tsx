@@ -22,7 +22,7 @@ import { PageHeader } from '../../components/ui/PageHeader';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { InterlinkChip } from '@/components/ui/InterlinkChip';
 import { severityColor, statusColor, formatDate, timeAgo } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useAuthStore } from '../../stores/authStore';
 import { useHitlReviews } from '../../hooks/useRiskIncidents';
 import { useModelsData } from '@/hooks/useModelsData';
@@ -97,7 +97,7 @@ function slaDisplay(r: HitlRecord) {
 // ── Main Component ────────────────────────────────────────────────────────────
 
 export default function HITLReviewCenter() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const user = useAuthStore(s => s.user);
   const currentUser = user?.fullName || user?.email || 'Reviewer';
   const { items, isLoading, error, save, decide, isDeciding, isSaving } = useHitlReviews();

@@ -1,5 +1,5 @@
 -- Demo seed: register a handful of governed models for the default demo org
--- (Sentinel Financial Corp, 00000000-0000-0000-0000-000000000001) so the wired
+-- (the demo tenant, 00000000-0000-0000-0000-000000000001) so the wired
 -- Model Registry shows live, RLS-scoped data for the demo accounts. Idempotent
 -- (guarded by NOT EXISTS on name) and constraint-valid (model_type / risk_tier /
 -- eu_ai_act_category use the ai_models CHECK enums). Applied via Supabase MCP.

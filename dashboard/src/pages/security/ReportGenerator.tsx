@@ -19,7 +19,7 @@ import {
   BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer,
 } from 'recharts';
 import { formatDate } from '../../data/seed';
-import { useSettingsStore } from '../../stores/settingsStore';
+import { useOrgName } from '../../hooks/useOrganization';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { supabase } from '../../lib/supabase';
 import { useReports, useReportRuns, useGenerateReport } from '../../hooks/useSecurityGroup';
@@ -76,7 +76,7 @@ const EMPTY_TEMPLATE: ReportTemplate = {
 };
 
 export default function ReportGenerator() {
-  const { orgName } = useSettingsStore();
+  const orgName = useOrgName();
   const ct = useChartTheme();
 
   const { items: templates, isLoading, error, save, remove, isSaving } = useReports();
