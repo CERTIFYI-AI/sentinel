@@ -135,7 +135,7 @@ export default function AiAdvisor() {
           </div>
           <div className="flex-1">
             <h1 className="text-base font-semibold text-[hsl(var(--text-1))]">AI Governance Advisor</h1>
-            <p className="text-xs text-[hsl(var(--text-4))]">Sentinel AI Co-Pilot · Acme Financial Corp · 12 AI systems monitored</p>
+            <p className="text-xs text-[hsl(var(--text-4))]">Sentinel AI Co-Pilot</p>
           </div>
           <div className="flex items-center gap-3 text-xs text-[hsl(var(--text-4))]">
             {criticalCount > 0 && (
@@ -149,6 +149,15 @@ export default function AiAdvisor() {
               </span>
             )}
           </div>
+        </div>
+
+        {/* Simulation banner */}
+        <div className="flex items-start gap-2 px-3 py-2 text-xs" style={{ border: '1px solid hsl(var(--s-wn-tx))', background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>
+          <Warning size={14} className="mt-0.5 shrink-0" />
+          <span>
+            <strong>Simulation.</strong> Responses are keyword-matched canned text, not a live AI model.
+            Suggestions and metrics shown below are illustrative examples, not derived from your data.
+          </span>
         </div>
 
         {/* Chat history */}

@@ -105,7 +105,7 @@ export default function GovernanceMesh() {
       .reduce((n, e) => n + (e.output?.findings?.length ?? 0), 0);
     const events24 = events.filter((e) => new Date(e.createdAt).getTime() > dayAgo).length;
     const failed = executions.filter((e) => e.status === 'failed').length;
-    const errorRate = executions.length > 0 ? ((failed / executions.length) * 100).toFixed(1) : '0.0';
+    const errorRate = executions.length > 0 ? ((failed / executions.length) * 100).toFixed(1) : '—';
     return { running, sweeps24, findings24, events24, errorRate };
   }, [fleet, sweeps, events, executions, dayAgo]);
 
@@ -210,7 +210,7 @@ export default function GovernanceMesh() {
           { label: 'Sweeps (24h)', value: kpi.sweeps24, sub: 'fleet executions' },
           { label: 'Findings (24h)', value: kpi.findings24, sub: 'intercepted issues' },
           { label: 'Bus Events (24h)', value: kpi.events24, sub: 'incl. cascades' },
-          { label: 'Error Rate', value: `${kpi.errorRate}%`, sub: 'all executions' },
+          { label: 'Error Rate', value: kpi.errorRate === '—' ? '—' : `${kpi.errorRate}%`, sub: 'all executions' },
         ].map((k) => (
           <Card key={k.label} style={{ borderRadius: 0 }}>
             <CardContent className="px-4 py-4">

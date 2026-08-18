@@ -197,6 +197,15 @@ export default function StakeholderNotifications() {
         </Button>
       </div>
 
+      {/* Simulation banner */}
+      <div className="flex items-start gap-2 px-3 py-2 text-xs" style={{ border: '1px solid hsl(var(--s-wn-tx))', background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>
+        <Warning size={14} className="mt-0.5 shrink-0" />
+        <span>
+          <strong>Simulated data.</strong> Delivery history, incident notifications and SLA metrics
+          below are hardcoded examples. This module is not yet connected to a real notification pipeline.
+        </span>
+      </div>
+
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">
         <MetricTile label="Templates" value={String(templates.length)} variant="info" icon={<Envelope size={16} weight="fill" className="text-[hsl(var(--s-in-tx))]" />} />

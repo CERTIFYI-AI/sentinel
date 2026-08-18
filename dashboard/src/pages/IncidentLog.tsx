@@ -706,9 +706,9 @@ export default function IncidentLog() {
                         {linked.map((r) => (
                           <div key={r.id} className="flex items-center gap-2 flex-wrap">
                             <InterlinkChip label={r.planRef ? `${r.planRef} — ${r.title}` : r.title} to={`/remediation-tracker?open=${r.id}`} />
-                            <span className="text-xs font-mono text-[hsl(var(--text-3))]">{r.progressPct}%</span>
+                            <span className="text-xs font-mono text-[hsl(var(--text-3))]">{r.progressPct != null ? `${r.progressPct}%` : '—'}</span>
                             <div className="w-16 h-1.5 bg-[hsl(var(--bg-raised))] overflow-hidden">
-                              <div className="h-full bg-[hsl(var(--s-ok-tx))]" style={{ width: `${r.progressPct}%` }} />
+                              <div className="h-full bg-[hsl(var(--s-ok-tx))]" style={{ width: `${r.progressPct ?? 0}%` }} />
                             </div>
                           </div>
                         ))}

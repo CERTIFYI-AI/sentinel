@@ -197,8 +197,8 @@ function RegistrySection() {
     critical: agents.filter(a => a.riskTier === 'Critical').length,
     shadow: agents.filter(isShadowAgent).length,
     avgTrust: (() => {
-      const scored = agents.filter(a => a.trustScore > 0)
-      return scored.length ? Math.round(scored.reduce((s, a) => s + a.trustScore, 0) / scored.length) : 0
+      const scored = agents.filter(a => a.trustScore != null && a.trustScore > 0)
+      return scored.length ? Math.round(scored.reduce((s, a) => s + a.trustScore, 0) / scored.length) : null
     })(),
   }
 
@@ -346,8 +346,8 @@ function RegistrySection() {
           },
           {
             label: 'Avg Trust Score (declared)',
-            value: `${stats.avgTrust}%`,
-            description: `Average declared trust score: ${stats.avgTrust}% — self-reported at registration, not computed by the platform`,
+            value: stats.avgTrust != null ? `${stats.avgTrust}%` : '—',
+            description: stats.avgTrust != null ? `Average declared trust score: ${stats.avgTrust}% — self-reported at registration, not computed by the platform` : 'No agents with declared trust scores',
           },
         ]}
       />
@@ -415,12 +415,12 @@ function RegistrySection() {
                 <td className="px-3 py-2.5">
                   <div className="flex items-center gap-1.5">
                     <div className="h-1.5 w-14 bg-raised rounded-full overflow-hidden">
-                      <div className="h-full rounded-full" style={{ width: `${a.trustScore}%`, background: a.trustScore >= 80 ? 'hsl(var(--s-ok-tx))' : a.trustScore >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
+                      <div className="h-full rounded-full" style={{ width: a.trustScore != null ? `${a.trustScore}%` : '0%', background: a.trustScore != null ? (a.trustScore >= 80 ? 'hsl(var(--s-ok-tx))' : a.trustScore >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))') : 'hsl(var(--text-4))' }} />
                     </div>
-                    <span className="text-xs font-medium text-[hsl(var(--text-2))]">{a.trustScore}</span>
+                    <span className="text-xs font-medium text-[hsl(var(--text-2))]">{a.trustScore ?? '—'}</span>
                   </div>
                 </td>
-                <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-2))] font-medium">{a.dailyCallCount.toLocaleString()}</td>
+                <td className="px-3 py-2.5 text-xs text-[hsl(var(--text-2))] font-medium">{a.dailyCallCount != null ? a.dailyCallCount.toLocaleString() : '—'}</td>
                 <td className="px-3 py-2.5">
                   {a.killSwitchEnabled ? (
                     <button
@@ -477,10 +477,10 @@ function RegistrySection() {
                       { label: 'Team', value: selected.team },
                       { label: 'Approved By', value: selected.approvedBy },
                       { label: 'Registered', value: selected.registeredDate },
-                      { label: 'Daily Calls', value: selected.dailyCallCount.toLocaleString() },
-                      { label: 'Lifetime Calls', value: selected.totalCallsLifetime.toLocaleString() },
-                      { label: 'Avg Latency', value: selected.avgLatencyMs + ' ms' },
-                      { label: 'Max Budget', value: '$' + selected.maxBudget.toLocaleString() + '/mo' },
+                      { label: 'Daily Calls', value: selected.dailyCallCount != null ? selected.dailyCallCount.toLocaleString() : '—' },
+                      { label: 'Lifetime Calls', value: selected.totalCallsLifetime != null ? selected.totalCallsLifetime.toLocaleString() : '—' },
+                      { label: 'Avg Latency', value: selected.avgLatencyMs != null ? selected.avgLatencyMs + ' ms' : '—' },
+                      { label: 'Max Budget', value: selected.maxBudget != null ? '$' + selected.maxBudget.toLocaleString() + '/mo' : '—' },
                     ].map(f => (
                       <div key={f.label}>
                         <p className="text-xs text-[hsl(var(--text-4))]">{f.label}</p>
@@ -498,9 +498,9 @@ function RegistrySection() {
                     <p className="text-xs text-[hsl(var(--text-4))] mb-1">Trust Score (declared by owning team — not computed)</p>
                     <div className="flex items-center gap-3">
                       <div className="flex-1 h-2 bg-raised rounded-full overflow-hidden">
-                        <div className="h-full rounded-full" style={{ width: `${selected.trustScore}%`, background: selected.trustScore >= 80 ? 'hsl(var(--s-ok-tx))' : selected.trustScore >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))' }} />
+                        <div className="h-full rounded-full" style={{ width: selected.trustScore != null ? `${selected.trustScore}%` : '0%', background: selected.trustScore != null ? (selected.trustScore >= 80 ? 'hsl(var(--s-ok-tx))' : selected.trustScore >= 60 ? 'hsl(var(--s-wn-tx))' : 'hsl(var(--destructive))') : 'hsl(var(--text-4))' }} />
                       </div>
-                      <span className="text-lg font-bold text-[hsl(var(--text-1))]">{selected.trustScore}</span>
+                      <span className="text-lg font-bold text-[hsl(var(--text-1))]">{selected.trustScore ?? '—'}</span>
                     </div>
                   </div>
 
