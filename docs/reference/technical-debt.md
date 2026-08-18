@@ -648,11 +648,87 @@ EU AI Act Art. 12 and the repo's own Gate 4 both require the record. Attaching
 
 ---
 
+## TD-019 — Two FastAPI apps; the integrations router lived on only one
+
+**Owner:** Platform · **Raised:** 2026-08-18 · **Severity:** P2 ·
+**Status:** Partially resolved 2026-08-18.
+
+The backend has **two** FastAPI apps: `sentinel.api.main:app` (the canonical
+app the container runs, ~30 routers under `/api/*`) and `sentinel.proxy:app`
+(the LLM gateway — `/v1/chat/completions`, `/v1/models`, SPA static). The
+integration connect/sync router (`/v1/integrations/*`) was mounted on **only**
+`proxy.py`, so the deployed app (`main:app`) answered every
+`/v1/integrations/connect` with 404 — break ④ in
+[`continuous-evidence-roadmap.md`](continuous-evidence-roadmap.md).
+
+**Resolved for the loop:** the router is now also mounted in `main.py` (ahead
+of its catch-all frontend proxy, which only exempts `api`/`ws`/`favicon` paths
+and would otherwise swallow the router's GET routes). Verified via the app's
+OpenAPI schema.
+
+**Residual debt:** the two-app split itself remains — routers, CORS config, and
+auth dependencies are duplicated and can drift (e.g. a router added to one app
+and not the other, exactly as happened here). `resolve_org` in
+`integrations/api.py` still reaches back into `proxy.py` for tenant resolution
+via a local import. Converging on a single app (or a shared router registry
+both mount) is the real fix; until then, **any new public router must be
+registered in both apps**, and that rule is easy to forget.
+
+**Now a THIRD surface.** The free-tier deploy (see
+[`continuous-evidence-roadmap.md`](continuous-evidence-roadmap.md)) makes the
+`integrations-connect` **Supabase Edge Function** (Deno) the *deployed* connect
+surface, while the two Python surfaces remain as the reference + test target.
+Three implementations of the same connect/sync/available contract now exist and
+must agree — the credential blob format especially (pinned by
+`crypto_interop_test.ts`). A behaviour change to the connect flow must be made
+in the edge function first (it is what runs) and mirrored into the Python
+surfaces. Consolidation is more valuable now, not less.
+
+---
+
 ## TD-014 — From-zero replay is red on the `incidents.id` type split
 
 **Owner:** Risk & Incidents team · **Raised:** 2026-08-26 · **Severity:** P1 ·
-**Status:** Open. **Not caused by the framework-catalog change** — surfaced by
-it, because that branch runs a full replay locally that CI cannot currently run.
+**Status: CLOSED 2026-08-18.** The repo now builds its own database from zero:
+**149/149 migrations apply, 0 failures, 254 tables, 901 RLS policies**, verified
+against a real PostgreSQL 16 behind a platform-only shim (no application table
+or function in the harness).
+
+### How it was closed
+
+`incidents.id` / `risks.id` / `vendors.id` are TEXT — in this repo *and* on the
+live project (verified by query, 2026-08-18). The audit's premise that "live
+evolved to uuid" was backwards; text is canonical, so the *referencing* columns
+were aligned to it rather than the parents converted:
+
+| Site | Was | Now |
+|---|---|---|
+| `regulator_filings.linked_incident_id` | uuid | text |
+| `post_market_events.incident_id` | uuid | text |
+| `remediation_plans.incident_id` / `.risk_id` | uuid | text |
+| `incident_workflow_steps.incident_id` | uuid | text |
+| `audit_findings` / `evidence_artifacts` / `exceptions` / `financial_risks`.`linked_*_id` | uuid | text |
+| `ai_apps.vendor_id`, `transfer_impact_assessments.vendor_id` | converted to uuid | left text (FK now implementable) |
+| seed variables in `20260819000002` / `20260820000006` | uuid | text |
+
+Plus two non-type fixes: the unguarded `assets.tenant_id` default is now guarded
+like its siblings, and `pg_cron`'s `CREATE EXTENSION` is guarded so a bare
+Postgres skips it instead of aborting.
+
+`20260819000015_normalize_incident_risk_reference_types.sql` normalises any
+remaining such column and then **asserts the invariant**, so the class cannot
+silently return.
+
+**The cascade is what made this expensive:** `20260817000000_replay_repair`
+failed on its *first* statement, so risk-schema-v2 never landed and 50 later
+migrations never ran. With it fixed, previously unreachable objects now build —
+`realtime_alerts` (the Control Drift table), `risks.kri_metric`,
+`risks.linked_asset_ids` — and the from-zero build seeds all **936** catalog
+rows.
+
+**Still open (the lesson):** `check_migration_replay.py` verifies *references*,
+never *types*, and cannot see inside `DO $$ … $$`. It reported clean on all
+eight failing files. A static pass is not a replay; CI should run a real one.
 
 ### What
 
@@ -748,7 +824,7 @@ statement of record (15 full catalogs + 13 reference-coverage frameworks).
 
 ---
 
-## TD-015 — `frameworks` exists in two incompatible schemas (slug-keyed vs uuid-keyed)
+## TD-016 — `frameworks` exists in two incompatible schemas (slug-keyed vs uuid-keyed)
 
 **Owner:** Platform team · **Raised:** 2026-08-18 · **Severity:** P1 ·
 **Status:** Open (live unblocked; the migration chain still forks).
@@ -797,6 +873,43 @@ from-zero replay produces the shape production actually runs. Until then any
 migration touching `frameworks` must be written to tolerate both, and — the
 rule this cost us — **a catalog/interlink claim must be verified against the
 live database, not only against a replayed one.**
+
+---
+
+## TD-017 — `tenant_id`/`org_id` era split on four operational tables
+
+**Owner:** Platform team · **Raised:** 2026-08-18 · **Severity:** P1 ·
+**Status:** Open.
+
+### What
+
+`bcp_plans`, `red_team_findings` and `training_courses` are scoped by
+**`tenant_id`** on the live database and have **no `org_id` column at all**;
+`departments` has `org_id`. PR #78 ("4 repaired write paths") changed the
+services for these four to *stop sending `tenant_id`* and rely on an `org_id`
+DB default, and `20260827000001` sets that default. Both assume the `org_id`
+era. On live only `departments` matches; the other three are still
+`tenant_id`-scoped.
+
+### Why it matters
+
+- `20260827000001`'s original proof block `RAISE`d on the three `org_id`-less
+  tables, which would abort the Deploy Migrations pipeline. Made tolerant
+  (assert only on `org_id`-bearing tables) so the pipeline survives.
+- **The live risk remains:** once the #78 frontend deploys, create/edit on
+  Business Continuity, Red Team Findings and Training Courses will send neither
+  `tenant_id` (removed) nor a resolvable `org_id` (no such column), so those
+  writes fail on a `tenant_id`-only database. Verified the column shapes against
+  the live project on 2026-08-18.
+
+### To close
+
+Converge these four tables onto one scoping column. Either add `org_id`
+(nullable, default `current_user_org_id()`, backfilled from `tenant_id`) and
+keep #78's service change, or revert #78 for the three `tenant_id` tables. This
+is the same class as TD-016: the committed chain and the live database disagree
+on schema, and only a live query reveals it. Decide the canonical scoping column
+platform-wide and reconcile in one pass rather than table by table.
 
 ---
 

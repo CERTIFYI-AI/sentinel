@@ -86,20 +86,33 @@ async def process_job(conn: asyncpg.Connection, job: asyncpg.Record) -> None:
     payload = job["payload"]
     if isinstance(payload, str):
         payload = json.loads(payload)
-    org_id = payload["org_id"]
     integration_id = payload["integration_id"]
-    slug = payload["integration_slug"]
 
-    # Service role bypasses RLS, so the org boundary is enforced here: the
-    # integration row must belong to the org named in the job.
+    # The integration ROW is the authority on org and slug — not the job
+    # payload. Both connect surfaces (the integrations-connect edge function and
+    # the FastAPI endpoint) enqueue only {integration_id, catalog_slug}, so the
+    # old reads of payload["org_id"]/["integration_slug"] KeyError'd on every
+    # real job. Deriving org_id from the row keeps the org boundary intact (a
+    # job cannot name a different org than the row it points at) and tolerates
+    # either payload shape. Service role bypasses RLS, so this fetch is the
+    # boundary.
     integration = await conn.fetchrow(
-        "SELECT * FROM public.integrations"
-        " WHERE id = $1 AND org_id = $2 AND is_deleted = false",
-        integration_id, org_id,
+        "SELECT * FROM public.integrations WHERE id = $1 AND is_deleted = false",
+        integration_id,
     )
     if integration is None:
         raise RuntimeError(
-            f"integration {integration_id} not found in org {org_id} — refusing to sync"
+            f"integration {integration_id} not found or deleted — refusing to sync"
+        )
+    org_id = integration["org_id"]
+    slug = (
+        integration["catalog_slug"]
+        or payload.get("catalog_slug")
+        or payload.get("integration_slug")
+    )
+    if not slug:
+        raise RuntimeError(
+            f"integration {integration_id} has no catalog_slug — cannot select an adapter"
         )
     blob = integration["credentials_encrypted"]
     if blob is None:
@@ -157,20 +170,16 @@ async def process_job(conn: asyncpg.Connection, job: asyncpg.Record) -> None:
     await conn.execute(
         """
         UPDATE public.integrations
-        SET last_sync_at      = now(),
-            last_run_status   = 'success',
-            last_run_error    = NULL,
-            health            = 'healthy',
-            -- PROMOTE OUT OF 'configuring'. The connect endpoint creates the
-            -- row as 'configuring' — linked, not yet proven — and until this
-            -- line existed nothing ever moved it on. That mattered because the
-            -- `daily-integration-sync` schedule enqueues only
-            -- `where status = 'connected'`, so a source collected once at
-            -- connect time and then never again: the whole point of continuous
-            -- monitoring, silently absent. A successful sync IS the proof, so
-            -- this is the right place to record it.
-            status            = 'connected',
-            updated_at        = now()
+        SET last_sync_at = now(), last_run_status = 'success',
+            last_run_error = NULL, health = 'healthy', updated_at = now(),
+            -- Close the collection loop. connect() writes status='configuring'
+            -- and enqueues one immediate job; the daily cron only re-enqueues
+            -- rows WHERE status='connected'. Nothing else promotes the row, so
+            -- without this an integration collected exactly once at connect
+            -- time and never again. Promote to 'connected' on first successful
+            -- sync so the recurring schedule picks it up; never overwrite a
+            -- terminal state a human or another path set (disconnected/paused).
+            status = CASE WHEN status = 'configuring' THEN 'connected' ELSE status END
         WHERE id = $1
         """,
         integration_id,
@@ -240,19 +249,34 @@ async def fail_job(conn: asyncpg.Connection, job: asyncpg.Record, error: Excepti
                  "failed terminally" if terminal else "requeued", error)
 
 
-async def run(stop_event: asyncio.Event | None = None) -> None:
+async def run(stop_event: asyncio.Event | None = None, drain: bool = False) -> None:
+    """Claim and run integration_sync jobs.
+
+    Two modes:
+      * long-lived (``drain=False``): poll forever, sleeping POLL_INTERVAL
+        between empty polls. This is the always-on posture (a container/VM).
+      * drain-once (``drain=True``): process every currently-available job, then
+        exit as soon as the queue is empty. This is the FREE-TIER posture — a
+        scheduled GitHub Actions run drains what pg_cron enqueued and stops, so
+        no machine runs 24/7. Jobs deferred by backoff are picked up on the next
+        scheduled run. See .github/workflows/evidence-worker.yml.
+    """
     dsn = os.environ.get("SENTINEL_DATABASE_URL")
     if not dsn:
         raise RuntimeError("SENTINEL_DATABASE_URL is not set — worker cannot start")
     stop = stop_event or asyncio.Event()
     pool = await asyncpg.create_pool(dsn, min_size=1, max_size=4)
-    logger.info("%s started at %s", WORKER_ID, datetime.now(UTC).isoformat())
+    logger.info("%s started at %s (mode=%s)", WORKER_ID,
+                datetime.now(UTC).isoformat(), "drain" if drain else "poll")
+    processed = 0
     try:
         while not stop.is_set():
             async with pool.acquire() as conn:
                 async with conn.transaction():
                     job = await claim_next_job(conn)
                 if job is None:
+                    if drain:
+                        break
                     try:
                         await asyncio.wait_for(stop.wait(), POLL_INTERVAL_SECONDS)
                     except TimeoutError:
@@ -260,20 +284,26 @@ async def run(stop_event: asyncio.Event | None = None) -> None:
                     continue
                 try:
                     await process_job(conn, job)
+                    processed += 1
                 except Exception as exc:  # noqa: BLE001 — every failure is recorded
                     await fail_job(conn, job, exc)
     finally:
         await pool.close()
+    if drain:
+        logger.info("%s drained %d job(s) and is exiting", WORKER_ID, processed)
 
 
 def main() -> None:
     logging.basicConfig(level=logging.INFO,
                         format="%(asctime)s %(name)s %(levelname)s %(message)s")
+    # Drain-and-exit when SENTINEL_WORKER_DRAIN is truthy (the scheduled
+    # GitHub Actions job sets it); otherwise run as a long-lived poller.
+    drain = os.environ.get("SENTINEL_WORKER_DRAIN", "").strip().lower() in ("1", "true", "yes", "on")
     stop = asyncio.Event()
     loop = asyncio.new_event_loop()
     for sig in (signal.SIGINT, signal.SIGTERM):
         loop.add_signal_handler(sig, stop.set)
-    loop.run_until_complete(run(stop))
+    loop.run_until_complete(run(stop, drain=drain))
 
 
 if __name__ == "__main__":

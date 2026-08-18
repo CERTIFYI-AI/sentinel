@@ -196,11 +196,12 @@ BEGIN
    WHERE a.vendor_id IS NOT NULL
      AND NOT EXISTS (SELECT 1 FROM public.vendors r WHERE r.id::text = a.vendor_id::text);
 
-  IF dtype = 'text' THEN
-    ALTER TABLE public.ai_apps ALTER COLUMN vendor_id TYPE uuid
-      USING (CASE WHEN vendor_id ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
-                  THEN vendor_id::uuid ELSE NULL END);
-  END IF;
+  -- DO NOT convert to uuid: vendors.id is TEXT (both in 20260418000002 and on
+  -- the live project, verified 2026-08-18). Converting the referencing column to
+  -- uuid makes the FK below unimplementable — "foreign key constraint
+  -- ai_apps_vendor_id_fkey cannot be implemented" — which aborted this migration
+  -- on every from-zero replay (audit F1). The column stays text; the remap above
+  -- has already pointed it at real vendors.id values, and the FK enforces it.
 
   IF NOT EXISTS (SELECT 1 FROM pg_constraint
                   WHERE conrelid='public.ai_apps'::regclass AND conname='ai_apps_vendor_id_fkey') THEN
@@ -228,11 +229,9 @@ BEGIN
    WHERE a.vendor_id IS NOT NULL
      AND NOT EXISTS (SELECT 1 FROM public.vendors r WHERE r.id::text = a.vendor_id::text);
 
-  IF dtype = 'text' THEN
-    ALTER TABLE public.transfer_impact_assessments ALTER COLUMN vendor_id TYPE uuid
-      USING (CASE WHEN vendor_id ~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
-                  THEN vendor_id::uuid ELSE NULL END);
-  END IF;
+  -- Same reason as ai_apps above: vendors.id is TEXT, so converting the
+  -- referencing column to uuid makes the FK below unimplementable and aborts
+  -- the migration on a from-zero replay (audit F1). The column stays text.
 
   IF NOT EXISTS (SELECT 1 FROM pg_constraint
                   WHERE conrelid='public.transfer_impact_assessments'::regclass

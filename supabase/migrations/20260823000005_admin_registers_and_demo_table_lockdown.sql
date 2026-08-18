@@ -33,7 +33,16 @@
 -- 20260816000010 removed from eight other tables; these three were missed
 -- because they default a uuid column rather than a text one.
 
-alter table public.assets         alter column tenant_id set default current_user_org_id();
+-- Guarded exactly as bia_processes/identities are below: `assets` has no
+-- tenant_id column in this repo's schema (it is org_id-scoped), so the bare
+-- ALTER aborted the migration on a from-zero replay (audit F1).
+do $assets_tenant$
+begin
+  if exists (select 1 from information_schema.columns
+              where table_schema='public' and table_name='assets' and column_name='tenant_id') then
+    alter table public.assets alter column tenant_id set default current_user_org_id();
+  end if;
+end $assets_tenant$;
 
 -- bia_processes and identities live only on the live project (the baseline
 -- gap documented in supabase/migrations/README.md) — guard so a from-zero

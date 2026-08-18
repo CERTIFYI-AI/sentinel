@@ -80,7 +80,10 @@ CREATE TABLE IF NOT EXISTS public.financial_risks (
   title text NOT NULL,
   scenario text,
   model_id uuid,                                   -- → ai_models.id
-  linked_risk_id uuid,                             -- → risks.id
+  -- text: references a TEXT-keyed parent (risks.id / incidents.id). See
+  -- 20260819000015 and audit F1 — a uuid column here cannot hold or compare
+  -- against those ids.
+  linked_risk_id text,                             -- → risks.id (text)
   category text,                                   -- model_failure | bias_discrimination | data_breach | ...
   methodology text NOT NULL DEFAULT 'FAIR',
   loss_event_frequency numeric,                    -- events / year
@@ -206,7 +209,7 @@ ALTER TABLE public.remediation_plans
   -- heal-before-police: era unify loops strip tenant_id on a fresh replay
   ADD COLUMN IF NOT EXISTS tenant_id text NOT NULL DEFAULT 'default',
   ADD COLUMN IF NOT EXISTS start_date date,
-  ADD COLUMN IF NOT EXISTS risk_id uuid,           -- → risks.id
+  ADD COLUMN IF NOT EXISTS risk_id text,           -- → risks.id (text; see 20260819000015)
   ADD COLUMN IF NOT EXISTS assignee text,
   ADD COLUMN IF NOT EXISTS linked_model_ids uuid[] NOT NULL DEFAULT '{}';
 ALTER TABLE public.remediation_plans ENABLE ROW LEVEL SECURITY;
@@ -237,7 +240,7 @@ ALTER TABLE public.exceptions
   ADD COLUMN IF NOT EXISTS approver text,
   ADD COLUMN IF NOT EXISTS requested_date date,
   ADD COLUMN IF NOT EXISTS review_date date,
-  ADD COLUMN IF NOT EXISTS linked_risk_id uuid,
+  ADD COLUMN IF NOT EXISTS linked_risk_id text,    -- → risks.id (text; see 20260819000015)
   ADD COLUMN IF NOT EXISTS linked_model_ids uuid[] NOT NULL DEFAULT '{}';
 
 -- ---------------------------------------------------------------------------

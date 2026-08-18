@@ -8,7 +8,13 @@ WORKDIR /app
 COPY pyproject.toml ./
 COPY sentinel/ sentinel/
 
-RUN pip install --no-cache-dir .
+# Install the base app plus the [integrations] extra: the evidence-sync worker
+# (`python -m sentinel.integrations.worker`) runs the provider adapters, which
+# need boto3 (AWS) and PyGithub (GitHub). The API process does not import them
+# (adapters import their SDK lazily), but a single shared image keeps the two
+# Fly processes — web and worker — byte-identical, so what CI builds is exactly
+# what collects evidence.
+RUN pip install --no-cache-dir '.[integrations]'
 
 FROM python:3.11-slim AS runtime
 

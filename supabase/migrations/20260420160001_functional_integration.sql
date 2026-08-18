@@ -145,7 +145,7 @@ END $seed$;
 DO $seed$
 BEGIN
   alter table public.remediation_plans
-    add column if not exists incident_id uuid,
+    add column if not exists incident_id text,   -- → incidents.id (text)
     add column if not exists due_date timestamptz;
 EXCEPTION WHEN OTHERS THEN
   RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160001_functional_integration.sql', SQLERRM;
