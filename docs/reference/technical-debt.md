@@ -1013,23 +1013,31 @@ via the Supabase management API, each verified after:
 `20260901000002` (integration `connection_mode` + manual-holds-no-credentials
 guard), `20260830000001` (aws/azure catalogue → `beta`), `20260905000001`
 (pgvector + `policy_knowledge_base` + `ai_compliance_verdicts` +
-`match_policy_chunks`). `20260901000003` was **not** applied — see below.
+`match_policy_chunks`). `20260901000003` was **rewritten to be lineage-agnostic**
+and its live-lineage branch applied — see sub-item 2 below.
 
 **Open sub-items.**
 1. **Reconcile the migration lineage** so `db push` is safe: decide whether live
    converges onto the repo (add the `auth.*` helpers + `rbac_permissions`) or
    the repo is rebased onto live's `get_user_org_id()` reality. Until then,
    apply migrations individually and reviewed, never bulk-push.
-2. **Org-edit privilege gap.** On live, `organizations_isolation` is `FOR ALL`,
-   so **any** authenticated org member can rename the organisation (proven with
-   a rolled-back RLS probe: `org_update_rows=1` as a non-privileged member).
-   The repo intended admin-only (`org.update`). This is within-tenant (not a
-   TD-000 cross-tenant breach) so lower severity, but it is a real posture gap.
-   The safe fix is an **additive RESTRICTIVE `FOR UPDATE` policy** gated on the
-   live admin check (`is_org_admin()`), which AND-combines without touching the
-   load-bearing read policy — deferred pending a product decision on whether org
-   edits should be admin-only, and confirmation that real operators carry the
-   admin flag (else it locks them out).
+2. **Org-edit privilege gap — RESOLVED 2026-08-18.** On live,
+   `organizations_isolation` is `FOR ALL`, so **any** authenticated org member
+   could rename the organisation (proven with a rolled-back RLS probe:
+   `org_update_rows=1` as a non-privileged member). The repo intended admin-only.
+   Fixed with an **additive RESTRICTIVE `FOR UPDATE` policy** (`org_update_admin_only`)
+   gated on `public.is_org_admin()`, which AND-combines with the base policy and
+   never touches reads (`20260901000003`, live-lineage branch). Verified: the org
+   admin still saves (`admin_rows=1`), the auditor is blocked (`auditor_rows=0`).
+   Confirmed the org retains an admin before gating, so it is never locked out of
+   its own settings.
+
+   **Latent bug fixed in passing:** `public.is_org_admin()` was `SECURITY DEFINER
+   SET search_path=''` but referenced `user_profiles` **unqualified**, so every
+   call raised *"relation user_profiles does not exist"* — the function had never
+   worked (nothing else referenced it, which is why it went unnoticed). Redefined
+   with `public.user_profiles`, matching `get_user_org_id()`. Same drift family:
+   the repo does not define `is_org_admin` at all; it is a live-only helper.
 3. **AI Brain runtime key.** The schema/RPC are live, but retrieval + LLM-judge
    run in `sentinel/services/embedding_service.py` /
    `compliance_evaluator.py` and only produce results when that worker runs with

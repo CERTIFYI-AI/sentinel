@@ -4,77 +4,108 @@
 --
 -- The organisation's own name is the most-shown string in the product: 28
 -- pages put it in their subtitle, the board report prints it on every page,
--- and the narrative engine writes it into prose an auditor reads. Until now it
--- came from a **hardcoded default in a browser localStorage store**
--- (`dashboard/src/stores/settingsStore.ts`, `orgName: 'Sentinel Financial
--- Corp'`). Three things were wrong with that:
+-- and the narrative engine writes it into prose an auditor reads. It must come
+-- from the org row (single source of truth), and only an administrator may
+-- change it — renaming the organisation rewrites what every report says the
+-- company is called, which is an administrative act, not a preference.
 --
---   1. Every tenant saw the same name until somebody typed over it, and the
---      value never left that one browser — a second device, or the same user
---      after clearing site data, was back to the demo company's name.
---   2. Settings → General rendered `defaultValue="CertifyI"` with a Save
---      button wired to nothing. It looked like the setting existed.
---   3. `organizations` already had every one of those columns — name, domain,
---      industry, company_size, primary_contact, timezone, fiscal_year_start
---      (006_core and 20260421000003) — and the product never read them.
+-- LINEAGE-AGNOSTIC (see TD-020). This migration originally assumed one schema
+-- lineage: a SELECT-only `ws02_org_self_read` policy on `organizations`, the
+-- `auth.current_org_id()` / `auth.has_permission()` helpers, and an
+-- `rbac_permissions` table. The live project has *none* of those — it governs
+-- `organizations` with a single `organizations_isolation` policy
+-- (`FOR ALL … id = get_user_org_id()`) and exposes `public.is_org_admin()`
+-- (role in owner/admin) instead. Applying the original form to live would
+-- error, and even patched it would stack a SECOND permissive UPDATE policy over
+-- `organizations_isolation` — the TD-000 defect where permissive policies
+-- OR-combine and the wider one wins.
 --
--- So the org row becomes the single source of truth. The blocker was RLS:
--- `ws02_org_self_read` (20260421000014) grants authenticated **SELECT only**,
--- so a save would have failed at the database with a policy error the operator
--- could do nothing about.
+-- So this detects which primitives exist and does the right thing on each:
 --
--- WHAT THIS DOES
+--   * Original lineage (auth.has_permission + auth.current_org_id present):
+--     add the admin-gated *permissive* UPDATE policy, as before, because the
+--     base policy there grants SELECT only.
 --
--- Adds the missing UPDATE policy, scoped two ways:
+--   * Live lineage (is_org_admin present, base policy is already FOR ALL):
+--     the base policy already permits the owner's UPDATE, so adding a permissive
+--     one is wrong. Instead AND-in an admin gate with a *RESTRICTIVE* FOR UPDATE
+--     policy — restrictive policies AND-combine, so the net effect is
+--     "id = get_user_org_id()  AND  is_org_admin()" for UPDATE only, leaving the
+--     SELECT/INSERT/DELETE paths of the base policy untouched. No read is
+--     affected; a non-admin (e.g. an auditor) can no longer rename the org.
 --
---   * `id = auth.current_org_id()` — you can only ever rename your own
---     organisation, never another tenant's.
---   * `auth.has_permission('org.update')` — renaming the organisation changes
---     what every report and every exported PDF says the company is called.
---     That is an administrative act, not a preference. Today only `org_admin`
---     satisfies it (via the `'*'` grant in 20260421000018); no other role is
---     given it here, deliberately.
---
--- Both are repeated in USING and WITH CHECK: USING decides which row you may
--- touch, WITH CHECK decides what it may look like afterwards. Omitting the
--- second would let an admin move their organisation to another tenant's id.
---
--- No column is added — they all already exist. Idempotent; safe to re-run.
+-- Idempotent and safe to re-run on either lineage.
 
 do $$
+declare
+  has_perm_fn   boolean := exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                                    where n.nspname = 'auth' and p.proname = 'has_permission');
+  has_curorg_fn boolean := exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                                    where n.nspname = 'auth' and p.proname = 'current_org_id');
+  has_admin_fn  boolean := exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                                    where n.nspname = 'public' and p.proname = 'is_org_admin');
+  has_rbac      boolean := to_regclass('public.rbac_permissions') is not null;
 begin
-  if not exists (
-    select 1 from pg_class c
-    join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'public' and c.relname = 'organizations' and c.relkind = 'r'
-  ) then
+  if to_regclass('public.organizations') is null then
     raise notice 'organizations table absent — nothing to do';
     return;
   end if;
 
   execute 'alter table public.organizations enable row level security';
 
-  -- Replaced rather than added to, so re-running cannot leave two policies
-  -- whose PERMISSIVE union is wider than either alone — the defect class
-  -- recorded as TD-000.
-  execute 'drop policy if exists org_self_update on public.organizations';
-  execute $sql$
-    create policy org_self_update on public.organizations
-      for update to authenticated
-      using       (id = auth.current_org_id() and auth.has_permission('org.update'))
-      with check  (id = auth.current_org_id() and auth.has_permission('org.update'));
-  $sql$;
+  if has_perm_fn and has_curorg_fn then
+    -- Original lineage: base policy grants SELECT only; add the permissive,
+    -- admin-gated UPDATE. USING and WITH CHECK both carry the tenant + admin
+    -- test so an admin can neither touch another tenant's row nor move their own
+    -- org to another tenant's id.
+    execute 'drop policy if exists org_self_update on public.organizations';
+    execute $sql$
+      create policy org_self_update on public.organizations
+        for update to authenticated
+        using       (id = auth.current_org_id() and auth.has_permission('org.update'))
+        with check  (id = auth.current_org_id() and auth.has_permission('org.update'))
+    $sql$;
+    raise notice 'org update: permissive admin-gated policy installed (auth.has_permission lineage)';
+
+  elsif has_admin_fn then
+    -- Live lineage: base policy is FOR ALL and already permits the owner's
+    -- UPDATE. Add a RESTRICTIVE FOR UPDATE gate so only owner/admin may write,
+    -- without adding a second permissive policy (TD-000) and without touching
+    -- reads. NULL from is_org_admin() (no profile) is treated as false → denied.
+    --
+    -- First repair a latent bug in the live helper: is_org_admin() is
+    -- SECURITY DEFINER with search_path='' but referenced `user_profiles`
+    -- UNQUALIFIED, so every call raised "relation user_profiles does not exist"
+    -- (get_user_org_id gets this right with public.user_profiles). A policy
+    -- built on the broken form would hard-error every UPDATE rather than deny.
+    -- Redefine with the schema-qualified table; behaviour is otherwise identical.
+    execute $fn$
+      create or replace function public.is_org_admin()
+      returns boolean language sql stable security definer set search_path to ''
+      as $body$ select role in ('owner','admin') from public.user_profiles where id = auth.uid() $body$
+    $fn$;
+
+    execute 'drop policy if exists org_update_admin_only on public.organizations';
+    execute $sql$
+      create policy org_update_admin_only on public.organizations
+        as restrictive
+        for update to authenticated
+        using       (public.is_org_admin())
+        with check  (public.is_org_admin())
+    $sql$;
+    raise notice 'org update: restrictive is_org_admin gate installed (live lineage)';
+
+  else
+    raise notice 'neither auth.has_permission nor public.is_org_admin present — org UPDATE policy left unchanged';
+  end if;
+
+  execute $c$comment on column public.organizations.name is
+    'The organisation''s display name. Shown on 28 pages, in the board report and in generated narrative — this row is the single source of truth for it, not any client-side store. Editable by owner/admin only (RLS).'$c$;
+
+  -- Record the permission where that table exists; org_admin already matches
+  -- through its '*' grant, so this documents rather than changes access.
+  if has_rbac then
+    execute $ins$insert into public.rbac_permissions (role, permission)
+             values ('org_admin', 'org.update') on conflict (role, permission) do nothing$ins$;
+  end if;
 end $$;
-
-comment on column public.organizations.name is
-  'The organisation''s display name. Shown on 28 pages, in the board report '
-  'and in generated narrative — this row is the single source of truth for it, '
-  'not any client-side store.';
-
--- `org.update` is checked by the policy above; recording it against org_admin
--- makes the permission discoverable in rbac_permissions rather than existing
--- only as a string inside a policy. org_admin already matches through its '*'
--- grant, so this changes no access — it documents it.
-insert into public.rbac_permissions (role, permission)
-values ('org_admin', 'org.update')
-on conflict (role, permission) do nothing;
