@@ -139,7 +139,10 @@ CREATE TABLE IF NOT EXISTS regulator_filings (
   -- FK to incidents is added in 20260817_replay_repair.sql: incidents is
   -- created later (20260418000002_core_grc_tables.sql), so an inline REFERENCES
   -- here broke every from-zero replay (supabase db reset / CI drift job).
-  linked_incident_id uuid,
+  -- text, not uuid: incidents.id is TEXT on live and in 20260418000002. A uuid
+  -- column here cannot take the FK added by 20260817000000_replay_repair, which
+  -- aborted that migration and every one of the 50 after it (audit F1).
+  linked_incident_id text,
   regulator_name text, regulator_contact text, reference_number text,
   content jsonb DEFAULT '{}', attachments text[] DEFAULT '{}',
   owner_id uuid REFERENCES user_profiles(id),

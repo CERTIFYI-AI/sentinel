@@ -86,7 +86,7 @@ ALTER TABLE public.conformity_assessments
 ALTER TABLE public.evidence
   ADD COLUMN IF NOT EXISTS url text,
   ADD COLUMN IF NOT EXISTS linked_use_cases text[] NOT NULL DEFAULT '{}',
-  ADD COLUMN IF NOT EXISTS linked_incident_id uuid,
+  ADD COLUMN IF NOT EXISTS linked_incident_id text,  -- → incidents.id (text; see 20260819000015)
   ADD COLUMN IF NOT EXISTS linked_assessment_id text;
 
 -- ---------------------------------------------------------------------------
@@ -275,7 +275,8 @@ CREATE TABLE IF NOT EXISTS public.post_market_events (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid NOT NULL DEFAULT current_user_org_id(),
   plan_id uuid REFERENCES public.post_market_plans(id) ON DELETE CASCADE,
-  incident_id uuid,                                 -- → incidents.id when escalated
+  -- text: incidents.id is TEXT (live-canonical). See audit F1.
+  incident_id text,                                 -- → incidents.id when escalated
   severity text,
   event_type text,                                  -- metric_breach | complaint | drift | recall_check
   description text,

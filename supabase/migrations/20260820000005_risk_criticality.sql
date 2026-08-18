@@ -15,7 +15,10 @@ ALTER TABLE public.approvals
   ADD COLUMN IF NOT EXISTS due_at timestamptz;
 
 ALTER TABLE public.audit_findings
-  ADD COLUMN IF NOT EXISTS linked_risk_id uuid;   -- → risks.id
+  -- text: risks.id is TEXT. A uuid column here cannot take a risks.id value
+  -- ("column linked_risk_id is of type uuid but expression is of type text")
+  -- and aborted the seed that populates it (audit F1).
+  ADD COLUMN IF NOT EXISTS linked_risk_id text;   -- → risks.id (text)
 
 DO $$
 BEGIN

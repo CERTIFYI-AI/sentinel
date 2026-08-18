@@ -36,7 +36,12 @@
 DO $bind$
 DECLARE
   r record;
-  v_id uuid;
+  -- text, not uuid: on the slug-keyed schema (A) frameworks.id holds
+  -- 'eu-ai-act' and selecting it into a uuid variable raises "invalid input
+  -- syntax for type uuid" (audit F1). Held as text and only rewritten when the
+  -- resolved id actually differs from the slug, so this is a no-op on (A) and
+  -- the intended remap on the uuid-keyed live schema (B).
+  v_id text;
   v_moved int;
   v_total int := 0;
 BEGIN
@@ -59,13 +64,15 @@ BEGIN
       ('hitrust',          'HITRUST CSF')
     ) AS m(slug, fw_name)
   LOOP
-    SELECT f.id INTO v_id FROM public.frameworks f WHERE f.name = r.fw_name;
+    SELECT f.id::text INTO v_id FROM public.frameworks f WHERE f.name = r.fw_name;
     IF v_id IS NULL THEN
       RAISE NOTICE 'no frameworks row named %; leaving slug % unmapped', r.fw_name, r.slug;
       CONTINUE;
     END IF;
+    -- On the slug-keyed schema the resolved id IS the slug; nothing to rewrite.
+    CONTINUE WHEN v_id = r.slug;
     UPDATE public.framework_controls
-       SET framework_id = v_id::text
+       SET framework_id = v_id
      WHERE framework_id = r.slug;
     GET DIAGNOSTICS v_moved = ROW_COUNT;
     v_total := v_total + v_moved;

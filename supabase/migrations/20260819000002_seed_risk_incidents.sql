@@ -10,9 +10,13 @@ DO $ri$
 DECLARE
   v_org uuid := '00000000-0000-0000-0000-000000000001';
   m_credit uuid; m_fraud uuid; m_kyc uuid; m_support uuid; m_loan uuid; m_nepberta uuid;
-  r_bias uuid; r_drift uuid;
+  -- text, not uuid: risks.id and incidents.id are TEXT (20260418000002, and on
+  -- live). Declaring these uuid made every comparison against a text id column
+  -- fail with "operator does not exist: text = uuid" and aborted the seed
+  -- (audit F1). incident_playbooks.id really is uuid, so pb_* stay uuid.
+  r_bias text; r_drift text;
   pb_model uuid; pb_bias uuid; pb_breach uuid;
-  i_drift uuid; i_bias uuid; i_pii uuid;
+  i_drift text; i_bias text; i_pii text;
   wf_release uuid; wf_exception uuid;
 BEGIN
   SELECT id INTO m_credit   FROM public.ai_models WHERE org_id = v_org AND name = 'Credit Risk Scorer'       LIMIT 1;
@@ -21,8 +25,8 @@ BEGIN
   SELECT id INTO m_support  FROM public.ai_models WHERE org_id = v_org AND name = 'Customer Support Copilot' LIMIT 1;
   SELECT id INTO m_loan     FROM public.ai_models WHERE org_id = v_org AND name = 'Loan Approval Assistant'  LIMIT 1;
   SELECT id INTO m_nepberta FROM public.ai_models WHERE org_id = v_org AND name = 'NepBERTa'                 LIMIT 1;
-  SELECT id INTO r_bias  FROM public.risks WHERE tenant_id = v_org::text AND title ILIKE '%bias%'  LIMIT 1;
-  SELECT id INTO r_drift FROM public.risks WHERE tenant_id = v_org::text AND title ILIKE '%drift%' LIMIT 1;
+  SELECT id INTO r_bias  FROM public.risks WHERE tenant_id = v_org::text AND coalesce(name, '') ILIKE '%bias%'  LIMIT 1;
+  SELECT id INTO r_drift FROM public.risks WHERE tenant_id = v_org::text AND coalesce(name, '') ILIKE '%drift%' LIMIT 1;
 
   -- -------------------------------------------------------------------------
   -- Playbooks — response runbooks with phases, escalation roles, regulatory

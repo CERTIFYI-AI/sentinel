@@ -15,8 +15,17 @@
 --
 -- Applied live 2026-08-25; verified: cron.job shows mesh-sentinels-sweep
 -- (*/10) and daily-integration-sync (02:00 UTC) both active.
-
-create extension if not exists pg_cron;
+-- Guarded: pg_cron is a Supabase platform extension and is not available in a
+-- bare Postgres, where the bare CREATE EXTENSION aborts the replay (audit F1).
+-- The schedule blocks below already take a guarded no-op path without it.
+do $pgcron$
+begin
+  if exists (select 1 from pg_available_extensions where name = 'pg_cron') then
+    create extension if not exists pg_cron;
+  else
+    raise notice 'pg_cron unavailable in this environment; schedules skipped';
+  end if;
+end $pgcron$;
 
 select set_config('app.settings.supabase_functions_url',
                   'https://vhparvughsygyknblkzt.supabase.co/functions/v1', false);

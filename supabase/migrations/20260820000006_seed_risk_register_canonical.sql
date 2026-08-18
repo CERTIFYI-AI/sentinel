@@ -12,7 +12,10 @@ DO $rr$
 DECLARE
   v_org uuid := '00000000-0000-0000-0000-000000000001';
   m_credit uuid; m_fraud uuid; m_support uuid;
-  i_bias uuid; i_drift uuid; i_pii uuid;
+  -- text, not uuid: incidents.id is TEXT, and risks.linked_incident_ids is
+  -- text[]. Declared uuid, the CASE below could not convert text[] to uuid[]
+  -- and aborted the seed (audit F1).
+  i_bias text; i_drift text; i_pii text;
   c_bias text; c_drift text;
 BEGIN
   SELECT id INTO m_credit  FROM public.ai_models WHERE org_id = v_org AND name = 'Credit Risk Scorer'       LIMIT 1;
@@ -46,7 +49,7 @@ BEGIN
        'Approval-rate disparity (pp)', 5, 11.8,
        CASE WHEN m_credit IS NULL THEN '{}' ELSE ARRAY[m_credit::text] END,
        CASE WHEN c_bias IS NULL THEN '{}' ELSE ARRAY[c_bias] END,
-       CASE WHEN i_bias IS NULL THEN '{}'::uuid[] ELSE ARRAY[i_bias] END,
+       CASE WHEN i_bias IS NULL THEN '{}'::text[] ELSE ARRAY[i_bias] END,
        ARRAY['EU AI Act Art. 10','ISO 42001 8.2','ECOA Reg B'],
        'Fairness-constrained retraining plus segment-level human review until the disparity KRI is inside threshold for two consecutive months.',
        'bias_monitor'),
@@ -62,7 +65,7 @@ BEGIN
        'PSI (remittance features)', 0.25, 0.32,
        CASE WHEN m_fraud IS NULL THEN '{}' ELSE ARRAY[m_fraud::text] END,
        CASE WHEN c_drift IS NULL THEN '{}' ELSE ARRAY[c_drift] END,
-       CASE WHEN i_drift IS NULL THEN '{}'::uuid[] ELSE ARRAY[i_drift] END,
+       CASE WHEN i_drift IS NULL THEN '{}'::text[] ELSE ARRAY[i_drift] END,
        ARRAY['EU AI Act Art. 9','ISO 42001 8.3'],
        'Seasonal covariates in retraining plus drift-triggered deployment holds (AUTO-002).',
        'drift_detection'),
@@ -78,7 +81,7 @@ BEGIN
        'Guardrail PII block events (30d)', 10, 4,
        CASE WHEN m_support IS NULL THEN '{}' ELSE ARRAY[m_support::text] END,
        '{}',
-       CASE WHEN i_pii IS NULL THEN '{}'::uuid[] ELSE ARRAY[i_pii] END,
+       CASE WHEN i_pii IS NULL THEN '{}'::text[] ELSE ARRAY[i_pii] END,
        ARRAY['GDPR Art. 32','EU AI Act Art. 15'],
        'Block-mode PII redaction, canary identifiers in eval sets, and quarterly privacy red-team scenarios.',
        'guardrail_events');

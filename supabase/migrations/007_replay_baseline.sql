@@ -475,7 +475,10 @@ CREATE TABLE IF NOT EXISTS guardrails (
 CREATE TABLE IF NOT EXISTS incident_workflow_steps (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   org_id uuid,
-  incident_id uuid,
+  -- text, matching incidents.id (TEXT) and the sibling playbook_runs.incident_id.
+  -- Declared uuid here, it made every join/compare against an incident id fail
+  -- with "operator does not exist: uuid = text" (audit F1).
+  incident_id text,
   created_at timestamptz DEFAULT now()
 );
 
@@ -670,7 +673,7 @@ CREATE TABLE IF NOT EXISTS red_team_findings (
 
 CREATE TABLE IF NOT EXISTS remediation_plans (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  incident_id uuid,
+  incident_id text,   -- → incidents.id (TEXT); see 20260819000015
   due_date timestamptz,
   org_id uuid,
   title text,

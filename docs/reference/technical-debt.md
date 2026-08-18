@@ -651,8 +651,46 @@ EU AI Act Art. 12 and the repo's own Gate 4 both require the record. Attaching
 ## TD-014 — From-zero replay is red on the `incidents.id` type split
 
 **Owner:** Risk & Incidents team · **Raised:** 2026-08-26 · **Severity:** P1 ·
-**Status:** Open. **Not caused by the framework-catalog change** — surfaced by
-it, because that branch runs a full replay locally that CI cannot currently run.
+**Status: CLOSED 2026-08-18.** The repo now builds its own database from zero:
+**149/149 migrations apply, 0 failures, 254 tables, 901 RLS policies**, verified
+against a real PostgreSQL 16 behind a platform-only shim (no application table
+or function in the harness).
+
+### How it was closed
+
+`incidents.id` / `risks.id` / `vendors.id` are TEXT — in this repo *and* on the
+live project (verified by query, 2026-08-18). The audit's premise that "live
+evolved to uuid" was backwards; text is canonical, so the *referencing* columns
+were aligned to it rather than the parents converted:
+
+| Site | Was | Now |
+|---|---|---|
+| `regulator_filings.linked_incident_id` | uuid | text |
+| `post_market_events.incident_id` | uuid | text |
+| `remediation_plans.incident_id` / `.risk_id` | uuid | text |
+| `incident_workflow_steps.incident_id` | uuid | text |
+| `audit_findings` / `evidence_artifacts` / `exceptions` / `financial_risks`.`linked_*_id` | uuid | text |
+| `ai_apps.vendor_id`, `transfer_impact_assessments.vendor_id` | converted to uuid | left text (FK now implementable) |
+| seed variables in `20260819000002` / `20260820000006` | uuid | text |
+
+Plus two non-type fixes: the unguarded `assets.tenant_id` default is now guarded
+like its siblings, and `pg_cron`'s `CREATE EXTENSION` is guarded so a bare
+Postgres skips it instead of aborting.
+
+`20260819000015_normalize_incident_risk_reference_types.sql` normalises any
+remaining such column and then **asserts the invariant**, so the class cannot
+silently return.
+
+**The cascade is what made this expensive:** `20260817000000_replay_repair`
+failed on its *first* statement, so risk-schema-v2 never landed and 50 later
+migrations never ran. With it fixed, previously unreachable objects now build —
+`realtime_alerts` (the Control Drift table), `risks.kri_metric`,
+`risks.linked_asset_ids` — and the from-zero build seeds all **936** catalog
+rows.
+
+**Still open (the lesson):** `check_migration_replay.py` verifies *references*,
+never *types*, and cannot see inside `DO $$ … $$`. It reported clean on all
+eight failing files. A static pass is not a replay; CI should run a real one.
 
 ### What
 
