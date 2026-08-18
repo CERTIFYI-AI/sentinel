@@ -1475,8 +1475,16 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 11,
+  "entryCount": 12,
   "entries": [
+    {
+      "type": "fix",
+      "scope": "notifications",
+      "summary": "repair the Notifications inbox, which failed outright with `column notifications.notification_type does not exist`. Root cause: `public.notifications` is created **twice** — `20260418000002_core_grc_tables` (`tenant_id`/`notification_type`/`message`/`entity_*`) and `20260421000006_phase4_foundation` (`org_id`/`type`/`body`/`resource_*`/`url_path`) — and the second `CREATE TABLE` is `IF NOT EXISTS`, so whichever era reached a database first silently won. Phase-4 heals an era-1 database forward but nothing healed an era-2 database back, and the app reads era-1 names, so on an era-2 database every read threw. The application was split the same way: the drawer and two of three writers used era-1 names while `governance-dispatcher` wrote era-2 names **plus a `severity` column that has never existed in either era** — and did not check its insert, so those notifications were discarded in silence. `20260828000001_notifications_schema_convergence.sql` converges the table on one canonical column set; it is **additive only** (never drops a column, since a deployment's starting shape cannot be observed from the repo) and carries data across the naming split (`type`→`notification_type`, `body`→`message`, `resource_*`→`entity_*`) so no notification is lost, then asserts every column the drawer selects exists. `governance-dispatcher` now writes canonical columns and fails loudly on error — a dropped governance notification is a missed escalation (EU AI Act Art. 14). Verified against a real Postgres in **both** starting states, each converging with its existing row preserved and re-running cleanly. New `docs/modules/notifications.md` documents the two-era history and the residual debt (era-2 columns left in place, empty, pending a confirm-then-drop follow-up)",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "feat",
       "scope": "legal",

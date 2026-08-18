@@ -61,13 +61,23 @@ const notificationAgent: AgentHandler = async (ctx: AgentContext): Promise<Agent
   ])
   if (!IMPORTANT.has(ctx.event.event_type)) return { status: 'skipped' }
   const p = ctx.event.payload as any
-  await ctx.supabase.from('notifications').insert({
-    org_id: ctx.event.org_id, type: ctx.event.event_type,
-    severity: p.severity ?? 'INFO',
+  // Canonical `notifications` columns (see
+  // 20260828000001_notifications_schema_convergence.sql). This previously wrote
+  // `type`/`body` plus a `severity` column that has never existed in any era of
+  // this table — and did not check the result, so every notification it
+  // produced was discarded in silence. Severity now rides in the message.
+  const { error } = await ctx.supabase.from('notifications').insert({
+    org_id: ctx.event.org_id,
+    tenant_id: ctx.event.org_id,
+    notification_type: ctx.event.event_type,
     title: `${ctx.event.event_type.replace(/_/g,' ')} — ${p.modelName ?? p.title ?? 'auto'}`,
-    body: JSON.stringify(p).slice(0, 500),
+    message: JSON.stringify({ severity: p.severity ?? 'INFO', ...p }).slice(0, 500),
+    entity_type: p.incidentId ? 'incident' : p.modelId ? 'model' : 'event',
+    entity_id: (p.incidentId as string) ?? (p.modelId as string) ?? null,
     is_read: false,
   })
+  // Fail loudly: a dropped governance notification is a missed escalation.
+  if (error) return { status: 'failed', error: error.message }
   return { status: 'succeeded' }
 }
 Object.defineProperty(notificationAgent, 'name', { value: 'NotificationAgent' })

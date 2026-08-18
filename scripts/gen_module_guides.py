@@ -69,7 +69,6 @@ HEADING_ALIASES = {
 # here keeps them out of the "undocumented" count with a stated reason, rather
 # than quietly inflating coverage.
 NO_DOC_REASON: dict[str, str] = {
-    "/notifications": "Notification centre — a cross-module inbox, documented per source module.",
     "/settings": "Workspace settings — documented in docs/getting-started/dashboard-setup.md.",
 }
 
