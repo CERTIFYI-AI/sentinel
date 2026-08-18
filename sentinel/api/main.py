@@ -352,6 +352,23 @@ try:
 except Exception as e:
     logger.warning(f'use_case_router error: {e}')
 
+# Integration connect/sync surface (/v1/integrations/*). This is the browser
+# half of the evidence pipeline: it stores AES-256-GCM-encrypted credentials
+# and enqueues sync jobs for the worker. It was previously mounted ONLY on
+# sentinel/proxy.py's app, but the container runs sentinel.api.main:app — so a
+# deployed API answered every /v1/integrations/connect with 404 and the loop
+# could never start. Mounted here so the canonical app serves it. The router
+# carries its own /v1/integrations prefix and resolves the caller's org from
+# their bearer token (never the body). MUST be registered before the catch-all
+# frontend proxy below, which would otherwise swallow its GET routes (the
+# proxy only exempts paths beginning with "api"/"ws"/"favicon", not "v1").
+try:
+    from sentinel.integrations.api import router as integrations_router
+    app.include_router(integrations_router)
+    logger.info('integrations_router loaded')
+except Exception as e:
+    logger.warning(f'integrations_router error: {e}')
+
 
 # ── Frontend Proxy ────────────────────────────────────────────────────────────
 # Proxy all non-API requests to the Vite dev server so that accessing the

@@ -158,7 +158,15 @@ async def process_job(conn: asyncpg.Connection, job: asyncpg.Record) -> None:
         """
         UPDATE public.integrations
         SET last_sync_at = now(), last_run_status = 'success',
-            last_run_error = NULL, health = 'healthy', updated_at = now()
+            last_run_error = NULL, health = 'healthy', updated_at = now(),
+            -- Close the collection loop. connect() writes status='configuring'
+            -- and enqueues one immediate job; the daily cron only re-enqueues
+            -- rows WHERE status='connected'. Nothing else promotes the row, so
+            -- without this an integration collected exactly once at connect
+            -- time and never again. Promote to 'connected' on first successful
+            -- sync so the recurring schedule picks it up; never overwrite a
+            -- terminal state a human or another path set (disconnected/paused).
+            status = CASE WHEN status = 'configuring' THEN 'connected' ELSE status END
         WHERE id = $1
         """,
         integration_id,

@@ -1,0 +1,74 @@
+# Deploy the Python backend (FastAPI API + evidence-sync worker) to Fly.io.
+#
+# WHY THIS EXISTS: deploy-dashboard.yml ships the frontend and
+# deploy-migrations.yml applies the schema, but nothing deployed the Python
+# backend. So POST /v1/integrations/connect had no host and the sync worker
+# never ran — evidence collection could not start. This closes that gap.
+#
+# The app is defined in fly.toml (two processes: web + worker, one image).
+#
+# ── One-time setup ──────────────────────────────────────────────────────────
+# 1. Create the app and set its runtime secrets once, locally (see fly.toml
+#    header and docs/ops/backend-deployment.md).
+# 2. Add ONE repository secret so CI can deploy:
+#      FLY_API_TOKEN   — `fly tokens create deploy` (a deploy-scoped token)
+#
+# Until FLY_API_TOKEN exists this workflow SKIPS with a clear notice rather than
+# failing, so it never reds main before you have wired up Fly.
+#
+# ── Safety ──────────────────────────────────────────────────────────────────
+# `fly deploy` performs a rolling release and health-checks /api/health before
+# shifting traffic (see fly.toml). Runtime secrets live in Fly, never in the
+# repo. Nothing here touches the database.
+
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'sentinel/**'
+      - 'pyproject.toml'
+      - 'Dockerfile'
+      - 'fly.toml'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+# One deploy at a time; a newer push supersedes an in-progress deploy.
+concurrency:
+  group: deploy-backend
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check for Fly deploy token
+        id: guard
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: |
+          if [ -z "$FLY_API_TOKEN" ]; then
+            echo "::notice::FLY_API_TOKEN is not set — skipping backend deploy."
+            echo "Add it under Settings → Secrets and variables → Actions."
+            echo "Create one with: fly tokens create deploy"
+            echo "See .github/workflows/deploy-backend.yml and docs/ops/backend-deployment.md."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Install flyctl
+        if: steps.guard.outputs.skip == 'false'
+        uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Deploy (rolling, health-checked)
+        if: steps.guard.outputs.skip == 'false'
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+        run: fly deploy --remote-only

@@ -648,6 +648,35 @@ EU AI Act Art. 12 and the repo's own Gate 4 both require the record. Attaching
 
 ---
 
+## TD-019 — Two FastAPI apps; the integrations router lived on only one
+
+**Owner:** Platform · **Raised:** 2026-08-18 · **Severity:** P2 ·
+**Status:** Partially resolved 2026-08-18.
+
+The backend has **two** FastAPI apps: `sentinel.api.main:app` (the canonical
+app the container runs, ~30 routers under `/api/*`) and `sentinel.proxy:app`
+(the LLM gateway — `/v1/chat/completions`, `/v1/models`, SPA static). The
+integration connect/sync router (`/v1/integrations/*`) was mounted on **only**
+`proxy.py`, so the deployed app (`main:app`) answered every
+`/v1/integrations/connect` with 404 — break ④ in
+[`continuous-evidence-roadmap.md`](continuous-evidence-roadmap.md).
+
+**Resolved for the loop:** the router is now also mounted in `main.py` (ahead
+of its catch-all frontend proxy, which only exempts `api`/`ws`/`favicon` paths
+and would otherwise swallow the router's GET routes). Verified via the app's
+OpenAPI schema.
+
+**Residual debt:** the two-app split itself remains — routers, CORS config, and
+auth dependencies are duplicated and can drift (e.g. a router added to one app
+and not the other, exactly as happened here). `resolve_org` in
+`integrations/api.py` still reaches back into `proxy.py` for tenant resolution
+via a local import. Converging on a single app (or a shared router registry
+both mount) is the real fix; until then, **any new public router must be
+registered in both apps**, and that rule is easy to forget. Triage alongside
+the Phase-0 backend deploy.
+
+---
+
 ## TD-014 — From-zero replay is red on the `incidents.id` type split
 
 **Owner:** Risk & Incidents team · **Raised:** 2026-08-26 · **Severity:** P1 ·
