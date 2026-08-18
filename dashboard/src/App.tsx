@@ -57,7 +57,8 @@ const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 const TrustEngineDashboard = lazy(() => import('./pages/trust-engine/TrustEngineDashboard'));
 const LiveTraceFeed = lazy(() => import('./pages/trust-engine/LiveTraceFeed'));
 const GuardrailActivity = lazy(() => import('./pages/trust-engine/GuardrailActivity'));
-const Reporting = lazy(() => import("./pages/reporting/Reporting"));
+// Retired 2026-08-25 (route redirects to /export): read the reporting_table demo table.
+// const Reporting = lazy(() => import("./pages/reporting/Reporting"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 const CostTokenDashboard = lazy(() => import('./pages/trust-engine/CostTokenDashboard'));
 const FallbackLog = lazy(() => import('./pages/trust-engine/FallbackLog'));
@@ -139,7 +140,8 @@ const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 const PeerIntelligence = lazy(() => import('./pages/PeerIntelligence'));
 const ModelDNA = lazy(() => import('./pages/models/ModelDNA'));
 const ComplianceAutopilot = lazy(() => import('./pages/ComplianceAutopilot'));
-const NarrativeEngine = lazy(() => import('./pages/NarrativeEngine'));
+// Parked 2026-08-25 (route redirects to /ciso/report): duplicate of Board Report.
+// const NarrativeEngine = lazy(() => import('./pages/NarrativeEngine'));
 const KnowledgeGraph = lazy(() => import('./pages/KnowledgeGraph'));
 const RegulatoryVelocity = lazy(() => import('./pages/RegulatoryVelocity'));
 
@@ -447,7 +449,8 @@ export default function App() {
           <Route path="/compliance/policy-templates" element={<Suspense fallback={null}><PolicyTemplates /></Suspense>} />
           <Route path="/compliance/controls/:id" element={<ControlDetail />} />
           <Route path="/controls/:id" element={<ParamRedirect to="/compliance/controls" />} />
-          <Route path="/reporting" element={<Suspense fallback={<Loading />}><Reporting /></Suspense>} />
+          {/* Reporting retired 2026-08-25: last consumer of the reporting_table demo table; Export Center is the real report surface. */}
+          <Route path="/reporting" element={<Navigate to="/export" replace />} />
           <Route path="/ciso" element={<Suspense fallback={<Loading />}><CisoDashboard /></Suspense>} />
           <Route path="/ciso/report" element={<Suspense fallback={<Loading />}><BoardReport /></Suspense>} />
           <Route path="/risk/register" element={<RedirectWithQuery to="/risks" />} />
@@ -577,7 +580,8 @@ export default function App() {
           <Route path="/peer-intelligence" element={<Suspense fallback={<Loading />}><PeerIntelligence /></Suspense>} />
           <Route path="/models/dna" element={<Suspense fallback={<Loading />}><ModelDNA /></Suspense>} />
           <Route path="/autopilot" element={<Suspense fallback={<Loading />}><ComplianceAutopilot /></Suspense>} />
-          <Route path="/narrative-engine" element={<Suspense fallback={<Loading />}><NarrativeEngine /></Suspense>} />
+          {/* Narrative Engine parked 2026-08-25 — duplicates Board Report + Export Center; see Sidebar note. */}
+          <Route path="/narrative-engine" element={<Navigate to="/ciso/report" replace />} />
           <Route path="/knowledge-graph" element={<Suspense fallback={<Loading />}><KnowledgeGraph /></Suspense>} />
           <Route path="/reg-velocity" element={<Suspense fallback={<Loading />}><RegulatoryVelocity /></Suspense>} />
 

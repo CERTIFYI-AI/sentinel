@@ -11,7 +11,7 @@ import {
   type DemoImportStep,
 } from "../services/demoImportService";
 
-type Tab = "general" | "team" | "api-keys" | "notifications" | "compliance" | "integrations" | "demo-data";
+type Tab = "general" | "team" | "api-keys" | "notifications" | "compliance" | "demo-data";
 
 const TABS: { id: Tab; label: string; icon: typeof User }[] = [
   { id: "general", label: "General", icon: User },
@@ -19,7 +19,6 @@ const TABS: { id: Tab; label: string; icon: typeof User }[] = [
   { id: "api-keys", label: "API Keys", icon: Key },
   { id: "notifications", label: "Notifications", icon: Bell },
   { id: "compliance", label: "Compliance", icon: Shield },
-  { id: "integrations", label: "Integrations", icon: Globe },
   { id: "demo-data", label: "Demo data", icon: Database },
 ];
 
@@ -203,14 +202,10 @@ const API_KEYS = [
   { name: "Old Integration (deprecated)", prefix: "sk-old-****1f8a", created: "2024-06-10", lastUsed: "30 days ago", status: "revoked" },
 ];
 
-const INTEGRATIONS = [
-  { name: "Slack", description: "Send alerts to #ai-compliance channel", status: "connected", icon: "💬" },
-  { name: "Jira", description: "Sync remediation tasks", status: "connected", icon: "📋" },
-  { name: "PagerDuty", description: "Critical incident escalation", status: "connected", icon: "🚨" },
-  { name: "Datadog", description: "Forward metrics and traces", status: "disconnected", icon: "📊" },
-  { name: "AWS CloudTrail", description: "Ingest cloud audit events", status: "connected", icon: "☁️" },
-  { name: "Okta", description: "SSO and identity management", status: "disconnected", icon: "🔐" },
-];
+// The Integrations register lives at /integrations (real org-scoped
+// `integrations` table + the 219-product integration_catalog). The tab that
+// used to be here rendered a hardcoded six-item array with connect buttons
+// that did nothing — a fake-success surface duplicating a real module.
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<Tab>("general");
@@ -385,38 +380,6 @@ export default function SettingsPage() {
                 ))}
               </CardContent>
             </Card>
-          )}
-
-          {activeTab === "integrations" && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {INTEGRATIONS.map(int => (
-                <Card key={int.name} className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
-                  <CardContent className="p-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <span className="text-2xl">{int.icon}</span>
-                        <div>
-                          <h3 className="text-sm font-semibold text-[hsl(var(--text-1))] dark:text-[hsl(var(--bg-surface))]">{int.name}</h3>
-                          <p className="text-[11px] text-[hsl(var(--text-3))]">{int.description}</p>
-                        </div>
-                      </div>
-                      <span className={`text-[10px] font-medium px-2 py-0.5 rounded capitalize ${
-                        int.status === "connected"
-                          ? "bg-[hsl(var(--s-ok-bg))] text-[hsl(var(--s-ok-tx))]"
-                          : "bg-[hsl(var(--bg-muted))] text-[hsl(var(--text-3))]"
-                      }`}>{int.status}</span>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-[hsl(var(--border))]">
-                      <button className={`text-xs font-medium ${
-                        int.status === "connected" ? "text-[hsl(var(--text-3))] hover:text-[hsl(var(--s-er-tx))]" : "text-[hsl(var(--s-ok-tx))] hover:underline"
-                      }`}>
-                        {int.status === "connected" ? "Disconnect" : "Connect"}
-                      </button>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           )}
 
           {activeTab === "demo-data" && <DemoDataSection />}

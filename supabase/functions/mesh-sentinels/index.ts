@@ -46,10 +46,19 @@ const day = () => new Date().toISOString().slice(0, 10)
 // ─── The 10 sentinels (server ports of dashboard/src/agents/sentinels) ──────
 
 const policyEnforcement: Sweep = async ({ sb, orgId, since, emit }) => {
+  // trust_traces is the runtime-telemetry table; it does not exist on every
+  // deployment (absent on this project as of 2026-08-25). No telemetry is not
+  // a sweep failure — it is a skip with an honest reason, so the fleet health
+  // panel does not show a permanent red for a table nobody has provisioned.
   const { data, error } = await sb.from('trust_traces')
     .select('id, model_id, injection_detected, pii_detected, toxicity_detected, intent_violation')
     .eq('tenant_id', orgId).gte('created_at', since).limit(500)
-  if (error) return { status: 'failed', findings: [], summary: 'trust_traces query failed', error: error.message }
+  if (error) {
+    const missing = /schema cache|does not exist/i.test(error.message)
+    return missing
+      ? { status: 'skipped', findings: [], summary: 'No runtime trace telemetry provisioned (trust_traces absent).' }
+      : { status: 'failed', findings: [], summary: 'trust_traces query failed', error: error.message }
+  }
   const flagged = (data ?? []).filter((t: any) => t.injection_detected || t.pii_detected || t.toxicity_detected || t.intent_violation)
   const findings: Finding[] = flagged.map((t: any) => ({
     title: 'Trace flagged by policy firewall', severity: t.injection_detected ? 'HIGH' : 'MEDIUM', entityType: 'trace', entityId: t.id,
@@ -139,7 +148,7 @@ const biasMonitor: Sweep = async ({ sb, orgId, emit }) => {
 
 const dataLineage: Sweep = async ({ sb, orgId, emit }) => {
   const [dsRes, mRes] = await Promise.all([
-    sb.from('datasets').select('id, name, contains_pii, last_audit_date, linked_models').eq('tenant_id', orgId),
+    sb.from('datasets').select('id, name, contains_pii, last_audit_date, used_in_models').eq('tenant_id', orgId),
     sb.from('ai_models').select('id, name, is_active').eq('org_id', orgId),
   ])
   if (dsRes.error) return { status: 'failed', findings: [], summary: 'datasets query failed', error: dsRes.error.message }
@@ -153,7 +162,7 @@ const dataLineage: Sweep = async ({ sb, orgId, emit }) => {
     if (!ok) findings.push({ title: `PII dataset "${d.name}" lacks fresh audit`, severity: 'HIGH', entityType: 'dataset', entityId: d.id })
   }
   const linked = new Set<string>()
-  for (const d of datasets as any[]) for (const v of (Array.isArray(d.linked_models) ? d.linked_models : [])) if (typeof v === 'string') linked.add(v)
+  for (const d of datasets as any[]) for (const v of (Array.isArray(d.used_in_models) ? d.used_in_models : [])) if (typeof v === 'string') linked.add(v)
   const orphaned = (models as any[]).filter((m) => !linked.has(m.id) && !linked.has(m.name))
   for (const m of orphaned) findings.push({ title: `No dataset lineage for model ${m.name}`, severity: 'MEDIUM', entityType: 'model', entityId: m.id })
   if (findings.length > 0) {
@@ -165,36 +174,38 @@ const dataLineage: Sweep = async ({ sb, orgId, emit }) => {
 }
 
 const incidentTriage: Sweep = async ({ sb, orgId, emit }) => {
+  // Live incidents columns only: there is no title/assignee/detected_at/
+  // affected_users_count. The incident is described by `description`, dated by
+  // detected_date/occurred_date, and has no assignee column — so triage here
+  // fills severity and flags SLA breaches rather than assigning an owner.
   const { data, error } = await sb.from('incidents')
-    .select('id, title, severity, status, incident_type, assignee, detected_at, created_at, affected_users_count')
+    .select('id, description, severity, status, incident_type, detected_date, occurred_date, created_at, affected_persons')
     .eq('tenant_id', orgId).in('status', ['open', 'OPEN', 'investigating', 'triage']).limit(500)
   if (error) return { status: 'failed', findings: [], summary: 'incidents query failed', error: error.message }
   const findings: Finding[] = []
   let triaged = 0
   for (const inc of (data ?? []) as any[]) {
-    if (!inc.severity || !inc.assignee) {
+    const label = String(inc.description ?? inc.incident_type ?? inc.id).slice(0, 80)
+    if (!inc.severity) {
       const type = String(inc.incident_type ?? '').toLowerCase()
       let severity = 'medium'
-      if (type.includes('breach') || (inc.affected_users_count ?? 0) > 10_000) severity = 'critical'
+      if (type.includes('breach') || Number(inc.affected_persons ?? 0) > 10_000) severity = 'critical'
       else if (type.includes('security') || type.includes('model_failure')) severity = 'high'
-      const assignee = severity === 'critical' ? 'ciso' : severity === 'high' ? 'head-of-risk' : 'incident-manager'
-      const up = await sb.from('incidents').update({
-        severity: inc.severity ?? severity, assignee: inc.assignee ?? assignee,
-      }).eq('id', inc.id)
+      const up = await sb.from('incidents').update({ severity }).eq('id', inc.id)
       if (!up.error) {
         triaged++
-        findings.push({ title: `Triaged "${inc.title}"`, severity: 'INFO', entityType: 'incident', entityId: inc.id })
+        findings.push({ title: `Triaged "${label}" as ${severity}`, severity: 'INFO', entityType: 'incident', entityId: inc.id })
       }
     }
     const sev = String(inc.severity ?? '').toLowerCase()
     const sla = sev === 'critical' ? 4 : sev === 'high' ? 24 : 0
     if (sla) {
-      const ageH = (Date.now() - new Date(inc.detected_at ?? inc.created_at).getTime()) / 3600_000
+      const ageH = (Date.now() - new Date(inc.detected_date ?? inc.occurred_date ?? inc.created_at).getTime()) / 3600_000
       if (ageH > sla) {
-        findings.push({ title: `SLA breached on "${inc.title}" (${Math.round(ageH)}h)`, severity: sev === 'critical' ? 'CRITICAL' : 'HIGH', entityType: 'incident', entityId: inc.id })
+        findings.push({ title: `SLA breached on "${label}" (${Math.round(ageH)}h)`, severity: sev === 'critical' ? 'CRITICAL' : 'HIGH', entityType: 'incident', entityId: inc.id })
         await emit('SLA_BREACHED', {
           source: 'VENDOR_SLA', severity: sev === 'critical' ? 'CRITICAL' : 'HIGH', affectedModels: [],
-          title: `Incident SLA breached: ${inc.title}`, detectedAt: new Date().toISOString(), incidentId: inc.id,
+          title: `Incident SLA breached: ${label}`, detectedAt: new Date().toISOString(), incidentId: inc.id,
         }, `INC_SLA:${inc.id}:${day()}`)
       }
     }
@@ -338,14 +349,17 @@ const changeDetection: Sweep = async ({ sb, orgId, emit }) => {
 
 const reporting: Sweep = async ({ sb, orgId }) => {
   const windowStart = new Date(Date.now() - 20 * 3600_000).toISOString()
-  const recent = await sb.from('notifications').select('id').eq('tenant_id', orgId)
-    .eq('notification_type', 'mesh_digest').gte('created_at', windowStart).limit(1)
+  // Live notifications shape: org_id (not tenant_id), source_module (not
+  // notification_type), message (not content), and `type` is CHECK-constrained
+  // to a severity vocabulary — there is no entity_type column.
+  const recent = await sb.from('notifications').select('id').eq('org_id', orgId)
+    .eq('source_module', 'mesh-digest').gte('created_at', windowStart).limit(1)
   if ((recent.data ?? []).length > 0) return { status: 'skipped', findings: [], summary: 'Digest already compiled in the last 20h.' }
   const dayAgo = new Date(Date.now() - 86400_000).toISOString()
   const [events, execs, risks, incidents, models] = await Promise.all([
     sb.from('governance_events').select('id', { count: 'exact', head: true }).eq('org_id', orgId).gte('created_at', dayAgo),
     sb.from('agent_executions').select('id', { count: 'exact', head: true }).eq('org_id', orgId).eq('status', 'failed').gte('started_at', dayAgo),
-    sb.from('risks').select('id', { count: 'exact', head: true }).eq('tenant_id', orgId).in('status', ['open', 'OPEN']),
+    sb.from('risks').select('id', { count: 'exact', head: true }).eq('tenant_id', orgId).not('mitigation_status', 'in', '("Completed","Closed")'),
     sb.from('incidents').select('id', { count: 'exact', head: true }).eq('tenant_id', orgId).in('status', ['open', 'OPEN', 'investigating']),
     sb.from('ai_models').select('id', { count: 'exact', head: true }).eq('org_id', orgId),
   ])
@@ -358,8 +372,8 @@ const reporting: Sweep = async ({ sb, orgId }) => {
   ]
   const content = lines.join(' · ')
   const notif = await sb.from('notifications').insert({
-    tenant_id: orgId, title: 'AI governance daily digest', message: content,
-    notification_type: 'mesh_digest', entity_type: 'mesh', is_read: false,
+    org_id: orgId, title: 'AI governance daily digest', message: content,
+    type: 'info', source_module: 'mesh-digest', is_read: false,
   })
   if (notif.error) return { status: 'failed', findings: [], summary: 'notifications write failed', error: notif.error.message }
   // Server-only: executive digest row (service-role write policy).

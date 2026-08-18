@@ -17,7 +17,8 @@ import {
 } from '@/services/riskTieringService'
 import {
   fetchMeetings, fetchAgendaItems, fetchVotes, createMeeting, createAgendaItem,
-  setAgendaDecision, castVote, type MrcMeeting, type MrcAgendaItem, type MrcVote, type Decision,
+  setAgendaDecision, castVote, fetchMrcMembers, addMrcMember, removeMrcMember,
+  type MrcMeeting, type MrcAgendaItem, type MrcVote, type Decision, type MrcMember,
 } from '@/services/mrcService'
 
 // Shared: model registry options for interlink dropdowns across all modules.
@@ -115,5 +116,19 @@ export function useMrc() {
     meetings: meetings.data ?? [], agenda: agenda.data ?? [], votes: votes.data ?? [],
     isLoading: meetings.isLoading || agenda.isLoading || votes.isLoading,
     vote, addMeeting, addAgenda, decide,
+  }
+}
+
+// Committee roster on the canonical mrc_members table (20260825000003) — the
+// last MRC concern to leave its demo table.
+export function useMrcMembers() {
+  const qc = useQueryClient()
+  const list = useQuery({ queryKey: ['mrc-members'], queryFn: fetchMrcMembers, staleTime: 30_000 })
+  const inv = () => qc.invalidateQueries({ queryKey: ['mrc-members'] })
+  const add = useMutation({ mutationFn: (m: Partial<MrcMember>) => addMrcMember(m), onSuccess: inv })
+  const remove = useMutation({ mutationFn: (id: string) => removeMrcMember(id), onSuccess: inv })
+  return {
+    members: list.data ?? [], isLoading: list.isLoading, error: list.error as Error | null,
+    addMember: add.mutateAsync, removeMember: remove.mutateAsync,
   }
 }

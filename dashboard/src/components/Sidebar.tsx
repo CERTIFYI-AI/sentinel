@@ -309,7 +309,11 @@ const NAV: NavSection[] = [
         ],
       },
       { label: 'Governance Mesh',  to: '/governance-mesh',  icon: TreeStructure },
-      { label: 'Narrative Engine', to: '/narrative-engine', icon: Brain },
+      // Narrative Engine parked 2026-08-25: its auto-composed governance
+      // narrative duplicates Board Report (/ciso/report) and Export Center.
+      // Code kept (pages/NarrativeEngine.tsx, narrativeComposer.ts) — restore
+      // this line and the route in App.tsx to re-enable.
+      // { label: 'Narrative Engine', to: '/narrative-engine', icon: Brain },
       { label: 'Integrations',     to: '/integrations',     icon: Plugs },
       { label: 'Export Center',    to: '/export',           icon: DownloadSimple },
       { label: 'Settings',         to: '/settings',         icon: Gear },

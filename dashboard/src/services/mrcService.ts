@@ -134,3 +134,51 @@ export function tallyVotes(votes: MrcVote[]): { approve: number; reject: number;
   for (const v of votes) t[v.vote]++
   return t
 }
+
+// ── Committee members (mrc_members, canonical since 20260825000003) ─────────
+//
+// The roster quorum is computed from. Previously the one MRC concern still on
+// the modelriskcommittee_table demo table; `chair`/`quorum` names are kept on
+// the client type so the page's quorum math reads unchanged.
+
+export interface MrcMember {
+  id: string
+  name: string
+  role?: string
+  department?: string
+  chair: boolean
+  quorum: boolean
+}
+
+function memberFromRow(r: Record<string, any>): MrcMember {
+  return {
+    id: r.id, name: r.name ?? '', role: r.role ?? undefined,
+    department: r.department ?? undefined,
+    chair: !!r.is_chair, quorum: !!r.counts_toward_quorum,
+  }
+}
+
+export async function fetchMrcMembers(): Promise<MrcMember[]> {
+  if (!isSupabaseConfigured() || !supabase) return []
+  const { data, error } = await supabase.from('mrc_members')
+    .select('*').eq('is_active', true).order('is_chair', { ascending: false }).order('name')
+  if (error) { console.warn('[mrc] fetchMembers:', error.message); throw new Error(error.message) }
+  return (data ?? []).map(memberFromRow)
+}
+
+export async function addMrcMember(m: Partial<MrcMember>): Promise<MrcMember> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot add member.')
+  const { data, error } = await supabase.from('mrc_members').insert({
+    name: m.name, role: m.role ?? null, department: m.department ?? null,
+    is_chair: m.chair ?? false, counts_toward_quorum: m.quorum ?? true,
+  }).select().single()
+  if (error) { console.warn('[mrc] addMember:', error.message); throw new Error(error.message) }
+  return memberFromRow(data)
+}
+
+export async function removeMrcMember(id: string): Promise<void> {
+  if (!isSupabaseConfigured() || !supabase) throw new Error('Supabase is not configured — cannot remove member.')
+  const { error } = await supabase.from('mrc_members')
+    .update({ is_active: false, updated_at: new Date().toISOString() }).eq('id', id)
+  if (error) { console.warn('[mrc] removeMember:', error.message); throw new Error(error.message) }
+}
