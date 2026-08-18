@@ -208,11 +208,11 @@ export default function BenchmarkingMaturity() {
           color="hsl(var(--s-wn-tx))"
         />
         <MetricTile
-          label="Industry Percentile"
+          label="Industry Percentile (simulated)"
           value={`${industryPercentile}th`}
-          sub="Financial Services sector"
+          sub="Simulated — not derived from real benchmark data"
           icon={ArrowRight}
-          color="hsl(var(--s-in-tx))"
+          color="hsl(var(--text-4))"
         />
       </div>
 
