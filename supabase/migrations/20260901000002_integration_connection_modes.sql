@@ -1,4 +1,4 @@
--- 20260901000001_integration_connection_modes.sql
+-- 20260901000002_integration_connection_modes.sql
 --
 -- WHY
 --

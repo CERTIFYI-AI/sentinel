@@ -265,7 +265,7 @@ implemented; it surfaces the contradiction so a person resolves it.
 | `tier` | `tier` | 1 = adapter shipped, 2 = planned, 3 = catalogued |
 | `adapterStatus` | `adapter_status` | `available` \| `beta` \| `catalogued` |
 
-### `integrations` (added by `20260901000001`)
+### `integrations` (added by `20260901000002`)
 
 | Field | Column | Notes |
 | --- | --- | --- |
