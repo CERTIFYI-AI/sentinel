@@ -9683,7 +9683,7 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
           [
             "Fields",
             "the adapter's own credential contract",
-            "the source's identity, owner, cadence, evidence location"
+            "the product's own identifiers (34 products) or its category shape, plus owner, cadence, evidence location"
           ],
           [
             "Secrets",
