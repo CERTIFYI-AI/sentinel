@@ -216,3 +216,17 @@ to the org's controls (see
 | A.6.2.6 | Operation monitoring | Continuous posture collection per connected account/subscription, with the scope of each observation stated (account-wide vs. one region, one subscription) | Implemented |
 | 7.5.3 | Control of documented information | Credentials are AES-256-GCM encrypted server-side and never reach the browser; raw provider payloads are retained for the audit trail and never rendered; no adapter holds a write permission on the provider or touches the database | Implemented |
 | 9.1 | Monitoring must reflect reality | A check that cannot see its subject returns NOT_AVAILABLE rather than a pass, and neither adapter is labelled `available` until it has been validated against a production tenant | Implemented |
+
+## Module Coverage — Agent Tool-Call Enforcement (MCP Gateway)
+
+Runtime authorization for agent tool calls, with a durable decision record (see
+[`docs/modules/mcp-gateway-enforcement.md`](../modules/mcp-gateway-enforcement.md)).
+
+| Clause | Requirement | Module & backing | Status |
+|---|---|---|---|
+| 8.1 | Operational planning and control | Agent autonomy is bounded at the point of use: approval state, per-agent grant and rate limit are evaluated on every call, not declared once in a register | Implemented |
+| 9.1 | Monitoring, measurement, analysis and evaluation | Counts on the gateway surfaces are derived from the decision rows at render time. `mcp_tools.invocations_30d` — a stored column nothing maintains — is deliberately not used | Implemented |
+| A.6.2.6 | AI system operation monitoring | Denials, pending approvals and their causes are grouped by a stable `reason_code`, so "why are calls not proceeding?" is answerable without reading prose | Implemented |
+| A.9.2 / A.9.4 | Access control and least privilege | `allowed_agent_ids` is the grant, and it now decides rather than documents. Empty means nobody — the fail-closed reading | Implemented |
+| 7.5.3 | Control of documented information | `mcp_policy_decisions` has **no client insert policy**; decisions are written by the service role only, because evidence a browser can forge is not evidence | Implemented |
+| 9.1 | Monitoring must reflect reality | "No calls yet" renders distinctly from zero refusals — never asked is not the same as never refused — and an empty feed states plainly that no agent runtime has called the gateway | Implemented |

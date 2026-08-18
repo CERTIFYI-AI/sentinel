@@ -265,3 +265,18 @@ map each finding onto the org's controls (see
 | Art. 15 | Accuracy and robustness — a control claim rests on measured state | Posture claims (MFA, encryption at rest, network exposure, log retention) are read from the provider's own API rather than asserted by the operator | Implemented |
 | — | Never fabricate an observation | A permission gap returns **NOT_AVAILABLE**, never PASSED or FAILED: Azure's MFA check without `Policy.Read.All`, AWS bucket encryption behind AccessDenied. A check that cannot see something says so, and a check whose scope is one region says which region | N/A — honesty rule, enforced in both adapters and asserted in `tests/test_aws_adapter.py` / `tests/test_azure_adapter.py` |
 | — | Never overstate maturity | Both ship as `adapter_status = 'beta'` — implemented and unit-tested, not yet validated against a production tenant — and the UI says so on the connect screen | N/A — honesty rule |
+
+## Module Coverage — Agent Tool-Call Enforcement (MCP Gateway)
+
+The gateway decides whether an agent may invoke a tool, and records every
+decision (see
+[`docs/modules/mcp-gateway-enforcement.md`](../modules/mcp-gateway-enforcement.md)).
+
+| Article | Obligation | How enforcement relates | Status |
+|---|---|---|---|
+| Art. 12 | Record-keeping — the control's operation must be evidenced, not just its traffic | Every decision writes an `mcp_policy_decisions` row with its cause. **Refusals are the point**: a denied call never reaches `tool_call_logs`, so without this table an enforcement plane leaves no proof it enforced anything | Implemented |
+| Art. 14 | Human oversight over autonomous action | `requires_hitl` produces `pending_approval` (HTTP 202) and a real queued `hitl_items` row linked to the decision. It is a third outcome, never folded into "denied" — the UI gives it its own state and filter, so the queue cannot hide behind a refusal count | Implemented |
+| Art. 14 | Oversight must be able to stop the system | A blocked server overrides every tool beneath it, and `rate_limit_per_hour = 0` suspends a tool without disturbing its approval history — two kill switches that take effect at the next call | Implemented |
+| Art. 15 | Accuracy and robustness — bounded autonomy | An agent's reach is the intersection of tool approval, its own grant and a rate limit, evaluated per call rather than asserted once | Implemented |
+| Art. 10 / Art. 12 | Data minimisation in the record | Tool arguments are **never stored** — only a SHA-256 fingerprint, which answers "was this the same call again?" without retaining what it carried | Implemented |
+| — | Fail closed, never fail open | An empty grant list means no agent, not every agent; an unrecognised server state is refused rather than assumed benign; an unknown tenant's tool is indistinguishable from a non-existent one. Each is pinned by a test in `tests/test_gateway_policy.py` | N/A — honesty rule, enforced in `sentinel/gateway/policy.py` |

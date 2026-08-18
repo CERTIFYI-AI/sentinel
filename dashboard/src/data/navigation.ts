@@ -136,6 +136,7 @@ export const NAV: NavSection[] = [
         children: [
           { label: 'MCP Overview', to: '/mcp-gateway' },
           { label: 'Tool Catalog', to: '/mcp-gateway/tools' },
+          { label: 'Policy Decisions', to: '/mcp-gateway/decisions' },
         ],
       },
       { label: 'Configuration', to: '/trust-engine/config', icon: Gear },

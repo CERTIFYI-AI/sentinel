@@ -1475,8 +1475,40 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 26,
+  "entryCount": 30,
   "entries": [
+    {
+      "type": "feat",
+      "scope": "gateway",
+      "summary": "**`mcp_tools` now decides instead of documenting.** The table has carried a complete authorization policy since August — `approval_state`, `requires_hitl`, `side_effects`, `risk_tier`, `scopes`, `allowed_agent_ids` — and **nothing read any of it at call time**: an operator could block a tool, grant it to two agents and mark it as needing human review, and an agent could still call it. This is the runtime. `sentinel/gateway/policy.py` is a pure decision function (no DB, no clock, no I/O) evaluating, in order: agent known → tool known → server not blocked → tool approved → **agent holds a grant** → within rate limit → no human required → allowed. `POST /v1/gateway/authorize` binds it to the database and records the outcome. Three orderings are deliberate: **authorization precedes rate limiting** (an ungranted agent is told so, not told to slow down — a 429 on a call that would never be permitted invites a retry loop); **human approval is evaluated last** (no point queueing a reviewer for what policy already refuses); and **identity precedes existence** (an unknown caller learns nothing about whether a tool exists). Fail closed throughout — an empty `allowed_agent_ids` means **nobody**, not everybody, which is the reading that does not silently open every tool when someone clears the field. New `rate_limit_per_hour` on `mcp_tools`: NULL unlimited, **0 suspends a tool without disturbing its approval history**. 30 backend tests cover the decision table exhaustively, including that every `reason_code` the rules emit is one the database CHECK constraint accepts — and that every code the constraint allows is reachable, so the vocabulary cannot drift",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "feat",
+      "scope": "gateway",
+      "summary": "**make enforcement visible.** New `/mcp-gateway/decisions` renders every decision the gateway made, defaulting to the ones that need attention rather than the allowed ones nobody opens the page for. **A pending approval is never folded into \"denied\"** — policy permitted that call and paused it for a person (EU AI Act Art. 14), it gets its own tone, its own filter and a link to the queued review; counting it as a refusal would misreport what the platform did and hide the queue from whoever must clear it. The tool catalogue gains an **Enforcement** column with live counts where \"No calls yet\" renders distinctly from zero refusals (never asked ≠ never refused), and the Overview posture card now counts real decisions instead of `mcp_tools.invocations_30d`, a stored column nothing maintains. Realtime rather than polling: a denial seen five minutes late is a denial nobody can act on. This also ends the isolation the 2026-08-18 audit recorded — `/mcp-gateway/*` had **no cross-module link in or out** and now reaches agents, HITL and the tool registry both ways",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "feat",
+      "scope": "gateway",
+      "summary": "`mcp_policy_decisions` — the durable record, with **no client insert policy**, because a decision a browser can write is not evidence. Denials matter most: a refused call never reaches `tool_call_logs`, so this is the only proof the control operated. `request_fingerprint` is a SHA-256 of the arguments and **never the arguments** — tool arguments routinely carry customer data, and the hash answers the one question an auditor asks of them. Org scoping filled DB-side; the migration asserts its own postconditions and re-runs the TD-000 permissive-policy test over the table it adds",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "fix",
+      "scope": "integrations",
+      "summary": "**continuous collection actually recurs now.** The connect endpoint created an integration as `configuring` and **nothing ever moved it on**, while `daily-integration-sync` enqueues only `where status = 'connected'` — so a source collected once at connect time and then never again, which is the entire point of continuous monitoring, silently absent. A successful sync is the proof, so the worker now promotes the row there. Adds the missing **`integrations-worker` service**: `background_jobs` had a producer (the connect endpoint and the nightly schedule) and a locking, backing-off consumer in `sentinel/integrations/worker.py` that **nothing ran** — the container's only command was the API, and the compose worker belongs to a different, older engine",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "fix",
       "scope": "security",

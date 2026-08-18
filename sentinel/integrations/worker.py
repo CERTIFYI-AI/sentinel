@@ -157,8 +157,20 @@ async def process_job(conn: asyncpg.Connection, job: asyncpg.Record) -> None:
     await conn.execute(
         """
         UPDATE public.integrations
-        SET last_sync_at = now(), last_run_status = 'success',
-            last_run_error = NULL, health = 'healthy', updated_at = now()
+        SET last_sync_at      = now(),
+            last_run_status   = 'success',
+            last_run_error    = NULL,
+            health            = 'healthy',
+            -- PROMOTE OUT OF 'configuring'. The connect endpoint creates the
+            -- row as 'configuring' — linked, not yet proven — and until this
+            -- line existed nothing ever moved it on. That mattered because the
+            -- `daily-integration-sync` schedule enqueues only
+            -- `where status = 'connected'`, so a source collected once at
+            -- connect time and then never again: the whole point of continuous
+            -- monitoring, silently absent. A successful sync IS the proof, so
+            -- this is the right place to record it.
+            status            = 'connected',
+            updated_at        = now()
         WHERE id = $1
         """,
         integration_id,

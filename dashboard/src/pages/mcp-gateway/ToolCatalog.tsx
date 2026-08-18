@@ -22,6 +22,7 @@ import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { FormDialog, Field } from '@/components/evals/FormDialog'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
 import { useMcpServers, useMcpTools } from '@/hooks/useMcpData'
+import { usePolicyDecisions } from '@/hooks/useMcpEnforcement'
 import { agentRecordsCrud } from '@/hooks/queries/useAgentGovCrud'
 import { useQuery } from '@tanstack/react-query'
 import { useRBAC } from '@/hooks/useRBAC'
@@ -61,6 +62,11 @@ export default function ToolCatalog() {
   const serverParam = searchParams.get('server')
 
   const tools = useMcpTools()
+  // What the gateway has actually decided for each tool. Derived from the
+  // decision rows at render, never from a stored counter — `invocations_30d`
+  // already exists as a number nothing maintains, and a second one would
+  // repeat that mistake.
+  const enforcement = usePolicyDecisions()
   const servers = useMcpServers()
   const agents = useQuery({ queryKey: ['agent_gov_registry'], queryFn: () => agentRecordsCrud.list(), staleTime: 60_000 })
 
@@ -133,6 +139,31 @@ export default function ToolCatalog() {
     { key: 'riskTier', header: 'Risk', sortable: true, render: (t) => (
       <span className={`inline-flex px-2 py-0.5 text-[11px] font-medium capitalize ${RISK_TONE[t.riskTier]}`}>{t.riskTier}</span>
     ) },
+    { key: 'enforcement', header: 'Enforcement', render: (t) => {
+      const c = enforcement.byTool.get(t.id)
+      if (!c) {
+        // No decision recorded is genuinely different from zero refusals: the
+        // gateway has never been asked about this tool. Say so.
+        return <span className="text-[11px] text-[hsl(var(--text-4))]">No calls yet</span>
+      }
+      return (
+        <button
+          className="flex flex-col gap-0.5 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--ring))]"
+          onClick={(e) => { e.stopPropagation(); nav('/mcp-gateway/decisions') }}
+        >
+          <span className="font-mono text-[12px] text-[hsl(var(--text-2))]">
+            {c.allowed} allowed
+          </span>
+          {c.open > 0 && (
+            <span className="text-[10px] text-[hsl(var(--s-er-tx))]">
+              {c.denied > 0 ? `${c.denied} refused` : ''}
+              {c.denied > 0 && c.pending > 0 ? ' · ' : ''}
+              {c.pending > 0 ? `${c.pending} awaiting approval` : ''}
+            </span>
+          )}
+        </button>
+      )
+    } },
     { key: 'approvalState', header: 'Approval', sortable: true, render: (t) => (
       <div className="flex flex-col gap-1">
         <span className={`inline-flex w-fit px-2 py-0.5 text-[11px] font-medium capitalize ${APPROVAL_TONE[t.approvalState]}`}>

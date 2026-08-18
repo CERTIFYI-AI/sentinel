@@ -42,6 +42,24 @@ services:
       - redisdata:/data
     restart: unless-stopped
 
+  # Evidence-collection worker. Drains `background_jobs`, runs the provider
+  # adapters and maps findings onto controls. Without this service the queue
+  # fills and nothing collects: the connect endpoint and the nightly schedule
+  # both only ENQUEUE, and until this existed nothing consumed.
+  integrations-worker:
+    build: .
+    command: python -m sentinel.integrations.worker
+    env_file: .env
+    environment:
+      # The worker writes with the service role and decrypts credentials, so it
+      # needs the privileged DSN and the credential key. It fails fast and loud
+      # if either is absent rather than idling as if healthy.
+      SENTINEL_DATABASE_URL: ${SENTINEL_DATABASE_URL:-postgresql://${POSTGRES_USER:-sentinel}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-sentinel}}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+
   celery:
     build: .
     command: celery -A sentinel.compliance.engine worker -l info

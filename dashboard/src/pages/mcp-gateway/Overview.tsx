@@ -14,6 +14,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { EmptyState, ErrorState } from '@/components/evals/states'
 import { useMcpServers, useMcpTools } from '@/hooks/useMcpData'
+import { usePolicyDecisions } from '@/hooks/useMcpEnforcement'
 
 function Stat({ label, value, tone, hint }: { label: string; value: React.ReactNode; tone?: string; hint?: string }) {
   return (
@@ -29,6 +30,7 @@ export default function McpOverview() {
   const nav = useNavigate()
   const servers = useMcpServers()
   const tools = useMcpTools()
+  const enforcement = usePolicyDecisions()
 
   const m = useMemo(() => {
     const s = servers.data
@@ -72,6 +74,7 @@ export default function McpOverview() {
           <div className="flex items-center gap-2">
             <Button size="sm" variant="secondary" onClick={() => nav('/mcp-gateway/servers')}>Servers</Button>
             <Button size="sm" variant="secondary" onClick={() => nav('/mcp-gateway/tools')}>Tool Catalog</Button>
+            <Button size="sm" variant="secondary" onClick={() => nav('/mcp-gateway/decisions')}>Policy Decisions</Button>
           </div>
         }
       />
@@ -97,10 +100,18 @@ export default function McpOverview() {
                 hint="servers reporting healthy"
               />
               <Stat label="Exposed tools" value={m.tools} hint={`${m.writeTools.length} write/execute`} />
+              {/* What the gateway DECIDED, not what a stored counter claims.
+                  `invocations_30d` is a column nothing maintains; these come
+                  from the decision rows themselves. */}
               <Stat
-                label="Calls (30d)"
-                value={m.calls30d ? m.calls30d.toLocaleString() : '—'}
-                hint={m.calls30d ? 'recorded invocations' : 'no invocation data yet'}
+                label="Decisions"
+                value={enforcement.counts.total ? enforcement.counts.total.toLocaleString() : '—'}
+                hint={
+                  enforcement.counts.total
+                    ? `${enforcement.counts.allowed} allowed · ${enforcement.counts.open} need attention`
+                    : 'the gateway has not been asked to authorize a call yet'
+                }
+                tone={enforcement.counts.open > 0 ? 'text-[hsl(var(--s-wn-tx))]' : undefined}
               />
             </CardContent>
           </Card>
