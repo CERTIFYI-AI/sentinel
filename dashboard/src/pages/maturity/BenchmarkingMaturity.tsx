@@ -138,9 +138,9 @@ export default function BenchmarkingMaturity() {
     hint: d.priority,
   }));
 
-  const overallCurrent = DIMENSIONS.length > 0 ? Math.round(DIMENSIONS.reduce((s, d) => s + d.current, 0) / DIMENSIONS.length) : 0;
+  const overallCurrent = DIMENSIONS.length > 0 ? Math.round(DIMENSIONS.reduce((s, d) => s + d.current, 0) / DIMENSIONS.length) : null;
   const dimensionsAtTarget = DIMENSIONS.filter(d => d.gap === 0).length;
-  const gapScore = DIMENSIONS.length > 0 ? (DIMENSIONS.reduce((s, d) => s + d.gap, 0) / DIMENSIONS.length).toFixed(1) : '0.0';
+  const gapScore = DIMENSIONS.length > 0 ? (DIMENSIONS.reduce((s, d) => s + d.gap, 0) / DIMENSIONS.length).toFixed(1) : null;
   const industryPercentile = 68;
 
   const filteredDimensions = DIMENSIONS.filter(d =>
@@ -151,7 +151,7 @@ export default function BenchmarkingMaturity() {
 
   const totalGap = DIMENSIONS.reduce((s, d) => s + d.gap, 0);
   const closedGap = DIMENSIONS.filter(d => d.gap === 0).length;
-  const trajectoryPct = DIMENSIONS.length > 0 ? Math.round((closedGap / DIMENSIONS.length) * 100) : 0;
+  const trajectoryPct = DIMENSIONS.length > 0 ? Math.round((closedGap / DIMENSIONS.length) * 100) : null;
 
   return (
     <div className="space-y-6">
@@ -188,8 +188,8 @@ export default function BenchmarkingMaturity() {
       <div className="grid grid-cols-4 gap-4">
         <MetricTile
           label="Overall Maturity Level"
-          value={`Level ${overallCurrent}`}
-          sub={MATURITY_LABELS[overallCurrent]}
+          value={overallCurrent != null ? `Level ${overallCurrent}` : '—'}
+          sub={overallCurrent != null ? MATURITY_LABELS[overallCurrent] : 'No maturity data'}
           icon={ChartBar}
           color="hsl(var(--brand))"
         />
@@ -202,7 +202,7 @@ export default function BenchmarkingMaturity() {
         />
         <MetricTile
           label="Gap Score"
-          value={gapScore}
+          value={gapScore ?? '—'}
           sub="Average gap across dimensions"
           icon={TrendUp}
           color="hsl(var(--s-wn-tx))"
@@ -276,10 +276,10 @@ export default function BenchmarkingMaturity() {
             <div>
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium" style={{ color: 'hsl(var(--text-3))' }}>Overall Trajectory</span>
-                <span className="text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{trajectoryPct}% on target</span>
+                <span className="text-xs font-bold" style={{ color: 'hsl(var(--brand))' }}>{trajectoryPct != null ? `${trajectoryPct}% on target` : '—'}</span>
               </div>
               <div style={{ height: 8, background: 'hsl(var(--bg-muted))', borderRadius: 0, width: '100%' }}>
-                <div style={{ height: '100%', width: `${trajectoryPct}%`, background: 'hsl(var(--brand))', borderRadius: 0, transition: 'width 0.4s ease' }} />
+                <div style={{ height: '100%', width: `${trajectoryPct ?? 0}%`, background: 'hsl(var(--brand))', borderRadius: 0, transition: 'width 0.4s ease' }} />
               </div>
             </div>
 

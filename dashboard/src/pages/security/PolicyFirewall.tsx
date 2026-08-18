@@ -415,7 +415,7 @@ export default function PolicyFirewall() {
                   <div className="mt-4 p-3" style={{ background: 'hsl(var(--bg-muted))' }}>
                     <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Block Rate</p>
                     <p className="text-2xl font-bold" style={{ color: 'hsl(var(--r-hi-tx))' }}>
-                      {(viewItem.evaluations ?? 0) > 0 ? (((viewItem.blocked ?? 0) / (viewItem.evaluations ?? 1)) * 100).toFixed(2) : '0.00'}%
+                      {(viewItem.evaluations ?? 0) > 0 ? `${(((viewItem.blocked ?? 0) / (viewItem.evaluations ?? 1)) * 100).toFixed(2)}%` : '—'}
                     </p>
                   </div>
                 </TabsContent>
