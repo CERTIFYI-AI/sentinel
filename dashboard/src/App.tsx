@@ -140,8 +140,7 @@ const IntegrationsPage = lazy(() => import('./pages/IntegrationsPage'));
 const PeerIntelligence = lazy(() => import('./pages/PeerIntelligence'));
 const ModelDNA = lazy(() => import('./pages/models/ModelDNA'));
 const ComplianceAutopilot = lazy(() => import('./pages/ComplianceAutopilot'));
-// Parked 2026-08-25 (route redirects to /ciso/report): duplicate of Board Report.
-// const NarrativeEngine = lazy(() => import('./pages/NarrativeEngine'));
+const NarrativeEngine = lazy(() => import('./pages/NarrativeEngine'));
 const KnowledgeGraph = lazy(() => import('./pages/KnowledgeGraph'));
 const RegulatoryVelocity = lazy(() => import('./pages/RegulatoryVelocity'));
 
@@ -581,8 +580,10 @@ export default function App() {
           <Route path="/peer-intelligence" element={<Suspense fallback={<Loading />}><PeerIntelligence /></Suspense>} />
           <Route path="/models/dna" element={<Suspense fallback={<Loading />}><ModelDNA /></Suspense>} />
           <Route path="/autopilot" element={<Suspense fallback={<Loading />}><ComplianceAutopilot /></Suspense>} />
-          {/* Narrative Engine parked 2026-08-25 — duplicates Board Report + Export Center; see Sidebar note. */}
-          <Route path="/narrative-engine" element={<Navigate to="/ciso/report" replace />} />
+          {/* Narrative Engine — restored: a distinct audience-shaped narrative
+              composer over the real registers (governanceFactsService), not a
+              duplicate of Board Report. Menu no longer silently redirects. */}
+          <Route path="/narrative-engine" element={<Suspense fallback={<Loading />}><NarrativeEngine /></Suspense>} />
           <Route path="/knowledge-graph" element={<Suspense fallback={<Loading />}><KnowledgeGraph /></Suspense>} />
           <Route path="/reg-velocity" element={<Suspense fallback={<Loading />}><RegulatoryVelocity /></Suspense>} />
 

@@ -1,0 +1,70 @@
+# Sentinel enforcement GATEWAY — single always-on host deployment.
+#
+# WHY A SEPARATE COMPOSE: the control-plane (integrations connect, the evidence
+# worker) runs on free serverless — a Supabase Edge Function and a scheduled
+# GitHub Actions job. The GATEWAY (`POST /v1/chat/completions` in
+# sentinel/proxy.py) is data-plane: it sits inline on every LLM call, holds a
+# Redis rate-limit connection, sanitizes prompts, and streams provider
+# responses. That cannot be serverless — it needs one always-on process. This
+# compose runs exactly that, and nothing else, so it fits a single free-tier VM
+# (e.g. Oracle Cloud Always Free). See docs/operations/gateway-deployment.md and
+# docs/architecture/deployment-topology.md.
+#
+# There is NO local Postgres here: SENTINEL_DATABASE_URL points at Supabase.
+#
+#   Bring up:            docker compose -f docker-compose.gateway.yml up -d
+#   With Cloudflare      docker compose -f docker-compose.gateway.yml \
+#     Tunnel ingress:      --profile tunnel up -d
+#
+services:
+  gateway:
+    build: .
+    # The gateway lives in sentinel.proxy:app, NOT sentinel.api.main:app — they
+    # are two different FastAPI apps (TD-019). Override the image's default CMD.
+    command: uvicorn sentinel.proxy:app --host 0.0.0.0 --port 8000
+    env_file: .env
+    # Bound to loopback only: the gateway is reached through the Cloudflare
+    # Tunnel below (or a reverse proxy), never exposed to the internet directly.
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://localhost:8000/health').getcode()==200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: redis-server --requirepass ${REDIS_PASSWORD:?set REDIS_PASSWORD in .env}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD}", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    volumes:
+      - gateway_redis:/data
+    restart: unless-stopped
+
+  # Recommended ingress: Cloudflare Tunnel. The VM opens NO inbound ports and
+  # needs no TLS certificate — cloudflared makes an outbound connection to
+  # Cloudflare, which terminates TLS at the edge and forwards to gateway:8000.
+  # Create the tunnel in Cloudflare Zero Trust, route a hostname (e.g.
+  # gateway.certifyi.ai) to http://gateway:8000, and put its token in .env.
+  # Enabled only with `--profile tunnel`.
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    profiles: ["tunnel"]
+    command: tunnel --no-autoupdate run
+    environment:
+      TUNNEL_TOKEN: ${CLOUDFLARE_TUNNEL_TOKEN:?set CLOUDFLARE_TUNNEL_TOKEN in .env for the tunnel profile}
+    depends_on:
+      - gateway
+    restart: unless-stopped
+
+volumes:
+  gateway_redis:

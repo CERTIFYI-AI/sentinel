@@ -1475,7 +1475,7 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 36,
+  "entryCount": 39,
   "entries": [
     {
       "type": "feat",
@@ -1488,7 +1488,7 @@ export const UNRELEASED: UnreleasedChanges = {
     {
       "type": "feat",
       "scope": "deploy",
-      "summary": "serve the dashboard at **`1shield-oss.certifyi.ai`**. Declared as a `custom_domain` route in `dashboard/wrangler.toml` rather than clicked once in a dashboard, so the hostname is reviewable and a fresh account can be stood up from the tree. **Additive, not a cutover** — the workers.dev subdomain keeps serving unless disabled separately, so existing links do not break the moment this lands. Also fixes the two places that would have quietly kept pointing at the old origin: the Playwright `baseURL` (E2E would have gone on testing workers.dev) and the DR runbook's `/healthz` check, which is worse than useless if it probes the wrong host mid-incident. Ticks the \"move to custom domain\" item that had been sitting unchecked in `dashboard/docs/DEPLOYMENT.md`. **Prerequisite: `certifyi.ai` must be a zone on the same Cloudflare account** — Cloudflare mints the DNS record and certificate itself for a custom domain and cannot do so for a zone it does not hold; if it is absent `wrangler deploy` fails on the hostname, and deleting the `[[routes]]` block restores the previous behaviour with nothing else depending on it",
+      "summary": "serve the dashboard at **`1shield-oss.certifyi.ai`**. Declared as a `custom_domain` route in `dashboard/wrangler.toml` — the manual `wrangler deploy` path — alongside the same declaration in the root `wrangler.jsonc` that the Cloudflare Git build reads (see the `chore(hosting)` entry below); the hostname is stated in both so neither deploy path can drop it. Reviewable and diffable rather than clicked once in a dashboard, so the hostname is reviewable and a fresh account can be stood up from the tree. **Additive, not a cutover** — the workers.dev subdomain keeps serving unless disabled separately, so existing links do not break the moment this lands. Also fixes the two places that would have quietly kept pointing at the old origin: the Playwright `baseURL` (E2E would have gone on testing workers.dev) and the DR runbook's `/healthz` check, which is worse than useless if it probes the wrong host mid-incident. Ticks the \"move to custom domain\" item that had been sitting unchecked in `dashboard/docs/DEPLOYMENT.md`. **Prerequisite: `certifyi.ai` must be a zone on the same Cloudflare account** — Cloudflare mints the DNS record and certificate itself for a custom domain and cannot do so for a zone it does not hold; if it is absent `wrangler deploy` fails on the hostname, and deleting the `[[routes]]` block restores the previous behaviour with nothing else depending on it",
       "breaking": false,
       "sha": null,
       "section": null
@@ -1521,6 +1521,30 @@ export const UNRELEASED: UnreleasedChanges = {
       "type": "feat",
       "scope": "gateway",
       "summary": "`mcp_policy_decisions` — the durable record, with **no client insert policy**, because a decision a browser can write is not evidence. Denials matter most: a refused call never reaches `tool_call_logs`, so this is the only proof the control operated. `request_fingerprint` is a SHA-256 of the arguments and **never the arguments** — tool arguments routinely carry customer data, and the hash answers the one question an auditor asks of them. Org scoping filled DB-side; the migration asserts its own postconditions and re-runs the TD-000 permissive-policy test over the table it adds",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "chore",
+      "scope": "hosting",
+      "summary": "declare the dashboard custom domain `1shield-oss.certifyi.ai` in the root `wrangler.jsonc` (`routes` with `custom_domain: true`). On the next `wrangler deploy` Cloudflare provisions the DNS record + TLS cert automatically, provided `certifyi.ai` is a zone in the deploying Cloudflare account; the `*.workers.dev` URL keeps working alongside it. If the zone is not in the account, add the domain via the Cloudflare dashboard (Workers & Pages → sentinel → Settings → Domains & Routes → Add → Custom Domain) instead. Config only — provisioning needs the account's Cloudflare credentials, which are not present in this environment.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "fix",
+      "scope": "nav",
+      "summary": "the **Narrative Engine** menu item no longer silently redirects to Board Report. `/narrative-engine` had been \"parked\" as a supposed duplicate and routed to `/ciso/report`, but `pages/NarrativeEngine.tsx` is a distinct, functional page — an audience-shaped governance narrative composed from the real registers via `governanceFactsService` (null-not-0, with the source query shown behind each figure). Restored the lazy import and route. A cross-reference of every `navigation.ts` `to:` against the app's `<Navigate>` routes confirmed this was the **only** menu entry redirecting to a different module.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "feat",
+      "scope": "gateway",
+      "summary": "**give the enforcement gateway a home — an always-on free VM, not an edge function.** Removing the FastAPI deploy path left `POST /v1/chat/completions` (the inline LLM proxy in `sentinel/proxy.py`) with no host. It is data-plane — on the path of every LLM call, holds a Redis rate-limit connection, sanitizes prompts, circuit-breaks to the provider via litellm, streams responses, writes the audit chain — so it **cannot** be serverless (no warm Redis pool, CPU-time limits blow on streaming, cold starts hit enforcement latency, and the Python policy stack would need a full rewrite). New [`docker-compose.gateway.yml`](docker-compose.gateway.yml) runs it as `sentinel.proxy:app` + Redis off the existing image, `SENTINEL_DATABASE_URL` → Supabase, no local Postgres; ingress via an optional **Cloudflare Tunnel** service (no open inbound ports, free TLS, reusing the Cloudflare you already run). New [`.env.gateway.example`](.env.gateway.example) documents the real env contract (verified against `config.py`/`proxy.py`: `SENTINEL_SECRET_KEY`, `SENTINEL_DATABASE_URL`, `SENTINEL_REDIS_URL`, and provider keys litellm reads directly — `OPENAI_API_KEY`/`ANTHROPIC_API_KEY`). Footprint is light — spaCy/torch are not dependencies, the sanitizer runs in regex fallback — so it fits ~512 MB and a free **Oracle Cloud Always Free** (or GCP `e2-micro`) VM; scale-to-zero platforms are explicitly ruled out. New runbook [`docs/operations/gateway-deployment.md`](docs/operations/gateway-deployment.md) and architecture doc [`docs/architecture/deployment-topology.md`](docs/architecture/deployment-topology.md) record the control-plane (serverless, $0) vs data-plane (hosted gateway) split — including the measured fact that of ~597 dashboard files, 106 talk to Supabase directly and the frontend's only tie to a hosted FastAPI was one gracefully-degrading events WebSocket plus one unreferenced config default, so dropping the FastAPI host changed almost nothing for the app. `backend-deployment.md` scoped to control-plane and cross-linked; TD-019 updated with where each of the three surfaces is hosted.",
       "breaking": false,
       "sha": null,
       "section": null

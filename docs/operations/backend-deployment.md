@@ -89,6 +89,16 @@ asserts Web Crypto AES-GCM reproduces a fixed vector the Python
 `cryptography` library produced. Run it with
 `deno test supabase/functions/integrations-connect/`.
 
+## Scope: this runbook is the CONTROL-PLANE only
+
+This covers the management pieces — connect (edge function) and the evidence
+worker (scheduled Actions). The **enforcement gateway**
+(`POST /v1/chat/completions`, the inline LLM proxy) is **data-plane** and is
+deployed separately, on an always-on free VM — see
+[`gateway-deployment.md`](gateway-deployment.md). Why the split exists (and why
+the gateway can't be an edge function) is in
+[`../architecture/deployment-topology.md`](../architecture/deployment-topology.md).
+
 ## Note on the Python API
 
 `sentinel/api/main.py` also mounts a `/v1/integrations/*` router (the same

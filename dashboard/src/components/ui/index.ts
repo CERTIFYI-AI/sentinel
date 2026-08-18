@@ -40,7 +40,6 @@ export { RiskBadge } from './RiskBadge';
 export { StatusPill } from './StatusPill';
 export { AgentStatusIndicator } from './AgentStatusIndicator';
 export { InterlinkChip } from './InterlinkChip';
-export { ContextualAlert } from './ContextualAlert';
 export { MetricGauge } from './MetricGauge';
 export { MetricStrip } from './MetricStrip';
 export type { MetricStripItem } from './MetricStrip';

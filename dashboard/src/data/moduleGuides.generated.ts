@@ -4175,37 +4175,42 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "route": "/workflows",
         "parentLabel": null,
         "hasDoc": true,
-        "docPath": "docs/modules/agent-platform.md",
-        "title": "Agent Platform (Registry, Discovery, IAM, Choreography)",
-        "purpose": "Govern autonomous and human-in-the-loop agents: registration, capability declaration, identity and entitlements (non-human identity), orchestration, and safety rails.",
+        "docPath": "docs/modules/approval-workflows.md",
+        "title": "Approval Workflows",
+        "purpose": "Configurable multi-stage approvals for high-impact actions: model deployment, exceptions, incident reports, policy changes.",
         "why": "",
         "how": [],
-        "dataProcess": [],
-        "interlinks": [],
+        "dataProcess": [
+          "Definitions: public.approval_workflows (steps jsonb — {name, approver_role, required, sla_hours} — MFA + escalation config).",
+          "Requests: public.approvals — entity-linked (entity_type + entity_id), org-scoped, with step_index, decisions jsonb ledger and due_at (migration 20260820000005_risk_criticality.sql).",
+          "Entity types: model (→ /models/inventory/:id), exception (→ /exceptions?open=), incident (→ /risk/incidents?open=), policy (→ /policies?open=, name resolved from the policies register).",
+          "Decisions are audited via withAudit → audit_client_event RPC into the hash-chained audit_log, with entity_name in the audit metadata so the Audit Trail shows a readable label; the trail links approval entities back to /workflows?open=<id>.",
+          "Realtime: approvals and approval_workflows changes invalidate the ri-approvals / ri-approval-workflows query namespaces (useRealtimeInvalidation)."
+        ],
+        "interlinks": [
+          "Outbound: model / exception / incident / policy chips per request.",
+          "Inbound: Audit Trail (approval → /workflows?open=), CISO Dashboard \"Pending approvals\" tile, Exception Management (shared decision state)."
+        ],
         "compliance": [
           "| Control | Requirement |"
         ],
         "operations": [],
         "fields": [
           [
-            "OWASP LLM Top 10 (Agentic)",
-            "Excessive agency, tool misuse"
+            "SOC 2 CC5.2, CC8.1",
+            "Policy and change management"
           ],
           [
-            "EU AI Act Art.14, 15",
-            "Oversight, robustness"
+            "ISO/IEC 27001:2022 A.8.32",
+            "Change management"
           ],
           [
-            "ISO/IEC 42001 A.9",
-            "Use of the AI system and oversight"
+            "NIST SP 800-53 CM-3",
+            "Configuration change control"
           ],
           [
-            "NIST AI RMF MANAGE 2.1",
-            "Risk response tracked post-deployment"
-          ],
-          [
-            "NIST SP 800-207",
-            "Zero-trust applied to workload identities"
+            "ISO/IEC 42001 A.6.2.7",
+            "Deployment"
           ]
         ],
         "noDocReason": null
@@ -4215,9 +4220,9 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "route": "/automation-studio",
         "parentLabel": null,
         "hasDoc": true,
-        "docPath": "docs/modules/agent-platform.md",
-        "title": "Agent Platform (Registry, Discovery, IAM, Choreography)",
-        "purpose": "Govern autonomous and human-in-the-loop agents: registration, capability declaration, identity and entitlements (non-human identity), orchestration, and safety rails.",
+        "docPath": "docs/modules/automation-studio.md",
+        "title": "Automation Studio",
+        "purpose": "Governance automation rules: a trigger (incident created, model drift, approval required, schedule) plus an ordered action list (create HITL review, hold deployments, create approval, notify). Rules are definitions; every run is a recorded fact.",
         "why": "",
         "how": [],
         "dataProcess": [],
@@ -4228,24 +4233,12 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "operations": [],
         "fields": [
           [
-            "OWASP LLM Top 10 (Agentic)",
-            "Excessive agency, tool misuse"
+            "ISO/IEC 42001 8.2",
+            "Operational planning and control"
           ],
           [
-            "EU AI Act Art.14, 15",
-            "Oversight, robustness"
-          ],
-          [
-            "ISO/IEC 42001 A.9",
-            "Use of the AI system and oversight"
-          ],
-          [
-            "NIST AI RMF MANAGE 2.1",
-            "Risk response tracked post-deployment"
-          ],
-          [
-            "NIST SP 800-207",
-            "Zero-trust applied to workload identities"
+            "EU AI Act Art. 14",
+            "Human oversight gates in automated flows"
           ]
         ],
         "noDocReason": null
@@ -4280,15 +4273,61 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "route": "/frameworks",
         "parentLabel": null,
         "hasDoc": true,
-        "docPath": "docs/modules/compliance-programs.md",
-        "title": "Compliance Programs (Frameworks, Autopilot, Dashboard, Maturity, Gap Analysis, Framework Mapping)",
-        "purpose": "Single control universe mapped to multiple frameworks, with live posture, gap analysis, and maturity scoring. Compliance Autopilot automates evidence refresh, task assignment, and reviewer routing.",
-        "why": "",
-        "how": [],
+        "docPath": "docs/modules/frameworks.md",
+        "title": "Frameworks",
+        "purpose": "The single frameworks surface for the platform: the org's adopted framework portfolio (real rows, real scores, real control coverage), the bundled reference catalog, and the static cross-framework reference crosswalk.",
+        "why": "Every compliance view ultimately keys off \"which frameworks do we govern against, and how far along are we?\". Keeping one governed frameworks table — instead of per-page framework lists — lets scores, controls, conformity assessments and the executive Overview all read the same portfolio.",
+        "how": [
+          "Three tabs:",
+          "Portfolio — org-scoped frameworks rows with full CRUD",
+          "(writes throw; toasts only after the write resolves). Each card shows:",
+          "Compliance Score: the recorded score. A **null score renders \"—\"",
+          "with \"No score recorded yet\"** and neutral styling — never 0% and never",
+          "the red <65% treatment.",
+          "Controls: implemented/total **derived live from the org controls",
+          "table** (statuses implemented/effective count as implemented). A",
+          "control belongs to a framework when its framework_id matches or its",
+          "free-text framework label equals the framework's name/code (allowing a",
+          "versioned suffix, e.g. \"ISO/IEC 42001\" ↔ \"ISO/IEC 42001:2023\"). When no",
+          "controls reference the framework the line reads \"— no controls linked"
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
+        "interlinks": [
+          "Outbound:",
+          "Framework detail Requirements tab → each published catalog control",
+          "(framework_controls) surfaces the org controls implementing it, as pill",
+          "links to /compliance/controls?open=<controls.id>.",
+          "Framework detail Implemented tab → each matched control opens in",
+          "/compliance/controls?open=<controls.id>.",
+          "Catalog (bundled reference) entries → issuing-authority URLs.",
+          "Inbound:",
+          "Control → catalog backlink: ControlDetail (/compliance/controls/:id,",
+          "Interlinks tab) resolves the published catalog entry a control satisfies via",
+          "useControlCatalogEntry and deep-links back to /frameworks?open=<framework_id>.",
+          "This is the reverse of the Requirements-tab edge, so the catalog ↔ register"
+        ],
+        "compliance": [
+          "ISO/IEC 42001: Clause 4.1/6.1 (determining applicable requirements and",
+          "planning against them); the portfolio is the AIMS statement of applicability",
+          "anchor. The framework_controls catalog + the Requirements↔register interlink",
+          "make the Statement of Applicability auditable — for each published control",
+          "it is now visible whether an org control implements it, or it is explicitly",
+          "outstanding.",
+          "EU AI Act: the adopted-framework record underpins Art. 43 conformity",
+          "routes and Annex IV documentation; EU AI Act appears both as catalog",
+          "reference and as an adoptable portfolio row. The published EU AI Act catalog",
+          "(Art. 5–73) with its implementation backlinks supports Art. 11/Annex IV",
+          "technical-documentation traceability of which requirements are met.",
+          "Honesty rules enforced here: null scores are never rendered as measured"
+        ],
+        "operations": [
+          "CRUD via frameworkService (throw-on-failure) and useFrameworksData",
+          "(React Query; invalidates ['frameworks'] on mutation).",
+          "Deleting a framework leaves its controls without a framework reference",
+          "(warned in the confirm dialog).",
+          "Seeded portfolio rows (10 frameworks) currently carry score = null —",
+          "the UI shows the unscored state until scores are actually recorded."
+        ],
         "fields": [],
         "noDocReason": null
       },
@@ -5241,48 +5280,52 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "route": "/regulator-filings",
         "parentLabel": "Reg Radar",
         "hasDoc": true,
-        "docPath": "docs/modules/incident-management.md",
-        "title": "Incident Management",
-        "purpose": "Detect, triage, contain, remediate, and learn from security, privacy, operational, and AI-specific incidents (hallucination harm, model misuse, data leakage, safety event).",
+        "docPath": "docs/modules/regulator-filings.md",
+        "title": "Regulator Filing Workspace",
+        "purpose": "Manage regulator-facing notifications (incidents, breaches, serious AI incidents, material operational events) with jurisdiction-specific SLA countdowns, drafting, approval, and acknowledgement tracking.",
         "why": "",
         "how": [
-          "Detect (alert, HITL, user complaint, eval regression, red-team) → Triage & classify (severity, category, regulator scope) → Contain → Eradicate → Recover → Post-incident review → Corrective actions."
+          "Detect (from Incident Module) → Classify jurisdiction and obligations → Auto-start SLA timer → Draft with template → Internal approval (Legal, DPO, CISO) → Submit → Track acknowledgement → Close with evidence."
         ],
         "dataProcess": [
-          "public.incidents (uuid PK, tenant-scoped RLS incidents_org_scoped); services incidentResponseService.ts (canonical) and incidentService.ts (legacy snake_case consumers); hooks useIncidents, useIncidentTransitions, useWorkflowSteps.",
-          "Declaring an incident emits INCIDENT_CREATED on the governance bus — the mesh's incident cascade (triage, containment, regulator-notify, evidence collection, …) fires from this emitter.",
-          "Workflow transitions persist to public.incident_workflow_steps (from/to status, actor, notes, timestamp) — EU AI Act Art. 73 traceability.",
-          "Playbooks: public.incident_playbooks + activations in public.playbook_runs (linked to real incidents; the \"active incident\" banner is driven by open runs only)."
+          "Real regulator_filings table (CHECK-constrained regulation/type/status); filings link incidents via linked_incident_id → /risk/incidents?open=.",
+          "filing_ref (FIL-YYYY-NNNN) is minted by a DB trigger on insert — the UI shows it read-only and the create form notes it is assigned on save.",
+          "Statutory deadlines derive from dashboard/src/lib/statutoryWindows.ts (one source of truth keyed by the FILING_REGULATIONS vocabulary): picking a regulation on a new filing defaults the deadline from that window; the Incident Log Art. 73 prompt counts the same window from the incident's detected_at; the mesh's RegulatorNotify agent uses the same clocks. Staged regimes (Art. 73's 15d/10d/2d, NIS2 24h/72h, DORA 4h/24h/72h) document the chosen default stage in that file.",
+          "The mesh's RegulatorNotify agent drafts filings into the same table via a strict insert (throws on failure); REGULATOR_NOTIFIED carries only the ids of rows that really persisted, and any shortfall returns a failed agent result — a statutory draft can never claim success it didn't have.",
+          "Transitioning a filing to acknowledged requires the regulator-issued reference_number (enforced in the form) — the acknowledgment is evidence, not a checkbox.",
+          "Art. 12 audit logging: every save/delete writes to audit_log via logAction (module regulator-filings), with dedicated submit / acknowledge actions for the legally significant transitions.",
+          "The previously documented four-eyes/WORM workflow is NOT implemented — approvals go through the platform approvals backend when required.",
+          "Known debt: regulator_filings.deleted_at exists but is unused (deletes are hard)."
         ],
         "interlinks": [],
         "compliance": [
-          "| Control | Requirement |"
+          "| Obligation | SLA |"
         ],
         "operations": [],
         "fields": [
           [
-            "ISO/IEC 27001:2022 A.5.24–A.5.28",
-            "IR planning, assessment, response, learning"
+            "GDPR Art. 33 personal data breach",
+            "72 hours to supervisory authority"
           ],
           [
-            "NIST SP 800-61 r2",
-            "Computer security IR handling"
+            "EU AI Act Art. 73 serious incident",
+            "15 days (2 days for widespread, 10 days for fatality)"
           ],
           [
-            "ISO/IEC 27035",
-            "Information security incident management"
+            "NIS2 Art. 23 significant incident",
+            "Early warning 24h, notification 72h, final report 1 month"
           ],
           [
-            "EU AI Act Art. 72–73",
-            "Post-market monitoring + serious incident reporting"
+            "DORA Art. 19 major ICT incident",
+            "Initial, intermediate, final reports per RTS"
           ],
           [
-            "DORA Art.17–23",
-            "ICT incident management and classification"
+            "SEC Item 1.05 (Form 8-K)",
+            "4 business days after materiality determination"
           ],
           [
-            "NIS2 Art.21(2)(b)",
-            "Incident handling"
+            "HIPAA Breach Notification Rule",
+            "60 days"
           ]
         ],
         "noDocReason": null
@@ -5292,43 +5335,16 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "route": "/transparency-reports",
         "parentLabel": "Reg Radar",
         "hasDoc": true,
-        "docPath": "docs/modules/explainability.md",
-        "title": "Explainability & Transparency",
-        "purpose": "Produce model-level and decision-level explanations, transparency disclosures, and provenance evidence for every consequential AI decision.",
+        "docPath": "docs/modules/transparency-reports.md",
+        "title": "Transparency Reports",
+        "purpose": "",
         "why": "",
         "how": [],
         "dataProcess": [],
         "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
-        ],
+        "compliance": [],
         "operations": [],
-        "fields": [
-          [
-            "EU AI Act Art.13, 50",
-            "Transparency obligations, content labelling"
-          ],
-          [
-            "EU AI Act Art.86",
-            "Right to explanation of individual decisions"
-          ],
-          [
-            "GDPR Art.13–15, 22",
-            "Meaningful information about logic"
-          ],
-          [
-            "NIST AI RMF MEASURE 2.8, 2.9",
-            "Interpretability and explainability"
-          ],
-          [
-            "ISO/IEC 42001 A.6.2.8",
-            "System information for users"
-          ],
-          [
-            "ISO/IEC TS 6254",
-            "Objectives and approaches for explainability"
-          ]
-        ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -5336,39 +5352,16 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "route": "/post-market",
         "parentLabel": "Reg Radar",
         "hasDoc": true,
-        "docPath": "docs/modules/model-inventory.md",
-        "title": "Model Inventory & Lifecycle",
-        "purpose": "The model registry of record: every model (first-party, fine-tuned, third-party) with provenance, intended use, risk tier, owners, approvals, deployments, and post-market monitoring.",
+        "docPath": "docs/modules/post-market.md",
+        "title": "Post-Market Monitoring",
+        "purpose": "",
         "why": "",
         "how": [],
         "dataProcess": [],
         "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
-        ],
+        "compliance": [],
         "operations": [],
-        "fields": [
-          [
-            "EU AI Act Art.9, 11, 13, 16–21, 72–73",
-            "Risk management, technical documentation, transparency, provider obligations, post-market monitoring, incident reporting"
-          ],
-          [
-            "ISO/IEC 42001 6.1.3, A.6, A.8",
-            "AI risk and impact assessment, system lifecycle, data for AI systems"
-          ],
-          [
-            "NIST AI RMF GOVERN, MAP, MEASURE, MANAGE",
-            "Full lifecycle"
-          ],
-          [
-            "SR 11-7 / OCC 2011-12",
-            "Model risk management (financial services)"
-          ],
-          [
-            "ISO/IEC 23894",
-            "AI risk management guidance"
-          ]
-        ],
+        "fields": [],
         "noDocReason": null
       },
       {

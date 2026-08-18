@@ -41,7 +41,9 @@ Security headers are configured in `public/_headers` and include:
 ## Pre-GA Checklist
 
 - [x] Move to custom domain (off workers.dev for cookie isolation) —
-      `1shield-oss.certifyi.ai`, declared in `dashboard/wrangler.toml`.
+      `1shield-oss.certifyi.ai`, declared in the root `wrangler.jsonc` (what
+      the Cloudflare Git build reads) and in `dashboard/wrangler.toml` (the
+      manual `wrangler deploy` path).
       Requires `certifyi.ai` to be a zone on the same Cloudflare account.
       The workers.dev subdomain keeps serving unless disabled separately.
 - [ ] Add Turnstile CAPTCHA on /auth/*

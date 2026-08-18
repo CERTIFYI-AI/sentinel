@@ -5,7 +5,10 @@ recovering it, and shipping new versions of it.
 
 | Document | What it covers |
 |---|---|
-| [deployment.md](deployment.md) | Docker Compose, bare metal, AWS and GCP deployments; reverse proxy config; environment variable reference; ML model pre-download; smoke test; upgrades |
+| [../architecture/deployment-topology.md](../architecture/deployment-topology.md) | **Start here.** Which piece runs where and why — control-plane (serverless, $0) vs data-plane (the always-on gateway) |
+| [backend-deployment.md](backend-deployment.md) | Control-plane on free tiers: the `integrations-connect` Supabase Edge Function + the scheduled GitHub Actions evidence worker |
+| [gateway-deployment.md](gateway-deployment.md) | Data-plane: the enforcement gateway (`sentinel.proxy:app`) + Redis on a free always-on VM, Cloudflare Tunnel ingress |
+| [deployment.md](deployment.md) | General/self-hosted: Docker Compose, bare metal, AWS and GCP; reverse proxy config; environment variable reference; ML model pre-download; smoke test; upgrades |
 | [production-checklist.md](production-checklist.md) | The gate to clear before serving production traffic |
 | [monitoring.md](monitoring.md) | Prometheus scrape config, key metrics, Grafana dashboards, alert rules, Slack routing, health endpoints, log aggregation |
 | [scaling.md](scaling.md) | Baseline performance, horizontal and vertical scaling, GPU acceleration, Kubernetes/Helm, PostgreSQL and Redis tuning, load testing, capacity planning |

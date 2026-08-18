@@ -5,6 +5,12 @@ compatibility_flags = ["nodejs_compat"]
 
 # Custom domain for the production app: https://1shield-oss.certifyi.ai
 #
+# DECLARED IN TWO PLACES ON PURPOSE. The Cloudflare Git build deploys from the
+# repository root and reads `wrangler.jsonc` there; this file is the manual
+# `wrangler deploy` path run from `dashboard/`. Both target the same Worker, so
+# the hostname is stated in both — a config that omits it would drop the domain
+# on the next deploy through that path. Keep the two in step.
+#
 # Declared here rather than clicked once in the Cloudflare dashboard, so the
 # hostname is reviewable, diffable and reproducible like everything else in
 # this repo — and so a fresh account can be stood up from the tree.

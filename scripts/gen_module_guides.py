@@ -126,8 +126,13 @@ ROUTE_TO_DOC: dict[str, str] = {
     "/tabletop": "tabletop-exercises",
     "/remediation-tracker": "remediation-tasks",
     "/hitl": "hitl-review",
+    # These have dedicated docs but were falling through to fuzzy matching,
+    # which rendered an unrelated module's guide. Pin them explicitly.
+    "/workflows": "approval-workflows",
+    "/automation-studio": "automation-studio",
     # COMPLIANCE & REGULATORY
     "/compliance": "compliance-overview",
+    "/frameworks": "frameworks",
     "/conformity": "conformity-assessment",
     "/compliance/controls": "controls-control-testing",
     "/control-testing": "controls-control-testing",
@@ -137,6 +142,11 @@ ROUTE_TO_DOC: dict[str, str] = {
     "/policies": "policy-management",
     "/compliance/policy-templates": "policy-management",
     "/policy-editor": "policy-management",
+    # Reg Radar family — each has its own doc; stop fuzzy-matching them to
+    # incident-management / explainability / model-inventory.
+    "/regulator-filings": "regulator-filings",
+    "/transparency-reports": "transparency-reports",
+    "/post-market": "post-market",
     # PRIVACY
     "/dsr": "dsr-consent",
     "/consent-management": "dsr-consent",
