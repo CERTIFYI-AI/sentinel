@@ -1,5 +1,7 @@
 ## Unreleased
 
+* fix(honesty): **null-guard KPI metrics in 4 more pages.** TrustEngineDashboard: traces/violations show '—' when analytics is null (consistent with trust index tile). GovernanceMesh: error rate '—' when no executions. BenchmarkingMaturity: overall level, gap score, trajectory '—' when empty; hardcoded `industryPercentile = 68` labeled as simulated. PolicyFirewall: block rate '—' when no evaluations.
+
 * fix(honesty): **null-guard doc-jsonb and derived fields across 5 pages.** Agents.tsx: `trustScore`, `dailyCallCount`, `totalCallsLifetime`, `avgLatencyMs`, `maxBudget` wrapped in null checks with '—' fallback; `avgTrust` stat returns null (not 0) when no agents have declared trust scores. ModelDetail: drift score renders '—' instead of '0%' when no telemetry exists. AIImpactAssessments: `progressPct` null guard prevents 'undefined%' crash. IncidentLog: remediation `progressPct` null guard with '—' fallback and safe bar width.
 
 * docs(modules): **100% guide coverage (135/135).** GenAI Risk Profiles doc written (`genai-risk-profiles.md`), completing the last undocumented sidebar destination. Compliance mappings updated (EU AI Act Art. 9, ISO 42001 6.1.2/A.5.4). 23 additional stub module docs expanded to full template format in the same pass.
