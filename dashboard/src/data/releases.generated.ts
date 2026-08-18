@@ -1475,8 +1475,24 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 24,
+  "entryCount": 26,
   "entries": [
+    {
+      "type": "fix",
+      "scope": "security",
+      "summary": "**close a cross-tenant read on seven tables.** `20260421000014_ws02_tenancy_sweep` classified eleven tables as \"tables [that] serve every tenant\" and gave each `FOR SELECT TO authenticated USING (true)`. Three genuinely are global reference data; eight are not. One of the eight (`audit_findings`) was caught in `20260821000001` — \"every tenant could read every other tenant's audit findings\" — and **the other seven were never revisited**: `document_versions`, `event_cascade_links`, `incident_workflow_steps`, `observability_metrics`, `vendor_questionnaires`, `workflow_step_actions`, `module_health`. Each holds tenant data, each also carries a correct org-scoped policy, and that does not help, because **Postgres OR-combines permissive policies** — `USING (true)` widens access straight past the org predicate beside it. This is **TD-000 recurring**, the register entry written to preserve exactly this lesson. Reproduced on a from-zero replay before the fix (a user in Org A read Org B's `document_versions`) and again after (own rows only). `20260830000003` drops the two `ws02_catalog_*` policies on all seven and narrows `event_cascade_links.cascade_org_insert` — which was `WITH CHECK (true)`, allowing a cross-tenant **write** — to the caller's own org rather than dropping it, since the governance event bus writes through it. Self-verifying: it refuses to run if any of the seven would be left without an org-scoped read or without its service-role policy, and it re-runs TD-000's regression query before finishing. Whole-schema recheck leaves only `emission_factors`, `integration_catalog` and `policy_templates` permissive — all three have no `org_id` column at all",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "docs",
+      "scope": "audit",
+      "summary": "**platform audit — modules, features, database, interlinks** (`docs/reference/platform-audit-2026-08-18.md`). Every migration was applied to a **real PostgreSQL 16**, so all 253 tables are verifiable rather than the 187 the static checker can parse (TD-015's blind spot), and the code side was measured over 468 files, 157 route bindings and the 134 menu destinations. Ten findings with reproduction for each. The three that matter beyond the fix above: **(1)** a from-zero replay **halts at migration 97 of 146** — eight migrations fail, five of them the same `incidents/risks/vendors/frameworks` text-vs-uuid split, and because the first failure is `replay_repair.sql` — whose entire purpose is re-applying the guarded early migrations — one type mismatch silently strips the rest of that file and cascades into three more failures. TD-014 recorded two of the eight and assumed the rest unreachable; under `supabase db push` that assumption costs **50 migrations that never run**. **(2)** **Thirteen create paths are rejected by their own RLS policy** — `org_id` has no DB default, no trigger fills it, the INSERT policy requires it, and the service never sends it; `insert into use_cases (name)` was reproduced returning *\"new row violates row-level security policy\"*, and the same insert with `org_id` supplied succeeds. **(3)** `ai_models`, `use_cases` and `datasets` — including the canonical model id-space — are covered by **neither** `logAction` nor `fn_audit_trigger`, so registering or deleting an AI model leaves no audit record with an actor (note the near-miss: `model_inventory` **is** trigger-audited, `ai_models` is not). Also: 11 tables the dashboard reads that no migration creates (two of them behind live RBAC admin screens), 3 tables with RLS off, **40 `<entity>_id` columns with no foreign key** — the mechanism behind the 2026-08-17 audit's \"98 references resolve to nothing\" — 12 modules with no cross-module link in or out, and error states missing on 64 of 120 destinations. Recorded as **TD-016/017/018**, and TD-014's scope note corrected against the evidence",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "feat",
       "scope": "integrations",

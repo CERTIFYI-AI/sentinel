@@ -4,7 +4,7 @@
 > auditor instead of by us. Every accepted shortcut belongs here with an owner
 > and a reason — see [`../contributing/review-process.md`](../contributing/review-process.md).
 
-Last reviewed: 2026-08-16
+Last reviewed: 2026-08-18
 
 ---
 
@@ -571,6 +571,83 @@ tables it can actually see"*.
 
 ---
 
+## TD-016 — `ws02_catalog_read` leaves seven tenant tables world-readable
+
+**Owner:** Platform team · **Raised:** 2026-08-18 · **Severity:** P0 (security) ·
+**Status:** **Policies fixed** in
+`20260830000003_close_ws02_catalog_read_cross_tenant.sql`; the entry stays
+**open** for the part that is not fixed — TD-000's regression query is still a
+one-off sweep rather than a gate, which is why this shipped twice. Found by
+[`platform-audit-2026-08-18.md`](platform-audit-2026-08-18.md) §F0.
+
+`20260421000014_ws02_tenancy_sweep.sql` grants
+`FOR SELECT TO authenticated USING (true)` to eleven tables it classifies as
+serving every tenant. Seven of them are tenant data: `document_versions`,
+`event_cascade_links`, `incident_workflow_steps`, `observability_metrics`,
+`vendor_questionnaires`, `workflow_step_actions`, `module_health`. An eighth,
+`audit_findings`, was caught and fixed in `20260821000001`; the seven were not.
+
+Reproduced against a from-zero replay: a user in Org A reads Org B's
+`document_versions`. `event_cascade_links` also carries an INSERT policy with
+`WITH CHECK (true)`, so cross-tenant *writes* are possible there too.
+
+This is **TD-000 recurring**. The tables' correct org policies are present and
+irrelevant — Postgres OR-combines permissive policies. The seven `DROP POLICY`
+statements have shipped and were verified before and after against a real
+replay (Org A saw 2 rows, then 1). **What has not shipped is the gate**: until
+TD-000's regression query runs on every migration, nothing stops a third
+recurrence.
+
+---
+
+## TD-017 — Thirteen create paths are rejected by their own RLS policy
+
+**Owner:** Platform team · **Raised:** 2026-08-18 · **Severity:** P0 ·
+**Status:** Open. Found by
+[`platform-audit-2026-08-18.md`](platform-audit-2026-08-18.md) §F2.
+
+Thirteen tables have `org_id` with **no DB default**, no trigger that fills it,
+and an INSERT policy requiring `org_id = auth.current_org_id()` — while the
+service that writes them never sends `org_id`. Every create is rejected:
+`use_cases`, `datasets`, `ai_impact_assessments`, `guardrail_rules`,
+`model_dna`, `model_lifecycle_stages`, `prompt_registry`, `trust_policies`,
+`webhook_endpoints`, `api_keys`, `consent_records`, `eval_techniques`,
+`maturity_assessments`.
+
+Reproduced: `insert into use_cases (name) values (…)` as `authenticated` with a
+resolved org returns *"new row violates row-level security policy"*; the same
+insert with `org_id` supplied succeeds.
+
+Same family as TD-015 and the seven paths repaired in `20260827000001` /
+`20260829000000`, reached from the other direction — those sent a column that
+does not exist, these send too little. Fix is one migration adding
+`DEFAULT current_user_org_id()`, as `ai_models` already has.
+
+---
+
+## TD-018 — `ai_models`, `use_cases` and `datasets` changes are not audit-logged
+
+**Owner:** Compliance + Platform · **Raised:** 2026-08-18 · **Severity:** P1 ·
+**Status:** Open. Found by
+[`platform-audit-2026-08-18.md`](platform-audit-2026-08-18.md) §F3.
+
+The platform audits state changes two ways — `logAction` in the app and
+`fn_audit_trigger` in the database — and 23 of 93 write-capable menu
+destinations use **neither**. Three matter most: `ai_models` (the canonical
+model id-space), `use_cases` and `datasets` have no audit trigger, and
+`modelService.ts` / `useCaseService.ts` / `datasetService.ts` contain no
+`logAction` call. Registering or deleting an AI model therefore leaves no audit
+record with an actor.
+
+Note the near-miss that hides it: `model_inventory` **is** trigger-audited,
+`ai_models` is not, and `ai_models` is the table the product actually uses.
+
+EU AI Act Art. 12 and the repo's own Gate 4 both require the record. Attaching
+`fn_audit_trigger` to the three tables is a three-line migration; the remaining
+20 destinations need triage.
+
+---
+
 ## TD-014 — From-zero replay is red on the `incidents.id` type split
 
 **Owner:** Risk & Incidents team · **Raised:** 2026-08-26 · **Severity:** P1 ·
@@ -616,9 +693,13 @@ check. Consider teaching the static checker to flag FK type mismatches inside
 `assets.vendor_id uuid → vendors.id text` mismatch in this branch was caught and
 fixed before merge.
 
-> **Scope note.** The framework-catalog migrations (`20260826000001`–`000020`)
-> and this branch's own migrations replay cleanly; they run *after* the failing
-> files, so a from-zero replay stops before reaching them. Their correctness was
+> **Scope note (revised 2026-08-18).** As written this said a from-zero replay
+> "stops before reaching them", so only the two failures above were recorded.
+> That holds for `supabase db push`, which aborts — and is the real cost: **50
+> of 146 migrations never run.** A replay that continues past a failed file
+> shows **eight** failures, not two, five of them this same type split; see
+> [`platform-audit-2026-08-18.md`](platform-audit-2026-08-18.md) §F1. The
+> framework-catalog migrations themselves still replay cleanly. Their correctness was
 > verified by applying them to a database replayed to that point — 936 catalog
 > controls across 15 frameworks, `count(*) = count(distinct control_ref)` per
 > framework.
