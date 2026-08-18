@@ -58,7 +58,7 @@ export const GUIDE_TOTAL_ENTRIES = 134
 export const GUIDE_DOCUMENTED_ENTRIES = 134
 
 /** Module docs available in docs/modules/. */
-export const MODULE_DOCS_AVAILABLE = 91
+export const MODULE_DOCS_AVAILABLE = 92
 
 export const GUIDE_COLLECTIONS: GuideCollection[] = [
   {
@@ -7639,33 +7639,165 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "route": "/integrations",
         "parentLabel": null,
         "hasDoc": true,
-        "docPath": "docs/modules/integrations-platform.md",
-        "title": "Integrations Platform",
-        "purpose": "First-class connectors to SIEM, ITSM, Cloud posture, Identity, and AI-safety vendors — bidirectional where possible.",
-        "why": "",
-        "how": [],
-        "dataProcess": [],
-        "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
+        "docPath": "docs/modules/integration-catalog.md",
+        "title": "Integration Catalog & Collected Evidence",
+        "purpose": "Browse the published catalogue of evidence sources, enable the ones that can actually collect, and see the evidence they produce mapped onto the org's controls.",
+        "why": "The catalogue held 219 products and nothing in the product read it. The evidence tables behind it — integration_findings, control_finding_evidence, background_jobs — had zero readers too. So the platform had a real collection pipeline, a real control-mapping engine, and no way for a user to reach any of it. This module closes that gap. It also carries an honesty obligation. Of the 219 catalogued products, exactly one (github) ships an adapter. Rendering a Connect button on all 219 would promise evidence collection that cannot happen — the same class of defect as an unearned certification badge",
+        "how": [
+          "### Three states, stated plainly",
+          "| adapter_status | Meaning | UI |",
+          "isConnectable() is the single gate, unit-tested, and it mirrors the server:",
+          "the Python worker refuses a slug absent from its registry",
+          "(sentinel/integrations/registry.py), so client and server agree by",
+          "construction rather than by comment.",
+          "A catalogued-only product still shows its full operator prose — what it",
+          "evidences, how evidence is pulled, what it maps to, connection steps — because",
+          "that is genuinely useful for deciding which sources to prioritise.",
+          "### Enable / disable",
+          "Connect creates the org's integrations row carrying catalog_slug; the",
+          "server-side worker picks the job up from there. The row starts as"
         ],
-        "operations": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Catalog → org instance. Joined on catalog_slug, never on name.",
+          "Integration → findings. The detail sheet shows what the source has",
+          "actually collected, worst-first, or an honest \"nothing collected yet\".",
+          "Control → evidence. ControlDetail gains an Automated Evidence tab",
+          "listing the findings mapped to that control, with posture, counts and",
+          "remediation.",
+          "Control → Integrations. A control with no automated evidence links to",
+          "/integrations so the reader can connect a source."
+        ],
+        "compliance": [
+          "EU AI Act Art. 12 (record-keeping). Connect and disconnect are audit-",
+          "logged; findings survive disconnection.",
+          "EU AI Act Art. 14 (human oversight). Automated evidence is presented as a",
+          "signal for a person to act on, never as an automatic control state change.",
+          "ISO/IEC 42001 §9.1 / §9.2. Continuous monitoring evidence feeding the",
+          "control register, with provenance (which source, which check, when).",
+          "Data minimisation. Credentials never reach the browser; raw provider",
+          "payloads are not rendered."
+        ],
+        "operations": [
+          "The catalogue is seeded by migration",
+          "(20260825000002_seed_integration_catalog.sql) and is global reference data:",
+          "readable by any signed-in user, writable only by the service role. **If the",
+          "Catalog tab shows \"Catalogue not available\", migrations have not been applied",
+          "to that database.**",
+          "Adding an adapter means: implement it under sentinel/integrations/, register",
+          "it in registry.py, and flip that row's adapter_status to available. The",
+          "registry docstring states the two must agree; the worker enforces it."
+        ],
         "fields": [
           [
-            "ISO/IEC 27001:2022 A.5.19–23",
-            "Supplier/ICT supply chain"
+            "available",
+            "Adapter ships; connecting starts real collection",
+            "Green badge, Connect"
           ],
           [
-            "NIST CSF DE.AE, RS.CO",
-            "Detection and communication"
+            "beta",
+            "Adapter exists, not production-ready",
+            "Amber badge, Connect"
           ],
           [
-            "OAuth 2.1 / OpenID Connect",
-            "Delegated identity"
+            "catalogued",
+            "Reference only — no adapter, collects nothing",
+            "Neutral badge, no Connect, with the reason"
           ],
           [
-            "SCIM 2.0",
-            "User provisioning"
+            "Field",
+            "Column",
+            "Notes"
+          ],
+          [
+            "slug",
+            "slug",
+            "Primary key; the one id-space shared with integrations.catalog_slug"
+          ],
+          [
+            "name",
+            "name",
+            "Product name"
+          ],
+          [
+            "category",
+            "category",
+            "hr, identity, code, cloud, device, security, siem, secrets, cicd, ticketing, training, collaboration, saas, hiring, ai"
+          ],
+          [
+            "whyNeeded",
+            "why_needed",
+            "What evidence this source carries"
+          ],
+          [
+            "evidencePull",
+            "evidence_pull",
+            "How evidence is pulled (API / OAuth / SCIM …)"
+          ],
+          [
+            "connectSteps",
+            "connect_steps",
+            "Operator walkthrough"
+          ],
+          [
+            "evidenceMapping",
+            "evidence_mapping",
+            "What maps to which evidence entities"
+          ],
+          [
+            "docsHint",
+            "docs_hint",
+            "Provider's own docs"
+          ],
+          [
+            "tier",
+            "tier",
+            "1 = adapter shipped, 2 = planned, 3 = catalogued"
+          ],
+          [
+            "adapterStatus",
+            "adapter_status",
+            "available \\",
+            "beta \\",
+            "catalogued"
+          ],
+          [
+            "Field",
+            "Column",
+            "Notes"
+          ],
+          [
+            "checkId",
+            "check_id",
+            "Stable, e.g. github.org.mfa_required"
+          ],
+          [
+            "title / description / remediation",
+            "same",
+            "Normalized, operator-facing"
+          ],
+          [
+            "status",
+            "status",
+            "PASSED \\",
+            "FAILED \\",
+            "WARNING \\",
+            "NOT_AVAILABLE"
+          ],
+          [
+            "severity",
+            "severity",
+            "CRITICAL … INFO"
+          ],
+          [
+            "checkCategory",
+            "check_category",
+            "Drives the control mapping"
+          ],
+          [
+            "collectedAt",
+            "collected_at",
+            "When the check ran"
           ]
         ],
         "noDocReason": null

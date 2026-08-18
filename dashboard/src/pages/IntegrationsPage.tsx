@@ -28,6 +28,7 @@ import { FormDialog, Field } from '@/components/evals/FormDialog'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog'
 import { TableSkeleton, EmptyState, ErrorState } from '@/components/evals/states'
 import { useIntegrations, useWebhooks } from '@/hooks/useIntegrations'
+import { IntegrationCatalog } from '@/components/integrations/IntegrationCatalog'
 import { useRBAC } from '@/hooks/useRBAC'
 import {
   INTEGRATION_CATEGORIES,
@@ -86,7 +87,7 @@ export default function IntegrationsPage() {
   const integrations = useIntegrations()
   const webhooks = useWebhooks()
 
-  const [tab, setTab] = useState('connectors')
+  const [tab, setTab] = useState('catalog')
   const [formOpen, setFormOpen] = useState(false)
   const [editing, setEditing] = useState<IntegrationRecord | null>(null)
   const [form, setForm] = useState<Partial<IntegrationRecord>>(EMPTY)
@@ -203,9 +204,19 @@ export default function IntegrationsPage() {
 
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList>
+          <TabsTrigger value="catalog">Catalog</TabsTrigger>
           <TabsTrigger value="connectors">Connectors</TabsTrigger>
           <TabsTrigger value="webhooks">Webhooks</TabsTrigger>
         </TabsList>
+
+        {/* The published catalogue of evidence sources, and the enable/disable
+            path for the ones that actually ship an adapter. Before this tab
+            existed the catalogue was rows in a table nothing read. */}
+        <TabsContent value="catalog" className="mt-4">
+          <Card className="p-4">
+            <IntegrationCatalog canManage={can('create')} />
+          </Card>
+        </TabsContent>
 
         <TabsContent value="connectors" className="mt-4">
           <Card className="p-4">
