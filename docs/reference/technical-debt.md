@@ -684,6 +684,13 @@ must agree — the credential blob format especially (pinned by
 in the edge function first (it is what runs) and mirrored into the Python
 surfaces. Consolidation is more valuable now, not less.
 
+Where each surface is hosted is documented in
+[`../architecture/deployment-topology.md`](../architecture/deployment-topology.md):
+the gateway (`proxy:app`) on an always-on free VM
+([`../operations/gateway-deployment.md`](../operations/gateway-deployment.md)),
+connect as the edge function, and the `main:app` routers unhosted (the dashboard
+is Supabase-direct and does not need them).
+
 ---
 
 ## TD-014 — From-zero replay is red on the `incidents.id` type split
