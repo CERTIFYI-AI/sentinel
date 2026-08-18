@@ -40,6 +40,10 @@ import {
   type GuideEntry,
 } from '../../data/userGuide'
 import {
+  TERMS_URL, PRIVACY_URL, WEBSITE_URL, CONTACT_EMAIL, CONTACT_PHONE, COMPANY,
+  EXTERNAL_LINK_PROPS,
+} from '../../lib/legal'
+import {
   RELEASES,
   UNRELEASED,
   LATEST_VERSION,
@@ -753,9 +757,8 @@ export function RightSidebar() {
                     automation.
                   </p>
                   <a
-                    href="https://certifyi.ai/"
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href={WEBSITE_URL}
+                    {...EXTERNAL_LINK_PROPS}
                     className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[hsl(var(--brand))] hover:underline"
                   >
                     Visit certifyi.ai <ArrowSquareOut size={13} weight="bold" />
@@ -772,10 +775,10 @@ export function RightSidebar() {
                         Email
                       </span>
                       <a
-                        href="mailto:get@certifyi.ai"
+                        href={`mailto:${CONTACT_EMAIL}`}
                         className="text-[13px] text-[hsl(var(--text-1))] hover:text-[hsl(var(--brand))]"
                       >
-                        get@certifyi.ai
+                        {CONTACT_EMAIL}
                       </a>
                     </div>
                     <div className="flex flex-col">
@@ -783,10 +786,10 @@ export function RightSidebar() {
                         Phone
                       </span>
                       <a
-                        href="tel:+9779851334787"
+                        href={`tel:${CONTACT_PHONE.replace(/[^+\d]/g, '')}`}
                         className="text-[13px] text-[hsl(var(--text-1))] hover:text-[hsl(var(--brand))]"
                       >
-                        +977-9851334787
+                        {CONTACT_PHONE}
                       </a>
                     </div>
                   </div>
@@ -845,11 +848,35 @@ export function RightSidebar() {
                   <BookOpen size={14} /> Open the user guide
                 </button>
 
-                <p className="text-[11px] text-[hsl(var(--text-4))] leading-relaxed pt-2">
-                  <strong>Note:</strong> our privacy policy follows Nepal's data protection
-                  framework. If you are subject to another jurisdiction (for example GDPR in the
-                  EU), additional terms may apply.
-                </p>
+                {/* The legal documents, reachable from inside the product —
+                    not just at sign-up. */}
+                <Card>
+                  <h4 className="text-[13px] font-semibold text-[hsl(var(--text-1))] mb-3">
+                    Legal
+                  </h4>
+                  <div className="flex flex-col gap-2">
+                    <a
+                      href={TERMS_URL}
+                      {...EXTERNAL_LINK_PROPS}
+                      className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[hsl(var(--brand))] hover:underline"
+                    >
+                      Terms of Service <ArrowSquareOut size={13} weight="bold" />
+                    </a>
+                    <a
+                      href={PRIVACY_URL}
+                      {...EXTERNAL_LINK_PROPS}
+                      className="inline-flex items-center gap-1.5 text-[13px] font-medium text-[hsl(var(--brand))] hover:underline"
+                    >
+                      Privacy Policy <ArrowSquareOut size={13} weight="bold" />
+                    </a>
+                  </div>
+                  <p className="text-[11px] text-[hsl(var(--text-4))] leading-relaxed mt-3 pt-3 border-t border-[hsl(var(--border))]">
+                    Certifyi AI is a product of {COMPANY.name}, {COMPANY.address} (reg. no.{' '}
+                    {COMPANY.registrationNo}). Our privacy policy follows Nepal's data protection
+                    framework; if you are subject to another jurisdiction — GDPR in the EU, for
+                    example — additional terms may apply.
+                  </p>
+                </Card>
               </div>
             )}
           </div>

@@ -6,6 +6,7 @@ import {
 
   Eye, EyeSlash, ShieldCheck, CheckCircle, Lock, ArrowRight, Check,
 } from '@phosphor-icons/react';
+import { TERMS_URL, PRIVACY_URL, EXTERNAL_LINK_PROPS } from '@/lib/legal';
 
 const FEATURES = [
   'Real-time AI governance across all deployed models',
@@ -73,31 +74,15 @@ function BrandPanel() {
       </div>
 
       <div className="relative z-10">
-        <blockquote className="border-l-2 pl-4" style={{ borderColor: 'hsl(var(--brand))' }}>
-          <p className="text-sm italic leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>
-            "From risk tiering to DPIA workflows — Sentinel replaced five separate tools and gave us a single source of truth for AI compliance."
-          </p>
-          <footer className="mt-2 text-xs font-medium" style={{ color: 'hsl(var(--text-4))' }}>
-            — Head of AI Risk, Tier-1 European Bank
-          </footer>
-        </blockquote>
-
-        <div className="mt-6 flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>
-            <Lock size={10} style={{ color: 'hsl(var(--brand))' }} />
-            SOC 2 Type II
-          </div>
-          <span style={{ color: 'hsl(var(--border))' }}>·</span>
-          <div className="flex items-center gap-1.5 text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>
-            <ShieldCheck size={10} style={{ color: 'hsl(var(--brand))' }} />
-            ISO 27001
-          </div>
-          <span style={{ color: 'hsl(var(--border))' }}>·</span>
-          <div className="flex items-center gap-1.5 text-[10px] font-medium" style={{ color: 'hsl(var(--text-4))' }}>
-            <ShieldCheck size={10} style={{ color: 'hsl(var(--brand))' }} />
-            GDPR Compliant
-          </div>
-        </div>
+        {/* A fabricated testimonial ("Head of AI Risk, Tier-1 European Bank")
+            and three unearned badges (SOC 2 Type II, ISO 27001, GDPR
+            Compliant) stood here. No such statement was given and no such
+            certification is held. See docs/legal/README.md. */}
+        <p className="text-sm leading-relaxed" style={{ color: 'hsl(var(--text-3))' }}>
+          Bring every AI system under one governed inventory — with the risk
+          classifications, controls, evidence and incident history your auditors
+          will ask to see.
+        </p>
       </div>
     </div>
   );
@@ -269,9 +254,9 @@ export default function Signup() {
                 <input type="checkbox" checked={form.agreeTerms} onChange={e => set('agreeTerms', e.target.checked)} className="mt-0.5 w-3.5 h-3.5 accent-[hsl(var(--brand))]" />
                 <span className="text-sm leading-snug" style={{ color: 'hsl(var(--text-3))' }}>
                   I agree to the{' '}
-                  <a href="#" className="underline font-medium" style={{ color: 'hsl(var(--brand))' }}>Terms of Service</a>
+                  <a href={TERMS_URL} {...EXTERNAL_LINK_PROPS} onClick={e => e.stopPropagation()} className="underline font-medium" style={{ color: 'hsl(var(--brand))' }}>Terms of Service</a>
                   {' '}and{' '}
-                  <a href="#" className="underline font-medium" style={{ color: 'hsl(var(--brand))' }}>Privacy Policy</a>
+                  <a href={PRIVACY_URL} {...EXTERNAL_LINK_PROPS} onClick={e => e.stopPropagation()} className="underline font-medium" style={{ color: 'hsl(var(--brand))' }}>Privacy Policy</a>
                 </span>
               </label>
               {errors.agreeTerms && <p className="text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>{errors.agreeTerms}</p>}
@@ -302,9 +287,11 @@ export default function Signup() {
             </Link>
           </p>
 
+          {/* States what we actually do. "SOC 2 Type II certified" stood here
+              and is not held — see docs/legal/README.md. */}
           <p className="mt-4 text-center text-[11px] leading-relaxed" style={{ color: 'hsl(var(--text-4))' }}>
-            Your data is encrypted at rest and in transit.<br />
-            AES-256 · TLS 1.3 · SOC 2 Type II certified
+            Your data is encrypted in transit and at rest, and each workspace is
+            isolated by row-level security in the database.
           </p>
         </div>
       </div>
