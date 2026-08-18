@@ -1,4 +1,4 @@
--- 20260831000001_mcp_gateway_enforcement.sql
+-- 20260831000002_mcp_gateway_enforcement.sql
 --
 -- WHY: `mcp_tools` already models a complete authorization policy — per-tool
 -- `approval_state`, `requires_hitl`, `side_effects`, `risk_tier`, `scopes` and

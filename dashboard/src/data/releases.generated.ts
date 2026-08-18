@@ -1475,8 +1475,16 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 33,
+  "entryCount": 34,
   "entries": [
+    {
+      "type": "docs",
+      "scope": "audit",
+      "summary": "**re-audit** (`docs/reference/platform-audit-2026-08-18b.md`) — checks which of the morning's ten findings actually closed, by re-running every measurement rather than reading commit messages. **F1 is closed properly**: a from-zero replay now applies **150 of 150** migrations against a real PostgreSQL 16, where this morning it halted at 97 of 146. **F0 is closed.** **F2 is 4 of 13** — `e67e519` added defaults \"on the live org_id-bearing tables\", so nine remain and the two the original finding reproduced, `use_cases` and `datasets`, still fail byte-identically. **F3 is untouched**: still 23 write-capable destinations with neither `logAction` nor a DB audit trigger, and still zero of both on `ai_models`, `use_cases` and `datasets`. F4 improved 11 → 9 but gained `knowledge_graph`, which **two agents** now read and no migration creates. F6 went 40 → 41. Also audits the new $0-infra surface: the edge function is well built, but the evidence pipeline's clock now depends on GitHub Actions — the one piece of infrastructure that has been unable to allocate a runner all day — credential-shape validation moved from an immediate 400 to an hours-later `last_run_error`, `sync` does not gate on `adapter_status` where `connect` does, and \"continuous\" is a 24-hour batch that the UI does not say is a 24-hour batch",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "feat",
       "scope": "gateway",

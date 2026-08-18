@@ -4,7 +4,7 @@
 > auditor instead of by us. Every accepted shortcut belongs here with an owner
 > and a reason — see [`../contributing/review-process.md`](../contributing/review-process.md).
 
-Last reviewed: 2026-08-18
+Last reviewed: 2026-08-18 (re-audit)
 
 ---
 
@@ -603,7 +603,12 @@ recurrence.
 ## TD-017 — Thirteen create paths are rejected by their own RLS policy
 
 **Owner:** Platform team · **Raised:** 2026-08-18 · **Severity:** P0 ·
-**Status:** Open. Found by
+**Status:** **Partially closed — 4 of 13.** `e67e519` added defaults "on the
+live org_id-bearing tables", which fixed `api_keys`, `eval_techniques`,
+`model_dna` and `model_lifecycle_stages`. **Nine remain**, and the two the
+original finding reproduced — `use_cases` and `datasets` — still fail
+byte-identically on a from-zero replay. See
+[`platform-audit-2026-08-18b.md`](platform-audit-2026-08-18b.md) §F2. Found by
 [`platform-audit-2026-08-18.md`](platform-audit-2026-08-18.md) §F2.
 
 Thirteen tables have `org_id` with **no DB default**, no trigger that fills it,
@@ -628,7 +633,9 @@ does not exist, these send too little. Fix is one migration adding
 ## TD-018 — `ai_models`, `use_cases` and `datasets` changes are not audit-logged
 
 **Owner:** Compliance + Platform · **Raised:** 2026-08-18 · **Severity:** P1 ·
-**Status:** Open. Found by
+**Status:** Open, **re-verified unchanged** on 2026-08-18 — still 23 write-capable
+destinations with neither mechanism, and still zero triggers and zero
+`logAction` calls on `ai_models`, `use_cases` and `datasets`. Found by
 [`platform-audit-2026-08-18.md`](platform-audit-2026-08-18.md) §F3.
 
 The platform audits state changes two ways — `logAction` in the app and

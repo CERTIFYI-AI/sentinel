@@ -110,7 +110,7 @@ describe('topReasons', () => {
 
 describe('labels and tone', () => {
   it('labels every reason code the gateway can emit', () => {
-    // Kept in step with the CHECK constraint in 20260831000001 and with
+    // Kept in step with the CHECK constraint in 20260831000002 and with
     // sentinel/gateway/policy.py. An unlabelled code renders as a raw slug.
     const codes: ReasonCode[] = [
       'allowed', 'unknown_agent', 'unknown_tool', 'server_blocked',
