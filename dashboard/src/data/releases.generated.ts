@@ -1475,8 +1475,16 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 12,
+  "entryCount": 13,
   "entries": [
+    {
+      "type": "chore",
+      "scope": "replay-check",
+      "summary": "report the migration checker's own blind spot instead of implying it away. `check_migration_replay.py` verifies column references only against tables whose literal `CREATE TABLE` it parsed; tables born inside a dynamic `execute format('create table …')` loop are learned only from later `ALTER`s and cannot be column-checked. It now prints the full list — **81 of 268 tracked tables (30%)** — so \"replay check clean\" reads honestly as \"clean for the tables it can see\". This is not theoretical: **all four broken write paths repaired in `20260827000001` were on dynamically-created tables**, which is exactly why a client sending a non-existent column passed this gate for six audit waves. Recorded as **TD-015**, which also names the three most likely next instances (`attack_surface_assets`, `ethics_reports`, `policy_firewall_rules` — all dynamic, all still injecting `tenant_id`)",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "fix",
       "scope": "notifications",
