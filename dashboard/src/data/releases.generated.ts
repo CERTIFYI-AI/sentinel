@@ -1475,8 +1475,24 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 9,
+  "entryCount": 11,
   "entries": [
+    {
+      "type": "feat",
+      "scope": "legal",
+      "summary": "author the Terms of Service and Privacy Policy and wire them into the product. Canonical text lives in `docs/legal/` and is published at certifyi.ai; `dashboard/src/lib/legal.ts` holds the URLs and the operating entity (Dignep Group Pvt. Ltd., Pulchowk Lalitpur, reg. no. 200505/2075/76) in one place. The Login and Signup pages previously linked both documents with `href=\"#\"` — and Signup **blocked registration behind an \"I agree\" checkbox for documents the user had no way to open**. Both now resolve. The Help panel gains a Legal card linking the same documents from inside the product. The Privacy Policy is written against what the platform actually does: the five fields registration collects, Supabase Auth, the audit trail's attributed actor, DB-enforced tenant isolation, the real sub-processor list (Supabase, Cloudflare, optional Sentry), and explicit statements that we do not sell data, carry no advertising trackers, and do not train models on customer data",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "fix",
+      "scope": "trust-claims",
+      "summary": "remove fabricated assurance from the authentication pages. **\"SOC 2 Type II certified\" was displayed on Login, Signup and Forgot Password with no such audit ever completed** — confirmed with the platform owner. Also removed: \"ISO 27001\" and \"GDPR Compliant\" badges (the latter is not a certification anyone issues), and **two fabricated customer testimonials** — \"CISO, Fortune 500 Financial Services Firm\" claiming an 18-months-to-6-weeks result, and \"Head of AI Risk, Tier-1 European Bank\". No such customers said these things. Replaced with claims that are true and checkable: TLS in transit, encryption at rest, and tenant isolation enforced by row-level security in the database. `docs/legal/README.md` records that no certification claim may be reintroduced until a report exists",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "fix",
       "scope": "write-paths",
