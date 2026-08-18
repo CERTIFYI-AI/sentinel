@@ -75,6 +75,7 @@ Status reported honestly; real gaps are named.
 | Control / Clause | Control description | Module & backing | Status |
 | --- | --- | --- | --- |
 | 6.1.2 / A.5.2 | AI risk assessment — classify each system by risk | [Risk Classification](../modules/ai-risk-tiering.md) — `ai_risk_tiering`, `deriveEuTier` | Implemented — `ai_models` now DB-trigger audit-logged (migration `20260902000001`); sibling registries (`use_cases`, `datasets`, `risks`) remain un-audited (blocked on tenant_id→org_id migration, [TD-018](../reference/technical-debt.md)) |
+| 6.1.2 / A.5.4 | GenAI-specific risk assessment — NIST AI 600-1 taxonomy, severity, guardrail coverage | [GenAI Risk Profiles](../modules/genai-risk-profiles.md) — `genai_risk_profiles`, 12 risk categories per model | Implemented |
 | 6.1.2 / 8.2 / A.5.5 | AI risk treatment register — likelihood, severity, mitigation to closure | [Risk Register](../modules/risk-register.md) — `risks` | Implemented — Art. 12 logging gap; manual-create interlinks not settable |
 | 8.4 / A.5.3 | AI system impact assessment | [Impact Assessments](../modules/ai-impact-assessments.md) — AIIA records | Implemented |
 | A.6.2.4 / A.6.2.6 | Operation & monitoring of the AI system at runtime | [Trust Engine](../modules/trust-engine.md) — `sentinel/proxy.py` gateway + trust/guardrail/trace tables | Implemented (runtime); dashboard views partly telemetry |

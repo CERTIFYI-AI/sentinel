@@ -2,6 +2,8 @@
 
 * fix(honesty): **null-guard doc-jsonb and derived fields across 5 pages.** Agents.tsx: `trustScore`, `dailyCallCount`, `totalCallsLifetime`, `avgLatencyMs`, `maxBudget` wrapped in null checks with '—' fallback; `avgTrust` stat returns null (not 0) when no agents have declared trust scores. ModelDetail: drift score renders '—' instead of '0%' when no telemetry exists. AIImpactAssessments: `progressPct` null guard prevents 'undefined%' crash. IncidentLog: remediation `progressPct` null guard with '—' fallback and safe bar width.
 
+* docs(modules): **100% guide coverage (135/135).** GenAI Risk Profiles doc written (`genai-risk-profiles.md`), completing the last undocumented sidebar destination. Compliance mappings updated (EU AI Act Art. 9, ISO 42001 6.1.2/A.5.4). 23 additional stub module docs expanded to full template format in the same pass.
+
 * docs(modules): **autopilot.md rewritten from stub to full template** — Purpose, Why it exists, How it works, Features table, Interlinks, Compliance mapping (EU AI Act Art. 14, ISO/IEC 42001 A.9.2), Operations.
 
 * feat(compliance): **DB-side audit trail for ai_models (TD-018 closed, EU AI Act Art. 12).** New `fn_audit_governed()` trigger function writes append-only rows to `audit_log` on every INSERT/UPDATE/DELETE against `ai_models`, capturing the actor (from `auth.uid()` / JWT email), org, before/after JSON, and action. Fires in the database so it also captures direct-SQL and service-role writes the app layer would miss. EXECUTE revoked from anon/authenticated to prevent PostgREST RPC exposure. Migration: `20260902000001_audit_trigger_ai_models_art12.sql`.
