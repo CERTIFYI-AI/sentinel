@@ -1475,8 +1475,16 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 42,
+  "entryCount": 43,
   "entries": [
+    {
+      "type": "feat",
+      "scope": "ai-brain",
+      "summary": "**retrieval-augmented compliance evaluation** — `policy_knowledge_base` (pgvector, HNSW on `vector_cosine_ops`), a `match_policy_chunks` RPC, an ingestion service that chunks and embeds policy text, and an LLM judge that decides whether raw integration evidence satisfies a control *against the org's own written policy* rather than a generic notion of the framework. The platform already had keyword search over policies (`20260421000006`); what it lacked was retrieval by meaning, which is what matching a provider JSON payload to a prose clause needs. **Three departures from the obvious design.** (1) `org_id`, not `tenant_id`: the platform has one tenancy id-space and a vector store keyed on the legacy `tenant_id text` could not join to the evidence it judges without a lossy bridge. (2) A verdict is evidence, so it is stored — `ai_compliance_verdicts` keeps the model, the prompt version and the ids of the chunks the model was shown, because \"why did the platform say this control passed?\" cannot be answered by a row holding only the answer; the raw evidence is **never** stored, only a SHA-256 fingerprint. (3) **A `fail` does not go straight to the mesh.** `RISK_DETECTED` already has seven subscribers, one of which — AutoPauseAgent — pauses production models; wiring a probabilistic judge to that means an inference nobody read can take a model offline. Fails below `SENTINEL_AI_AUTO_ACTION_CONFIDENCE` (0.85) raise a `hitl_items` review instead, and an unreachable judge records `inconclusive` and queues a human — an API outage marking controls satisfied is the worst failure this module could have. The judge runs at `temperature=0` with a provider-enforced `response_format`, so a compliance decision is never regex-parsed out of prose, and the prompt fences the evidence as untrusted data because an S3 object key or a resource tag is user-controlled text that ends up in a finding. Verified against a real PostgreSQL 16 with pgvector: retrieval ranks correctly, the similarity threshold excludes unrelated chunks, `match_count` is clamped server-side, and an org-A query returns **zero** org-B rows despite an identical vector. 15 tests",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "feat",
       "scope": "settings",

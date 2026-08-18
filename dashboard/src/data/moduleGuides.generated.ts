@@ -58,7 +58,7 @@ export const GUIDE_TOTAL_ENTRIES = 135
 export const GUIDE_DOCUMENTED_ENTRIES = 135
 
 /** Module docs available in docs/modules/. */
-export const MODULE_DOCS_AVAILABLE = 95
+export const MODULE_DOCS_AVAILABLE = 96
 
 export const GUIDE_COLLECTIONS: GuideCollection[] = [
   {
