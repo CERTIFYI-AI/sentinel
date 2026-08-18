@@ -201,3 +201,18 @@ to the org `controls` register (see
 | 7.5.3 | Control of documented information | The catalog interlink is **read-only** — `framework_controls` is seeded by migration and never written here; it derives implementation status from existing rows and cannot weaken any evidence chain | N/A — read-only |
 | 9.1 | Monitoring reflects reality | Implementation status is derived from real clause-reference matches, never stored; an unreadable register renders "Implementation status unavailable", never a fabricated zero | Implemented |
 | A.6.2.6 | AI system impact/requirements addressed | Published requirements and their implementing controls are linked bidirectionally, so an assessor can trace a requirement to its control and back | Supporting |
+
+## Module Coverage — Cloud Evidence Adapters (AWS, Microsoft Azure)
+
+Read-only connectors that collect cloud security posture and link each finding
+to the org's controls (see
+[`docs/modules/integration-catalog.md`](../modules/integration-catalog.md)).
+
+| Clause | Requirement | Module & backing | Status |
+|---|---|---|---|
+| 9.1 | Monitoring, measurement, analysis and evaluation | Fourteen AWS checks and nine Azure checks run on a schedule and record dated findings, so control effectiveness is measured continuously rather than attested once a year | Implemented |
+| 9.2 | Internal audit — evidence with provenance | Every finding names its source, its check and when it ran; `control_finding_evidence` links it to the controls it evidences across the frameworks the org has actually adopted (a framework not enabled contributes no links — the mapper never invents a target) | Implemented |
+| 8.1 | Operational planning and control | Cloud configuration drift (public storage, unrotated keys, unencrypted volumes, open admin ports) is surfaced against the control it undermines, so operational control is evidenced from the running environment | Implemented |
+| A.6.2.6 | Operation monitoring | Continuous posture collection per connected account/subscription, with the scope of each observation stated (account-wide vs. one region, one subscription) | Implemented |
+| 7.5.3 | Control of documented information | Credentials are AES-256-GCM encrypted server-side and never reach the browser; raw provider payloads are retained for the audit trail and never rendered; no adapter holds a write permission on the provider or touches the database | Implemented |
+| 9.1 | Monitoring must reflect reality | A check that cannot see its subject returns NOT_AVAILABLE rather than a pass, and neither adapter is labelled `available` until it has been validated against a production tenant | Implemented |

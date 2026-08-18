@@ -110,8 +110,16 @@ async def process_job(conn: asyncpg.Connection, job: asyncpg.Record) -> None:
     adapter_cls, credentials_cls = get_adapter_class(slug)
     adapter = adapter_cls(credentials_cls(**decrypt_credentials(blob)))
 
-    await adapter.validate()
-    findings = await adapter.fetch_all()
+    try:
+        await adapter.validate()
+        findings = await adapter.fetch_all()
+    finally:
+        # An adapter that holds a connection pool (the Azure one keeps an
+        # httpx client) releases it here. Optional by design: adapters with
+        # nothing to release do not implement it.
+        aclose = getattr(adapter, "aclose", None)
+        if aclose is not None:
+            await aclose()
 
     for f in findings:
         await conn.execute(

@@ -8,7 +8,8 @@ instances), `integration_findings`, `control_finding_evidence` ·
 **Hook:** `dashboard/src/hooks/useIntegrationCatalog.ts` ·
 **Code:** `dashboard/src/components/integrations/IntegrationCatalog.tsx`,
 `dashboard/src/pages/controls/ControlDetail.tsx` (Automated Evidence tab) ·
-**Server:** `sentinel/integrations/` (registry, worker, crypto, control mapping)
+**Server:** `sentinel/integrations/` (registry, worker, crypto, control mapping),
+`sentinel/integrations/{github,aws,azure}/adapter.py`
 
 ## Purpose
 
@@ -24,10 +25,10 @@ evidence tables behind it — `integration_findings`, `control_finding_evidence`
 collection pipeline, a real control-mapping engine, and no way for a user to
 reach any of it. This module closes that gap.
 
-It also carries an honesty obligation. Of the 219 catalogued products, exactly
-**one** (`github`) ships an adapter. Rendering a Connect button on all 219 would
-promise evidence collection that cannot happen — the same class of defect as an
-unearned certification badge.
+It also carries an honesty obligation. Of the 217 catalogued products, **three**
+ship an adapter today — `github`, `aws` and `microsoft_azure`. Rendering a
+Connect button on all 217 would promise evidence collection that cannot happen —
+the same class of defect as an unearned certification badge.
 
 ## How it works
 
@@ -44,6 +45,18 @@ the Python worker refuses a slug absent from its registry
 (`sentinel/integrations/registry.py`), so client and server agree by
 construction rather than by comment.
 
+**The server is the tiebreaker.** `adapter_status` is set by a migration and the
+registry lives in Python; the two deploy separately, so they drift.
+`reconcileWithServer()` folds `GET /v1/integrations/available` over the
+catalogue before it renders: a product the server ships but the catalogue calls
+`catalogued` becomes connectable (as `beta`, never `available` — the registry
+proves an adapter exists, not that it is production-ready), and a product the
+catalogue advertises but the server does not know is withdrawn. If the backend
+cannot be reached the catalogue is used unchanged, because "no answer" is not
+evidence that nothing is connectable. Without this, a database that has not yet
+received the migration hides a Connect button the server would have accepted —
+which is exactly how AWS came to look permanently unconnectable.
+
 A catalogued-only product still shows its full operator prose — what it
 evidences, how evidence is pulled, what it maps to, connection steps — because
 that is genuinely useful for deciding which sources to prioritise.
@@ -51,10 +64,11 @@ that is genuinely useful for deciding which sources to prioritise.
 ### Enable / disable — where you fill in credentials
 
 **Connect** opens a form built from the provider's own
-`IntegrationConfig.credentialFields` (e.g. GitHub asks for an access token, an
-organization, and an optional API base URL for Enterprise Server). Submitting
-it posts to **`POST /v1/integrations/connect`** (`sentinel/integrations/api.py`),
-which:
+`IntegrationConfig.credentialFields` — GitHub asks for an access token, an
+organization and an optional Enterprise base URL; AWS asks for an access key
+pair and region, optionally a role to assume; Azure asks for the four values of
+an Entra ID app registration. Submitting it posts to
+**`POST /v1/integrations/connect`** (`sentinel/integrations/api.py`), which:
 
 1. refuses any slug with no registered adapter — the server is the authority,
    so the UI and the backend cannot disagree about what can collect;
@@ -80,6 +94,68 @@ server's own message and never echo submitted input.
   retained** — disconnecting a source must not erase the evidence trail it
   produced (EU AI Act Art. 12).
 - Both write an audit entry via `logAction`.
+
+### Shipped adapters
+
+Three today. Each is read-only against the provider — no adapter holds a write
+permission, and none touches the database; the worker persists what is
+returned.
+
+| Slug | Status | Auth | What it needs |
+| --- | --- | --- | --- |
+| `github` | available | PAT / GitHub App | `read:org`, repo metadata read, `security_events` read |
+| `aws` | beta | IAM keys, optionally `sts:AssumeRole` | AWS-managed `SecurityAudit` policy |
+| `microsoft_azure` | beta | Entra ID app registration (client credentials) | **Reader** on the subscription; `Policy.Read.All` on Graph for the MFA check |
+
+#### AWS — `sentinel/integrations/aws/adapter.py`
+
+Fourteen checks. Account-wide ones (IAM, S3, CloudTrail) cover the account;
+resource ones cover the configured region only, and every finding names the
+region it observed so a single-region result is never read as account-wide.
+
+| check_id | Category | What it looks at |
+| --- | --- | --- |
+| `aws.iam.root_mfa` | mfa_enforcement | Root user has an MFA device |
+| `aws.iam.user_mfa` | mfa_enforcement | Console users without MFA (programmatic-only users excluded) |
+| `aws.iam.password_policy` | access_control | Length, complexity, reuse prevention |
+| `aws.iam.access_key_age` | access_control | Active keys older than 90 days (CIS threshold) |
+| `aws.iam.admin_policy_attachments` | least_privilege | `AdministratorAccess` attached directly to users |
+| `aws.cloudtrail.multi_region` | audit_logging | A multi-region trail that is actually logging |
+| `aws.s3.public_access_block` | access_control | Account-level block, else per bucket |
+| `aws.s3.default_encryption` | encryption_at_rest | Default SSE per bucket |
+| `aws.ec2.ebs_encryption_default` | encryption_at_rest | Encrypt-new-volumes, per region |
+| `aws.rds.storage_encrypted` | encryption_at_rest | Instance storage encryption |
+| `aws.ec2.security_group_ingress` | network_security | Admin/database ports open to `0.0.0.0/0` or `::/0` |
+| `aws.kms.key_rotation` | secret_management | Automatic rotation on customer-managed symmetric keys |
+| `aws.guardduty.enabled` | incident_response | An enabled detector, not merely a present one |
+| `aws.backup.plans` | backup_recovery | AWS Backup plans (says plainly that service-native backups are invisible to it) |
+
+Requires `boto3`; install with `pip install 'sentinel-ai-grc[integrations]'`.
+The import is lazy, so the module loads without it and only a real connect
+attempt needs the SDK.
+
+#### Microsoft Azure — `sentinel/integrations/azure/adapter.py`
+
+Nine checks over the ARM and Microsoft Graph REST APIs via `httpx` — no
+management SDK, and therefore no new dependency. Scoped to one
+`subscription_id`; connect each subscription separately.
+
+| check_id | Category | What it looks at |
+| --- | --- | --- |
+| `azure.entra.conditional_access_mfa` | mfa_enforcement | An **enabled** Conditional Access policy with an MFA grant control |
+| `azure.rbac.owner_assignments` | least_privilege | Share of role assignments granting Owner |
+| `azure.storage.public_blob_access` | access_control | `allowBlobPublicAccess` (absence is not read as disabled) |
+| `azure.storage.https_only` | encryption_in_transit | Secure transfer required, minimum TLS 1.2 |
+| `azure.disks.encryption_at_rest` | encryption_at_rest | Managed disk encryption (platform-managed keys count) |
+| `azure.network.nsg_ingress` | network_security | Inbound Allow from Internet/`*` on an admin port or range |
+| `azure.keyvault.purge_protection` | secret_management | Purge protection on each vault |
+| `azure.monitor.activity_log_export` | audit_logging | A diagnostic setting with a real destination |
+| `azure.defender.plans` | vulnerability_management | Defender for Cloud plans above the free tier |
+
+Without `Policy.Read.All` the MFA check returns **NOT_AVAILABLE**, not FAILED —
+"we could not look" is a different fact from "MFA is not enforced", and
+reporting the second when only the first is true would put a finding in front
+of an auditor that nobody observed.
 
 ### Collection and control mapping
 
@@ -167,10 +243,11 @@ normalized fields above.
   states the two must agree; the worker and the connect endpoint both enforce
   it. `GET /v1/integrations/available` returns the server's own answer so the
   UI can cross-check.
-- **Why AWS and Azure cannot be connected yet:** they are catalogued, not
-  adapted. Making either connectable is the four steps above — the adapter is
-  the work, not the form. The catalogue entry already records what evidence
-  each would carry and how it would be pulled.
+- **Adapter maturity is stated, not implied.** `beta` means every check is
+  implemented and unit-tested but the connector has not been validated against
+  a production tenant; the detail sheet says so in the UI. Promoting a
+  connector to `available` is a separate change backed by a real sync, never a
+  wording tweak.
 - The backend requires `SENTINEL_CREDENTIAL_KEY` (credential encryption) and a
   database URL; without either, connect returns a clear 503 rather than
   storing anything.
@@ -178,6 +255,25 @@ normalized fields above.
   page cannot advertise a number the catalogue does not contain.
 
 ## History
+
+- **2026-08-30** — AWS and Microsoft Azure became connectable. Both were
+  catalogued only, so the product showed "no adapter ships for this product
+  yet" on the two most-asked-for evidence sources. Adds a 14-check AWS adapter
+  (boto3, lazy import) and a 9-check Azure adapter (ARM + Graph REST over the
+  `httpx` already in the tree, so no new dependency), both read-only, both
+  shipped as `beta` because neither has been run against a production tenant.
+  Adds `reconcileWithServer()` so a stale `adapter_status` can no longer hide a
+  Connect button the server would accept — the failure mode that made AWS look
+  permanently unconnectable. Client-side scrub of any `docs_hint` naming a
+  competing GRC platform, mirroring migration `20260829000002`, so the text
+  disappears on the next frontend release instead of waiting on a database
+  migration. Verifying that scrub against a real Postgres found three rows it
+  had missed: `connect_steps` on `openai_azure_openai`, `anthropic_claude_api`
+  and `langsmith_langfuse` instructed the operator to enter the credential *in
+  a competitor's product*. `20260830000002` rewrites those three phrases (a
+  rewrite, not a clear — the sentence is our own walkthrough, and the place a
+  credential is entered really is Sentinel), and `sanitizeConnectSteps()`
+  mirrors it client-side.
 
 - **2026-08-28** — Module created. Before this, `integration_catalog` (219
   rows), `integration_findings`, `control_finding_evidence` and

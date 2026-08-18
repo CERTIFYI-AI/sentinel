@@ -16,9 +16,10 @@
 //                    'catalogued'  reference only — no adapter, cannot be
 //                                  connected, collects nothing
 //
-// Today exactly ONE product ('github') is 'available'. Presenting the other
-// 218 as connectable would be fabricated capability, so `isConnectable`
-// gates every connect affordance in the UI on the real status.
+// Presenting a product as connectable when no adapter stands behind it would
+// be fabricated capability, so `isConnectable` gates every connect affordance
+// in the UI on the real status, and the server refuses any slug absent from
+// its own registry.
 //
 // Reads THROW on a real query failure so the page renders an error state
 // rather than an empty catalogue that looks like "no integrations exist".
@@ -47,15 +48,78 @@ export interface CatalogEntry {
   adapterStatus: AdapterStatus
 }
 
+/**
+ * Competing GRC platforms. They are not evidence sources for us, and the
+ * seeded catalogue listed some of them as if they were.
+ *
+ * Migration `20260829000002` removes the rows and clears the pointers. This
+ * mirror exists because the two halves deploy independently: a database that
+ * has not yet received that migration would keep rendering the competitor
+ * text no matter how many times the frontend ships. Rather than let the user
+ * wait on deploy order, both ends apply the same rule.
+ */
+export const COMPETITOR_GRC_SLUGS: readonly string[] = [
+  'vanta', 'verifywise', 'drata', 'secureframe', 'sprinto', 'tugboatlogic',
+]
+
+const THIRD_PARTY_GRC = /vanta|verifywise|drata|secureframe|sprinto|tugboat/i
+
+/**
+ * A `docs_hint` is supposed to point at the PROVIDER's own documentation.
+ * 163 seeded rows instead read "Vanta Help Center → Cloud / Infrastructure →
+ * search exact product 'AWS'", which is a competitor's help centre advertised
+ * inside our product.
+ *
+ * Dropped, not rewritten: we hold no verified documentation URL for 219
+ * products, and inventing 163 of them would be fabricated data — worse than
+ * an omitted line. The UI renders `docsHint` only when present, so null
+ * simply omits it.
+ */
+export function sanitizeDocsHint(hint: string | null | undefined): string | null {
+  const value = (hint ?? '').trim()
+  if (!value) return null
+  return THIRD_PARTY_GRC.test(value) ? null : value
+}
+
+/**
+ * Three seeded `connect_steps` told the operator to enter the credential "in
+ * Vanta" — our own connection walkthrough instructing the reader to go and set
+ * the integration up in a competitor's product. Worse than the `docs_hint`
+ * case, because it is not a reference but an instruction someone may follow.
+ *
+ * Rewritten rather than dropped: the sentence is OUR walkthrough describing
+ * where a credential is entered, and that place is Sentinel. Everything else
+ * in the step — which key, which role, which scope — is provider fact from the
+ * source workbook and is left untouched.
+ *
+ * Bounded to literal phrases, deliberately. A blanket name substitution would
+ * corrupt any row using the word in another sense, and this mirrors migration
+ * `20260830000002` exactly so the two cannot disagree.
+ */
+const CONNECT_STEP_REWRITES: ReadonlyArray<readonly [string, string]> = [
+  ['webhook export to Vanta ingestion queue',
+   'webhook export to the Sentinel evidence ingestion queue'],
+  [' in Vanta.', ' in Sentinel.'],
+]
+
+export function sanitizeConnectSteps(steps: string | null | undefined): string | null {
+  const value = (steps ?? '').trim()
+  if (!value) return null
+  return CONNECT_STEP_REWRITES.reduce(
+    (text, [from, to]) => text.split(from).join(to),
+    value,
+  )
+}
+
 const mapRow = (r: Record<string, any>): CatalogEntry => ({
   slug: String(r.slug),
   name: r.name ?? '',
   category: r.category ?? 'other',
   whyNeeded: r.why_needed ?? null,
   evidencePull: r.evidence_pull ?? null,
-  connectSteps: r.connect_steps ?? null,
+  connectSteps: sanitizeConnectSteps(r.connect_steps),
   evidenceMapping: r.evidence_mapping ?? null,
-  docsHint: r.docs_hint ?? null,
+  docsHint: sanitizeDocsHint(r.docs_hint),
   tier: typeof r.tier === 'number' ? r.tier : 3,
   adapterStatus: (r.adapter_status as AdapterStatus) ?? 'catalogued',
 })
@@ -80,7 +144,9 @@ export async function fetchIntegrationCatalog(): Promise<CatalogEntry[]> {
     console.warn('[integrationCatalogService] fetch:', error.message)
     throw new Error(error.message)
   }
-  return (data ?? []).map(mapRow)
+  return (data ?? [])
+    .map(mapRow)
+    .filter(e => !COMPETITOR_GRC_SLUGS.includes(e.slug))
 }
 
 // ── Pure helpers (no I/O; unit tested) ──────────────────────────────────────
@@ -99,6 +165,47 @@ export const isConnectable = (e: Pick<CatalogEntry, 'adapterStatus'>): boolean =
 /** Human label for an adapter status. */
 export const adapterStatusLabel = (s: AdapterStatus): string =>
   s === 'available' ? 'Available' : s === 'beta' ? 'Beta' : 'Catalogued'
+
+/**
+ * Reconcile the catalogue's `adapter_status` against what the SERVER will
+ * actually accept (`GET /v1/integrations/available`).
+ *
+ * The two are maintained separately — `adapter_status` by a migration, the
+ * registry by Python code — and they deploy separately, so they drift. Both
+ * directions of drift hurt a user:
+ *
+ *   * catalogue says `catalogued`, server ships an adapter → the Connect
+ *     button is hidden and the product looks permanently unavailable, which
+ *     is exactly the "unable to connect AWS" report this reconciliation
+ *     exists to answer;
+ *   * catalogue says `available`, server has no adapter → Connect is offered
+ *     and 400s.
+ *
+ * The server wins, because it is the thing that accepts or rejects the
+ * request. An upgrade lands on `beta`, never `available`: we know an adapter
+ * exists, and claiming production maturity on that basis would be inventing a
+ * fact the catalogue is supposed to carry.
+ *
+ * `serverSlugs === null` means the backend could not be reached. That is not
+ * evidence about any product, so the catalogue is returned untouched rather
+ * than concluding nothing is connectable.
+ */
+export function reconcileWithServer(
+  entries: CatalogEntry[],
+  serverSlugs: string[] | null,
+): CatalogEntry[] {
+  if (!serverSlugs) return entries
+  const ships = new Set(serverSlugs)
+  return entries.map(e => {
+    if (ships.has(e.slug) && e.adapterStatus === 'catalogued') {
+      return { ...e, adapterStatus: 'beta' as AdapterStatus }
+    }
+    if (!ships.has(e.slug) && isConnectable(e)) {
+      return { ...e, adapterStatus: 'catalogued' as AdapterStatus }
+    }
+    return e
+  })
+}
 
 /** Distinct categories present, in stable alphabetical order. */
 export function catalogCategories(entries: CatalogEntry[]): string[] {
