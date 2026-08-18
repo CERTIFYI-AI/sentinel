@@ -425,9 +425,13 @@ Set `verifier.embedding_cache_size: 1000` in `configs/sentinel.yaml`.
 
 #### Dashboard shows no data
 
-**Cause**: Dashboard connecting to wrong API endpoint.
+**Cause**: Supabase not reachable, or the browser session is not signed in.
 
-Verify `VITE_SENTINEL_API_URL` in `dashboard/.env` points to the running Sentinel instance.
+The dashboard reads its data from Supabase directly, so verify
+`VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in `dashboard/.env` and that you
+are signed in. (`VITE_SENTINEL_API_URL` is no longer used — the FastAPI host was
+retired; connect runs as a Supabase Edge Function and the enforcement gateway is
+deployed separately. See `docs/architecture/deployment-topology.md`.)
 
 #### Charts not updating in real-time
 

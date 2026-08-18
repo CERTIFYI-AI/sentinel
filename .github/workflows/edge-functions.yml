@@ -1,0 +1,39 @@
+# Edge function checks — currently the crypto interop contract.
+#
+# WHY THIS EXISTS: the integrations-connect edge function encrypts credentials
+# that the Python worker must decrypt byte-for-byte. crypto_interop_test.ts pins
+# that contract against a fixed vector, but a test only protects you if it runs.
+# Nothing ran Deno in CI, so the contract was asserted in docs but unenforced.
+# This runs it on every change to the functions.
+
+name: Edge Functions
+
+on:
+  pull_request:
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/edge-functions.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'supabase/functions/**'
+      - '.github/workflows/edge-functions.yml'
+
+concurrency:
+  group: edge-functions-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  deno-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      # Runs *_test.ts under supabase/functions/. crypto_interop_test.ts imports
+      # only crypto.ts (clean TS) + the std assert lib, so it type-checks and
+      # runs without touching index.ts's runtime-resolved remote imports.
+      - name: Run edge-function tests (crypto interop contract)
+        run: deno test supabase/functions/
