@@ -1,7 +1,6 @@
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { fromDB, mutateDB, getTenantId } from '@/lib/dataSource'
+import { fromDB, mutateDB } from '@/lib/dataSource'
 
-const TENANT_ID = getTenantId()
 
 export async function fetchAllDepartments(filters: Record<string,any> = {}) {
   if (!isSupabaseConfigured()) return []
@@ -27,7 +26,7 @@ export async function fetchDepartmentsById(id: string) {
 export async function upsertDepartments(record: any) {
   if (!isSupabaseConfigured()) return record
   try {
-    const { data, error } = await supabase.from('departments').upsert({ ...record, tenant_id: TENANT_ID }).select().single()
+    const { data, error } = await supabase.from('departments').upsert(record).select().single()
     if (error) throw error
     return data
   } catch (e) { console.warn('[departmentsService] upsert:', e); return record }

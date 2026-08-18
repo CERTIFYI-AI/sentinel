@@ -55,10 +55,10 @@ export interface GuideCollection {
 export const GUIDE_TOTAL_ENTRIES = 134
 
 /** Destinations backed by an authored module doc. */
-export const GUIDE_DOCUMENTED_ENTRIES = 130
+export const GUIDE_DOCUMENTED_ENTRIES = 134
 
 /** Module docs available in docs/modules/. */
-export const MODULE_DOCS_AVAILABLE = 87
+export const MODULE_DOCS_AVAILABLE = 90
 
 export const GUIDE_COLLECTIONS: GuideCollection[] = [
   {
@@ -929,23 +929,169 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
     "id": "assess-validate",
     "title": "ASSESS & VALIDATE",
     "entryCount": 13,
-    "documentedCount": 12,
+    "documentedCount": 13,
     "entries": [
       {
         "label": "Impact Assessments",
         "route": "/aiia",
         "parentLabel": null,
-        "hasDoc": false,
-        "docPath": null,
-        "title": "Impact Assessments",
-        "purpose": null,
-        "why": null,
-        "how": [],
+        "hasDoc": true,
+        "docPath": "docs/modules/ai-impact-assessments.md",
+        "title": "AI Impact Assessments (AIIA)",
+        "purpose": "The register of impact assessments carried out on AI systems — FRIA, DPIA and AIIA alike. Each record ties a model or use case to an assessed risk level, the findings behind that judgement, the mitigations agreed, and the review date at which the judgement expires.",
+        "why": "An AI system's risk classification is a claim, and a claim an auditor will ask you to evidence. The EU AI Act requires a fundamental-rights impact assessment for high-risk deployments (Art. 27) and GDPR requires a DPIA where processing is likely to be high risk (Art. 35). This module is where that assessment lives as a record with an owner, a reviewer and an expiry — rather than as a document somebody once wrote.",
+        "how": [
+          "The list reads ai_impact_assessments through useAiiaData, with filters for",
+          "status, type and risk level, and CSV export via exportCsv.",
+          "A record moves through draft → in_review → approved | rejected. progress_pct",
+          "tracks completion; rag_status (green | amber | red) carries the assessor's",
+          "headline judgement separately from risk_level.",
+          "findings and mitigations are jsonb arrays edited on the record's",
+          "Overview and Mitigations tabs.",
+          "next_review is the date the assessment must be revisited. approved_at",
+          "records when sign-off happened.",
+          "Reads and writes throw on failure, so the page renders a real error state",
+          "rather than an empty list that looks like \"no assessments\"."
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
-        "fields": [],
+        "interlinks": [
+          "→ Model Registry. model_id resolves against ai_models.id; the",
+          "assessment deep-links to /models/inventory/<id>.",
+          "→ Use Cases. use_case_id resolves against use_cases.id.",
+          "← Risk Classification. A model's tier is evidenced by its assessments.",
+          "/aiia/:id is a stable, shareable URL for a single record (RecordDeepLink)."
+        ],
+        "compliance": [
+          "EU AI Act Art. 27 — fundamental-rights impact assessment for high-risk",
+          "deployments: this is the register that holds them.",
+          "EU AI Act Art. 9 — risk management as a continuous process; next_review",
+          "is what makes it continuous rather than one-off.",
+          "GDPR Art. 35 — DPIA, carried as an assessment_type.",
+          "ISO/IEC 42001 §6.1.2 / §8.2 — AI risk assessment and impact assessment.",
+          "### Known gap",
+          "This module does not currently write to the audit log — logAction does not",
+          "appear in its page or service. Approving or rejecting an assessment is a",
+          "state-changing governance decision, so it should be traceable under EU AI Act",
+          "Art. 12. Recorded here rather than left implicit; closing it means adding",
+          "logAction on the status-transition and delete paths."
+        ],
+        "operations": [
+          "Table is org-scoped. tenant_id is NOT NULL with a DB default, so the client",
+          "must not send it (CLAUDE.md First principle #3).",
+          "model_id is uuid and use_case_id is text — they are deliberately",
+          "different types because the two parent tables key differently. Do not",
+          "\"normalise\" one to the other without migrating the parent."
+        ],
+        "fields": [
+          [
+            "Column",
+            "Type",
+            "Notes"
+          ],
+          [
+            "id",
+            "text",
+            "Primary key"
+          ],
+          [
+            "assessment_id",
+            "text",
+            "Human-facing reference"
+          ],
+          [
+            "title",
+            "text",
+            "Assessment name"
+          ],
+          [
+            "assessment_type",
+            "text",
+            "FRIA / DPIA / AIIA"
+          ],
+          [
+            "model_id",
+            "uuid",
+            "→ ai_models.id — the one model id-space"
+          ],
+          [
+            "use_case_id",
+            "text",
+            "→ use_cases.id"
+          ],
+          [
+            "risk_level",
+            "text",
+            "low \\",
+            "medium \\",
+            "high \\",
+            "critical"
+          ],
+          [
+            "status",
+            "text",
+            "draft \\",
+            "in_review \\",
+            "approved \\",
+            "rejected"
+          ],
+          [
+            "progress_pct",
+            "numeric",
+            "Completion, 0–100"
+          ],
+          [
+            "assessor_id / reviewer_id",
+            "text",
+            "Who performed and who reviewed"
+          ],
+          [
+            "summary",
+            "text",
+            "Narrative conclusion"
+          ],
+          [
+            "affected_entities",
+            "text[]",
+            "Groups or systems in scope"
+          ],
+          [
+            "rag_status",
+            "text",
+            "green \\",
+            "amber \\",
+            "red"
+          ],
+          [
+            "findings",
+            "jsonb",
+            "Findings raised"
+          ],
+          [
+            "mitigations",
+            "jsonb",
+            "Mitigations agreed"
+          ],
+          [
+            "approved_at",
+            "timestamptz",
+            "Sign-off time"
+          ],
+          [
+            "next_review",
+            "date",
+            "When the assessment expires"
+          ],
+          [
+            "org_id",
+            "uuid",
+            "Tenant scoping"
+          ],
+          [
+            "tenant_id",
+            "text",
+            "NOT NULL, DB default current_user_org_id()::text"
+          ]
+        ],
         "noDocReason": null
       },
       {
@@ -1691,7 +1837,7 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
     "id": "trust-engine-gateways",
     "title": "TRUST ENGINE & GATEWAYS",
     "entryCount": 14,
-    "documentedCount": 13,
+    "documentedCount": 14,
     "entries": [
       {
         "label": "Runtime Trust",
@@ -1913,17 +2059,121 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "label": "Performance Monitoring",
         "route": "/performance-monitoring",
         "parentLabel": null,
-        "hasDoc": false,
-        "docPath": null,
+        "hasDoc": true,
+        "docPath": "docs/modules/performance-monitoring.md",
         "title": "Performance Monitoring",
-        "purpose": null,
-        "why": null,
-        "how": [],
+        "purpose": "The fleet-wide view of how registered models are actually behaving in production: latency, throughput, accuracy, error rate, drift and cost per inference, each as a recorded time series rather than a headline number.",
+        "why": "Post-market monitoring is an obligation, not a nice-to-have: a provider of a high-risk AI system must monitor performance across its lifetime and act when it degrades. Drift and error-rate trends are also the earliest signal that a model needs re-validation or retirement, which is why this module sits next to the registry rather than inside an ops dashboard.",
+        "how": [
+          "One card per model in the registry, keyed by ai_models.id (uuid) — the same",
+          "id-space as everything else, so a card always resolves to a real model.",
+          "Each card shows the latest recorded metrics plus a trend series drawn from",
+          "the real recorded_at timestamps, rendered with Recharts.",
+          "A model with no telemetry renders an honest empty state. There are no",
+          "fabricated endpoints, no invented history and no synthetic SLO targets — if a",
+          "metric was never recorded, nothing is drawn for it.",
+          "?model=<uuid> filters the page to a single model, with a dismissible chip,",
+          "following the platform's deep-link convention.",
+          "Refresh invalidates the React Query cache rather than mutating anything; this",
+          "module is read-only."
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
-        "fields": [],
+        "interlinks": [
+          "→ Model Registry. Each card deep-links to /models/inventory/<model_id>.",
+          "← Model Registry. A model's detail surfaces its recorded performance.",
+          "→ Model Efficiency / Energy. Cost and throughput here pair with the",
+          "efficiency modules, which read their own tables.",
+          "Shares model_performance_metrics with the model analytics service, so the",
+          "registry and this page never disagree about a number."
+        ],
+        "compliance": [
+          "EU AI Act Art. 72 — post-market monitoring: this is the surface that",
+          "evidences it.",
+          "EU AI Act Art. 15 — accuracy, robustness and cybersecurity, measured over",
+          "time rather than asserted once.",
+          "EU AI Act Art. 12 — record-keeping: recorded_at gives every sample a",
+          "timestamp that survives independent of the UI.",
+          "ISO/IEC 42001 §9.1 — monitoring, measurement, analysis and evaluation."
+        ],
+        "operations": [
+          "Read-only. There is no write path and therefore no logAction requirement.",
+          "model_name is denormalised for display convenience only. Resolve names from",
+          "ai_models at render time; never join on it.",
+          "The page shows what has been recorded. If a card looks empty, the fix is in",
+          "whatever populates model_performance_metrics, not here."
+        ],
+        "fields": [
+          [
+            "Column",
+            "Type",
+            "Notes"
+          ],
+          [
+            "id",
+            "uuid",
+            "Primary key"
+          ],
+          [
+            "org_id",
+            "uuid",
+            "Tenant scoping, DB default current_user_org_id()"
+          ],
+          [
+            "model_id",
+            "uuid",
+            "→ ai_models.id"
+          ],
+          [
+            "model_name",
+            "text",
+            "Denormalised label; the id is authoritative"
+          ],
+          [
+            "recorded_at",
+            "timestamptz",
+            "When the sample was taken — drives the trend axis"
+          ],
+          [
+            "latency_p50 / latency_p99",
+            "numeric",
+            "Latency percentiles"
+          ],
+          [
+            "throughput",
+            "numeric",
+            "Requests per unit time"
+          ],
+          [
+            "accuracy",
+            "numeric",
+            "Model accuracy at the sample"
+          ],
+          [
+            "error_rate",
+            "numeric",
+            "Error fraction"
+          ],
+          [
+            "drift_score",
+            "numeric",
+            "Drift signal"
+          ],
+          [
+            "cost_per_inference",
+            "numeric",
+            "Unit cost"
+          ],
+          [
+            "request_count",
+            "numeric",
+            "Requests in the sample window"
+          ],
+          [
+            "metadata",
+            "jsonb",
+            "Free-form sample context"
+          ]
+        ],
         "noDocReason": null
       },
       {
@@ -6563,7 +6813,7 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
     "id": "admin",
     "title": "ADMIN",
     "entryCount": 18,
-    "documentedCount": 16,
+    "documentedCount": 18,
     "entries": [
       {
         "label": "IAM & Roles",
@@ -6756,34 +7006,204 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "label": "Resilience",
         "route": "/continuity",
         "parentLabel": null,
-        "hasDoc": false,
-        "docPath": null,
-        "title": "Resilience",
-        "purpose": null,
-        "why": null,
-        "how": [],
+        "hasDoc": true,
+        "docPath": "docs/modules/business-continuity.md",
+        "title": "Business Continuity & Resilience",
+        "purpose": "The register of business continuity plans: what each plan covers, its current standby/active state, which incident activated it, and when.",
+        "why": "When an AI system that a business depends on fails, the question is not whether somebody wrote a continuity plan but whether the current one can be produced, shows an owner, and has been tested. Holding plans as records — rather than as documents in a drive — is what makes activation auditable after the fact.",
+        "how": [
+          "The list reads bcp_plans through useBcpPlansData, with search and filters",
+          "by status and type, and renders skeleton / empty / error states.",
+          "A plan's detail opens in a sheet with Overview, Recovery,",
+          "Dependencies, Contacts and Tests tabs.",
+          "status defaults to STANDBY at the database. activated_by_incident and",
+          "activated_at record an activation against the incident that caused it.",
+          "Reads and writes throw on failure; an empty table renders an honest empty",
+          "state rather than seeded example plans. (An earlier version returned",
+          "fabricated MDL-00x plans whenever the table was empty or the query failed —",
+          "removed.)"
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
-        "fields": [],
+        "interlinks": [
+          "→ Incidents. activated_by_incident names the incident that triggered",
+          "activation.",
+          "→ Business Impact Analysis. BIA (/bia, bia_records) establishes the",
+          "impact and recovery targets that a plan exists to meet.",
+          "→ Tabletop Exercises. Tabletops are how a plan gets tested."
+        ],
+        "compliance": [
+          "ISO/IEC 42001 §8.1 — operational planning and control for AI systems the",
+          "business depends on.",
+          "ISO/IEC 27001:2022 A.5.29 / A.5.30 — information security during",
+          "disruption, and ICT readiness for business continuity.",
+          "EU AI Act Art. 15 — robustness, including resilience to failure.",
+          "### Known gaps",
+          "Two, recorded rather than papered over:",
+          "1. No audit logging. logAction does not appear in this module's page or",
+          "service, so activating a plan is not written to the audit trail. Activation",
+          "is a material governance event and should be traceable (EU AI Act Art. 12).",
+          "2. RTO/RPO are not backed by the schema. The page reads plan.rto /",
+          "plan.rto_hours (and the RPO equivalents), and bcp_plans has none of those"
+        ],
+        "operations": [
+          "org_id is filled by the database. The client must never send a scoping",
+          "column (CLAUDE.md First principle #3).",
+          "Historical note: upsertBcpPlans used to send tenant_id, a column",
+          "bcp_plans does not have. PostgREST rejects a row containing an unknown",
+          "column, so every save failed until this was removed",
+          "(20260827000001_org_scoping_defaults_repair.sql and the service fix).",
+          "ux_bcp_plans_org_code makes plan_code unique per org — an upsert with a",
+          "duplicate code updates rather than inserts."
+        ],
+        "fields": [
+          [
+            "Column",
+            "Type",
+            "Notes"
+          ],
+          [
+            "id",
+            "uuid",
+            "Primary key"
+          ],
+          [
+            "org_id",
+            "uuid",
+            "NOT NULL, DB default current_user_org_id()"
+          ],
+          [
+            "plan_code",
+            "text",
+            "Human-facing reference; unique per org with org_id"
+          ],
+          [
+            "name",
+            "text",
+            "Plan name"
+          ],
+          [
+            "status",
+            "text",
+            "NOT NULL, DB default 'STANDBY'"
+          ],
+          [
+            "activated_by_incident",
+            "text",
+            "Incident reference that activated the plan"
+          ],
+          [
+            "activated_at",
+            "timestamptz",
+            "Activation time"
+          ],
+          [
+            "created_at / updated_at",
+            "timestamptz",
+            "NOT NULL, default now()"
+          ]
+        ],
         "noDocReason": null
       },
       {
         "label": "Business Continuity",
         "route": "/continuity",
         "parentLabel": "Resilience",
-        "hasDoc": false,
-        "docPath": null,
-        "title": "Business Continuity",
-        "purpose": null,
-        "why": null,
-        "how": [],
+        "hasDoc": true,
+        "docPath": "docs/modules/business-continuity.md",
+        "title": "Business Continuity & Resilience",
+        "purpose": "The register of business continuity plans: what each plan covers, its current standby/active state, which incident activated it, and when.",
+        "why": "When an AI system that a business depends on fails, the question is not whether somebody wrote a continuity plan but whether the current one can be produced, shows an owner, and has been tested. Holding plans as records — rather than as documents in a drive — is what makes activation auditable after the fact.",
+        "how": [
+          "The list reads bcp_plans through useBcpPlansData, with search and filters",
+          "by status and type, and renders skeleton / empty / error states.",
+          "A plan's detail opens in a sheet with Overview, Recovery,",
+          "Dependencies, Contacts and Tests tabs.",
+          "status defaults to STANDBY at the database. activated_by_incident and",
+          "activated_at record an activation against the incident that caused it.",
+          "Reads and writes throw on failure; an empty table renders an honest empty",
+          "state rather than seeded example plans. (An earlier version returned",
+          "fabricated MDL-00x plans whenever the table was empty or the query failed —",
+          "removed.)"
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
-        "fields": [],
+        "interlinks": [
+          "→ Incidents. activated_by_incident names the incident that triggered",
+          "activation.",
+          "→ Business Impact Analysis. BIA (/bia, bia_records) establishes the",
+          "impact and recovery targets that a plan exists to meet.",
+          "→ Tabletop Exercises. Tabletops are how a plan gets tested."
+        ],
+        "compliance": [
+          "ISO/IEC 42001 §8.1 — operational planning and control for AI systems the",
+          "business depends on.",
+          "ISO/IEC 27001:2022 A.5.29 / A.5.30 — information security during",
+          "disruption, and ICT readiness for business continuity.",
+          "EU AI Act Art. 15 — robustness, including resilience to failure.",
+          "### Known gaps",
+          "Two, recorded rather than papered over:",
+          "1. No audit logging. logAction does not appear in this module's page or",
+          "service, so activating a plan is not written to the audit trail. Activation",
+          "is a material governance event and should be traceable (EU AI Act Art. 12).",
+          "2. RTO/RPO are not backed by the schema. The page reads plan.rto /",
+          "plan.rto_hours (and the RPO equivalents), and bcp_plans has none of those"
+        ],
+        "operations": [
+          "org_id is filled by the database. The client must never send a scoping",
+          "column (CLAUDE.md First principle #3).",
+          "Historical note: upsertBcpPlans used to send tenant_id, a column",
+          "bcp_plans does not have. PostgREST rejects a row containing an unknown",
+          "column, so every save failed until this was removed",
+          "(20260827000001_org_scoping_defaults_repair.sql and the service fix).",
+          "ux_bcp_plans_org_code makes plan_code unique per org — an upsert with a",
+          "duplicate code updates rather than inserts."
+        ],
+        "fields": [
+          [
+            "Column",
+            "Type",
+            "Notes"
+          ],
+          [
+            "id",
+            "uuid",
+            "Primary key"
+          ],
+          [
+            "org_id",
+            "uuid",
+            "NOT NULL, DB default current_user_org_id()"
+          ],
+          [
+            "plan_code",
+            "text",
+            "Human-facing reference; unique per org with org_id"
+          ],
+          [
+            "name",
+            "text",
+            "Plan name"
+          ],
+          [
+            "status",
+            "text",
+            "NOT NULL, DB default 'STANDBY'"
+          ],
+          [
+            "activated_by_incident",
+            "text",
+            "Incident reference that activated the plan"
+          ],
+          [
+            "activated_at",
+            "timestamptz",
+            "Activation time"
+          ],
+          [
+            "created_at / updated_at",
+            "timestamptz",
+            "NOT NULL, default now()"
+          ]
+        ],
         "noDocReason": null
       },
       {

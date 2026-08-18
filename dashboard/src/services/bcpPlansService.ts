@@ -11,9 +11,7 @@
 // fake success (CLAUDE.md, First principle #4).
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { getTenantId } from '@/lib/dataSource'
 
-const TENANT_ID = getTenantId()
 
 export async function fetchAllBcpPlans(filters: Record<string, any> = {}) {
   if (!isSupabaseConfigured()) return []
@@ -34,7 +32,7 @@ export async function fetchBcpPlansById(id: string) {
 
 export async function upsertBcpPlans(record: any) {
   if (!isSupabaseConfigured()) throw new Error('Supabase is not configured — cannot save BCP plan.')
-  const { data, error } = await supabase.from('bcp_plans').upsert({ ...record, tenant_id: TENANT_ID }).select().single()
+  const { data, error } = await supabase.from('bcp_plans').upsert(record).select().single()
   if (error) throw new Error(error.message)
   return data
 }

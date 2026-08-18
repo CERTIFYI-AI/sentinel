@@ -1475,8 +1475,32 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 6,
+  "entryCount": 9,
   "entries": [
+    {
+      "type": "fix",
+      "scope": "write-paths",
+      "summary": "repair four broken create/edit paths. `bcpPlansService`, `departmentsService`, `redTeamFindingsService` and `trainingService` each sent `tenant_id` on upsert to tables that have **no such column** (`bcp_plans`, `departments`, `red_team_findings`, `training_courses` are scoped by `org_id`). PostgREST rejects a row carrying an unknown column, so **every save on Business Continuity, Departments, Red Team Findings and Training Courses failed** at the API boundary. The services now send only the record and let the database fill the scoping column (CLAUDE.md First principle #3). `20260827000001_org_scoping_defaults_repair.sql` supplies the `DEFAULT current_user_org_id()` those columns needed for that to work — `departments.org_id` was `NOT NULL` with no default at all, so dropping the client value alone would have traded one write failure for a NOT NULL violation. Idempotent, self-verifying (raises if any of the four still lacks a default), and confirmed against a real Postgres replay",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "docs",
+      "scope": "modules",
+      "summary": "document the last four undocumented menu destinations — `ai-impact-assessments.md` (`/aiia`), `performance-monitoring.md` (`/performance-monitoring`) and `business-continuity.md` (`/continuity`, reached as both Resilience and Business Continuity). Written from the real schema, services and pages, with two honest gaps recorded rather than smoothed over: neither AIIA nor Business Continuity writes to the audit log (EU AI Act Art. 12), and the continuity page's RTO/RPO cells read columns `bcp_plans` does not have, so they always render `N/A`. **User guide coverage reaches 134/134 menu destinations (100%)**",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "fix",
+      "scope": "compliance",
+      "summary": "framework cards on `/compliance` deep-link to `/frameworks?open=<framework_id>` instead of the generic list, so a card opens that framework's own Requirements tab — its published control catalog — rather than making the reader find it again",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "feat",
       "scope": "side-panels",
