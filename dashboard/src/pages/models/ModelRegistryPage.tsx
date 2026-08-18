@@ -3,8 +3,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Eye, PencilSimple, Trash, Plus, Brain, CheckCircle, Warning,
-  MagnifyingGlass, Funnel, Export, Siren, ChartLine, FilePdf,
-  ShieldWarning, ArrowUp, ArrowDown, Minus, Info, ArrowRight,
+  MagnifyingGlass, Funnel, Export, Siren, ShieldWarning,
 } from '@phosphor-icons/react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Skeleton } from '../../components/ui/skeleton';
@@ -12,17 +11,11 @@ import { Badge } from '../../components/ui/badge';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Button } from '../../components/ui/button';
 import { Input } from '../../components/ui/input';
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from '../../components/ui/sheet';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../../components/ui/dialog';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
-import {
-  LineChart, Line, XAxis, YAxis, CartesianGrid,
-  Tooltip as RechartsTooltip, ResponsiveContainer, ReferenceLine,
-} from 'recharts';
 import {
   Model, severityColor, statusColor, formatDate,
 } from '../../data/seed';
@@ -91,66 +84,6 @@ function resolveLifecycleIndex(status: string): number {
   return idx >= 0 ? idx : 0;
 }
 
-function LifecycleStepper({ status }: { status: string }) {
-  const activeIdx = resolveLifecycleIndex(status);
-
-  return (
-    <div style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))', padding: 16 }}>
-      <p className="text-xs font-semibold mb-3" style={{ color: 'hsl(var(--text-4))' }}>Lifecycle Stage</p>
-      <div className="flex items-center" style={{ gap: 0 }}>
-        {LIFECYCLE_STAGES.map((stage, idx) => {
-          const isActive = idx === activeIdx;
-          const isPast = idx < activeIdx;
-          const dotColor = isActive ? stage.color : isPast ? stage.color : 'hsl(var(--border))';
-          const labelColor = isActive ? stage.color : isPast ? 'hsl(var(--text-3))' : 'hsl(var(--text-4))';
-          const lineColor = isPast ? LIFECYCLE_STAGES[idx].color : 'hsl(var(--border))';
-
-          return (
-            <div key={stage.key} className="flex items-center" style={{ flex: idx < LIFECYCLE_STAGES.length - 1 ? 1 : undefined }}>
-              {/* Stage dot + label */}
-              <div className="flex flex-col items-center" style={{ minWidth: 56 }}>
-                <div style={{
-                  width: isActive ? 20 : 12,
-                  height: isActive ? 20 : 12,
-                  borderRadius: 0,
-                  background: isActive ? dotColor : isPast ? dotColor : 'transparent',
-                  border: `2px solid ${dotColor}`,
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  transition: 'all 0.2s',
-                }}>
-                  {isActive && (
-                    <div style={{ width: 8, height: 8, background: 'hsl(var(--bg-surface))', borderRadius: 0 }} />
-                  )}
-                  {isPast && (
-                    <CheckCircle size={10} weight="bold" style={{ color: 'hsl(var(--bg-surface))' }} />
-                  )}
-                </div>
-                <span className="text-xs mt-1.5 text-center" style={{
-                  color: labelColor,
-                  fontWeight: isActive ? 700 : 400,
-                  fontSize: 10,
-                  whiteSpace: 'nowrap',
-                }}>
-                  {stage.label}
-                </span>
-              </div>
-              {/* Connector line */}
-              {idx < LIFECYCLE_STAGES.length - 1 && (
-                <div style={{
-                  flex: 1,
-                  height: 2,
-                  background: lineColor,
-                  marginBottom: 18,
-                  minWidth: 12,
-                }} />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
 
 // ── Main Component ────────────────────────────────────────────────────────────
 
@@ -165,7 +98,6 @@ export default function ModelRegistryPage() {
   const [search, setSearch] = useState('');
   const [riskFilter, setRiskFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [selectedModel, setSelectedModel] = useState<Model | null>(null);
   const [detailTab, setDetailTab] = useState('card');
   const [editModel, setEditModel] = useState<Model | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Model | null>(null);
@@ -482,245 +414,6 @@ export default function ModelRegistryPage() {
         onConfirm={handleDelete}
       />
 
-      {/* Model Detail Sheet */}
-      <Sheet open={!!selectedModel} onOpenChange={() => setSelectedModel(null)}>
-        <SheetContent style={{ borderRadius: 0, width: 640, maxWidth: '100vw' }}>
-          <SheetHeader>
-            <SheetTitle style={{ color: 'hsl(var(--text-1))' }}>
-              {selectedModel?.name} <span className="text-xs font-mono font-normal" style={{ color: 'hsl(var(--text-4))' }}>{selectedModel?.id}</span>
-            </SheetTitle>
-          </SheetHeader>
-          {selectedModel && (
-            <div className="mt-4 overflow-y-auto h-[calc(100vh-120px)]">
-              <Tabs value={detailTab} onValueChange={setDetailTab}>
-                <TabsList style={{ borderRadius: 0 }}>
-                  <TabsTrigger value="card" style={{ borderRadius: 0 }}>Model Card</TabsTrigger>
-                  <TabsTrigger value="performance" style={{ borderRadius: 0 }}>Performance</TabsTrigger>
-                  <TabsTrigger value="bias" style={{ borderRadius: 0 }}>Bias History</TabsTrigger>
-                  <TabsTrigger value="docs" style={{ borderRadius: 0 }}>Technical Docs</TabsTrigger>
-                  <TabsTrigger value="activity" style={{ borderRadius: 0 }}>Activity</TabsTrigger>
-                </TabsList>
-
-                {/* Model Card Tab */}
-                <TabsContent value="card" className="mt-4 space-y-4">
-                  <div className="flex gap-2 flex-wrap">
-                    {riskTierBadge(selectedModel.riskTier)}
-                    <Badge style={{ ...statusColor(selectedModel.status), borderRadius: 0, fontSize: 10 }}>
-                      {selectedModel.status}
-                    </Badge>
-                    {driftBadge(selectedModel.driftStatus)}
-                    {selectedModel.type.includes('LLM') && (
-                      <Badge style={{ background: 'hsl(270 70% 56% / 0.15)', color: 'hsl(270 70% 56%)', borderRadius: 0, fontSize: 10 }}>
-                        GPAI / LLM
-                      </Badge>
-                    )}
-                  </div>
-
-                  {/* Lifecycle Pipeline */}
-                  <LifecycleStepper status={selectedModel.status} />
-
-                  <div className="grid grid-cols-2 gap-4 text-xs">
-                    <div>
-                      <p style={{ color: 'hsl(var(--text-4))' }}>Intended Purpose</p>
-                      <p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedModel.description}</p>
-                    </div>
-                    <div>
-                      <p style={{ color: 'hsl(var(--text-4))' }}>Known Limitations</p>
-                      <p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>
-                        {selectedModel.biasMetrics.filter(b => b.status === 'Fail').length > 0
-                          ? `Fairness failures in: ${selectedModel.biasMetrics.filter(b => b.status === 'Fail').map(b => b.metric).join(', ')}`
-                          : 'No known limitations documented'}
-                      </p>
-                    </div>
-                    <div>
-                      <p style={{ color: 'hsl(var(--text-4))' }}>Risk Classification</p>
-                      <p className="mt-1 font-medium" style={{ color: 'hsl(var(--text-1))' }}>{selectedModel.riskTier.toUpperCase()} — {selectedModel.euAiActArticle}</p>
-                    </div>
-                    <div>
-                      <p style={{ color: 'hsl(var(--text-4))' }}>Owner</p>
-                      <p className="mt-1 font-medium" style={{ color: 'hsl(var(--text-1))' }}>{selectedModel.owner}</p>
-                    </div>
-                    <div>
-                      <p style={{ color: 'hsl(var(--text-4))' }}>Department</p>
-                      <p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedModel.department}</p>
-                    </div>
-                    <div>
-                      <p style={{ color: 'hsl(var(--text-4))' }}>Last Validated</p>
-                      <p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{formatDate(selectedModel.lastValidated)}</p>
-                    </div>
-                    <div>
-                      <p style={{ color: 'hsl(var(--text-4))' }}>Monthly Inferences</p>
-                      <p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedModel.monthlyInferences}</p>
-                    </div>
-                    <div>
-                      <p style={{ color: 'hsl(var(--text-4))' }}>Lifecycle Phase</p>
-                      <p className="mt-1" style={{ color: 'hsl(var(--text-1))' }}>{selectedModel.lifecyclePhase} ({selectedModel.daysInPhase}d)</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-2">
-                    <Button size="sm" variant="outline" style={{ borderRadius: 0 }}
-                      onClick={() => toast('Model card exported as PDF', 'info')}>
-                      <FilePdf size={14} />Export as PDF
-                    </Button>
-                  </div>
-                </TabsContent>
-
-                {/* Performance Tab */}
-                <TabsContent value="performance" className="mt-4 space-y-4">
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Accuracy</p>
-                      <p className="text-lg font-bold" style={{ color: 'hsl(var(--text-1))' }}>{selectedModel.accuracy}%</p>
-                    </div>
-                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Latency</p>
-                      <p className="text-lg font-bold" style={{ color: 'hsl(var(--text-1))' }}>{selectedModel.latencyMs}ms</p>
-                    </div>
-                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
-                      <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Fairness</p>
-                      <p className="text-lg font-bold" style={{ color: fairnessColor(selectedModel.fairnessScore).text }}>{selectedModel.fairnessScore}%</p>
-                    </div>
-                  </div>
-
-                  {/* Fairness trend chart */}
-                  <div>
-                    <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Accuracy Trend (6 Months)</p>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <LineChart data={selectedModel.performanceHistory}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                        <XAxis dataKey="month" tick={{ fontSize: 10, fill: ct.axis }} />
-                        <YAxis domain={['dataMin - 2', 'dataMax + 2']} tick={{ fill: ct.axis, fontSize: 10 }}
-                          label={{ value: 'Accuracy %', angle: -90, position: 'insideLeft', style: { fill: ct.axis, fontSize: 10 } }} />
-                        <RechartsTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-                        <Line type="monotone" dataKey="accuracy" stroke={ct.brand} strokeWidth={2} dot={false} name="Accuracy %" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-
-                  {/* Drift score with threshold */}
-                  <div>
-                    <p className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>Drift Score (threshold: 0.20)</p>
-                    <ResponsiveContainer width="100%" height={180}>
-                      <LineChart data={selectedModel.performanceHistory.map((p, idx) => ({
-                        month: p.month,
-                        drift: selectedModel.driftStatus === 'critical'
-                          ? [0.08, 0.10, 0.12, 0.18, 0.24, 0.28][idx] || 0.15
-                          : selectedModel.driftStatus === 'warning'
-                            ? [0.05, 0.06, 0.08, 0.12, 0.16, 0.19][idx] || 0.10
-                            : [0.03, 0.04, 0.03, 0.05, 0.04, 0.04][idx] || 0.04,
-                      }))}>
-                        <CartesianGrid strokeDasharray="3 3" stroke={ct.grid} />
-                        <XAxis dataKey="month" tick={{ fontSize: 10, fill: ct.axis }} />
-                        <YAxis domain={[0, 0.4]} tick={{ fill: ct.axis, fontSize: 10 }}
-                          label={{ value: 'Drift Score', angle: -90, position: 'insideLeft', style: { fill: ct.axis, fontSize: 10 } }} />
-                        <RechartsTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, color: ct.tooltipText, borderRadius: 0 }} />
-                        <ReferenceLine y={0.20} stroke="hsl(var(--s-er-tx))" strokeDasharray="5 5" label={{ value: 'Threshold', fill: 'hsl(var(--destructive))', fontSize: 10 }} />
-                        <Line type="monotone" dataKey="drift" stroke="hsl(var(--s-wn-tx))" strokeWidth={2} dot={false} name="Drift Score" />
-                      </LineChart>
-                    </ResponsiveContainer>
-                  </div>
-                </TabsContent>
-
-                {/* Bias History Tab */}
-                <TabsContent value="bias" className="mt-4 space-y-4">
-                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Bias Metrics — Current</p>
-                  <div className="space-y-2">
-                    {selectedModel.biasMetrics.map((bm, idx) => (
-                      <div key={idx} className="flex items-center justify-between p-3" style={{ border: '1px solid hsl(var(--border))' }}>
-                        <div>
-                          <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{bm.metric}</p>
-                          <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Threshold: {bm.threshold}</p>
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-bold" style={{ color: bm.status === 'Pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))' }}>
-                            {bm.value}
-                          </span>
-                          <Badge style={{
-                            background: bm.status === 'Pass' ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
-                            color: bm.status === 'Pass' ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
-                            borderRadius: 0, fontSize: 10,
-                          }}>
-                            {bm.status}
-                          </Badge>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </TabsContent>
-
-                {/* Technical Docs Tab */}
-                <TabsContent value="docs" className="mt-4 space-y-4">
-                  <div className="space-y-3">
-                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
-                      <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Framework Compliance</p>
-                      <div className="mt-2 space-y-2">
-                        {selectedModel.complianceMapping.map((c, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-xs">
-                            <span style={{ color: 'hsl(var(--text-1))' }}>{c.framework} — {c.clause}</span>
-                            <Badge style={{ ...statusColor(c.status.toLowerCase().replace('-', '_').replace(' ', '_')), borderRadius: 0, fontSize: 10 }}>
-                              {c.status}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                    <div className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
-                      <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Guardrails</p>
-                      <div className="mt-2 space-y-2">
-                        {selectedModel.guardrails.map((g, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-xs">
-                            <span style={{ color: 'hsl(var(--text-1))' }}>{g.name}: {g.threshold}</span>
-                            <Badge style={{
-                              background: g.enabled ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-nt-bg))',
-                              color: g.enabled ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-nt-tx))',
-                              borderRadius: 0, fontSize: 10,
-                            }}>
-                              {g.enabled ? 'Enabled' : 'Disabled'}
-                            </Badge>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                {/* Activity Tab */}
-                <TabsContent value="activity" className="mt-4 space-y-3">
-                  <p className="text-xs font-semibold" style={{ color: 'hsl(var(--text-4))' }}>Incident History</p>
-                  {selectedModel.incidents.length === 0 ? (
-                    <p className="text-xs py-6 text-center" style={{ color: 'hsl(var(--text-4))' }}>No incidents recorded</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {selectedModel.incidents.map((inc, idx) => {
-                        const sc = severityColor(inc.severity);
-                        return (
-                          <div key={idx} className="flex items-center justify-between p-3" style={{ border: '1px solid hsl(var(--border))' }}>
-                            <div>
-                              <p className="text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{inc.id} — {inc.type}</p>
-                              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>{formatDate(inc.date)}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <Badge style={{ background: sc.bg, color: sc.text, borderRadius: 0, fontSize: 10 }}>{inc.severity}</Badge>
-                              <Badge style={{
-                                background: inc.resolved ? 'hsl(var(--s-ok-bg))' : 'hsl(var(--s-er-bg))',
-                                color: inc.resolved ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--destructive))',
-                                borderRadius: 0, fontSize: 10,
-                              }}>
-                                {inc.resolved ? 'Resolved' : 'Open'}
-                              </Badge>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </TabsContent>
-              </Tabs>
-            </div>
-          )}
-        </SheetContent>
-      </Sheet>
 
       {/* Edit Dialog */}
       <Dialog open={!!editModel} onOpenChange={() => setEditModel(null)}>
