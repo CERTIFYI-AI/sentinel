@@ -241,9 +241,13 @@ export default function ComplianceDashboard() {
             const total = fw.controls_total;
             const implemented = fw.controls_implemented;
             return (
+              // `?open=<framework_id>` opens THAT framework's detail (the repo
+              // deep-link convention), so a card lands on its own Requirements
+              // tab — the published control catalog — instead of dropping the
+              // reader on the generic list to find it again.
               <Link
                 key={fw.id}
-                to="/frameworks"
+                to={`/frameworks?open=${encodeURIComponent(fw.id)}`}
                 className="block border transition-all hover:-translate-y-0.5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-[hsl(var(--brand))]"
                 style={{ background: 'hsl(var(--bg-surface))', borderColor: 'hsl(var(--border))' }}
               >

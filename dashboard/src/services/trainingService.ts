@@ -11,9 +11,7 @@
 // (CLAUDE.md, First principle #4).
 
 import { supabase, isSupabaseConfigured } from '@/lib/supabase'
-import { getTenantId } from '@/lib/dataSource'
 
-const TENANT_ID = getTenantId()
 
 export async function fetchAllTraining(filters: Record<string, any> = {}) {
   if (!isSupabaseConfigured()) return []
@@ -34,7 +32,7 @@ export async function fetchTrainingById(id: string) {
 
 export async function upsertTraining(record: any) {
   if (!isSupabaseConfigured()) throw new Error('Supabase is not configured — cannot save training course.')
-  const { data, error } = await supabase.from('training_courses').upsert({ ...record, tenant_id: TENANT_ID }).select().single()
+  const { data, error } = await supabase.from('training_courses').upsert(record).select().single()
   if (error) throw new Error(error.message)
   return data
 }
