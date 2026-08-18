@@ -55,7 +55,7 @@ export interface GuideCollection {
 export const GUIDE_TOTAL_ENTRIES = 135
 
 /** Destinations backed by an authored module doc. */
-export const GUIDE_DOCUMENTED_ENTRIES = 135
+export const GUIDE_DOCUMENTED_ENTRIES = 134
 
 /** Module docs available in docs/modules/. */
 export const MODULE_DOCS_AVAILABLE = 96
@@ -911,30 +911,41 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/knowledge-and-marketplace.md",
-        "title": "Knowledge Graph, Marketplace, Use Cases",
-        "purpose": "Graph view of organisational entities (assets, risks, controls, vendors, models, regulations, policies) for contextual analytics; a curated Marketplace of vetted templates, integrations, and eval packs; and a Use-Case library mapping business outcomes to control bundles.",
-        "why": "",
-        "how": [],
+        "title": "Knowledge Graph & Marketplace",
+        "purpose": "Graph view of organisational entities (models, use cases, datasets, agents) for contextual analytics and blast-radius analysis. Marketplace provides curated templates and eval packs. Use Case library maps business outcomes to model and control bundles.",
+        "why": "ISO/IEC 27001:2022 6.1 requires actions to address risks and opportunities in context. NIST AI RMF GOVERN 2.1 requires documented policies and processes. Understanding entity relationships — which models serve which use cases, which datasets trained which models, which agents operate on which entities — is prerequisite to impact analysis when something changes.",
+        "how": [
+          "### Knowledge Graph",
+          "1. Reads entities from ai_models, use_cases, datasets, and the agent",
+          "registry — no separate graph table.",
+          "2. Renders an interactive SVG graph where nodes are clickable, navigating to",
+          "the entity's detail page.",
+          "3. Three views: Visual Graph, Data-to-Use-Case Chains, and Entity Index",
+          "table.",
+          "4. Entity counts are shown as KPI tiles (4 entity types).",
+          "### Marketplace",
+          "All marketplace items are open-source, signed, and reviewed; installation",
+          "requires explicit admin approval.",
+          "### Use Cases"
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — node clicks navigate to /models/inventory/:id,",
+          "/datasets/:id, /use-cases/:id, /agents/:id.",
+          "Inbound — reachable from sidebar nav (Executive & Reporting group)."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "ISO/IEC 27001:2022 — 6.1 (actions to address risks and opportunities).",
+          "NIST AI RMF — GOVERN 2.1 (policies, processes, procedures).",
+          "COBIT 2019 — APO01 (managed I&T framework)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "ISO/IEC 27001:2022 6.1",
-            "Actions to address risks and opportunities"
-          ],
-          [
-            "NIST AI RMF GOVERN 2.1",
-            "Policies, processes, procedures"
-          ],
-          [
-            "COBIT 2019 APO01",
-            "Managed I&T framework"
-          ]
+        "operations": [
+          "Empty state: when no entities exist in any of the source tables, shows an",
+          "honest empty state. Pure read-only: graph is derived from existing entity",
+          "tables — no separate data storage. Realtime: not realtime; staleTime-based",
+          "React Query refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -943,38 +954,46 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/agent-platform.md",
-        "title": "Agent Platform (Registry, Discovery, IAM, Choreography)",
-        "purpose": "Govern autonomous and human-in-the-loop agents: registration, capability declaration, identity and entitlements (non-human identity), orchestration, and safety rails.",
-        "why": "",
-        "how": [],
+        "title": "Agent Platform",
+        "purpose": "Govern autonomous and human-in-the-loop agents: registration, capability declaration, identity and entitlements (non-human identity), orchestration, and safety rails. The Governance Mesh is the fleet-wide view of the 10 built-in governance sentinels.",
+        "why": "OWASP LLM Top 10 (Agentic) identifies excessive agency and tool misuse. EU AI Act Art. 14 and 15 require oversight and robustness. ISO/IEC 42001 A.9 covers use of AI systems and oversight. Autonomous agents that can create records, pause models, or file reports need the same governance as human operators — registration, capability scoping, and kill-switch binding.",
+        "how": [
+          "1. Agents are registered in agent_gov_registry with identity (workload ID),",
+          "declared tools, permissions (least-privilege), policy set, HITL",
+          "checkpoints, kill-switch binding, owner, and lifecycle state.",
+          "2. The Governance Mesh renders the 10 built-in sentinels (ComplianceImpact,",
+          "DriftWatcher, AutoPause, etc.) with their execution history and event",
+          "stream.",
+          "3. Client-side sweep runs all sentinels that have browser-executable logic;",
+          "server-side sweep triggers the Python evaluator.",
+          "4. Agent Inspector panel shows per-sentinel execution detail, findings, and",
+          "links to affected entities.",
+          "5. Choreography handles deterministic routing of multi-agent workflows with",
+          "observable span-level traces."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — InterlinkChip to /models/inventory/:id,",
+          "/risk/incidents?open=<id>, /datasets/:id, /agents/:id via",
+          "findingLink().",
+          "Inbound — reachable from sidebar nav (Agent Control group);",
+          "Compliance Autopilot links here; kill-switch events reference agents."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "OWASP LLM Top 10 (Agentic) — excessive agency, tool misuse.",
+          "EU AI Act — Art. 14 (oversight), Art. 15 (robustness).",
+          "ISO/IEC 42001 — A.9 (use of AI system and oversight).",
+          "NIST AI RMF — MANAGE 2.1 (risk response tracked post-deployment).",
+          "NIST SP 800-207 — zero-trust applied to workload identities."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "OWASP LLM Top 10 (Agentic)",
-            "Excessive agency, tool misuse"
-          ],
-          [
-            "EU AI Act Art.14, 15",
-            "Oversight, robustness"
-          ],
-          [
-            "ISO/IEC 42001 A.9",
-            "Use of the AI system and oversight"
-          ],
-          [
-            "NIST AI RMF MANAGE 2.1",
-            "Risk response tracked post-deployment"
-          ],
-          [
-            "NIST SP 800-207",
-            "Zero-trust applied to workload identities"
-          ]
+        "operations": [
+          "Fleet seeding: the 10-sentinel fleet is seeded by migration",
+          "20260816_agentic_mesh_fleet. Empty state directs user to apply the",
+          "migration. Sweep executions write to agent_executions and emit governance",
+          "events to the event bus. Writes throw on failure. Realtime: event stream",
+          "uses live query refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -983,38 +1002,46 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": "Agents",
         "hasDoc": true,
         "docPath": "docs/modules/agent-platform.md",
-        "title": "Agent Platform (Registry, Discovery, IAM, Choreography)",
-        "purpose": "Govern autonomous and human-in-the-loop agents: registration, capability declaration, identity and entitlements (non-human identity), orchestration, and safety rails.",
-        "why": "",
-        "how": [],
+        "title": "Agent Platform",
+        "purpose": "Govern autonomous and human-in-the-loop agents: registration, capability declaration, identity and entitlements (non-human identity), orchestration, and safety rails. The Governance Mesh is the fleet-wide view of the 10 built-in governance sentinels.",
+        "why": "OWASP LLM Top 10 (Agentic) identifies excessive agency and tool misuse. EU AI Act Art. 14 and 15 require oversight and robustness. ISO/IEC 42001 A.9 covers use of AI systems and oversight. Autonomous agents that can create records, pause models, or file reports need the same governance as human operators — registration, capability scoping, and kill-switch binding.",
+        "how": [
+          "1. Agents are registered in agent_gov_registry with identity (workload ID),",
+          "declared tools, permissions (least-privilege), policy set, HITL",
+          "checkpoints, kill-switch binding, owner, and lifecycle state.",
+          "2. The Governance Mesh renders the 10 built-in sentinels (ComplianceImpact,",
+          "DriftWatcher, AutoPause, etc.) with their execution history and event",
+          "stream.",
+          "3. Client-side sweep runs all sentinels that have browser-executable logic;",
+          "server-side sweep triggers the Python evaluator.",
+          "4. Agent Inspector panel shows per-sentinel execution detail, findings, and",
+          "links to affected entities.",
+          "5. Choreography handles deterministic routing of multi-agent workflows with",
+          "observable span-level traces."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — InterlinkChip to /models/inventory/:id,",
+          "/risk/incidents?open=<id>, /datasets/:id, /agents/:id via",
+          "findingLink().",
+          "Inbound — reachable from sidebar nav (Agent Control group);",
+          "Compliance Autopilot links here; kill-switch events reference agents."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "OWASP LLM Top 10 (Agentic) — excessive agency, tool misuse.",
+          "EU AI Act — Art. 14 (oversight), Art. 15 (robustness).",
+          "ISO/IEC 42001 — A.9 (use of AI system and oversight).",
+          "NIST AI RMF — MANAGE 2.1 (risk response tracked post-deployment).",
+          "NIST SP 800-207 — zero-trust applied to workload identities."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "OWASP LLM Top 10 (Agentic)",
-            "Excessive agency, tool misuse"
-          ],
-          [
-            "EU AI Act Art.14, 15",
-            "Oversight, robustness"
-          ],
-          [
-            "ISO/IEC 42001 A.9",
-            "Use of the AI system and oversight"
-          ],
-          [
-            "NIST AI RMF MANAGE 2.1",
-            "Risk response tracked post-deployment"
-          ],
-          [
-            "NIST SP 800-207",
-            "Zero-trust applied to workload identities"
-          ]
+        "operations": [
+          "Fleet seeding: the 10-sentinel fleet is seeded by migration",
+          "20260816_agentic_mesh_fleet. Empty state directs user to apply the",
+          "migration. Sweep executions write to agent_executions and emit governance",
+          "events to the event bus. Writes throw on failure. Realtime: event stream",
+          "uses live query refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -1023,38 +1050,46 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": "Agents",
         "hasDoc": true,
         "docPath": "docs/modules/agent-platform.md",
-        "title": "Agent Platform (Registry, Discovery, IAM, Choreography)",
-        "purpose": "Govern autonomous and human-in-the-loop agents: registration, capability declaration, identity and entitlements (non-human identity), orchestration, and safety rails.",
-        "why": "",
-        "how": [],
+        "title": "Agent Platform",
+        "purpose": "Govern autonomous and human-in-the-loop agents: registration, capability declaration, identity and entitlements (non-human identity), orchestration, and safety rails. The Governance Mesh is the fleet-wide view of the 10 built-in governance sentinels.",
+        "why": "OWASP LLM Top 10 (Agentic) identifies excessive agency and tool misuse. EU AI Act Art. 14 and 15 require oversight and robustness. ISO/IEC 42001 A.9 covers use of AI systems and oversight. Autonomous agents that can create records, pause models, or file reports need the same governance as human operators — registration, capability scoping, and kill-switch binding.",
+        "how": [
+          "1. Agents are registered in agent_gov_registry with identity (workload ID),",
+          "declared tools, permissions (least-privilege), policy set, HITL",
+          "checkpoints, kill-switch binding, owner, and lifecycle state.",
+          "2. The Governance Mesh renders the 10 built-in sentinels (ComplianceImpact,",
+          "DriftWatcher, AutoPause, etc.) with their execution history and event",
+          "stream.",
+          "3. Client-side sweep runs all sentinels that have browser-executable logic;",
+          "server-side sweep triggers the Python evaluator.",
+          "4. Agent Inspector panel shows per-sentinel execution detail, findings, and",
+          "links to affected entities.",
+          "5. Choreography handles deterministic routing of multi-agent workflows with",
+          "observable span-level traces."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — InterlinkChip to /models/inventory/:id,",
+          "/risk/incidents?open=<id>, /datasets/:id, /agents/:id via",
+          "findingLink().",
+          "Inbound — reachable from sidebar nav (Agent Control group);",
+          "Compliance Autopilot links here; kill-switch events reference agents."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "OWASP LLM Top 10 (Agentic) — excessive agency, tool misuse.",
+          "EU AI Act — Art. 14 (oversight), Art. 15 (robustness).",
+          "ISO/IEC 42001 — A.9 (use of AI system and oversight).",
+          "NIST AI RMF — MANAGE 2.1 (risk response tracked post-deployment).",
+          "NIST SP 800-207 — zero-trust applied to workload identities."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "OWASP LLM Top 10 (Agentic)",
-            "Excessive agency, tool misuse"
-          ],
-          [
-            "EU AI Act Art.14, 15",
-            "Oversight, robustness"
-          ],
-          [
-            "ISO/IEC 42001 A.9",
-            "Use of the AI system and oversight"
-          ],
-          [
-            "NIST AI RMF MANAGE 2.1",
-            "Risk response tracked post-deployment"
-          ],
-          [
-            "NIST SP 800-207",
-            "Zero-trust applied to workload identities"
-          ]
+        "operations": [
+          "Fleet seeding: the 10-sentinel fleet is seeded by migration",
+          "20260816_agentic_mesh_fleet. Empty state directs user to apply the",
+          "migration. Sweep executions write to agent_executions and emit governance",
+          "events to the event bus. Writes throw on failure. Realtime: event stream",
+          "uses live query refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -1064,33 +1099,39 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/kill-switch.md",
         "title": "Kill-Switch & Emergency Controls",
-        "purpose": "Emergency disablement of models, agents, prompts, policies, or entire features with full audit trail and post-event review.",
-        "why": "",
-        "how": [],
+        "purpose": "Emergency disablement of models, agents, prompts, policies, or entire features with full audit trail and post-event review — the platform's last-resort human-override mechanism.",
+        "why": "EU AI Act Art. 14(4)(e) requires the ability to intervene in or interrupt an AI system. ISO/IEC 42001 A.9.3 mandates human oversight including override capability. NIST AI RMF MANAGE 2.3 requires post-deployment override mechanisms. Without a documented kill-switch, the regulator has no evidence that human override is possible.",
+        "how": [
+          "1. A kill-switch event targets a specific scope (tenant, route, model, agent,",
+          "prompt, or feature).",
+          "2. Critical/production events require dual approval before activation.",
+          "3. Activation propagates instantaneously via the control channel — the target",
+          "entity is disabled.",
+          "4. An incident record and post-mortem task are auto-generated from the event.",
+          "5. Post-event review records the root cause, duration, and impact."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — PillLink to the target entity (model, agent, prompt),",
+          "InterlinkChip to /risk/incidents?open=<id> (auto-generated incident).",
+          "Inbound — reachable from sidebar nav; agent and model detail pages",
+          "link to their kill-switch history."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Art. 14(4)(e) (ability to intervene or interrupt): this",
+          "module IS the intervention mechanism.",
+          "ISO/IEC 42001 — A.9.3 (human oversight including override).",
+          "NIST AI RMF — MANAGE 2.3 (post-deployment override mechanisms).",
+          "DORA — Art. 12 (ICT response and recovery)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "EU AI Act Art.14(4)(e)",
-            "Ability to intervene or interrupt"
-          ],
-          [
-            "ISO/IEC 42001 A.9.3",
-            "Human oversight including override"
-          ],
-          [
-            "NIST AI RMF MANAGE 2.3",
-            "Post-deployment override mechanisms"
-          ],
-          [
-            "DORA Art.12",
-            "ICT response and recovery"
-          ]
+        "operations": [
+          "Empty state: an empty event log is the ideal state (no emergencies) and is",
+          "shown with a positive message. Dual approval is enforced for production",
+          "scopes. Auto-generated incidents ensure the event enters the standard",
+          "incident workflow. Writes throw on failure. Art. 12 audit logging via",
+          "logAction."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -1099,42 +1140,41 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/data-governance.md",
-        "title": "Data Governance (Datasets, Quality, Lineage)",
-        "purpose": "Inventory training/evaluation/production datasets, track quality, lineage, and compliance constraints; enforce data-minimisation and purpose-limitation.",
-        "why": "",
-        "how": [],
+        "title": "Data Governance",
+        "purpose": "Inventory training/evaluation/production datasets, track quality and lineage, manage Data Subject Access Requests (DSAR), and enforce data minimisation and purpose limitation.",
+        "why": "EU AI Act Art. 10 mandates data governance for training, validation, and test datasets. ISO/IEC 42001 A.7 covers data for AI systems. GDPR Art. 5(1)(c)(d) requires data minimisation and accuracy. Without a dataset registry, there is no evidence of what data trained which model, no quality metrics, and no lineage for audit.",
+        "how": [
+          "1. Datasets are registered in datasets with source, licence, collection",
+          "basis, labelling method, statistics, bias tests, retention, and linked",
+          "models.",
+          "2. Data lineage tracks raw → curated → feature → training set → model",
+          "version relationships.",
+          "3. DSAR tracker manages data-subject requests with status workflow and SLA",
+          "tracking via dsar_requests.",
+          "4. Data quality view surfaces quality metrics per dataset."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — navigation to /datasets/:id (dataset detail),",
+          "linked models to /models/inventory/:id.",
+          "Inbound — reachable from sidebar nav (AI Assets group); model detail",
+          "pages link to their training datasets; RoPA entries reference datasets."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Art. 10 (data governance for AI training/validation/test).",
+          "ISO/IEC 42001 — A.7 (data for AI systems).",
+          "ISO/IEC 25012 / 5259 — data quality for analytics and ML.",
+          "GDPR — Art. 5(1)(c)(d) (data minimisation and accuracy).",
+          "DAMA-DMBOK 2 — data management body of knowledge.",
+          "BCBS 239 — risk data aggregation (financial services)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "EU AI Act Art.10",
-            "Data governance for training/validation/test"
-          ],
-          [
-            "ISO/IEC 42001 A.7",
-            "Data for AI systems"
-          ],
-          [
-            "ISO/IEC 25012 / 5259",
-            "Data quality for analytics and ML"
-          ],
-          [
-            "GDPR Art.5(1)(c)(d)",
-            "Data minimisation and accuracy"
-          ],
-          [
-            "DAMA-DMBOK 2",
-            "Data management body of knowledge"
-          ],
-          [
-            "BCBS 239",
-            "Risk data aggregation (FS)"
-          ]
+        "operations": [
+          "Empty state: when no datasets exist, shows an honest empty state. Source",
+          "comment confirms \"Supabase-wired — no mock data.\" DSAR creation writes",
+          "throw on failure. Realtime: not realtime; staleTime-based React Query",
+          "refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -1143,42 +1183,41 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": "Datasets",
         "hasDoc": true,
         "docPath": "docs/modules/data-governance.md",
-        "title": "Data Governance (Datasets, Quality, Lineage)",
-        "purpose": "Inventory training/evaluation/production datasets, track quality, lineage, and compliance constraints; enforce data-minimisation and purpose-limitation.",
-        "why": "",
-        "how": [],
+        "title": "Data Governance",
+        "purpose": "Inventory training/evaluation/production datasets, track quality and lineage, manage Data Subject Access Requests (DSAR), and enforce data minimisation and purpose limitation.",
+        "why": "EU AI Act Art. 10 mandates data governance for training, validation, and test datasets. ISO/IEC 42001 A.7 covers data for AI systems. GDPR Art. 5(1)(c)(d) requires data minimisation and accuracy. Without a dataset registry, there is no evidence of what data trained which model, no quality metrics, and no lineage for audit.",
+        "how": [
+          "1. Datasets are registered in datasets with source, licence, collection",
+          "basis, labelling method, statistics, bias tests, retention, and linked",
+          "models.",
+          "2. Data lineage tracks raw → curated → feature → training set → model",
+          "version relationships.",
+          "3. DSAR tracker manages data-subject requests with status workflow and SLA",
+          "tracking via dsar_requests.",
+          "4. Data quality view surfaces quality metrics per dataset."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — navigation to /datasets/:id (dataset detail),",
+          "linked models to /models/inventory/:id.",
+          "Inbound — reachable from sidebar nav (AI Assets group); model detail",
+          "pages link to their training datasets; RoPA entries reference datasets."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Art. 10 (data governance for AI training/validation/test).",
+          "ISO/IEC 42001 — A.7 (data for AI systems).",
+          "ISO/IEC 25012 / 5259 — data quality for analytics and ML.",
+          "GDPR — Art. 5(1)(c)(d) (data minimisation and accuracy).",
+          "DAMA-DMBOK 2 — data management body of knowledge.",
+          "BCBS 239 — risk data aggregation (financial services)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "EU AI Act Art.10",
-            "Data governance for training/validation/test"
-          ],
-          [
-            "ISO/IEC 42001 A.7",
-            "Data for AI systems"
-          ],
-          [
-            "ISO/IEC 25012 / 5259",
-            "Data quality for analytics and ML"
-          ],
-          [
-            "GDPR Art.5(1)(c)(d)",
-            "Data minimisation and accuracy"
-          ],
-          [
-            "DAMA-DMBOK 2",
-            "Data management body of knowledge"
-          ],
-          [
-            "BCBS 239",
-            "Risk data aggregation (FS)"
-          ]
+        "operations": [
+          "Empty state: when no datasets exist, shows an honest empty state. Source",
+          "comment confirms \"Supabase-wired — no mock data.\" DSAR creation writes",
+          "throw on failure. Realtime: not realtime; staleTime-based React Query",
+          "refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -1187,42 +1226,41 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": "Datasets",
         "hasDoc": true,
         "docPath": "docs/modules/data-governance.md",
-        "title": "Data Governance (Datasets, Quality, Lineage)",
-        "purpose": "Inventory training/evaluation/production datasets, track quality, lineage, and compliance constraints; enforce data-minimisation and purpose-limitation.",
-        "why": "",
-        "how": [],
+        "title": "Data Governance",
+        "purpose": "Inventory training/evaluation/production datasets, track quality and lineage, manage Data Subject Access Requests (DSAR), and enforce data minimisation and purpose limitation.",
+        "why": "EU AI Act Art. 10 mandates data governance for training, validation, and test datasets. ISO/IEC 42001 A.7 covers data for AI systems. GDPR Art. 5(1)(c)(d) requires data minimisation and accuracy. Without a dataset registry, there is no evidence of what data trained which model, no quality metrics, and no lineage for audit.",
+        "how": [
+          "1. Datasets are registered in datasets with source, licence, collection",
+          "basis, labelling method, statistics, bias tests, retention, and linked",
+          "models.",
+          "2. Data lineage tracks raw → curated → feature → training set → model",
+          "version relationships.",
+          "3. DSAR tracker manages data-subject requests with status workflow and SLA",
+          "tracking via dsar_requests.",
+          "4. Data quality view surfaces quality metrics per dataset."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — navigation to /datasets/:id (dataset detail),",
+          "linked models to /models/inventory/:id.",
+          "Inbound — reachable from sidebar nav (AI Assets group); model detail",
+          "pages link to their training datasets; RoPA entries reference datasets."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Art. 10 (data governance for AI training/validation/test).",
+          "ISO/IEC 42001 — A.7 (data for AI systems).",
+          "ISO/IEC 25012 / 5259 — data quality for analytics and ML.",
+          "GDPR — Art. 5(1)(c)(d) (data minimisation and accuracy).",
+          "DAMA-DMBOK 2 — data management body of knowledge.",
+          "BCBS 239 — risk data aggregation (financial services)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "EU AI Act Art.10",
-            "Data governance for training/validation/test"
-          ],
-          [
-            "ISO/IEC 42001 A.7",
-            "Data for AI systems"
-          ],
-          [
-            "ISO/IEC 25012 / 5259",
-            "Data quality for analytics and ML"
-          ],
-          [
-            "GDPR Art.5(1)(c)(d)",
-            "Data minimisation and accuracy"
-          ],
-          [
-            "DAMA-DMBOK 2",
-            "Data management body of knowledge"
-          ],
-          [
-            "BCBS 239",
-            "Risk data aggregation (FS)"
-          ]
+        "operations": [
+          "Empty state: when no datasets exist, shows an honest empty state. Source",
+          "comment confirms \"Supabase-wired — no mock data.\" DSAR creation writes",
+          "throw on failure. Realtime: not realtime; staleTime-based React Query",
+          "refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -1231,42 +1269,41 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": "Datasets",
         "hasDoc": true,
         "docPath": "docs/modules/data-governance.md",
-        "title": "Data Governance (Datasets, Quality, Lineage)",
-        "purpose": "Inventory training/evaluation/production datasets, track quality, lineage, and compliance constraints; enforce data-minimisation and purpose-limitation.",
-        "why": "",
-        "how": [],
+        "title": "Data Governance",
+        "purpose": "Inventory training/evaluation/production datasets, track quality and lineage, manage Data Subject Access Requests (DSAR), and enforce data minimisation and purpose limitation.",
+        "why": "EU AI Act Art. 10 mandates data governance for training, validation, and test datasets. ISO/IEC 42001 A.7 covers data for AI systems. GDPR Art. 5(1)(c)(d) requires data minimisation and accuracy. Without a dataset registry, there is no evidence of what data trained which model, no quality metrics, and no lineage for audit.",
+        "how": [
+          "1. Datasets are registered in datasets with source, licence, collection",
+          "basis, labelling method, statistics, bias tests, retention, and linked",
+          "models.",
+          "2. Data lineage tracks raw → curated → feature → training set → model",
+          "version relationships.",
+          "3. DSAR tracker manages data-subject requests with status workflow and SLA",
+          "tracking via dsar_requests.",
+          "4. Data quality view surfaces quality metrics per dataset."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — navigation to /datasets/:id (dataset detail),",
+          "linked models to /models/inventory/:id.",
+          "Inbound — reachable from sidebar nav (AI Assets group); model detail",
+          "pages link to their training datasets; RoPA entries reference datasets."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Art. 10 (data governance for AI training/validation/test).",
+          "ISO/IEC 42001 — A.7 (data for AI systems).",
+          "ISO/IEC 25012 / 5259 — data quality for analytics and ML.",
+          "GDPR — Art. 5(1)(c)(d) (data minimisation and accuracy).",
+          "DAMA-DMBOK 2 — data management body of knowledge.",
+          "BCBS 239 — risk data aggregation (financial services)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "EU AI Act Art.10",
-            "Data governance for training/validation/test"
-          ],
-          [
-            "ISO/IEC 42001 A.7",
-            "Data for AI systems"
-          ],
-          [
-            "ISO/IEC 25012 / 5259",
-            "Data quality for analytics and ML"
-          ],
-          [
-            "GDPR Art.5(1)(c)(d)",
-            "Data minimisation and accuracy"
-          ],
-          [
-            "DAMA-DMBOK 2",
-            "Data management body of knowledge"
-          ],
-          [
-            "BCBS 239",
-            "Risk data aggregation (FS)"
-          ]
+        "operations": [
+          "Empty state: when no datasets exist, shows an honest empty state. Source",
+          "comment confirms \"Supabase-wired — no mock data.\" DSAR creation writes",
+          "throw on failure. Realtime: not realtime; staleTime-based React Query",
+          "refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -1371,30 +1408,41 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/knowledge-and-marketplace.md",
-        "title": "Knowledge Graph, Marketplace, Use Cases",
-        "purpose": "Graph view of organisational entities (assets, risks, controls, vendors, models, regulations, policies) for contextual analytics; a curated Marketplace of vetted templates, integrations, and eval packs; and a Use-Case library mapping business outcomes to control bundles.",
-        "why": "",
-        "how": [],
+        "title": "Knowledge Graph & Marketplace",
+        "purpose": "Graph view of organisational entities (models, use cases, datasets, agents) for contextual analytics and blast-radius analysis. Marketplace provides curated templates and eval packs. Use Case library maps business outcomes to model and control bundles.",
+        "why": "ISO/IEC 27001:2022 6.1 requires actions to address risks and opportunities in context. NIST AI RMF GOVERN 2.1 requires documented policies and processes. Understanding entity relationships — which models serve which use cases, which datasets trained which models, which agents operate on which entities — is prerequisite to impact analysis when something changes.",
+        "how": [
+          "### Knowledge Graph",
+          "1. Reads entities from ai_models, use_cases, datasets, and the agent",
+          "registry — no separate graph table.",
+          "2. Renders an interactive SVG graph where nodes are clickable, navigating to",
+          "the entity's detail page.",
+          "3. Three views: Visual Graph, Data-to-Use-Case Chains, and Entity Index",
+          "table.",
+          "4. Entity counts are shown as KPI tiles (4 entity types).",
+          "### Marketplace",
+          "All marketplace items are open-source, signed, and reviewed; installation",
+          "requires explicit admin approval.",
+          "### Use Cases"
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — node clicks navigate to /models/inventory/:id,",
+          "/datasets/:id, /use-cases/:id, /agents/:id.",
+          "Inbound — reachable from sidebar nav (Executive & Reporting group)."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "ISO/IEC 27001:2022 — 6.1 (actions to address risks and opportunities).",
+          "NIST AI RMF — GOVERN 2.1 (policies, processes, procedures).",
+          "COBIT 2019 — APO01 (managed I&T framework)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "ISO/IEC 27001:2022 6.1",
-            "Actions to address risks and opportunities"
-          ],
-          [
-            "NIST AI RMF GOVERN 2.1",
-            "Policies, processes, procedures"
-          ],
-          [
-            "COBIT 2019 APO01",
-            "Managed I&T framework"
-          ]
+        "operations": [
+          "Empty state: when no entities exist in any of the source tables, shows an",
+          "honest empty state. Pure read-only: graph is derived from existing entity",
+          "tables — no separate data storage. Realtime: not realtime; staleTime-based",
+          "React Query refresh."
         ],
+        "fields": [],
         "noDocReason": null
       }
     ]
@@ -2433,41 +2481,42 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/explainability.md",
         "title": "Explainability & Transparency",
-        "purpose": "Produce model-level and decision-level explanations, transparency disclosures, and provenance evidence for every consequential AI decision.",
-        "why": "",
-        "how": [],
+        "purpose": "Model-level and decision-level explanations, transparency disclosures, and provenance evidence for AI decisions — producing the documentation that makes AI systems interpretable and contestable.",
+        "why": "EU AI Act Art. 13 and Art. 50 require transparency obligations. Art. 86 provides a right to explanation of individual decisions. GDPR Art. 13–15 and Art. 22 require meaningful information about automated decision logic. ISO/IEC 42001 A.6.2.8 mandates system information for users. Without documented explanations, high-risk AI decisions are uncontestable.",
+        "how": [
+          "1. Explainability profiles are stored in explainability_profiles via the",
+          "evals CRUD pattern (useEvalsCrud).",
+          "2. Each profile documents the explanation technique (SHAP, LIME, integrated",
+          "gradients, counterfactuals, attention visualisation, or natural-language",
+          "rationales), the model it applies to, and the evidence.",
+          "3. RBAC gates create/update/delete operations.",
+          "4. Deep-link support: ?model=<uuid> filters to a specific model,",
+          "?open=<id> opens a specific profile."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — navigation to /models/inventory/:id (subject model),",
+          "/explainability/:id (profile detail).",
+          "Inbound — reachable from sidebar nav (AI Assets group); model detail",
+          "pages link to their explainability profiles. Provenance graph links back."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Art. 13 (transparency), Art. 50 (transparency obligations),",
+          "Art. 86 (right to explanation).",
+          "GDPR — Art. 13–15 (information about automated decisions), Art. 22",
+          "(automated individual decision-making).",
+          "ISO/IEC 42001 — A.6.2.8 (system information for users).",
+          "ISO/IEC TS 6254 — objectives and approaches for explainability.",
+          "NIST AI RMF — MEASURE 2.8, 2.9 (interpretability and explainability)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "EU AI Act Art.13, 50",
-            "Transparency obligations, content labelling"
-          ],
-          [
-            "EU AI Act Art.86",
-            "Right to explanation of individual decisions"
-          ],
-          [
-            "GDPR Art.13–15, 22",
-            "Meaningful information about logic"
-          ],
-          [
-            "NIST AI RMF MEASURE 2.8, 2.9",
-            "Interpretability and explainability"
-          ],
-          [
-            "ISO/IEC 42001 A.6.2.8",
-            "System information for users"
-          ],
-          [
-            "ISO/IEC TS 6254",
-            "Objectives and approaches for explainability"
-          ]
+        "operations": [
+          "Empty state: when no profiles exist, shows an honest empty state. CRUD",
+          "operations are RBAC-gated (can('create'), can('update'), can('delete')).",
+          "Soft-delete pattern. Writes throw on failure. Method selection is recorded",
+          "with each explanation. Realtime: not realtime; staleTime-based React Query",
+          "refresh."
         ],
+        "fields": [],
         "noDocReason": null
       }
     ]
@@ -2476,7 +2525,7 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
     "id": "trust-engine-gateways",
     "title": "TRUST ENGINE & GATEWAYS",
     "entryCount": 15,
-    "documentedCount": 15,
+    "documentedCount": 14,
     "entries": [
       {
         "label": "Runtime Trust",
@@ -3397,36 +3446,17 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "label": "GenAI Risk Profiles",
         "route": "/genai-risks",
         "parentLabel": null,
-        "hasDoc": true,
-        "docPath": "docs/modules/benchmarking-maturity.md",
-        "title": "Benchmarking & Examination Manager",
-        "purpose": "External and internal benchmarking of AI systems' quality/safety and structured management of regulator examinations (onsite inspections, supervisory reviews, audits).",
-        "why": "",
+        "hasDoc": false,
+        "docPath": null,
+        "title": "GenAI Risk Profiles",
+        "purpose": null,
+        "why": null,
         "how": [],
         "dataProcess": [],
         "interlinks": [],
-        "compliance": [
-          "| Control | Requirement |"
-        ],
+        "compliance": [],
         "operations": [],
-        "fields": [
-          [
-            "EU AI Act Art.43, 70",
-            "Conformity assessment, national supervisory authorities"
-          ],
-          [
-            "SR 11-7 / OCC 2011-12",
-            "Model validation, challenger models"
-          ],
-          [
-            "ISO/IEC 42001 9.2",
-            "Internal audit"
-          ],
-          [
-            "SOC 2 CC4.1",
-            "Monitoring activities"
-          ]
-        ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -5593,31 +5623,37 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "docPath": "docs/modules/financial-risk.md",
         "title": "Financial Risk Quantification",
         "purpose": "FAIR-style quantification of AI risk scenarios: loss event frequency × loss magnitude → annualized loss expectancy (ALE), with per-scenario controls (cost vs. risk-reduction) and insurance mapping.",
-        "why": "",
-        "how": [],
-        "dataProcess": [
-          "public.financial_risks (uuid PK, org-scoped RLS financial_risks_org_all): FAIR primitives as real columns; ALE is computed (computeFair), never typed in; model_id → ai_models.id, linked_risk_id → risks.id.",
-          "No simulated Monte Carlo output is displayed — only quantities derived from stored records."
+        "why": "ISO/IEC 42001 6.1.4 requires AI system impact assessment including the financial dimension. Open FAIR provides the standard taxonomy for loss-event frequency and magnitude. Regulators (BCBS 239 for financial services) expect risk data aggregation for model-driven exposures. This module stores the quantification — not fabricated Monte Carlo output, only quantities derived from stored records.",
+        "how": [
+          "1. Each scenario is stored in financial_risks with FAIR primitives as real",
+          "columns: threat event frequency, vulnerability, primary/secondary loss",
+          "event frequency, primary/secondary loss magnitude.",
+          "2. ALE is computed by computeFair at render time — never typed in directly.",
+          "3. model_id links to ai_models.id (the risk scenario's subject model).",
+          "4. linked_risk_id links to risks.id (the operational risk this quantifies).",
+          "5. Controls per scenario carry cost and risk-reduction percentage."
         ],
-        "interlinks": [],
+        "dataProcess": [],
+        "interlinks": [
+          "Outbound — PillLink to /models/inventory/:id (subject model),",
+          "PillLink to /risks?open=<id> (linked risk).",
+          "Inbound — reachable from sidebar nav (Risk & Oversight group);",
+          "risk detail pages can link to financial quantification."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Art. 9 (risk management): financial dimension of AI risk.",
+          "ISO/IEC 42001 — 6.1.4 (AI system impact assessment): financial impact",
+          "quantification.",
+          "Open FAIR — O-RT / O-RA: loss-event frequency and magnitude taxonomy.",
+          "BCBS 239 — risk data aggregation for model-driven exposures."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "Open FAIR O-RT / O-RA",
-            "Loss-event frequency and magnitude taxonomy"
-          ],
-          [
-            "ISO/IEC 42001 6.1.4",
-            "AI system impact assessment (financial dimension)"
-          ],
-          [
-            "BCBS 239",
-            "Risk data aggregation for model-driven exposures"
-          ]
+        "operations": [
+          "Empty state: when no scenarios exist, shows an honest empty state. ALE is",
+          "derived, never fabricated. No simulated Monte Carlo output is displayed.",
+          "Writes throw on failure. Realtime: not realtime; staleTime-based React Query",
+          "refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -5822,37 +5858,40 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/remediation-tasks.md",
         "title": "Remediation & Tasks",
-        "purpose": "Track corrective and preventive actions (CAPA) linked to gaps, findings, incidents, and exceptions; enforce SLA and evidence-of-closure.",
-        "why": "",
+        "purpose": "Track corrective and preventive actions (CAPA) linked to gaps, findings, incidents, and exceptions. Enforce SLA and evidence-of-closure with milestone tracking and Gantt visualisation.",
+        "why": "ISO/IEC 27001:2022 10.1–10.2 requires nonconformity and corrective action. SOC 2 CC4.2 mandates remediation of deficiencies. NIST AI RMF MANAGE 2, 4 covers risk treatment and continual improvement. Gaps and findings are worthless without tracked remediation — this module closes the loop from finding to fix.",
         "how": [
-          "Open → Owner → Plan → Execute → Evidence attached → Independent verification → Close. Overdue items escalate and degrade Trust Score."
+          "1. Plans are stored in remediation_plans with progress tracking",
+          "(progress_pct), milestones (jsonb), owner, priority, and linked",
+          "entities.",
+          "2. Lifecycle: Open → Owner → Plan → Execute → Evidence attached →",
+          "Independent verification → Close.",
+          "3. Overdue items escalate and degrade Trust Score.",
+          "4. Gantt chart and list views provide two perspectives on the same data.",
+          "5. Deep-link support: ?open=<id> opens a specific plan."
         ],
-        "dataProcess": [
-          "public.remediation_plans (uuid PK, org-scoped RLS): progress_pct, milestones jsonb, incident_id → incidents, risk_id → risks, linked_model_ids → models; full CRUD via useRemediations (writes throw — no fake success)."
+        "dataProcess": [],
+        "interlinks": [
+          "Outbound — InterlinkChip to /risk/incidents?open=<id>,",
+          "/risks?open=<id>, /models/inventory/:id, /audits?open=<id>,",
+          "/control-testing.",
+          "Inbound — reachable from sidebar nav (Risk & Oversight group);",
+          "incident pages, gap analysis, and audit findings link here via",
+          "?open=<id>."
         ],
-        "interlinks": [],
         "compliance": [
-          "| Control | Requirement |"
+          "ISO/IEC 27001:2022 — 10.1–10.2 (nonconformity and corrective action).",
+          "ISO 9001 — 10 (improvement).",
+          "SOC 2 — CC4.2 (remediation of deficiencies).",
+          "NIST AI RMF — MANAGE 2, 4 (risk treatment and continual improvement)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "ISO/IEC 27001:2022 10.1–10.2",
-            "Nonconformity and corrective action"
-          ],
-          [
-            "ISO 9001 10",
-            "Improvement"
-          ],
-          [
-            "SOC 2 CC4.2",
-            "Remediation of deficiencies"
-          ],
-          [
-            "NIST AI RMF MANAGE 2, 4",
-            "Risk treatment and continual improvement"
-          ]
+        "operations": [
+          "Empty state: when no plans exist, shows an honest empty state. Full CRUD",
+          "via useRemediations — writes throw on failure. incident_id →",
+          "incidents.id, risk_id → risks.id, linked_model_ids → models.",
+          "Realtime: not realtime; staleTime-based React Query refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -6007,24 +6046,35 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "docPath": "docs/modules/automation-studio.md",
         "title": "Automation Studio",
         "purpose": "Governance automation rules: a trigger (incident created, model drift, approval required, schedule) plus an ordered action list (create HITL review, hold deployments, create approval, notify). Rules are definitions; every run is a recorded fact.",
-        "why": "",
-        "how": [],
+        "why": "ISO/IEC 42001 8.2 requires operational planning and control. EU AI Act Art. 14 mandates human oversight gates in automated flows. Manual governance tasks (create a review when drift exceeds threshold, notify when an incident is critical) should be codified as auditable rules, not ad-hoc and undocumented.",
+        "how": [
+          "1. Rules are stored in automation_rules with trigger type, conditions,",
+          "and an ordered action list.",
+          "2. Each rule execution creates a row in automation_runs — the only source",
+          "of execution claims.",
+          "3. \"Validate\" checks the rule's configuration and records a",
+          "validated/failed run — nothing is executed and no synthetic outcome",
+          "is invented.",
+          "4. Multi-agent orchestration lives in Choreography (/multi-agent) —",
+          "Automation Studio links there rather than duplicating it."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — link to /multi-agent (agent choreography).",
+          "Inbound — reachable from sidebar nav (Agent Control group);",
+          "Compliance Autopilot links here for rule configuration."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "ISO/IEC 42001 — 8.2 (operational planning and control).",
+          "EU AI Act — Art. 14 (human oversight gates in automated flows)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "ISO/IEC 42001 8.2",
-            "Operational planning and control"
-          ],
-          [
-            "EU AI Act Art. 14",
-            "Human oversight gates in automated flows"
-          ]
+        "operations": [
+          "Honesty contract: \"Validate\" checks configuration only — no execution, no",
+          "synthetic outcomes. Run history is append-only evidence of what rules",
+          "actually did. Writes throw on failure; success toasts fire only after the",
+          "write resolves. Realtime: not realtime; staleTime-based React Query refresh."
         ],
+        "fields": [],
         "noDocReason": null
       }
     ]
@@ -6042,13 +6092,39 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/compliance-overview.md",
         "title": "Compliance Overview",
-        "purpose": "",
-        "why": "",
-        "how": [],
+        "purpose": "Derived posture dashboard showing framework-level compliance scores, control coverage, and recent scoring activity — the compliance officer's landing page.",
+        "why": "ISO/IEC 42001 9.3 requires management review of the AI management system's performance. A compliance officer needs a single view of which frameworks are tracked, how coverage stands, and what changed — without drilling into each framework individually. This page is that view.",
+        "how": [
+          "1. Framework scores are derived from real frameworks rows — each framework's",
+          "score reflects the ratio of implemented/effective controls to total",
+          "in-scope controls.",
+          "2. Control coverage is computed from controls rows mapped to each framework,",
+          "using status to determine implementation state.",
+          "3. compliance_scores stores periodic recalculations — the mesh's",
+          "ComplianceImpact agent writes here, so this screen reflects live",
+          "governance telemetry.",
+          "4. No literal scores are invented; — is shown where nothing is measured yet."
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
+        "interlinks": [
+          "Outbound — InterlinkChip to /compliance/gap-analysis (gaps),",
+          "InterlinkChip to /compliance/controls (control library), framework cards",
+          "navigate to individual framework detail.",
+          "Inbound — reachable from sidebar nav (Compliance & Regulatory group);",
+          "serves as the group landing page."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 9 (risk management system): visualises control",
+          "coverage across obligated frameworks.",
+          "ISO/IEC 42001 — 9.3 (management review): provides the posture view",
+          "leadership reviews."
+        ],
+        "operations": [
+          "Empty state: when no frameworks exist, shows an honest empty state with a",
+          "link to add frameworks. Writes: read-only page — no mutations. The",
+          "ComplianceImpact mesh agent writes compliance_scores rows; this page only",
+          "reads them. Realtime: not realtime; staleTime-based React Query refresh."
+        ],
         "fields": [],
         "noDocReason": null
       },
@@ -6226,13 +6302,37 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/control-drift.md",
         "title": "Control Drift",
-        "purpose": "",
-        "why": "",
-        "how": [],
+        "purpose": "Trend analysis of control effectiveness over time, detecting drift from established baselines and surfacing alerts when controls degrade.",
+        "why": "ISO/IEC 42001 9.1 requires monitoring and measurement of the AI management system. Controls that pass today may degrade tomorrow — a one-time assessment is not continuous compliance. Control Drift tracks evaluation results over time so degradation is caught, not discovered at audit.",
+        "how": [
+          "1. Trends render only from real evaluation rows in",
+          "control_evaluation_history — each row carries drift_severity and",
+          "drift_delta_pct.",
+          "2. An empty table shows an honest empty state (no fabricated \"live drift\").",
+          "3. Acknowledge/review actions persist to the database.",
+          "4. Raising a non-conformity creates a real audit finding.",
+          "5. The Python drift detector (sentinel/compliance/drift_detector.py) writes",
+          "the same columns, so both manual and automated evaluations appear."
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
+        "interlinks": [
+          "Outbound — control links to /compliance/controls?open=<id>,",
+          "raised findings to /audit-management.",
+          "Inbound — reachable from sidebar nav (Compliance & Regulatory group);",
+          "the Python drift detector writes evaluation rows."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 9 (risk management system): continuous monitoring of",
+          "control effectiveness.",
+          "ISO/IEC 42001 — 9.1 (monitoring, measurement, analysis and evaluation):",
+          "trend data over control evaluations."
+        ],
+        "operations": [
+          "Alerts: useControlDriftAlerts subscribes to org-scoped realtime_alerts",
+          "via Supabase Realtime for live toasts. A critical alert refetches the",
+          "evaluation history. Alert types: control_drift_critical,",
+          "control_drift_warning, reg_text_changed. Writes throw on failure."
+        ],
         "fields": [],
         "noDocReason": null
       },
@@ -6243,13 +6343,39 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/gap-analysis.md",
         "title": "Gap Analysis",
-        "purpose": "",
-        "why": "",
-        "how": [],
+        "purpose": "Computed view of compliance gaps — controls that are mapped and in-scope but not yet implemented or effective — grouped by framework with coverage rollups.",
+        "why": "ISO/IEC 42001 10.1 requires identification and correction of nonconformities. EU AI Act Art. 9 requires continuous improvement of the risk management system. Knowing which controls remain unimplemented is the prerequisite for prioritised remediation. This page derives that from the control library rather than maintaining a separate gap register.",
+        "how": [
+          "1. Gaps are computed, never authored: any mapped in-scope control not",
+          "implemented/effective becomes a gap row.",
+          "2. Controls marked not_applicable are out of scope — they are NOT gaps and",
+          "do not count toward coverage.",
+          "3. Gaps are grouped by framework and merged with mesh-recorded gap strings",
+          "from compliance_scores.gaps.",
+          "4. Per-framework rollup (implemented+effective vs in-scope total, with a",
+          "coverage bar) is derived live from the control library on every fetch",
+          "(fetchGaps returns { gaps, rollups }; hook: useGaps).",
+          "5. Each gap links to its control record for remediation."
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
+        "interlinks": [
+          "Outbound — InterlinkChip to /compliance/controls?open=<id> (control",
+          "record), framework cards to framework detail.",
+          "Inbound — reachable from Compliance Overview landing page and sidebar",
+          "nav; gaps auto-generate Tasks and Remediation records."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 9 (risk management system): identifies where",
+          "controls fall short.",
+          "ISO/IEC 42001 — 10.1 (nonconformity and corrective action):",
+          "systematic gap identification."
+        ],
+        "operations": [
+          "Empty state: an empty gap list is the ideal state (\"all controls",
+          "implemented\") and is shown with a positive message. Pure derived: nothing",
+          "is stored in a gap-specific table. Export is a real CSV of the derived rows.",
+          "Realtime: not realtime; staleTime-based React Query refresh."
+        ],
         "fields": [],
         "noDocReason": null
       },
@@ -6432,13 +6558,41 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/compliance-calendar.md",
         "title": "Compliance Calendar",
-        "purpose": "",
-        "why": "",
-        "how": [],
+        "purpose": "Unified deadline and milestone view that aggregates both manual compliance entries and live-derived events from across the platform into a single calendar interface.",
+        "why": "EU AI Act Art. 72 and ISO/IEC 42001 9.1 require ongoing monitoring with documented timelines. Regulatory filings, conformity-assessment renewals, training windows, and exception expiries each have their own table — an officer who has to open five modules to know what is due this month will miss something. The calendar centralises every deadline onto one surface.",
+        "how": [
+          "1. Manual entries are CRUD records in compliance_calendar (title, due date,",
+          "category, linked entity).",
+          "2. Derived events are computed at read time from sibling tables:",
+          "conformity_assessments.valid_until → renewal deadlines",
+          "compliance_exceptions expiry dates",
+          "tabletop_exercises scheduled dates",
+          "regulator_filings statutory deadlines",
+          "training_assignments completion windows",
+          "3. Each derived event carries source_type and source_id so a click",
+          "navigates to the originating record. Derived events are read-only and",
+          "never persisted.",
+          "4. The calendar renders month/week views with colour-coded categories and"
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
+        "interlinks": [
+          "Outbound — click-through on derived events routes to the source module",
+          "(/conformity-assessment, /compliance/exceptions, /tabletop, etc.).",
+          "Inbound — reachable from sidebar nav (Compliance & Regulatory group);",
+          "deep-link ?date=YYYY-MM-DD scrolls to that date."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 72 (post-market monitoring): centralises statutory",
+          "deadlines so nothing is missed.",
+          "ISO/IEC 42001 — 9.1 (monitoring, measurement, analysis): provides the",
+          "timeline view over compliance activities."
+        ],
+        "operations": [
+          "Empty state: when no events exist, shows an honest empty state. Manual",
+          "entries are org-scoped with RLS; derived events inherit the org scope of",
+          "their source table. Writes throw on failure. Realtime: not realtime;",
+          "staleTime-based React Query refresh."
+        ],
         "fields": [],
         "noDocReason": null
       },
@@ -7032,13 +7186,39 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/reg-radar.md",
         "title": "Reg Radar",
-        "purpose": "",
-        "why": "",
-        "how": [],
+        "purpose": "Horizon-scanning and deadline view over the regulatory register, showing upcoming regulations, their effective dates, and readiness status.",
+        "why": "EU AI Act Art. 9 and ISO/IEC 42001 6.1.1 require organisations to identify and assess regulatory obligations affecting their AI systems. Reg Radar provides the forward-looking lens — what is coming, when it takes effect, and which models it impacts — so the compliance team can prepare before deadlines arrive rather than reacting after.",
+        "how": [
+          "1. Reads from regulation_entries — the same table that powers Regulatory",
+          "Intelligence — but filters and presents through a deadline/horizon lens.",
+          "2. Countdown timers are computed from effective_on at render time, never",
+          "stored.",
+          "3. Each entry carries obligations (jsonb array) and linked_model_ids to",
+          "show which AI models are affected.",
+          "4. Detail view (/reg-radar/:id) shows the full regulation with obligations,",
+          "linked models, and jurisdiction."
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
+        "interlinks": [
+          "Outbound — PillLink to /models/inventory/:id (affected models),",
+          "InterlinkChip to /regulatory-intelligence (risk-mapping view on same",
+          "data).",
+          "Inbound — reachable from sidebar nav (Compliance & Regulatory group);",
+          "deep-link ?id=<uuid> opens that regulation."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 9 (risk management system): horizon scanning for",
+          "regulatory obligations.",
+          "ISO/IEC 42001 — 6.1.1 (actions to address risks and opportunities):",
+          "forward-looking regulatory awareness."
+        ],
+        "operations": [
+          "Empty state: when no regulation entries exist, shows an honest empty state.",
+          "One id-space: regulation_entries is shared with Regulatory Intelligence —",
+          "same rows, different lens. Writes: read-only page — no mutations from this",
+          "view (edits go through Regulatory Intelligence). Realtime: not realtime;",
+          "staleTime-based React Query refresh."
+        ],
         "fields": [],
         "noDocReason": null
       },
@@ -7049,13 +7229,38 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/reg-velocity.md",
         "title": "Reg Velocity",
-        "purpose": "",
-        "why": "",
-        "how": [],
+        "purpose": "Change-pressure analytics derived from the regulatory register, showing the pace and volume of upcoming regulatory obligations across jurisdictions and their impact on the AI model fleet.",
+        "why": "When multiple regulations take effect in the same quarter across different jurisdictions, the compliance team needs to understand the aggregate load — not just individual deadlines. Reg Velocity answers \"how much regulatory change is coming and where?\" so resourcing and prioritisation decisions can be made with data.",
+        "how": [
+          "1. All figures are derived live from regulation_entries on every fetch —",
+          "nothing is stored separately.",
+          "2. Entries effective in the next 90/180 days are counted, grouped by",
+          "jurisdiction and status.",
+          "3. Open vs. met obligations are tallied from each entry's obligations",
+          "jsonb array.",
+          "4. Impacted models are the union of all linked_model_ids across upcoming",
+          "entries.",
+          "5. Per-jurisdiction load is visualised as a breakdown showing which",
+          "jurisdictions carry the most upcoming regulatory activity."
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
+        "interlinks": [
+          "Outbound — InterlinkChip to /reg-radar (timeline view),",
+          "model links to /models/inventory/:id.",
+          "Inbound — reachable from sidebar nav (Compliance & Regulatory group)."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 9 (risk management system): quantifies regulatory",
+          "change pressure for planning.",
+          "ISO/IEC 42001 — 6.1.1 (actions to address risks and opportunities):",
+          "data-driven view of the regulatory landscape."
+        ],
+        "operations": [
+          "Empty state: when no regulation entries exist, shows an honest empty state.",
+          "Pure read-only: all data is derived from regulation_entries, no separate",
+          "table or mutations. Realtime: not realtime; staleTime-based React Query",
+          "refresh."
+        ],
         "fields": [],
         "noDocReason": null
       },
@@ -7121,13 +7326,41 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/transparency-reports.md",
         "title": "Transparency Reports",
-        "purpose": "",
-        "why": "",
-        "how": [],
+        "purpose": "Registry of transparency disclosures for AI systems — generated by the Narrative Engine agent or prepared manually — with versioning, audience targeting, and publication workflow.",
+        "why": "EU AI Act Art. 13 and Art. 50 require transparency obligations including disclosure of AI system capabilities, limitations, and intended purpose. ISO/IEC 42001 A.6.2.8 mandates provision of system information to users. This module stores, versions, and publishes those disclosures.",
+        "how": [
+          "1. Reports are stored in transparency_reports with model linkage",
+          "(model_id), version tracking, audience, and content.",
+          "2. The NarrativeEngine mesh agent can auto-generate reports by composing",
+          "from structured governance data. These carry generated_by =",
+          "NarrativeEngineAgent and an event_id.",
+          "3. Human-authored reports carry the author's name in generated_by and",
+          "render without the mesh badge.",
+          "4. Publishing stamps published_at; download produces a real artifact of",
+          "the stored content."
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
+        "interlinks": [
+          "Outbound — PillLink to /models/inventory/:id (subject model).",
+          "Published reports are bindable as Trust Center resources.",
+          "Inbound — reachable from sidebar nav (Compliance & Regulatory group);",
+          "the NarrativeEngine agent writes here; Trust Center resolves by",
+          "transparency_reports.id."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 13 (transparency and provision of information),",
+          "Art. 50 (transparency obligations for certain AI systems).",
+          "ISO/IEC 42001 — A.6.2.8 (system information for users).",
+          "Art. 12 audit logging: saves and deletes write to audit_log via",
+          "logAction (module transparency-reports), with a dedicated publish",
+          "action for the externally significant transition."
+        ],
+        "operations": [
+          "Empty state: when no reports exist, shows an honest empty state. Provenance",
+          "honesty: mesh-generated vs. human-authored is visually distinct and the KPI",
+          "counts only true mesh rows. Writes throw on failure. Realtime: not realtime;",
+          "staleTime-based React Query refresh."
+        ],
         "fields": [],
         "noDocReason": null
       },
@@ -7138,13 +7371,44 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/post-market.md",
         "title": "Post-Market Monitoring",
-        "purpose": "",
-        "why": "",
-        "how": [],
+        "purpose": "Surveillance plans and event log for monitoring AI systems after deployment, as required by EU AI Act Art. 72 — tracking metrics, threshold breaches, complaints, and drift observations against each model.",
+        "why": "EU AI Act Art. 72 mandates a post-market monitoring system proportionate to the risk level of the AI system. ISO/IEC 42001 A.9.4 requires continuous monitoring of AI system performance. This module provides the plan structure (what to monitor, what thresholds to set) and the event ledger (what actually happened), with escalation to the incident management workflow.",
+        "how": [
+          "1. A surveillance plan is created in post_market_plans, keyed to a model",
+          "(ai_models.id), defining metrics to monitor and threshold configurations.",
+          "2. Events are logged in post_market_events — breaches, complaints, drift",
+          "observations — each linked to a plan (or standalone).",
+          "3. Critical/high events can be escalated to an incident: the escalation",
+          "creates a real incident record via the incident service and emits",
+          "INCIDENT_CREATED, triggering the mesh cascade.",
+          "4. Plan deletion keeps the ledger: post_market_events.plan_id is",
+          "ON DELETE SET NULL — deleting a plan leaves its logged events in place.",
+          "The delete dialog states this."
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
+        "interlinks": [
+          "Outbound — PillLink to /models/inventory/:id (monitored model),",
+          "InterlinkChip to /risk/incidents?open=<id> (escalated incident),",
+          "Art. 73 chip to incident page for serious-incident assessment.",
+          "Inbound — reachable from sidebar nav (Compliance & Regulatory group);",
+          "model detail pages link here via performance/monitoring chips."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 72 (post-market monitoring system): this module IS",
+          "the post-market monitoring system. Art. 73 (serious incident reporting):",
+          "escalation path surfaces the assessment chip.",
+          "ISO/IEC 42001 — A.9.4 (monitoring and measuring AI system performance):",
+          "the surveillance plan and event ledger.",
+          "Art. 12 audit logging: plan and event writes log to audit_log via",
+          "logAction (module post-market); escalation logs an escalate action",
+          "carrying the created incident uuid."
+        ],
+        "operations": [
+          "Empty state: when no plans exist, shows an honest empty state with guidance",
+          "to create a surveillance plan. Plan deletion is soft — events survive with",
+          "null plan_id. Writes throw on failure; success toasts fire only after the",
+          "write resolves. Realtime: not realtime; staleTime-based React Query refresh."
+        ],
         "fields": [],
         "noDocReason": null
       },
@@ -7269,13 +7533,37 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/autopilot.md",
         "title": "Compliance Autopilot",
-        "purpose": "",
-        "why": "",
-        "how": [],
+        "purpose": "A compliance-focused lens over the governance agent fleet and its execution ledger, showing which agents ran, what they did, and whether they succeeded.",
+        "why": "EU AI Act Art. 14 requires human oversight of automated systems. ISO/IEC 42001 A.9.2 mandates operational controls over autonomous AI. Compliance Autopilot gives the compliance officer a single view of every governance agent that acts on their behalf, with an audit trail of every execution — without needing to understand the full agent platform.",
+        "how": [
+          "The page reads from the same agent_registry and agent_executions tables that",
+          "power the Governance Mesh, but filters to compliance-relevant agents (by",
+          "category and target modules). No separate data is stored — this is a view, not a",
+          "second id-space.",
+          "1. KPI tiles summarise the fleet: agent count, actions in the last 24 h,",
+          "success/failure counts, and time since last action.",
+          "2. Agent roster cards show each agent's type, run mode, target modules, owner,",
+          "and last-run status.",
+          "3. An action log table lists every execution with timestamp, agent, event,",
+          "status, and summary."
+        ],
         "dataProcess": [],
-        "interlinks": [],
-        "compliance": [],
-        "operations": [],
+        "interlinks": [
+          "Outbound — InterlinkChip to /governance-mesh (full fleet), InterlinkChip",
+          "to /automation-studio (rules).",
+          "Inbound — reachable from sidebar nav (Compliance & Regulatory group)."
+        ],
+        "compliance": [
+          "EU AI Act — Art. 14 (human oversight): provides visibility over autonomous",
+          "agent actions so a human can review and intervene.",
+          "ISO/IEC 42001 — A.9.2 (operational controls over AI capability): the",
+          "execution ledger is the evidence of what agents did and whether it succeeded."
+        ],
+        "operations": [
+          "Empty state: when no compliance agents exist, shows an honest empty state with",
+          "a link to the Governance Mesh to register agents. Writes: read-only page —",
+          "no mutations. Realtime: not realtime; staleTime-based React Query refresh."
+        ],
         "fields": [],
         "noDocReason": null
       }
@@ -9368,39 +9656,41 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/ethics-reporting.md",
         "title": "Ethics Reporting & Whistleblowing",
-        "purpose": "Confidential channel for employees and external parties to raise ethics, AI-safety, or compliance concerns, with triage, investigation, and non-retaliation evidence.",
-        "why": "",
+        "purpose": "Confidential channel for employees and external parties to raise ethics, AI-safety, or compliance concerns, with triage, investigation tracking, and non-retaliation evidence.",
+        "why": "EU Directive 2019/1937 requires whistleblower protection channels. ISO 37002:2021 mandates whistleblowing management systems. ISO/IEC 42001 A.5.3 requires AI ethics and accountability mechanisms. Without a structured intake and investigation workflow, concerns go unreported or untracked.",
         "how": [
-          "Intake (anonymous option) → Ack within 7 days → Triage → Investigation with SoD from subject → Outcome → Feedback within 3 months → Evidence retention."
+          "1. Reports are submitted via the public form (/ethics-reporting-submit)",
+          "with an anonymous option.",
+          "2. Each report enters the triage pipeline: Intake → Acknowledgement (within",
+          "7 days) → Triage → Investigation (with separation of duties from subject)",
+          "→ Outcome → Feedback (within 3 months) → Evidence retention.",
+          "3. Reports are stored in ethics_reports with severity, category, status,",
+          "assigned investigator, and timeline.",
+          "4. Identity disclosure is access-controlled — the \"View Identity\" dialog",
+          "exists for authorised investigators only."
         ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — public submit form at /ethics-reporting-submit. Stub",
+          "\"Link to Risk\" and \"Link to Incident\" buttons exist but are not yet wired.",
+          "Inbound — reachable from sidebar nav (Compliance & Regulatory group)."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "EU Directive 2019/1937 — whistleblower protection.",
+          "US SOX §806 — whistleblower provisions.",
+          "ISO 37002:2021 — whistleblowing management.",
+          "ISO/IEC 42001 — A.5.3 (AI ethics and accountability).",
+          "UN Guiding Principles — remedy mechanism."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "EU Directive 2019/1937",
-            "Whistleblower protection"
-          ],
-          [
-            "US SOX §806",
-            "Whistleblower provisions"
-          ],
-          [
-            "ISO 37002:2021",
-            "Whistleblowing management"
-          ],
-          [
-            "ISO/IEC 42001 A.5.3",
-            "AI ethics and accountability"
-          ],
-          [
-            "UN Guiding Principles",
-            "Remedy mechanism"
-          ]
+        "operations": [
+          "Empty state: when no reports exist, shows an honest empty state.",
+          "Anonymous submissions carry no reporter identity — View Identity is",
+          "disabled for anonymous reports. Writes throw on failure. The legacy SEED",
+          "constant in the component is unused — reports load from the backend via",
+          "useEthicsReportsData. Realtime: not realtime; staleTime-based React Query",
+          "refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -9410,39 +9700,41 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/ethics-reporting.md",
         "title": "Ethics Reporting & Whistleblowing",
-        "purpose": "Confidential channel for employees and external parties to raise ethics, AI-safety, or compliance concerns, with triage, investigation, and non-retaliation evidence.",
-        "why": "",
+        "purpose": "Confidential channel for employees and external parties to raise ethics, AI-safety, or compliance concerns, with triage, investigation tracking, and non-retaliation evidence.",
+        "why": "EU Directive 2019/1937 requires whistleblower protection channels. ISO 37002:2021 mandates whistleblowing management systems. ISO/IEC 42001 A.5.3 requires AI ethics and accountability mechanisms. Without a structured intake and investigation workflow, concerns go unreported or untracked.",
         "how": [
-          "Intake (anonymous option) → Ack within 7 days → Triage → Investigation with SoD from subject → Outcome → Feedback within 3 months → Evidence retention."
+          "1. Reports are submitted via the public form (/ethics-reporting-submit)",
+          "with an anonymous option.",
+          "2. Each report enters the triage pipeline: Intake → Acknowledgement (within",
+          "7 days) → Triage → Investigation (with separation of duties from subject)",
+          "→ Outcome → Feedback (within 3 months) → Evidence retention.",
+          "3. Reports are stored in ethics_reports with severity, category, status,",
+          "assigned investigator, and timeline.",
+          "4. Identity disclosure is access-controlled — the \"View Identity\" dialog",
+          "exists for authorised investigators only."
         ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — public submit form at /ethics-reporting-submit. Stub",
+          "\"Link to Risk\" and \"Link to Incident\" buttons exist but are not yet wired.",
+          "Inbound — reachable from sidebar nav (Compliance & Regulatory group)."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "EU Directive 2019/1937 — whistleblower protection.",
+          "US SOX §806 — whistleblower provisions.",
+          "ISO 37002:2021 — whistleblowing management.",
+          "ISO/IEC 42001 — A.5.3 (AI ethics and accountability).",
+          "UN Guiding Principles — remedy mechanism."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "EU Directive 2019/1937",
-            "Whistleblower protection"
-          ],
-          [
-            "US SOX §806",
-            "Whistleblower provisions"
-          ],
-          [
-            "ISO 37002:2021",
-            "Whistleblowing management"
-          ],
-          [
-            "ISO/IEC 42001 A.5.3",
-            "AI ethics and accountability"
-          ],
-          [
-            "UN Guiding Principles",
-            "Remedy mechanism"
-          ]
+        "operations": [
+          "Empty state: when no reports exist, shows an honest empty state.",
+          "Anonymous submissions carry no reporter identity — View Identity is",
+          "disabled for anonymous reports. Writes throw on failure. The legacy SEED",
+          "constant in the component is unused — reports load from the backend via",
+          "useEthicsReportsData. Realtime: not realtime; staleTime-based React Query",
+          "refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -9495,34 +9787,36 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": "People & Ethics",
         "hasDoc": true,
         "docPath": "docs/modules/benchmarking-maturity.md",
-        "title": "Benchmarking & Examination Manager",
-        "purpose": "External and internal benchmarking of AI systems' quality/safety and structured management of regulator examinations (onsite inspections, supervisory reviews, audits).",
-        "why": "",
-        "how": [],
+        "title": "Benchmarking & Maturity Assessment",
+        "purpose": "Per-domain maturity assessment of AI governance capabilities, benchmarked to CMMI and NIST CSF tiers. External benchmarking of AI systems' quality/safety and structured management of regulator examinations.",
+        "why": "EU AI Act Art. 43 requires conformity assessment. ISO/IEC 42001 9.2 mandates internal audit. SOC 2 CC4.1 requires monitoring activities. An organisation needs to measure where it stands across governance domains and track improvement over time — maturity scoring provides that structured self-assessment.",
+        "how": [
+          "1. Maturity is assessed across governance dimensions (Initial → Managed →",
+          "Defined → Quantitatively Managed → Optimising).",
+          "2. Assessments are stored in maturity_assessments with per-dimension",
+          "scores.",
+          "3. A radar chart visualises the multi-dimensional assessment.",
+          "4. The Assessment Wizard guides a structured self-assessment walk-through.",
+          "5. Benchmarking compares against CMMI and NIST CSF tiers."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — none currently.",
+          "Inbound — reachable from sidebar nav (Assess & Validate group)."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Art. 43 (conformity assessment): maturity as evidence of",
+          "governance capability.",
+          "ISO/IEC 42001 — 9.2 (internal audit): structured self-assessment.",
+          "SOC 2 — CC4.1 (monitoring activities).",
+          "SR 11-7 / OCC 2011-12 — model validation (benchmark track)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "EU AI Act Art.43, 70",
-            "Conformity assessment, national supervisory authorities"
-          ],
-          [
-            "SR 11-7 / OCC 2011-12",
-            "Model validation, challenger models"
-          ],
-          [
-            "ISO/IEC 42001 9.2",
-            "Internal audit"
-          ],
-          [
-            "SOC 2 CC4.1",
-            "Monitoring activities"
-          ]
+        "operations": [
+          "Empty state: when no assessments exist, shows an honest empty state with",
+          "guidance to start the Assessment Wizard. Writes throw on failure. Realtime:",
+          "not realtime; staleTime-based React Query refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -9531,38 +9825,46 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "parentLabel": null,
         "hasDoc": true,
         "docPath": "docs/modules/agent-platform.md",
-        "title": "Agent Platform (Registry, Discovery, IAM, Choreography)",
-        "purpose": "Govern autonomous and human-in-the-loop agents: registration, capability declaration, identity and entitlements (non-human identity), orchestration, and safety rails.",
-        "why": "",
-        "how": [],
+        "title": "Agent Platform",
+        "purpose": "Govern autonomous and human-in-the-loop agents: registration, capability declaration, identity and entitlements (non-human identity), orchestration, and safety rails. The Governance Mesh is the fleet-wide view of the 10 built-in governance sentinels.",
+        "why": "OWASP LLM Top 10 (Agentic) identifies excessive agency and tool misuse. EU AI Act Art. 14 and 15 require oversight and robustness. ISO/IEC 42001 A.9 covers use of AI systems and oversight. Autonomous agents that can create records, pause models, or file reports need the same governance as human operators — registration, capability scoping, and kill-switch binding.",
+        "how": [
+          "1. Agents are registered in agent_gov_registry with identity (workload ID),",
+          "declared tools, permissions (least-privilege), policy set, HITL",
+          "checkpoints, kill-switch binding, owner, and lifecycle state.",
+          "2. The Governance Mesh renders the 10 built-in sentinels (ComplianceImpact,",
+          "DriftWatcher, AutoPause, etc.) with their execution history and event",
+          "stream.",
+          "3. Client-side sweep runs all sentinels that have browser-executable logic;",
+          "server-side sweep triggers the Python evaluator.",
+          "4. Agent Inspector panel shows per-sentinel execution detail, findings, and",
+          "links to affected entities.",
+          "5. Choreography handles deterministic routing of multi-agent workflows with",
+          "observable span-level traces."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — InterlinkChip to /models/inventory/:id,",
+          "/risk/incidents?open=<id>, /datasets/:id, /agents/:id via",
+          "findingLink().",
+          "Inbound — reachable from sidebar nav (Agent Control group);",
+          "Compliance Autopilot links here; kill-switch events reference agents."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "OWASP LLM Top 10 (Agentic) — excessive agency, tool misuse.",
+          "EU AI Act — Art. 14 (oversight), Art. 15 (robustness).",
+          "ISO/IEC 42001 — A.9 (use of AI system and oversight).",
+          "NIST AI RMF — MANAGE 2.1 (risk response tracked post-deployment).",
+          "NIST SP 800-207 — zero-trust applied to workload identities."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "OWASP LLM Top 10 (Agentic)",
-            "Excessive agency, tool misuse"
-          ],
-          [
-            "EU AI Act Art.14, 15",
-            "Oversight, robustness"
-          ],
-          [
-            "ISO/IEC 42001 A.9",
-            "Use of the AI system and oversight"
-          ],
-          [
-            "NIST AI RMF MANAGE 2.1",
-            "Risk response tracked post-deployment"
-          ],
-          [
-            "NIST SP 800-207",
-            "Zero-trust applied to workload identities"
-          ]
+        "operations": [
+          "Fleet seeding: the 10-sentinel fleet is seeded by migration",
+          "20260816_agentic_mesh_fleet. Empty state directs user to apply the",
+          "migration. Sweep executions write to agent_executions and emit governance",
+          "events to the event bus. Writes throw on failure. Realtime: event stream",
+          "uses live query refresh."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
@@ -9572,29 +9874,42 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/ai-advisor-narrative.md",
         "title": "AI Advisor & Narrative Engine",
-        "purpose": "Retrieval-augmented assistant that answers GRC questions from only the tenant's own evidence, policies, and controls; Narrative Engine composes regulator- and executive-ready prose from structured data.",
-        "why": "",
-        "how": [],
+        "purpose": "AI Advisor is a simulated compliance co-pilot that responds to GRC questions with keyword-matched canned text. Narrative Engine composes governance narratives from real structured data for board reports and regulator disclosures.",
+        "why": "EU AI Act Art. 13 and Art. 15 require transparency and robustness. ISO/IEC 42001 A.6.2.5–6 covers AI system design and operation. A compliance officer needs a way to query the organisation's governance posture and generate regulator-ready prose. The Narrative Engine is the production component; the AI Advisor is a placeholder for a future RAG-backed assistant (AI Brain).",
+        "how": [
+          "### AI Advisor (Simulated)",
+          "1. Chat panel with keyword-matched responses from a hardcoded RESPONSES",
+          "array — not a live AI model.",
+          "2. Advisory queue with SUGGESTIONS cards (static, illustrative).",
+          "3. Simulation banner is displayed: \"Responses are keyword-matched canned",
+          "text, not a live AI model. Suggestions and metrics shown below are",
+          "illustrative examples, not derived from your data.\"",
+          "4. No data is read from or written to any table.",
+          "### Narrative Engine (Production)",
+          "1. Composes audience-targeted governance prose from real register data via",
+          "governanceFactsService.",
+          "2. Facts show null-not-0, with the source query visible behind each figure."
+        ],
         "dataProcess": [],
-        "interlinks": [],
+        "interlinks": [
+          "Outbound — AI Advisor: none. Narrative Engine: writes to",
+          "transparency_reports (→ /transparency-reports).",
+          "Inbound — reachable from sidebar nav. Narrative Engine is invoked by",
+          "the mesh's NarrativeEngine agent."
+        ],
         "compliance": [
-          "| Control | Requirement |"
+          "EU AI Act — Art. 13 (transparency), Art. 15 (robustness).",
+          "ISO/IEC 42001 — A.6.2.5–6 (design, operation).",
+          "NIST AI RMF — MEASURE 2.8, 2.9 (interpretability).",
+          "N/A for Art. 12 audit logging on AI Advisor (no state changes)."
         ],
-        "operations": [],
-        "fields": [
-          [
-            "EU AI Act Art.13, 15",
-            "Transparency, robustness"
-          ],
-          [
-            "ISO/IEC 42001 A.6.2.5–6",
-            "Design, operation"
-          ],
-          [
-            "NIST AI RMF MEASURE 2.8, 2.9",
-            "Interpretability"
-          ]
+        "operations": [
+          "AI Advisor: pure simulation — no backend, no state, no writes. The",
+          "simulation label is mandatory and must not be removed until replaced by a",
+          "live AI model (AI Brain). Narrative Engine: all responses pass the Policy",
+          "Firewall and log to live_traces. Agent writes throw on failure."
         ],
+        "fields": [],
         "noDocReason": null
       },
       {
