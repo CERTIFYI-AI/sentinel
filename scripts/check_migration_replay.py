@@ -395,6 +395,26 @@ def main() -> int:
             print("  " + p)
         return 1
     print(f"replay check clean: {len(files)} migrations, {len(rp.tables)} tables tracked")
+
+    # Coverage, stated rather than implied. Tables born inside a dynamic DO
+    # loop (`execute format('create table if not exists public.%I …')`) never
+    # present a literal CREATE TABLE, so this checker learns their columns only
+    # from later ALTERs — it cannot verify a column reference against them.
+    #
+    # That gap is not theoretical: every one of the four broken write paths
+    # fixed in 20260827000001 (bcp_plans, departments, red_team_findings,
+    # training_courses) was on such a table, which is exactly why a client
+    # sending a column that did not exist passed this gate for so long.
+    #
+    # Printing the list keeps the blind spot visible in CI logs. See TD-015.
+    partial = sorted(set(rp.tables) - rp.fully_known)
+    if partial:
+        print(
+            f"  note: {len(partial)} of {len(rp.tables)} tables have no literal CREATE TABLE "
+            "(created dynamically); their columns are NOT verified here:"
+        )
+        for name in partial:
+            print(f"    - {name}")
     return 0
 
 

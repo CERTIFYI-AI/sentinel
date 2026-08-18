@@ -505,6 +505,72 @@ and FK exist and are enforced; only the demo attribution is absent.
 
 ---
 
+## TD-015 — 30% of tables are invisible to the replay checker's column verification
+
+**Owner:** Platform · **Raised:** 2026-08-28 · **Severity:** P2 ·
+**Status:** Open, now *measured* rather than silent.
+
+### What
+
+`scripts/check_migration_replay.py` verifies that a column referenced by a
+migration actually exists — but only for tables whose **literal `CREATE TABLE`**
+it parsed. Tables created inside a dynamic loop:
+
+```sql
+execute format($f$ create table if not exists public.%I ( … ) $f$, t);
+```
+
+never present one. The checker learns their columns only from later `ALTER`s,
+so it cannot verify a reference against them. `20260420160001_functional_
+integration.sql` creates **31 tables** this way, and the legacy `<name>_table`
+demo tables add more.
+
+As of this entry: **81 of 268 tracked tables (30%)** are in this state. The
+checker now prints the full list on every run, so the gap is visible in CI logs
+instead of being implied away by "replay check clean".
+
+### Why it matters — this is not theoretical
+
+Every one of the four broken write paths repaired in
+`20260827000001_org_scoping_defaults_repair.sql` was on a dynamically-created
+table:
+
+| Table | Defect that survived every gate |
+| --- | --- |
+| `bcp_plans` | service sent `tenant_id`; table has only `org_id` |
+| `departments` | same, plus `org_id` was NOT NULL with no default |
+| `red_team_findings` | same |
+| `training_courses` | same |
+
+A client sending a column that does not exist is exactly what this checker is
+meant to catch. It could not, because these tables were never fully known to
+it — which is why the bug survived six audit waves and was found only by
+reading the schema directly against a live Postgres.
+
+The same gap explains the three tables recorded as **unverified** in PR #78:
+`attack_surface_assets`, `ethics_reports` and `policy_firewall_rules` are all in
+the dynamic set, and all three still inject `tenant_id` from their services.
+**They are the most likely place the next instance of this bug lives.**
+
+### To close
+
+Options, cheapest first:
+
+1. **Verify the three known suspects** against a real Postgres and repair them
+   the same way as the four above. This is the immediate, bounded action.
+2. **Teach the checker to parse the dynamic template.** The loop's `create
+   table` body is a literal inside `format()`; parsing it once and applying it
+   to every table in the array would move all 31 into `fully_known`.
+3. **Retire the dynamic creator.** Replace the loop with explicit `CREATE TABLE`
+   statements. Most verbose, but it makes the schema readable and every table
+   checkable — and these tables have since diverged anyway, so the shared
+   template no longer describes them.
+
+Until one of these lands, treat "replay check clean" as *"clean for the 187
+tables it can actually see"*.
+
+---
+
 ## TD-014 — From-zero replay is red on the `incidents.id` type split
 
 **Owner:** Risk & Incidents team · **Raised:** 2026-08-26 · **Severity:** P1 ·
