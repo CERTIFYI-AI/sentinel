@@ -53,7 +53,10 @@ export function recordToModel(r: ModelRecord): Model {
     lastValidated: (r.updated_at ?? r.created_at ?? '').slice(0, 10),
     framework: r.framework ?? (meta.euAiActArticle ? 'EU AI Act' : '—'),
     department: meta.department ?? '—', description: r.description ?? '',
-    accuracy: 0, latencyMs: 0, monthlyInferences: '—', euAiActArticle: meta.euAiActArticle ?? '—',
+    // The ai_models registry has no accuracy/latency columns — these are only
+    // known once telemetry lands (useModelAnalytics). Keep them null so the
+    // detail KPI tiles render "—" instead of a fabricated "0% / 0ms".
+    accuracy: null, latencyMs: null, monthlyInferences: '—', euAiActArticle: meta.euAiActArticle ?? '—',
     biasMetrics: [], performanceHistory: [], guardrails: [], complianceMapping: [], incidents: [],
     lifecyclePhase: r.lifecycle_stage ?? '—', daysInPhase: 0, lifecycleProgress: 0,
     // Round-trip the extended governance fields so editing a model (which rebuilds

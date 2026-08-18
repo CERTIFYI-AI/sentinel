@@ -769,8 +769,8 @@ function ModelDetailView({ model }: { model: Model }) {
           <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
             {/* KPI row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 10 }}>
-              <KpiTile label="Accuracy" value={`${model.accuracy}%`} color={model.accuracy > 90 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<ChartLine size={16} />} />
-              <KpiTile label="Latency p99" value={`${model.latencyMs}ms`} color={model.latencyMs < 200 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<Gauge size={16} />} />
+              <KpiTile label="Accuracy" value={model.accuracy == null ? '—' : `${model.accuracy}%`} color={model.accuracy == null ? 'hsl(var(--text-4))' : model.accuracy > 90 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<ChartLine size={16} />} />
+              <KpiTile label="Latency p99" value={model.latencyMs == null ? '—' : `${model.latencyMs}ms`} color={model.latencyMs == null ? 'hsl(var(--text-4))' : model.latencyMs < 200 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<Gauge size={16} />} />
               <KpiTile label="Fairness Score" value={model.fairnessScore == null ? '—' : `${model.fairnessScore}%`} color={model.fairnessScore == null ? 'hsl(var(--text-4))' : model.fairnessScore > 80 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-er-tx))'} icon={<Scales size={16} />} />
               <KpiTile label="Monthly Inferences" value={model.monthlyInferences} color="hsl(var(--brand))" icon={<Robot size={16} />} />
             </div>
@@ -1039,8 +1039,8 @@ function ModelDetailView({ model }: { model: Model }) {
           <>
           {/* KPI row — latest telemetry point */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
-            <KpiTile label="Accuracy" value={`${accVal}%`} color={accVal > 90 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<ChartLine size={16} />} />
-            <KpiTile label="Latency p99" value={`${latVal}ms`} color={latVal < 200 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<Gauge size={16} />} />
+            <KpiTile label="Accuracy" value={accVal == null ? '—' : `${accVal}%`} color={accVal == null ? 'hsl(var(--text-4))' : accVal > 90 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<ChartLine size={16} />} />
+            <KpiTile label="Latency p99" value={latVal == null ? '—' : `${latVal}ms`} color={latVal == null ? 'hsl(var(--text-4))' : latVal < 200 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<Gauge size={16} />} />
             <KpiTile label="Drift Score" value={`${latestPerf ? latestPerf.driftScore.toFixed(1) : '0'}%`} color={(latestPerf?.driftScore ?? 0) > 5 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))'} icon={<Scales size={16} />} />
             <KpiTile label="Requests (latest)" value={volVal} color="hsl(var(--brand))" icon={<Robot size={16} />} />
           </div>

@@ -586,7 +586,9 @@ function RegisterModelForm({ onSubmit, nextId }: { onSubmit: (m: Model) => void;
       id: nextId, name, version, type: modelType, owner: businessOwner, status: 'development',
       riskTier: isHighRisk ? 'high' : riskTier, fairnessScore: null, driftStatus: 'stable',
       lastValidated: '', framework: 'EU AI Act', department, description: intendedUse || name,
-      accuracy: 0, latencyMs: 0, monthlyInferences: '0', euAiActArticle: isHighRisk ? 'Annex III' : 'Art. 52',
+      // Brand-new model: no telemetry yet, so metrics are unmeasured (null → "—"),
+      // never a fabricated 0. Matches recordToModel once it reloads from the DB.
+      accuracy: null, latencyMs: null, monthlyInferences: '—', euAiActArticle: isHighRisk ? 'Annex III' : 'Art. 52',
       biasMetrics: [], performanceHistory: [], guardrails: [], complianceMapping: [],
       incidents: [], lifecyclePhase: 'Registration', daysInPhase: 0, lifecycleProgress: 5,
       provider, businessOwner, technicalOwner, dataClassification: dataClass,

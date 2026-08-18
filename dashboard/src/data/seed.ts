@@ -46,7 +46,7 @@ export interface Model {
   id: string; name: string; version: string; type: string; owner: string; status: ModelStatus;
   riskTier: 'high' | 'limited' | 'minimal' | 'unacceptable'; fairnessScore: number | null;
   driftStatus: 'stable' | 'warning' | 'critical'; lastValidated: string; framework: string;
-  department: string; description: string; accuracy: number; latencyMs: number;
+  department: string; description: string; accuracy: number | null; latencyMs: number | null;
   monthlyInferences: string; euAiActArticle: string;
   biasMetrics: { metric: string; value: number; threshold: number; status: 'Pass' | 'Fail' }[];
   performanceHistory: { month: string; accuracy: number; latency: number }[];
