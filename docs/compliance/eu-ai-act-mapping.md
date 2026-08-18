@@ -80,6 +80,33 @@ the module that produces the evidence, not merely the capability that exists.
 
 ---
 
+## Module Coverage — Model Governance, Risk Classification & Runtime Trust
+
+These foundational AI-Act modules exist as real screens but were previously
+absent from this mapping (flagged by the 2026-08-18 module deep-dives). Status is
+reported **honestly**: "Implemented" means the module produces the evidence;
+where a real gap exists it is named, not hidden.
+
+| Article | Requirement | Evidence-producing module | Status |
+| --- | --- | --- | --- |
+| Art. 6 + Annex III | **Risk classification** of an AI system (prohibited / high-risk / limited / minimal) — the gateway obligation | [Risk Classification](../modules/ai-risk-tiering.md) — deterministic `deriveEuTier` (Art. 5 → Annex III/rights → Art. 50 → minimal), persisted per use case | Implemented — **audit-logging gap (Art. 12): no `logAction`; see [TD-018](../reference/technical-debt.md)** |
+| Art. 9 | **Risk management system** — the primary risk register | [Risk Register](../modules/risk-register.md) — likelihood/severity/level, mitigation status; manual + autonomous-agent-created risks (`source='auto-agent'`) | Implemented — **Art. 12 logging gap; manual-create links (`linked_model_ids`) not yet settable in the dialog** |
+| Art. 9 / 15 | **Runtime risk & robustness enforcement** — inline trust, guardrails, rate limits, circuit breaker | [Trust Engine](../modules/trust-engine.md) — `sentinel/proxy.py` gateway (sanitize → rate-limit → circuit-break → provider → hash-chained audit) + 7 dashboard views | Implemented (runtime) — dashboard views partly telemetry; policy FK types are `text` not uuid |
+| Art. 27 | **Fundamental-rights impact assessment (FRIA)** | [Impact Assessments](../modules/ai-impact-assessments.md) — AIIA records, risk + mitigation | Implemented |
+| Art. 13 | **Explainability / transparency** of model behaviour | [Explainability](../modules/explainability.md) | Partial — module present; see module doc |
+| Art. 10(2)(f) / 15 | **Bias & fairness testing** | [Bias Audits](../modules/bias-fairness.md) — fairness metrics, pass/fail | Implemented |
+| Art. 73 | **Serious-incident reporting** | [Incidents](../modules/incident-management.md) — incident lifecycle, workflow, regulator-filing draft | Implemented — the module itself now mapped (previously only via the vendor-SLA link) |
+| Art. 14 | **Human oversight over autonomous action** — the mesh pauses production models / opens risks | [Risk Register](../modules/risk-register.md) auto-agent path + the governance mesh (`autoPauseAgent`, `containmentAgent`) | **Partial — the model-pause/containment path is autonomous and not yet gated on a `/hitl` record; documented as the priority Art. 14 gap** |
+
+> **Assessor note.** Three real gaps are stated above rather than smoothed over:
+> (1) the core registries (`ai_models`, `use_cases`, `datasets`, `risks`) are not
+> yet audit-logged (**TD-018**); (2) the autonomous model-pause / containment
+> cascade has no documented human-oversight checkpoint tied to `/hitl`; (3) the
+> Risk Register's manual-create dialog cannot set interlink ids. These are the
+> compliance backlog, tracked in [`technical-debt.md`](../reference/technical-debt.md).
+
+---
+
 ## Module Coverage — Privacy & Statutory Records
 
 Added 2026-08-16 with the PRIVACY group and TD-001 Tier 1 migrations. These

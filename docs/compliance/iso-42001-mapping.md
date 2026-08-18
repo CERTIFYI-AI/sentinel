@@ -66,6 +66,23 @@ Added with the connectivity and gateway build-out (August 2026).
 
 ---
 
+## Module Coverage — Model Governance, Risk Classification & Runtime Trust
+
+Foundational AIMS modules that were previously unmapped here (added 2026-08-18).
+Status reported honestly; real gaps are named.
+
+| Control / Clause | Control description | Module & backing | Status |
+| --- | --- | --- | --- |
+| 6.1.2 / A.5.2 | AI risk assessment — classify each system by risk | [Risk Classification](../modules/ai-risk-tiering.md) — `ai_risk_tiering`, `deriveEuTier` | Implemented — audit-logging gap (Art. 12 / [TD-018](../reference/technical-debt.md)) |
+| 6.1.2 / 8.2 / A.5.5 | AI risk treatment register — likelihood, severity, mitigation to closure | [Risk Register](../modules/risk-register.md) — `risks` | Implemented — Art. 12 logging gap; manual-create interlinks not settable |
+| 8.4 / A.5.3 | AI system impact assessment | [Impact Assessments](../modules/ai-impact-assessments.md) — AIIA records | Implemented |
+| A.6.2.4 / A.6.2.6 | Operation & monitoring of the AI system at runtime | [Trust Engine](../modules/trust-engine.md) — `sentinel/proxy.py` gateway + trust/guardrail/trace tables | Implemented (runtime); dashboard views partly telemetry |
+| A.7.4 / A.6.2.4 | Quality of data / fairness testing of AI systems | [Bias Audits](../modules/bias-fairness.md) — fairness metrics, pass/fail | Implemented |
+| 10.1 / 10.2 | Nonconformity & corrective action — incident handling | [Incidents](../modules/incident-management.md) — incident lifecycle + workflow | Implemented |
+| A.9.2 / A.6.2.8 | Human oversight of autonomous operation | governance mesh (`autoPauseAgent`, `containmentAgent`) + [Risk Register](../modules/risk-register.md) | **Partial — autonomous pause/containment not yet gated on a `/hitl` oversight record (priority gap)** |
+
+---
+
 ## Annex A Coverage — Privacy & Statutory Records
 
 Added 2026-08-16 with the PRIVACY group and TD-001 Tier 1 migrations.
