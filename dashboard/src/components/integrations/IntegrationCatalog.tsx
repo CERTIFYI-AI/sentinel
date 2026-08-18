@@ -10,10 +10,17 @@
 //
 //   * every card states its adapter status plainly (Available / Beta /
 //     Catalogued), using semantic colour, not decoration;
-//   * Connect is rendered ONLY for a product with a shipped or beta adapter;
-//   * a catalogued-only product says why it cannot be connected, and still
-//     shows the operator prose (what evidence it would carry, how it is
-//     pulled, what it maps to) because that is genuinely useful for planning.
+//   * Connect — the credential form that starts real collection — is rendered
+//     ONLY for a product with a shipped or beta adapter;
+//   * a catalogued-only product is not a dead end either. It offers "Monitor
+//     this source": a modal that records which tenant is in scope, who is
+//     accountable, and how often its evidence is refreshed by hand. No
+//     credential is asked for, nothing is collected, and the resulting record
+//     says exactly that.
+//
+// Both routes go through ConnectDialog, which picks the fields from
+// `buildConnectionProfile`. The mode is never blurred: a monitored source
+// shows as Monitored, never as Connected.
 //
 // Counts come from the data, never from a constant, so the header cannot drift
 // from what the catalogue actually contains.
@@ -22,7 +29,7 @@ import { useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
-  MagnifyingGlass, Plugs, CheckCircle, Info, LinkSimple, Prohibit,
+  MagnifyingGlass, Plugs, CheckCircle, Info, LinkSimple, Eye, ArrowsClockwise,
 } from '@phosphor-icons/react'
 
 import { Card } from '@/components/ui/card'
@@ -39,7 +46,7 @@ import {
   type CatalogEntryWithState,
 } from '@/hooks/useIntegrationCatalog'
 import { countByStatus, rankFindings } from '@/services/integrationFindingsService'
-import { ConnectForm } from './ConnectForm'
+import { ConnectDialog } from './ConnectDialog'
 import { resyncIntegration } from '@/services/integrationConnectService'
 import {
   adapterStatusLabel,
@@ -50,6 +57,28 @@ import {
   type AdapterStatus,
   type CatalogEntry,
 } from '@/services/integrationCatalogService'
+
+/**
+ * Human label for a recorded monitoring field. The keys come from
+ * `connectionProfiles`, so this stays a small, closed set; anything else falls
+ * back to the key with its underscores softened rather than rendering a raw
+ * identifier at the operator.
+ */
+const MONITOR_FIELD_LABELS: Record<string, string> = {
+  account_ref: 'Account',
+  tenant_url: 'Tenant',
+  tenant_ref: 'Tenant',
+  instance_url: 'Instance',
+  organization: 'Organisation',
+  auth_method: 'Access method',
+  review_cadence: 'Reviewed',
+  evidence_url: 'Evidence',
+  scope_notes: 'Scope',
+}
+
+function labelFor(key: string): string {
+  return MONITOR_FIELD_LABELS[key] ?? key.replace(/_/g, ' ')
+}
 
 /** Status pill. Colour carries meaning: only 'available' reads as ready. */
 function AdapterBadge({ status }: { status: AdapterStatus }) {
@@ -103,9 +132,17 @@ function CatalogCard({
         </p>
       )}
       {connected && (
-        <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-[hsl(var(--s-ok-tx))]">
-          <CheckCircle size={12} weight="fill" /> Connected
-        </p>
+        connected.connectionMode === 'manual' ? (
+          // Neutral, not the green "Connected" pill: this source is recorded
+          // and owned, and nothing is pulling from it.
+          <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-[hsl(var(--text-3))]">
+            <Eye size={12} /> Monitored
+          </p>
+        ) : (
+          <p className="mt-2 inline-flex items-center gap-1 text-[11px] font-medium text-[hsl(var(--s-ok-tx))]">
+            <CheckCircle size={12} weight="fill" /> Connected
+          </p>
+        )
       )}
     </button>
   )
@@ -199,9 +236,10 @@ export function IntegrationCatalog({ canManage }: { canManage: boolean }) {
   const [category, setCategory] = useState<string | null>(null)
   const [open, setOpen] = useState<CatalogEntryWithState | null>(null)
   const [confirmDisconnect, setConfirmDisconnect] = useState<CatalogEntryWithState | null>(null)
-  // Shown only after the operator chooses to connect, so the sheet stays
-  // readable for the far more common case of just browsing the catalogue.
-  const [showForm, setShowForm] = useState(false)
+  // The connect/monitor modal. Held separately from `open` so the detail sheet
+  // stays readable for the far more common case of just browsing, and so the
+  // form is unmounted — and its values dropped — the moment it closes.
+  const [connectTarget, setConnectTarget] = useState<CatalogEntry | null>(null)
 
   const entries = useMemo<CatalogEntry[]>(() => rows.map(r => r.entry), [rows])
   const counts = useMemo(() => countByCategory(entries), [entries])
@@ -316,10 +354,7 @@ export function IntegrationCatalog({ canManage }: { canManage: boolean }) {
       <Sheet
         open={Boolean(open)}
         onOpenChange={o => {
-          if (!o) {
-            setOpen(null)
-            setShowForm(false) // never leave a credential form mounted
-          }
+          if (!o) setOpen(null)
         }}
       >
         <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
@@ -339,15 +374,41 @@ export function IntegrationCatalog({ canManage }: { canManage: boolean }) {
                 </p>
 
                 {open.connected && (
-                  <div className="flex items-center gap-2 text-[13px] text-[hsl(var(--s-ok-tx))]">
-                    <CheckCircle size={15} weight="fill" />
-                    Connected
-                    {open.connected.lastRunStatus && (
-                      <span className="text-[hsl(var(--text-3))]">
-                        · last run {open.connected.lastRunStatus}
-                      </span>
-                    )}
-                  </div>
+                  open.connected.connectionMode === 'manual' ? (
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-[13px] text-[hsl(var(--text-2))]">
+                        <Eye size={15} />
+                        Monitored manually
+                        {open.connected.ownerName && (
+                          <span className="text-[hsl(var(--text-3))]">
+                            · owned by {open.connected.ownerName}
+                          </span>
+                        )}
+                      </div>
+                      {/* Everything the operator recorded, shown back so the
+                          registration is auditable from the source itself. */}
+                      <dl className="text-[12px] text-[hsl(var(--text-3))] leading-relaxed">
+                        {Object.entries(open.connected.config ?? {})
+                          .filter(([k]) => k !== 'owner_name')
+                          .map(([k, v]) => (
+                            <div key={k} className="flex gap-1.5">
+                              <dt className="text-[hsl(var(--text-4))]">{labelFor(k)}:</dt>
+                              <dd className="text-[hsl(var(--text-2))]">{String(v)}</dd>
+                            </div>
+                          ))}
+                      </dl>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 text-[13px] text-[hsl(var(--s-ok-tx))]">
+                      <CheckCircle size={15} weight="fill" />
+                      Connected
+                      {open.connected.lastRunStatus && (
+                        <span className="text-[hsl(var(--text-3))]">
+                          · last run {open.connected.lastRunStatus}
+                        </span>
+                      )}
+                    </div>
+                  )
                 )}
                 {open.connected?.lastRunError && (
                   <p className="text-[12px] text-[hsl(var(--s-er-tx))] leading-relaxed">
@@ -355,7 +416,7 @@ export function IntegrationCatalog({ canManage }: { canManage: boolean }) {
                   </p>
                 )}
 
-                {open.connected && (
+                {open.connected && open.connected.connectionMode !== 'manual' && (
                   <section>
                     <h4 className="text-[11px] font-semibold uppercase tracking-wider text-[hsl(var(--text-3))] mb-1">
                       Collected evidence
@@ -418,58 +479,54 @@ export function IntegrationCatalog({ canManage }: { canManage: boolean }) {
                   </p>
                 )}
 
-                {/* The affordance, gated on real capability. */}
+                {/* The affordance. Every product gets one; which one depends
+                    on whether an adapter can actually collect. */}
                 <div className="pt-3 border-t border-[hsl(var(--border))]">
-                  {!isConnectable(open.entry) ? (
-                    <div className="flex gap-2 text-[12px] text-[hsl(var(--text-3))] leading-relaxed">
-                      <Prohibit
-                        size={15}
-                        className="text-[hsl(var(--text-4))] flex-shrink-0 mt-0.5"
-                      />
-                      <span>
-                        Catalogued for reference only — no adapter ships for this product yet, so
-                        it cannot be connected and would collect nothing. The detail above is here
-                        to help you plan which sources to prioritise.
-                      </span>
-                    </div>
-                  ) : open.connected ? (
-                    <div className="flex gap-2">
-                      <Button
-                        variant="outline"
-                        disabled={!canManage}
-                        onClick={() =>
-                          resyncIntegration(open.connected!.id)
-                            .then(r => toast.success(r.message))
-                            .catch((e: any) => toast.error(e?.message ?? 'Could not queue a sync'))
-                        }
-                      >
-                        Sync now
-                      </Button>
+                  {open.connected ? (
+                    <div className="flex flex-wrap gap-2">
+                      {/* A manual source has no adapter to sync with, so it is
+                          offered an edit instead of a button that can only fail. */}
+                      {open.connected.connectionMode === 'manual' ? (
+                        <Button
+                          variant="outline"
+                          disabled={!canManage}
+                          onClick={() => setConnectTarget(open.entry)}
+                        >
+                          <Eye size={14} className="mr-1.5" />
+                          Update monitoring details
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          disabled={!canManage}
+                          onClick={() =>
+                            resyncIntegration(open.connected!.id)
+                              .then(r => toast.success(r.message))
+                              .catch((e: any) => toast.error(e?.message ?? 'Could not queue a sync'))
+                          }
+                        >
+                          <ArrowsClockwise size={14} className="mr-1.5" />
+                          Sync now
+                        </Button>
+                      )}
                       <Button
                         variant="outline"
                         disabled={!canManage || disconnect.isPending}
                         onClick={() => setConfirmDisconnect(open)}
                       >
-                        Disconnect
+                        {open.connected.connectionMode === 'manual' ? 'Stop monitoring' : 'Disconnect'}
                       </Button>
                     </div>
-                  ) : showForm ? (
-                    <ConnectForm
-                      slug={open.entry.slug}
-                      displayName={open.entry.name}
-                      onConnected={() => {
-                        setShowForm(false)
-                        setOpen(null)
-                        refresh()
-                      }}
-                      onCancel={() => setShowForm(false)}
-                    />
                   ) : (
-                    <Button disabled={!canManage} onClick={() => setShowForm(true)}>
-                      <Plugs size={14} className="mr-1.5" />
-                      Connect
+                    <Button disabled={!canManage} onClick={() => setConnectTarget(open.entry)}>
+                      {isConnectable(open.entry) ? (
+                        <><Plugs size={14} className="mr-1.5" />Connect</>
+                      ) : (
+                        <><Eye size={14} className="mr-1.5" />Monitor this source</>
+                      )}
                     </Button>
                   )}
+
                   {open.entry.adapterStatus === 'beta' && (
                     <p className="text-[11px] text-[hsl(var(--warning))] mt-2 flex gap-1.5">
                       <Info size={13} className="flex-shrink-0 mt-0.5" />
@@ -478,16 +535,17 @@ export function IntegrationCatalog({ canManage }: { canManage: boolean }) {
                       first findings before relying on them as audit evidence.
                     </p>
                   )}
-                  {!canManage && isConnectable(open.entry) && (
+                  {!canManage && (
                     <p className="text-[11px] text-[hsl(var(--text-4))] mt-2">
                       You do not have permission to change integrations.
                     </p>
                   )}
-                  {isConnectable(open.entry) && !open.connected && (
+                  {!open.connected && (
                     <p className="text-[11px] text-[hsl(var(--text-4))] mt-2 flex gap-1.5">
                       <Info size={13} className="flex-shrink-0 mt-0.5" />
-                      Connecting links the source to this workspace. Credentials are entered
-                      separately and stored encrypted server-side — the browser never holds them.
+                      {isConnectable(open.entry)
+                        ? 'Connecting links the source to this workspace. Credentials are entered in the next step and stored encrypted server-side — the browser never holds them.'
+                        : 'No adapter ships for this product yet, so Sentinel cannot pull from it. Monitoring records the source with an accountable owner and a review cadence, and states plainly that its evidence is refreshed by hand.'}
                     </p>
                   )}
                 </div>
@@ -497,11 +555,33 @@ export function IntegrationCatalog({ canManage }: { canManage: boolean }) {
         </SheetContent>
       </Sheet>
 
+      <ConnectDialog
+        entry={connectTarget}
+        open={Boolean(connectTarget)}
+        onOpenChange={o => { if (!o) setConnectTarget(null) }}
+        onDone={() => {
+          setConnectTarget(null)
+          setOpen(null)
+          refresh()
+        }}
+        canManage={canManage}
+      />
+
       <ConfirmDialog
         open={Boolean(confirmDisconnect)}
         onOpenChange={o => !o && setConfirmDisconnect(null)}
-        title={`Disconnect ${confirmDisconnect?.entry.name ?? ''}?`}
-        description="It will stop collecting new evidence. Findings it has already produced are kept, so the audit trail stays intact."
+        title={
+          confirmDisconnect?.connected?.connectionMode === 'manual'
+            ? `Stop monitoring ${confirmDisconnect?.entry.name ?? ''}?`
+            : `Disconnect ${confirmDisconnect?.entry.name ?? ''}?`
+        }
+        description={
+          confirmDisconnect?.connected?.connectionMode === 'manual'
+            // It never collected, so promising that collection stops would be
+            // describing an effect this action does not have.
+            ? 'The source stops being tracked and its owner and review cadence are no longer recorded against it. It stays in the catalogue and can be registered again.'
+            : 'It will stop collecting new evidence. Findings it has already produced are kept, so the audit trail stays intact.'
+        }
         confirmLabel="Disconnect"
         onConfirm={() => {
           const row = confirmDisconnect

@@ -1475,8 +1475,16 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 35,
+  "entryCount": 36,
   "entries": [
+    {
+      "type": "feat",
+      "scope": "integrations",
+      "summary": "**every catalogue product now opens a real connection modal.** The catalogue published 219 evidence sources; three of them (`github`, `aws`, `microsoft_azure`) had a connect form and the other 216 had prose and no way to record anything — browsable and unusable. Clicking any entry now opens `ConnectDialog` with fields appropriate to that product, chosen by `buildConnectionProfile`. **The obvious fix was the wrong one**: rendering a credential form on all 219 would take a token for a product with no adapter — a stored secret nothing can ever use, supplied by an operator who would reasonably believe collection had started. So a connection has a **mode**. `automated` is unchanged: the adapter's own credential contract, AES-256-GCM encrypted server-side, first sync queued. `monitored` is new and takes **no credential at all** — it records which tenant is in scope, who is accountable for it, how often its evidence is refreshed by hand, and where that evidence lives, then says plainly on the card, in the dialog and in the record that nothing is pulling from it. Owner and cadence are **required on both sides**, because a registered source with neither is a list entry pretending to be a control. The monitored fields are derived from the catalogue row's own `category` and `evidence_pull` prose, so no product gets invented documentation. Three guards keep the modes from blurring: a CHECK constraint (`integrations_manual_holds_no_credentials`) that refuses a manual row carrying a credential blob at the database rather than in a code path; a `connection_mode = 'automated'` predicate on the daily `pg_cron` sync enqueue — verified on a from-zero replay to be load-bearing, since the same predicate without it returns a manual row marked `connected` and with it returns none, and every such job can only fail its five attempts; and promotion to `automated` when `connect` runs over a previously monitored row, so a source that gains an adapter is relabelled rather than left misdescribed. `/integrations` counts **Collecting** and **Monitored manually** separately, because summing them would overstate automated coverage. Also closes 2026-08-18 re-audit finding **N3**: `sync` gated only on `catalog_slug` being non-null while `connect` gated on `adapter_status`, so a product later withdrawn could still queue work the worker must refuse — it now gates on both the adapter status and the mode",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "feat",
       "scope": "deploy",

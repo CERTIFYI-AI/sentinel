@@ -8,9 +8,13 @@
 // which credential fields to collect — not the browsable catalog.
 //
 // Security invariant: credential values collected through these fields are
-// sent to the FastAPI backend, AES-256-GCM encrypted there
-// (sentinel/integrations/crypto.py), and stored as ciphertext. The browser
-// never persists or re-reads plaintext.
+// sent to the `integrations-connect` edge function, AES-256-GCM encrypted
+// there into the exact blob sentinel/integrations/crypto.py decrypts, and
+// stored as ciphertext. The browser never persists or re-reads plaintext.
+//
+// Products WITHOUT an adapter do not appear here and never get a credential
+// field. They are registered as monitored sources instead — see
+// ./connectionProfiles.ts, which is what the connect modal actually reads.
 
 export type IntegrationCategory =
   | 'cloud' | 'identity' | 'code' | 'hr' | 'security' | 'saas'
