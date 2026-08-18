@@ -11,5 +11,15 @@
   },
   "compatibility_flags": [
     "nodejs_compat"
+  ],
+  // Custom domain for the dashboard. On `wrangler deploy` Cloudflare provisions
+  // the DNS record + TLS cert for this hostname automatically, PROVIDED
+  // `certifyi.ai` is a zone in the same Cloudflare account
+  // (CLOUDFLARE_ACCOUNT_ID). If the zone is not in the account the deploy will
+  // fail here — in that case add the domain via the dashboard instead
+  // (Workers & Pages -> sentinel -> Settings -> Domains & Routes -> Add ->
+  // Custom Domain). The *.workers.dev URL keeps working alongside this.
+  "routes": [
+    { "pattern": "1shield-oss.certifyi.ai", "custom_domain": true }
   ]
 }
