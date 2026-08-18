@@ -1041,7 +1041,7 @@ function ModelDetailView({ model }: { model: Model }) {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12 }}>
             <KpiTile label="Accuracy" value={accVal == null ? '—' : `${accVal}%`} color={accVal == null ? 'hsl(var(--text-4))' : accVal > 90 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<ChartLine size={16} />} />
             <KpiTile label="Latency p99" value={latVal == null ? '—' : `${latVal}ms`} color={latVal == null ? 'hsl(var(--text-4))' : latVal < 200 ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))'} icon={<Gauge size={16} />} />
-            <KpiTile label="Drift Score" value={`${latestPerf ? latestPerf.driftScore.toFixed(1) : '0'}%`} color={(latestPerf?.driftScore ?? 0) > 5 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))'} icon={<Scales size={16} />} />
+            <KpiTile label="Drift Score" value={latestPerf != null ? `${latestPerf.driftScore.toFixed(1)}%` : '—'} color={latestPerf == null ? 'hsl(var(--text-4))' : latestPerf.driftScore > 5 ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-ok-tx))'} icon={<Scales size={16} />} />
             <KpiTile label="Requests (latest)" value={volVal} color="hsl(var(--brand))" icon={<Robot size={16} />} />
           </div>
 

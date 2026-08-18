@@ -436,7 +436,7 @@ export default function AIImpactAssessments() {
                     {/* Overview Grid */}
                     <div className="grid grid-cols-2 gap-4 p-5 border border-[hsl(var(--border))] bg-raised rounded-none">
                       <InfoRow label="Type" value={selected.type} />
-                      <InfoRow label="Progress" value={`${selected.progressPct}%`} />
+                      <InfoRow label="Progress" value={selected.progressPct != null ? `${selected.progressPct}%` : '—'} />
                       <InfoRow label="Assessor" value={selected.assessor || '—'} />
                       <InfoRow label="Reviewer" value={selected.reviewer || '—'} />
                       <InfoRow label="Next Review" value={selected.nextReview ? selected.nextReview.slice(0, 10) : '—'} />

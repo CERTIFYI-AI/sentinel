@@ -197,8 +197,8 @@ function RegistrySection() {
     critical: agents.filter(a => a.riskTier === 'Critical').length,
     shadow: agents.filter(isShadowAgent).length,
     avgTrust: (() => {
-      const scored = agents.filter(a => a.trustScore > 0)
-      return scored.length ? Math.round(scored.reduce((s, a) => s + a.trustScore, 0) / scored.length) : 0
+      const scored = agents.filter(a => a.trustScore != null && a.trustScore > 0)
+      return scored.length ? Math.round(scored.reduce((s, a) => s + a.trustScore, 0) / scored.length) : null
     })(),
   }
 
@@ -346,8 +346,8 @@ function RegistrySection() {
           },
           {
             label: 'Avg Trust Score (declared)',
-            value: `${stats.avgTrust}%`,
-            description: `Average declared trust score: ${stats.avgTrust}% — self-reported at registration, not computed by the platform`,
+            value: stats.avgTrust != null ? `${stats.avgTrust}%` : '—',
+            description: stats.avgTrust != null ? `Average declared trust score: ${stats.avgTrust}% — self-reported at registration, not computed by the platform` : 'No agents with declared trust scores',
           },
         ]}
       />
