@@ -1475,7 +1475,7 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 30,
+  "entryCount": 33,
   "entries": [
     {
       "type": "feat",
@@ -1502,9 +1502,33 @@ export const UNRELEASED: UnreleasedChanges = {
       "section": null
     },
     {
+      "type": "feat",
+      "scope": "integrations",
+      "summary": "**run the evidence pipeline on $0 infrastructure, and fix a fifth break.** The earlier deploy plan used Fly.io; a continuous worker there costs a few USD/month, so with no budget that was the wrong default — this pass reimplements the deployable pieces on free tiers and **removes `fly.toml` and `deploy-backend.yml`.** connect/sync/available is now a **Supabase Edge Function** (`supabase/functions/integrations-connect/`, Deno) — free, already the project's serverless runtime — that encrypts credentials with **AES-256-GCM byte-compatible with the Python worker** (`crypto.py`'s `{v,nonce,ciphertext}` blob) and enqueues the sync; the frontend now calls it through `supabase.functions.invoke` (session token attached automatically), so `VITE_SENTINEL_API_URL` and the separate API host are gone entirely. The crypto interop is pinned by a Deno test against a fixed vector the Python `cryptography` library produced — if the two ever disagree, CI fails rather than silently storing blobs the worker can't decrypt. The Python **sync worker** stays (its adapters are Python) but gains a **drain-once mode** (`run(drain=True)`, `SENTINEL_WORKER_DRAIN`) and runs as a **daily GitHub Actions job** (`evidence-worker.yml`, secrets-guarded, ~60 free minutes/month) that drains what `pg_cron` enqueued and exits — no 24/7 process. Both write paths were grounded in the **live** schema of project `vhparvughsygyknblkzt` (verified: `integrations.org_id` defaults to `current_user_org_id()`, which is NULL under the service role, so the function sets it explicitly from `user_profiles`). **Fifth break, found while building this:** `process_job` read `payload[\"org_id\"]`/`[\"integration_slug\"]`, but both connect surfaces enqueue only `{integration_id, catalog_slug}` — the worker would `KeyError` on every real job. Fixed by making the `integrations` row the authority (derive `org_id` and slug from it, keyed by `integration_id`), which also keeps the org boundary intact. Runbook rewritten for the free-tier path (`docs/operations/backend-deployment.md`); roadmap updated (`docs/reference/continuous-evidence-roadmap.md`).",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
       "type": "fix",
       "scope": "integrations",
-      "summary": "**continuous collection actually recurs now.** The connect endpoint created an integration as `configuring` and **nothing ever moved it on**, while `daily-integration-sync` enqueues only `where status = 'connected'` — so a source collected once at connect time and then never again, which is the entire point of continuous monitoring, silently absent. A successful sync is the proof, so the worker now promotes the row there. Adds the missing **`integrations-worker` service**: `background_jobs` had a producer (the connect endpoint and the nightly schedule) and a locking, backing-off consumer in `sentinel/integrations/worker.py` that **nothing ran** — the container's only command was the API, and the compose worker belongs to a different, older engine",
+      "summary": "**close the evidence-collection loop, which broke in four places.** The platform has all the parts of continuous evidence collection — an event bus, the sync worker, `pg_cron` schedules, the job queue, the control mapper — but the loop never closed, and this pass fixes the two breaks that are code (the other two are deployment, addressed below). **③** `connect()` writes an integration row with `status='configuring'` and enqueues one immediate sync, but the worker updated `last_sync_at`/`last_run_status`/`health` and **never `status`**, while both cron schedules re-enqueue only `where i.status='connected'` — so nothing promoted `configuring → connected` and collection ran **exactly once** at connect time, never again. `worker.py` now promotes the row to `connected` on first successful sync (guarded so it never overwrites a terminal state a human or another path set), so the daily schedule picks it up. **④** the connect/sync router (`/v1/integrations/*`) was mounted on **only** `sentinel/proxy.py`'s app, but the container runs `sentinel.api.main:app`, which never mounted it — so a deployed API would answer every `POST /v1/integrations/connect` with 404. The router is now also mounted in `main.py`, ahead of the catch-all frontend proxy that only exempts `api`/`ws`/`favicon` paths and would otherwise swallow its GET routes; verified via the app's own OpenAPI schema. Residual two-app fork recorded as **TD-019**.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "feat",
+      "scope": "deploy",
+      "summary": "_**[superseded by the free-tier entry above — `fly.toml` and `deploy-backend.yml` were removed; connect runs as a Supabase Edge Function and the worker as a scheduled GitHub Actions job. Retained here for history.]**_ **the Python backend is now deployable** (Fly.io), closing breaks **①** (nothing deployed the API) and **②** (nothing ran the sync worker). New [`fly.toml`](fly.toml) defines one app with two processes off a single image — `web` (`uvicorn sentinel.api.main:app`) and `worker` (`python -m sentinel.integrations.worker`) — the `web` machine suspending when idle, the `worker` running continuously to poll the job queue. The `Dockerfile` now installs the `[integrations]` extra so the worker carries its provider SDKs (`boto3`, `PyGithub`). New [`deploy-backend.yml`](.github/workflows/deploy-backend.yml) redeploys on push to `main` touching the backend, guarded on a `FLY_API_TOKEN` secret so it **skips with a notice** (never reds `main`) until Fly is wired up. Full runbook — secrets, one-time setup, verification, and an honest note that a 24/7 worker is a few USD/month, not free, with a cheaper scheduled-worker alternative — in [`docs/operations/backend-deployment.md`](docs/operations/backend-deployment.md). The phased plan for what deploys unblocks (continuous evidence → autonomous mesh, both gated on TD-017/TD-018) is in [`docs/reference/continuous-evidence-roadmap.md`](docs/reference/continuous-evidence-roadmap.md).",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "chore",
+      "scope": "cleanup",
+      "summary": "delete two provably-dead frontend files — `useCommitteesData.ts` and the `ViewAsRole` component (zero consumers, verified by grep). Two more flagged as unnecessary (`ContextualAlert`, `EvidenceAttachments`) are **kept**, not deleted: `EvidenceAttachments` implements the platform's evidence-chain principle and is the right thing to *wire in*, not remove — the wire-or-remove decision for both is recorded in the roadmap rather than made by deleting built capability.",
       "breaking": false,
       "sha": null,
       "section": null
