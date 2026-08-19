@@ -33,6 +33,7 @@ import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import type { AlertConfig } from '@/services/modelDetailService';
 import { useAuthStore } from '../../store/authStore';
 import { recordToModel } from '@/lib/modelMapping';
+import { safeExternalUrl } from '@/lib/url';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { useChartTheme } from '../../hooks/useChartTheme';
 
@@ -404,8 +405,17 @@ function ModelDetailView({ model }: { model: Model }) {
   const [dForm, setDForm] = useState({ title: '', type: 'PDF', url: '', desc: '' });
   const linkDoc = () => {
     if (!dForm.title.trim() || !dForm.url.trim()) { toast.error('Title and document URL are required'); return; }
+    const urlValue = dForm.url.trim();
+    // Reject a URL that carries a scheme we won't open (javascript:, data:,
+    // blob:, …). A plain reference with no scheme is allowed through — the
+    // "Open" button below refuses to navigate to anything non-http(s) anyway.
+    const hasScheme = /^[a-z][a-z0-9+.-]*:/i.test(urlValue);
+    if (hasScheme && !safeExternalUrl(urlValue)) {
+      toast.error('Document URL must be an http(s) link');
+      return;
+    }
     const title = dForm.title.trim();
-    addDocument({ modelId: model.id, title, docType: dForm.type, url: dForm.url.trim(), description: dForm.desc.trim() || undefined, createdBy: actor })
+    addDocument({ modelId: model.id, title, docType: dForm.type, url: urlValue, description: dForm.desc.trim() || undefined, createdBy: actor })
       .then(() => {
         logActivity({ modelId: model.id, event: `Linked document “${title}”`, actor, kind: 'info' }).catch(() => {});
         toast.success(`Linked “${title}” to ${model.id}`);
@@ -1549,7 +1559,13 @@ function ModelDetailView({ model }: { model: Model }) {
                   <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', marginTop: 2 }}>Linked {formatDate(doc.createdAt)}{doc.createdBy ? ` · ${doc.createdBy}` : ''}</p>
                 </div>
                 <button
-                  onClick={() => { try { const u = new URL(doc.url); if (u.protocol === 'https:' || u.protocol === 'http:') window.open(doc.url, '_blank', 'noopener'); } catch { /* invalid URL */ } }}
+                  onClick={() => {
+                    // Never hand an unvetted scheme to window.open — a
+                    // javascript:/data: URL would execute in the new window.
+                    const safe = safeExternalUrl(doc.url);
+                    if (safe) window.open(safe, '_blank', 'noopener,noreferrer');
+                    else toast.error('This document reference is not an openable http(s) link');
+                  }}
                   style={{ padding: '6px 12px', background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
                 >
                   <DownloadSimple size={13} /> Open

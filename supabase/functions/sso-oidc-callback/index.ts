@@ -97,6 +97,7 @@ async function verifyIdToken(
   jwksUri: string,
   expectedIssuer: string,
   expectedAudience: string,
+  expectedNonce: string,
 ): Promise<IdTokenPayload> {
   const parts = token.split('.')
   if (parts.length !== 3) throw new Error('oidc_malformed_id_token')
@@ -120,10 +121,25 @@ async function verifyIdToken(
   const now = Math.floor(Date.now() / 1000)
   if (payload.exp <= now) throw new Error('oidc_expired')
 
+  // Replay defence (OIDC Core §3.1.3.7 step 11): the nonce we minted into the
+  // signed state must reappear verbatim in the ID token. A token minted for a
+  // different login — or replayed — carries a different nonce, or none.
+  if (expectedNonce) {
+    const tokenNonce = typeof payload.nonce === 'string' ? payload.nonce : ''
+    if (tokenNonce !== expectedNonce) throw new Error('oidc_nonce_mismatch')
+  }
+
   const jwksResp = await fetch(jwksUri, { signal: AbortSignal.timeout(5_000) })
   if (!jwksResp.ok) throw new Error('oidc_jwks_fetch_failed')
   const jwks = await jwksResp.json() as { keys: Array<Record<string, unknown>> }
-  const jwk = jwks.keys.find(k => k.kid === header.kid)
+  // Bind the signature to the key the IdP named. When the token header carries
+  // a `kid`, require an exact match — never fall back to an arbitrary key, or a
+  // forged token could be checked against a key its issuer never signed with.
+  // Only when the header omits `kid` AND the set holds exactly one key do we
+  // use that key (a common single-key IdP configuration).
+  const jwk = header.kid
+    ? jwks.keys.find(k => k.kid === header.kid)
+    : (jwks.keys.length === 1 ? jwks.keys[0] : undefined)
   if (!jwk) throw new Error('oidc_no_matching_key')
 
   const key = await importRsaJwk(jwk)
@@ -151,18 +167,18 @@ serve(async (req: Request): Promise<Response> => {
     return jsonResponse(400, { error: 'missing_code_or_state' })
   }
 
+  // Fail closed: without a signing secret we cannot tell a state we minted
+  // from one an attacker forged, so we refuse rather than trust an opaque,
+  // unauthenticated blob (CSRF / session-fixation via forged provider_id).
+  if (!SSO_STATE_SECRET) {
+    return jsonResponse(503, { error: 'sso_state_secret_unconfigured' })
+  }
   let providerId: string
+  let stateNonce: string
   try {
-    if (SSO_STATE_SECRET) {
-      const parsed = await verifyStateHmac(state)
-      providerId = parsed.provider_id
-    } else {
-      const decoded = JSON.parse(
-        new TextDecoder().decode(b64urlDecode(state)),
-      ) as { provider_id?: string; nonce?: string }
-      if (!decoded.provider_id) throw new Error('no_provider_id')
-      providerId = decoded.provider_id
-    }
+    const parsed = await verifyStateHmac(state)
+    providerId = parsed.provider_id
+    stateNonce = parsed.nonce
   } catch {
     return jsonResponse(400, { error: 'invalid_state' })
   }
@@ -220,6 +236,7 @@ serve(async (req: Request): Promise<Response> => {
       cfg.jwks_uri,
       cfg.issuer,
       cfg.client_id,
+      stateNonce,
     )
   } catch (err) {
     await logScimAudit(db, {

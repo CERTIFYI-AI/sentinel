@@ -210,11 +210,16 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'sentinel-auth',
+      // Persist only non-sensitive UI state. The access/refresh tokens are
+      // deliberately NOT written to localStorage here: the Supabase client
+      // already persists the session under its own key, so a second copy only
+      // widens the surface an XSS payload could steal a bearer token from. On
+      // reload, initializeAuth()/setSession() rehydrate the in-memory tokens
+      // from supabase.auth.getSession(); this store just remembers who is
+      // logged in so the UI can render before that resolves.
       partialize: (state) => ({
         isAuthenticated: state.isAuthenticated,
         user: state.user,
-        token: state.token,
-        refreshToken: state.refreshToken,
       }),
     }
   )

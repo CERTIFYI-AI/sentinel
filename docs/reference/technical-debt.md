@@ -4,7 +4,22 @@
 > auditor instead of by us. Every accepted shortcut belongs here with an owner
 > and a reason — see [`../contributing/review-process.md`](../contributing/review-process.md).
 
-Last reviewed: 2026-09 (enterprise-tables pass)
+Last reviewed: 2026-08 (public-repo security-audit remediation pass)
+
+---
+
+## TD-023 — CSP keeps `style-src 'unsafe-inline'` (accepted residual)
+
+**Owner:** frontend. **Reason:** the dashboard renders with React inline
+`style={{…}}` props in the thousands; a nonce/hash-based style policy cannot
+cover attribute-level inline styles, so `style-src 'self' 'unsafe-inline'` is
+retained across all three CSP fronts (`public/_headers`, `wrangler.toml`,
+`nginx.conf`). This is scoped to **styles only** — `script-src` carries no
+`'unsafe-inline'`, so script injection remains blocked, and style injection
+cannot execute code. Documented in
+[`../security/content-security-policy.md`](../security/content-security-policy.md).
+**Exit:** migrate high-traffic surfaces off inline styles (or to CSS modules /
+a nonce-able `<style>` strategy), then drop the directive. Not blocking.
 
 ---
 

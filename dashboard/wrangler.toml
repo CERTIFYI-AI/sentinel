@@ -50,7 +50,14 @@ X-XSS-Protection = "1; mode=block"
 Referrer-Policy = "strict-origin-when-cross-origin"
 Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
 Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
-Content-Security-Policy = "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://*.supabase.co wss://*.supabase.co; font-src 'self' data:; frame-ancestors 'none';"
+# Canonical CSP — keep byte-identical with public/_headers and nginx.conf.
+# script-src carries NO 'unsafe-inline' (that would defeat CSP's core XSS
+# defence); 'wasm-unsafe-eval' permits only WebAssembly, not JS eval.
+# style-src DOES keep 'unsafe-inline': the dashboard is built on React inline
+# `style={}` props (thousands of them), which a nonce/hash policy cannot cover;
+# style injection is far lower risk than script injection. See
+# docs/security/content-security-policy.md.
+Content-Security-Policy = "default-src 'self'; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.sentry.io; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests"
 
 [env.staging]
 name = "sentinel-staging"

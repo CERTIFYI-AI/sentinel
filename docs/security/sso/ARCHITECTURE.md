@@ -40,9 +40,9 @@ Browser → IdP /authorize
        ← IdP redirect (code, state)
 Browser → Sentinel /sso/oidc/callback?code=…&state=…
                       │
-                      ├─ parse state (Base64 JSON { provider_id, nonce })
+                      ├─ verify HMAC-SHA256 state → { provider_id, nonce, exp }
                       ├─ POST /token (code exchange)
-                      ├─ fetch /jwks, verify ID token (RS256, iss, aud, exp)
+                      ├─ fetch /jwks, verify ID token (RS256, iss, aud, exp, nonce)
                       ├─ jitProvision(org_id, email, external_subject)
                       ├─ insert sso_sessions row
                       ├─ generateLink(type=magiclink)
@@ -51,9 +51,18 @@ Browser → Sentinel /sso/oidc/callback?code=…&state=…
 
 **Key security properties:**
 - HS256 ID tokens are rejected — we require asymmetric signatures so IdP key compromise does not silently authorise us.
+- The signing key is bound to the token's `kid`: when the header names a `kid`
+  we require an exact match in the JWKS and never fall back to another key; a
+  key is only inferred when the header omits `kid` and the set holds exactly one.
 - `aud` must contain the `client_id` exactly.
 - Tokens with `exp ≤ now` are rejected.
-- The `state` parameter is never trusted as user input — we decode it only to recover `provider_id`.
+- The `state` parameter is **HMAC-SHA256 signed by us** (`SSO_STATE_SECRET`) and
+  carries `{ provider_id, nonce, exp }`. The signature is verified before any
+  field is read, so `provider_id` cannot be forged (no CSRF / session fixation),
+  and an expired state is rejected. If `SSO_STATE_SECRET` is unset the callback
+  **fails closed** (503) rather than trusting an unauthenticated blob.
+- The ID token's `nonce` claim must equal the nonce we minted into the signed
+  state (OIDC Core §3.1.3.7), defeating ID-token replay.
 
 ## 4. SCIM 2.0 Surface
 
