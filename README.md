@@ -7,7 +7,10 @@
 **One AI Risk Platform — governance, risk & compliance for production AI**
 
 [![License: Apache-2.0](https://img.shields.io/badge/License-Apache_2.0-green.svg?style=flat-square)](./LICENSE)
-[![CI](https://img.shields.io/github/actions/workflow/status/CERTIFYI-AI/sentinel/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/CERTIFYI-AI/sentinel/actions)
+[![CI](https://img.shields.io/github/actions/workflow/status/CERTIFYI-AI/sentinel/ci.yml?branch=main&style=flat-square&label=CI)](https://github.com/CERTIFYI-AI/sentinel/actions/workflows/ci.yml)
+[![Security](https://img.shields.io/github/actions/workflow/status/CERTIFYI-AI/sentinel/security.yml?branch=main&style=flat-square&label=Security)](https://github.com/CERTIFYI-AI/sentinel/actions/workflows/security.yml)
+[![Release](https://img.shields.io/github/actions/workflow/status/CERTIFYI-AI/sentinel/release.yml?branch=main&style=flat-square&label=Release)](https://github.com/CERTIFYI-AI/sentinel/actions/workflows/release.yml)
+[![GitHub Stars](https://img.shields.io/github/stars/CERTIFYI-AI/sentinel?style=flat-square&label=Stars)](https://github.com/CERTIFYI-AI/sentinel/stargazers)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat-square)](./CONTRIBUTING.md)
 [![TypeScript](https://img.shields.io/badge/TypeScript-6.x-3178c6?style=flat-square&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
 [![Supabase](https://img.shields.io/badge/Supabase-Postgres%20%2B%20RLS-3ecf8e?style=flat-square&logo=supabase&logoColor=white)](https://supabase.com)
