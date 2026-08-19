@@ -46,7 +46,7 @@ const EXAMINATIONS: Examination[] = [
     startDate: '2026-03-01',
     endDate: '2026-06-30',
     status: 'active',
-    lead: 'James Patel',
+    lead: 'Exam Lead B',
     openFindings: 2,
     docRequests: 18,
     docFulfilled: 14,
@@ -61,7 +61,7 @@ const EXAMINATIONS: Examination[] = [
     startDate: '2026-05-01',
     endDate: '2026-07-31',
     status: 'scheduled',
-    lead: 'Sarah Chen',
+    lead: 'Exam Lead A',
     openFindings: 0,
     docRequests: 0,
     docFulfilled: 0,
@@ -75,7 +75,7 @@ const EXAMINATIONS: Examination[] = [
     startDate: '2025-09-01',
     endDate: '2025-12-15',
     status: 'findings_open',
-    lead: 'James Patel',
+    lead: 'Exam Lead B',
     openFindings: 1,
     docRequests: 24,
     docFulfilled: 24,
@@ -90,7 +90,7 @@ const EXAMINATIONS: Examination[] = [
     startDate: '2025-04-01',
     endDate: '2025-06-30',
     status: 'closed',
-    lead: 'Sarah Chen',
+    lead: 'Exam Lead A',
     openFindings: 0,
     docRequests: 31,
     docFulfilled: 31,
@@ -112,18 +112,18 @@ interface DocRequest {
 }
 
 const DOC_REQUESTS: DocRequest[] = [
-  { id: 'DR-001', examId: 'EXM-2026-001', title: 'Model validation reports for CreditRisk-XGB v3.2', description: 'Full validation documentation including backtesting, stress testing, and bias analysis', requestedDate: '2026-03-05', dueDate: '2026-04-01', status: 'submitted', category: 'Validation', assignee: 'Raj Gupta', priority: 'high' },
-  { id: 'DR-002', examId: 'EXM-2026-001', title: 'Model Risk Committee meeting minutes (2025–2026)', description: 'All MRC meeting minutes, voting records, and model approval documentation', requestedDate: '2026-03-05', dueDate: '2026-04-01', status: 'accepted', category: 'Governance', assignee: 'James Patel', priority: 'high' },
-  { id: 'DR-003', examId: 'EXM-2026-001', title: 'Bias and fairness audit results — FraudDetect-LSTM', description: 'Statistical parity, equalized odds, and disparate impact analysis', requestedDate: '2026-03-10', dueDate: '2026-04-15', status: 'in_progress', category: 'Fairness', assignee: 'Maria Santos', priority: 'high' },
-  { id: 'DR-004', examId: 'EXM-2026-001', title: 'Model explainability methodology documentation', description: 'SHAP/LIME documentation, adverse action notice procedures, challenge process', requestedDate: '2026-03-15', dueDate: '2026-04-20', status: 'in_progress', category: 'Explainability', assignee: 'Maria Santos', priority: 'medium' },
-  { id: 'DR-005', examId: 'EXM-2026-001', title: 'Data governance policy and lineage records', description: 'Training data documentation, lineage, consent records, and data quality reports', requestedDate: '2026-03-20', dueDate: '2026-04-30', status: 'open', category: 'Data Governance', assignee: 'Raj Gupta', priority: 'medium' },
-  { id: 'DR-006', examId: 'EXM-2026-001', title: 'Vendor AI risk assessments — OpenAI, Anthropic APIs', description: 'Third-party AI vendor risk assessments and contract terms', requestedDate: '2026-03-25', dueDate: '2026-05-01', status: 'open', category: 'Vendor Risk', assignee: 'David Kim', priority: 'low' },
+  { id: 'DR-001', examId: 'EXM-2026-001', title: 'Model validation reports for CreditRisk-XGB v3.2', description: 'Full validation documentation including backtesting, stress testing, and bias analysis', requestedDate: '2026-03-05', dueDate: '2026-04-01', status: 'submitted', category: 'Validation', assignee: 'Validator A', priority: 'high' },
+  { id: 'DR-002', examId: 'EXM-2026-001', title: 'Model Risk Committee meeting minutes (2025–2026)', description: 'All MRC meeting minutes, voting records, and model approval documentation', requestedDate: '2026-03-05', dueDate: '2026-04-01', status: 'accepted', category: 'Governance', assignee: 'Exam Lead B', priority: 'high' },
+  { id: 'DR-003', examId: 'EXM-2026-001', title: 'Bias and fairness audit results — FraudDetect-LSTM', description: 'Statistical parity, equalized odds, and disparate impact analysis', requestedDate: '2026-03-10', dueDate: '2026-04-15', status: 'in_progress', category: 'Fairness', assignee: 'Analyst A', priority: 'high' },
+  { id: 'DR-004', examId: 'EXM-2026-001', title: 'Model explainability methodology documentation', description: 'SHAP/LIME documentation, adverse action notice procedures, challenge process', requestedDate: '2026-03-15', dueDate: '2026-04-20', status: 'in_progress', category: 'Explainability', assignee: 'Analyst A', priority: 'medium' },
+  { id: 'DR-005', examId: 'EXM-2026-001', title: 'Data governance policy and lineage records', description: 'Training data documentation, lineage, consent records, and data quality reports', requestedDate: '2026-03-20', dueDate: '2026-04-30', status: 'open', category: 'Data Governance', assignee: 'Validator A', priority: 'medium' },
+  { id: 'DR-006', examId: 'EXM-2026-001', title: 'Vendor AI risk assessments — OpenAI, Anthropic APIs', description: 'Third-party AI vendor risk assessments and contract terms', requestedDate: '2026-03-25', dueDate: '2026-05-01', status: 'open', category: 'Vendor Risk', assignee: 'Analyst B', priority: 'low' },
 ];
 
 const FINDINGS = [
-  { id: 'FND-001', examId: 'EXM-2026-001', title: 'Inadequate model monitoring frequency for high-risk models', severity: 'significant', status: 'in_remediation', dueDate: '2026-05-15', owner: 'Raj Gupta', regulatoryRef: 'SR 11-7 Section IV.D' },
-  { id: 'FND-002', examId: 'EXM-2026-001', title: 'Missing adverse action explainability for borderline credit decisions', severity: 'significant', status: 'open', dueDate: '2026-05-30', owner: 'Maria Santos', regulatoryRef: 'ECOA Reg B § 202.9' },
-  { id: 'FND-003', examId: 'EXM-2025-003', title: 'Consumer vulnerability identification model lacks adequate testing', severity: 'moderate', status: 'in_remediation', dueDate: '2026-04-30', owner: 'James Patel', regulatoryRef: 'FCA Consumer Duty PS22/9' },
+  { id: 'FND-001', examId: 'EXM-2026-001', title: 'Inadequate model monitoring frequency for high-risk models', severity: 'significant', status: 'in_remediation', dueDate: '2026-05-15', owner: 'Validator A', regulatoryRef: 'SR 11-7 Section IV.D' },
+  { id: 'FND-002', examId: 'EXM-2026-001', title: 'Missing adverse action explainability for borderline credit decisions', severity: 'significant', status: 'open', dueDate: '2026-05-30', owner: 'Analyst A', regulatoryRef: 'ECOA Reg B § 202.9' },
+  { id: 'FND-003', examId: 'EXM-2025-003', title: 'Consumer vulnerability identification model lacks adequate testing', severity: 'moderate', status: 'in_remediation', dueDate: '2026-04-30', owner: 'Exam Lead B', regulatoryRef: 'FCA Consumer Duty PS22/9' },
 ];
 
 function examStatusStyle(s: ExamStatus) {
@@ -371,33 +371,33 @@ export default function ExaminationManager() {
                 <ShieldCheck size={14} style={{ color: 'hsl(var(--brand))', flexShrink: 0, marginTop: 1 }} />
                 <div>
                   <p className="font-semibold mb-0.5" style={{ color: 'hsl(var(--brand))' }}>OCC Examination Pre-Readiness Checklist — May 2026</p>
-                  <p style={{ color: 'hsl(var(--text-3))' }}>Preparation required before OCC AI/ML Risk Management Examination begins. Assigned to Sarah Chen (Lead). Complete all critical items by April 30, 2026.</p>
+                  <p style={{ color: 'hsl(var(--text-3))' }}>Preparation required before OCC AI/ML Risk Management Examination begins. Assigned to Exam Lead A (Lead). Complete all critical items by April 30, 2026.</p>
                 </div>
               </div>
               {([
                 { category: 'Model Inventory & Documentation', items: [
-                  { task: 'Complete model inventory — all AI/ML models in scope with risk ratings', owner: 'Raj Gupta', status: 'done', critical: true },
-                  { task: 'Ensure model cards / factsheets current for CreditRisk-XGB and FraudDetect-LSTM', owner: 'Maria Santos', status: 'in_progress', critical: true },
-                  { task: 'Update model version history and change logs for past 12 months', owner: 'Raj Gupta', status: 'done', critical: false },
+                  { task: 'Complete model inventory — all AI/ML models in scope with risk ratings', owner: 'Validator A', status: 'done', critical: true },
+                  { task: 'Ensure model cards / factsheets current for CreditRisk-XGB and FraudDetect-LSTM', owner: 'Analyst A', status: 'in_progress', critical: true },
+                  { task: 'Update model version history and change logs for past 12 months', owner: 'Validator A', status: 'done', critical: false },
                 ]},
                 { category: 'Governance & MRC Documentation', items: [
-                  { task: 'Compile MRC meeting minutes for last 4 quarters (2025–2026)', owner: 'James Patel', status: 'done', critical: true },
-                  { task: 'Prepare SR 11-7 governance self-assessment — board-approved model risk policy', owner: 'Sarah Chen', status: 'in_progress', critical: true },
-                  { task: 'Confirm quorum records and voting documentation are audit-ready', owner: 'James Patel', status: 'not_started', critical: false },
+                  { task: 'Compile MRC meeting minutes for last 4 quarters (2025–2026)', owner: 'Exam Lead B', status: 'done', critical: true },
+                  { task: 'Prepare SR 11-7 governance self-assessment — board-approved model risk policy', owner: 'Exam Lead A', status: 'in_progress', critical: true },
+                  { task: 'Confirm quorum records and voting documentation are audit-ready', owner: 'Exam Lead B', status: 'not_started', critical: false },
                 ]},
                 { category: 'Bias & Fairness Evidence', items: [
-                  { task: 'Complete bias audit for CreditRisk-XGB (ECOA Reg B DI ≥ 0.85)', owner: 'Maria Santos', status: 'not_started', critical: true },
-                  { task: 'Compile statistical parity and equalized odds test results for all high-risk models', owner: 'Maria Santos', status: 'in_progress', critical: true },
-                  { task: 'Prepare adverse action notice sampling and review evidence', owner: 'Raj Gupta', status: 'not_started', critical: false },
+                  { task: 'Complete bias audit for CreditRisk-XGB (ECOA Reg B DI ≥ 0.85)', owner: 'Analyst A', status: 'not_started', critical: true },
+                  { task: 'Compile statistical parity and equalized odds test results for all high-risk models', owner: 'Analyst A', status: 'in_progress', critical: true },
+                  { task: 'Prepare adverse action notice sampling and review evidence', owner: 'Validator A', status: 'not_started', critical: false },
                 ]},
                 { category: 'Consumer Harm & Explainability', items: [
-                  { task: 'Document SHAP/LIME methodology and output review process', owner: 'Maria Santos', status: 'done', critical: true },
-                  { task: 'Test adverse action notice accuracy for borderline credit decision cases', owner: 'Raj Gupta', status: 'not_started', critical: true },
-                  { task: 'Prepare human oversight escalation workflow documentation', owner: 'David Kim', status: 'done', critical: false },
+                  { task: 'Document SHAP/LIME methodology and output review process', owner: 'Analyst A', status: 'done', critical: true },
+                  { task: 'Test adverse action notice accuracy for borderline credit decision cases', owner: 'Validator A', status: 'not_started', critical: true },
+                  { task: 'Prepare human oversight escalation workflow documentation', owner: 'Analyst B', status: 'done', critical: false },
                 ]},
                 { category: 'Vendor & Third-Party AI Oversight', items: [
-                  { task: 'Complete OpenAI and Anthropic API risk assessments', owner: 'David Kim', status: 'not_started', critical: true },
-                  { task: 'Ensure vendor contracts include AI governance terms and right-to-audit', owner: 'James Patel', status: 'in_progress', critical: false },
+                  { task: 'Complete OpenAI and Anthropic API risk assessments', owner: 'Analyst B', status: 'not_started', critical: true },
+                  { task: 'Ensure vendor contracts include AI governance terms and right-to-audit', owner: 'Exam Lead B', status: 'in_progress', critical: false },
                 ]},
               ] as const).map((section, si) => {
                 const done = section.items.filter(i => i.status === 'done').length;

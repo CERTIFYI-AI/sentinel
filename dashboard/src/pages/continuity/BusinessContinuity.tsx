@@ -563,7 +563,7 @@ export default function BusinessContinuity() {
               </div>
               <div className="space-y-1">
                 <Label>Owner *</Label>
-                <Input value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} placeholder="e.g., Sarah Chen" style={{ borderRadius: 0 }} />
+                <Input value={form.owner} onChange={e => setForm(f => ({ ...f, owner: e.target.value }))} placeholder="e.g. Plan owner" style={{ borderRadius: 0 }} />
               </div>
               <div className="space-y-1">
                 <Label>Status</Label>

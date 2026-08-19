@@ -424,7 +424,7 @@ export default function TrainingAwareness() {
       {/* Summary row */}
       <div className="flex items-center justify-between text-xs" style={{ color: 'hsl(var(--text-4))' }}>
         <span>Showing {filtered.length} of {courses.length} courses</span>
-        <span>Acme Financial Corp &middot; Training & Awareness Module</span>
+        <span>Sentinel &middot; Training & Awareness Module</span>
       </div>
 
       {/* ── Detail Drawer ──────────────────────────────────────────────────── */}

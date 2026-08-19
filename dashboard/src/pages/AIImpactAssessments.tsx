@@ -576,10 +576,10 @@ export default function AIImpactAssessments() {
                   <Input type="number" min={0} max={100} value={form.progressPct} onChange={e => sf('progressPct', Number(e.target.value))} className="rounded-none bg-raised" />
                 </FormField>
                 <FormField label="Assessor">
-                  <Input value={form.assessor} onChange={e => sf('assessor', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. Sarah Chen" />
+                  <Input value={form.assessor} onChange={e => sf('assessor', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. Assessor name" />
                 </FormField>
                 <FormField label="Reviewer">
-                  <Input value={form.reviewer} onChange={e => sf('reviewer', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. James Patel" />
+                  <Input value={form.reviewer} onChange={e => sf('reviewer', e.target.value)} className="rounded-none bg-raised" placeholder="e.g. Reviewer name" />
                 </FormField>
                 <FormField label="Linked Model">
                   <Select value={form.modelId ?? '__none'} onValueChange={v => sf('modelId', v === '__none' ? null : v)}>

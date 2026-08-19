@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { useNavigate } from 'react-router-dom'
 import { useState, useRef, useEffect, useCallback } from 'react'
 import { MagnifyingGlass, Bell, ArrowsClockwise, Sun, Moon, Monitor, User, Gear, SignOut, PaintBrush, Question } from '@phosphor-icons/react'
@@ -8,9 +7,7 @@ import { NotificationDrawer } from './ui/NotificationDrawer'
 import { useTheme } from '../providers/theme'
 import { getStoredAccent, setAccent, type Accent } from '../store/accentStore'
 import { useAuthStore } from '../store/authStore'
-// import { OrgSwitcher } from './tenancy/OrgSwitcher' // org switcher hidden for now
-
-const UNREAD_COUNT = 5
+const UNREAD_COUNT = 0
 
 const ACCENT_SWATCHES: { key: Accent; label: string; color: string; darkColor: string }[] = [
   { key: 'emerald', label: 'Emerald',  color: 'hsl(142 47% 38%)', darkColor: 'hsl(142 47% 50%)' },
@@ -297,7 +294,7 @@ export default function TopHeader() {
                   </div>
                   <div className='flex items-center gap-1.5'>
                     <span className='text-[10px] font-medium px-1.5 py-0.5 bg-[hsl(var(--brand-subtle))] text-[hsl(var(--brand))]'>
-                      {user?.jobTitle ?? user?.role?.toUpperCase() ?? 'ADMIN'}
+                      {user?.role?.toUpperCase() ?? 'ADMIN'}
                     </span>
                     <span className='text-[10px] text-[hsl(var(--text-4))]'>{user?.organization}</span>
                   </div>

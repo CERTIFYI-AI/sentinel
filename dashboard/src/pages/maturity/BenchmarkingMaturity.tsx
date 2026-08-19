@@ -159,7 +159,7 @@ export default function BenchmarkingMaturity() {
       {/* Header */}
       <PageHeader
         title="Benchmarking & Maturity"
-        subtitle="Acme Financial Corp · AI governance maturity assessment across 8 dimensions"
+        subtitle="AI governance maturity assessment across 8 dimensions"
         icon={ChartBar}
         actions={
           <>

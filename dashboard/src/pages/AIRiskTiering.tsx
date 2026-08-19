@@ -666,7 +666,7 @@ export default function AIRiskTiering() {
 
               <div className="space-y-2">
                 <label className="text-xs font-semibold text-[hsl(var(--text-2))] uppercase tracking-wide">Classifier / Owner *</label>
-                <Input className="rounded-none bg-raised" value={wClassifier} onChange={e => setWClassifier(e.target.value)} placeholder="e.g. Sarah Chen" />
+                <Input className="rounded-none bg-raised" value={wClassifier} onChange={e => setWClassifier(e.target.value)} placeholder="e.g. Classifier name" />
               </div>
 
               <div className="space-y-2">

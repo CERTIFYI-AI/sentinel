@@ -851,12 +851,11 @@ export default function Tasks() {
                 </div>
               </div>
 
-              {/* Mock comments */}
               <div>
                 <p style={{ fontSize: 11, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'hsl(var(--text-3))', marginBottom: 12 }}>Comments</p>
                 {[
-                  { author: 'Sarah Chen', time: '2026-03-30', comment: 'Prioritized this for Q2. Please update status when remediation steps are confirmed.' },
-                  { author: detailTask.assignee, time: '2026-03-31', comment: 'Acknowledged. Working on the technical implementation. ETA end of next sprint.' },
+                  { author: detailTask.assignee ?? 'Team Lead', time: '2026-03-30', comment: 'Prioritized this for Q2. Please update status when remediation steps are confirmed.' },
+                  { author: detailTask.assignee ?? 'Assignee', time: '2026-03-31', comment: 'Acknowledged. Working on the technical implementation. ETA end of next sprint.' },
                 ].map((c, i) => (
                   <div key={i} style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
                     <AvatarInitials name={c.author} />

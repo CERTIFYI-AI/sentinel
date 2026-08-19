@@ -675,7 +675,7 @@ function EditSheet({ record, open, onClose, onSave, models, modelsLoading }: {
             </div>
             <div>
               <label className="text-xs font-medium text-[hsl(var(--text-2))] mb-1 block">Owner *</label>
-              <Input value={owner} onChange={e => setOwner(e.target.value)} placeholder="e.g. Sarah Chen" className="text-sm" />
+              <Input value={owner} onChange={e => setOwner(e.target.value)} placeholder="e.g. Prompt owner" className="text-sm" />
             </div>
           </div>
 

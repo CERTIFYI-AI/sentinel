@@ -1,4 +1,3 @@
-// @ts-nocheck
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 const queryClient = new QueryClient()
 import { BrowserRouter, Routes, Route, Navigate, Outlet, useParams, useLocation } from 'react-router-dom';
@@ -256,7 +255,7 @@ function PublicRoute() {
  */
 function ProtectedLayout() {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
-  const tenantId = useAuthStore((s) => s.user?.tenantId ?? 'default');
+  const tenantId = useAuthStore((s) => s.user?.tenant ?? 'default');
   // Tenancy gate: pages must never render (and call useRequiredOrgId) while
   // the tenant context is still resolving — a hard reload or TOKEN_REFRESHED
   // used to throw inside pages and strand the ErrorBoundary.

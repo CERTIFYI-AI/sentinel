@@ -208,7 +208,7 @@ export default function Signup() {
             {/* Email */}
             <div className="space-y-1.5">
               <label className="text-xs font-semibold uppercase tracking-wide" style={{ color: 'hsl(var(--text-4))' }}>Work Email *</label>
-              <input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={ic(!!errors.email)} style={s0} placeholder="jane@company.com" autoComplete="email" />
+              <input type="email" value={form.email} onChange={e => set('email', e.target.value)} className={ic(!!errors.email)} style={s0} placeholder="user@company.com" autoComplete="email" />
               {errors.email && <p className="text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>{errors.email}</p>}
             </div>
 

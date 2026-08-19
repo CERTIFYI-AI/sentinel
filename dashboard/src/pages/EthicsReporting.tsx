@@ -108,7 +108,7 @@ function MetricTile({ label, value, variant }: { label: string; value: string | 
 }
 
 const REPORT_CATEGORIES: ReportCategory[] = ['AI Bias/Discrimination', 'Safety Concern', 'Privacy Violation', 'Misuse of AI', 'Regulatory Non-Compliance', 'Ethical Concern', 'Other'];
-const INVESTIGATORS = ['David Kim', 'James Patel', 'Emma Wilson', 'Sarah Chen', 'Maria Santos'];
+const INVESTIGATORS = ['Investigator A', 'Investigator B', 'Investigator C', 'Investigator D', 'Investigator E'];
 
 export default function EthicsReporting() {
   const { items: liveItems, isLoading, saveEthicsReports: save, removeEthicsReports: remove } = useEthicsReportsData();

@@ -12,22 +12,22 @@ const SUGGESTIONS = [
   { id: 3, category: "Compliance", severity: "High", title: "SOC 2 Type II evidence collection deadline approaching in 14 days", description: "Annual SOC 2 audit requires updated evidence for CC6.1, CC6.2, CC7.1 controls. Current collection is 43% complete.", action: "Trigger evidence sync for remaining controls and assign to compliance team.", status: "In Progress" },
   { id: 4, category: "Vendor Risk", severity: "High", title: "OpenAI GPT-4 API dependency — no fallback configured for FraudGuard AI", description: "FraudGuard AI v1.5 relies exclusively on OpenAI GPT-4 with no fallback model configured. Single point of failure risk.", action: "Configure Anthropic Claude 3 as fallback, implement circuit breaker pattern.", status: "Open" },
   { id: 5, category: "Incident", severity: "Critical", title: "Model drift: Customer Churn Predictor accuracy dropped below threshold", description: "Customer Churn Predictor v2.3 accuracy dropped from 87.4% to 71.2% over 30 days due to distribution shift.", action: "Initiate emergency retraining pipeline, escalate to ML Engineering.", status: "Escalated" },
-  { id: 6, category: "Policy Gap", severity: "Medium", title: "ISO 42001 Section 6.1.2 — Risk treatment plan incomplete for 4 risks", description: "Risk treatment plan for Acme Financial Corp AI governance program missing entries for R-004, R-007, R-009, R-012.", action: "Complete risk treatment plan entries within 7 days.", status: "Open" },
+  { id: 6, category: "Policy Gap", severity: "Medium", title: "ISO 42001 Section 6.1.2 — Risk treatment plan incomplete for 4 risks", description: "Risk treatment plan missing entries for R-004, R-007, R-009, R-012.", action: "Complete risk treatment plan entries within 7 days.", status: "Open" },
   { id: 7, category: "Data Quality", severity: "High", title: "PII detected in unencrypted training dataset DS-017", description: "Training dataset DS-017 contains unmasked social security numbers and bank account numbers violating GDPR Article 25.", action: "Immediately quarantine dataset, run PII scrubbing pipeline, notify DPO.", status: "Open" },
-  { id: 8, category: "Compliance", severity: "Medium", title: "NIST AI RMF GOVERN 1.1 — AI risk policy not reviewed in 18 months", description: "Acme Financial Corp AI Risk Policy was last reviewed January 2025, exceeding the 12-month review cycle requirement.", action: "Schedule policy review for April 25 with CISO and Legal.", status: "Open" },
+  { id: 8, category: "Compliance", severity: "Medium", title: "NIST AI RMF GOVERN 1.1 — AI risk policy not reviewed in 18 months", description: "AI Risk Policy was last reviewed January 2025, exceeding the 12-month review cycle requirement.", action: "Schedule policy review for April 25 with CISO and Legal.", status: "Open" },
 ]
 
 const INITIAL_MESSAGES = [
   {
     role: "assistant",
-    text: "Hello! I'm Sentinel AI Advisor — your AI governance co-pilot for Acme Financial Corp. I monitor 12 active AI systems, track 3 compliance frameworks, and surface real-time governance risks.\n\nI can help you with:\n• EU AI Act / ISO 42001 / NIST AI RMF compliance status\n• Bias audit findings and remediation\n• Risk posture and treatment plans\n• Evidence collection status\n• Vendor and model incident analysis\n\nWhat would you like to work on today?",
+    text: "Hello! I'm Sentinel AI Advisor — your AI governance co-pilot. I monitor your active AI systems, track compliance frameworks, and surface real-time governance risks.\n\nI can help you with:\n• EU AI Act / ISO 42001 / NIST AI RMF compliance status\n• Bias audit findings and remediation\n• Risk posture and treatment plans\n• Evidence collection status\n• Vendor and model incident analysis\n\nWhat would you like to work on today?",
   },
 ]
 
 const RESPONSES: { keywords: string[]; text: string }[] = [
   {
     keywords: ['eu ai act', 'eu act', 'article 13', 'high-risk'],
-    text: "**EU AI Act Status — Acme Financial Corp**\n\n3 systems classified as High-Risk:\n• Credit Scoring Model v2.1 → Article 13 transparency gap (CRITICAL)\n• Loan Approval Model v3.0 → Article 10 data governance gap (HIGH)\n• Fraud Detection Engine v4.2 → Conformant ✓\n\nOverall EU AI Act readiness: 67%. Deadline for compliance: August 2026.\n\n**Recommended immediate action:** Schedule Article 13 remediation for Credit Scoring Model — estimated 3 engineering sprints.",
+    text: "**EU AI Act Status — Your Organization**\n\n3 systems classified as High-Risk:\n• Credit Scoring Model v2.1 → Article 13 transparency gap (CRITICAL)\n• Loan Approval Model v3.0 → Article 10 data governance gap (HIGH)\n• Fraud Detection Engine v4.2 → Conformant ✓\n\nOverall EU AI Act readiness: 67%. Deadline for compliance: August 2026.\n\n**Recommended immediate action:** Schedule Article 13 remediation for Credit Scoring Model — estimated 3 engineering sprints.",
   },
   {
     keywords: ['bias', 'fairness', 'demographic', 'parity'],
@@ -35,11 +35,11 @@ const RESPONSES: { keywords: string[]; text: string }[] = [
   },
   {
     keywords: ['risk', 'risks', 'risk posture', 'risk register'],
-    text: "**Risk Posture — Acme Financial Corp**\n\nOverall risk level: ELEVATED (Score: 7.2/10)\n\nTop risks:\n1. Model drift — Customer Churn Predictor (CRITICAL, score 20/25)\n2. Demographic bias — Loan Approval Model (CRITICAL, score 20/25)\n3. API single point of failure — FraudGuard AI (HIGH, score 15/25)\n4. PII in training data — Dataset DS-017 (HIGH, score 12/25)\n\n4 risks awaiting treatment plan completion. Risk committee review due April 25.",
+    text: "**Risk Posture — Your Organization**\n\nOverall risk level: ELEVATED (Score: 7.2/10)\n\nTop risks:\n1. Model drift — Customer Churn Predictor (CRITICAL, score 20/25)\n2. Demographic bias — Loan Approval Model (CRITICAL, score 20/25)\n3. API single point of failure — FraudGuard AI (HIGH, score 15/25)\n4. PII in training data — Dataset DS-017 (HIGH, score 12/25)\n\n4 risks awaiting treatment plan completion. Risk committee review due April 25.",
   },
   {
     keywords: ['report', 'generate report', 'compliance report', 'summary'],
-    text: "**Compliance Summary — Acme Financial Corp (April 2026)**\n\nOverall compliance score: 72%\n• EU AI Act: 67% ↓ (was 71% last quarter)\n• ISO 42001: 78% → stable\n• SOC 2 Type II: 81% ↑ (was 76% last quarter)\n• NIST AI RMF: 69% → stable\n\n3 critical items require attention before April 20 audit:\n1. EU AI Act Article 13 transparency for Credit Scoring Model\n2. Bias remediation for Loan Approval Model\n3. SOC 2 evidence collection (currently 43% complete)\n\nExport full report as PDF?",
+    text: "**Compliance Summary — Your Organization (April 2026)**\n\nOverall compliance score: 72%\n• EU AI Act: 67% ↓ (was 71% last quarter)\n• ISO 42001: 78% → stable\n• SOC 2 Type II: 81% ↑ (was 76% last quarter)\n• NIST AI RMF: 69% → stable\n\n3 critical items require attention before April 20 audit:\n1. EU AI Act Article 13 transparency for Credit Scoring Model\n2. Bias remediation for Loan Approval Model\n3. SOC 2 evidence collection (currently 43% complete)\n\nExport full report as PDF?",
   },
   {
     keywords: ['vendor', 'openai', 'anthropic', 'supply chain', 'third-party'],
@@ -101,7 +101,7 @@ export default function AiAdvisor() {
       const lower = trimmed.toLowerCase()
       const matched = RESPONSES.find(r => r.keywords.some(k => lower.includes(k)))
       const responseText = matched?.text ||
-        "I've analyzed your query against Acme Financial Corp's governance data. For best results, ask about:\n• EU AI Act compliance status\n• Bias and fairness audit results\n• Risk posture and treatment plans\n• Incident status and remediation\n• Vendor risk and supply chain\n• Evidence and audit readiness"
+        "I've analyzed your query against Your Organization's governance data. For best results, ask about:\n• EU AI Act compliance status\n• Bias and fairness audit results\n• Risk posture and treatment plans\n• Incident status and remediation\n• Vendor risk and supply chain\n• Evidence and audit readiness"
 
       setMessages(prev => [...prev, { role: "assistant", text: responseText }])
       setLoading(false)

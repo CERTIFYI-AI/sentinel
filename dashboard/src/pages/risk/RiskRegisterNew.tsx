@@ -1520,7 +1520,7 @@ export default function RiskRegisterNew() {
                 <Input
                   value={form.owner}
                   onChange={e => set('owner', e.target.value)}
-                  placeholder="e.g. Sarah Chen"
+                  placeholder="e.g. Risk owner"
                   style={{ borderRadius: 0 }}
                 />
               </div>

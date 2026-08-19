@@ -437,7 +437,7 @@ export default function IncidentLog() {
               </div>
               <div>
                 <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Assignee</label>
-                <Input value={form.assignee} onChange={(e) => setForm({ ...form, assignee: e.target.value })} placeholder="e.g. Jane Doe" style={{ borderRadius: 0 }} />
+                <Input value={form.assignee} onChange={(e) => setForm({ ...form, assignee: e.target.value })} placeholder="e.g. Assignee name" style={{ borderRadius: 0 }} />
               </div>
             </div>
             <div>
@@ -506,7 +506,7 @@ export default function IncidentLog() {
                 </div>
                 <div>
                   <label className="block text-xs font-medium text-[hsl(var(--text-3))] mb-1">Assignee</label>
-                  <Input value={editForm.assignee} onChange={(e) => setEditForm({ ...editForm, assignee: e.target.value })} placeholder="e.g. Jane Doe" style={{ borderRadius: 0 }} />
+                  <Input value={editForm.assignee} onChange={(e) => setEditForm({ ...editForm, assignee: e.target.value })} placeholder="e.g. Assignee name" style={{ borderRadius: 0 }} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
