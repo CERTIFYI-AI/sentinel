@@ -288,7 +288,7 @@ export default function VendorAssessments() {
       />
 
       {isError ? (
-        <ErrorState title="Could not load assessments" error={error} onRetry={() => refetch()} />
+        <ErrorState title="Could not load assessments" error={error} subject="vendor assessments" onRetry={() => refetch()} />
       ) : (
         <>
           <StatCardRow cards={kpis} />

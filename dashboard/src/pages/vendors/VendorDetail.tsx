@@ -409,7 +409,7 @@ export default function VendorDetail() {
             Assessments
           </SectionTitle>
           {assessments.isError ? (
-            <ErrorState title="Could not load assessments" error={assessments.error} onRetry={() => assessments.refetch()} />
+            <ErrorState title="Could not load assessments" error={assessments.error} subject="vendor assessments" onRetry={() => assessments.refetch()} />
           ) : assessments.isLoading ? (
             <div role="status" aria-label="Loading assessments" className="h-20" />
           ) : assessments.assessments.length === 0 ? (
@@ -457,7 +457,7 @@ export default function VendorDetail() {
             Service levels
           </SectionTitle>
           {slas.isError ? (
-            <ErrorState title="Could not load SLAs" error={slas.error} onRetry={() => slas.refetch()} />
+            <ErrorState title="Could not load SLAs" error={slas.error} subject="vendor SLAs" onRetry={() => slas.refetch()} />
           ) : slas.slas.length === 0 ? (
             <EmptyState
               icon={<Gauge size={28} weight="duotone" />}
@@ -508,7 +508,7 @@ export default function VendorDetail() {
             Evidence &amp; certificates
           </SectionTitle>
           {documents.isError ? (
-            <ErrorState title="Could not load documents" error={documents.error} onRetry={() => documents.refetch()} />
+            <ErrorState title="Could not load documents" error={documents.error} subject="vendor documents" onRetry={() => documents.refetch()} />
           ) : documents.documents.length === 0 ? (
             <EmptyState
               icon={<Certificate size={28} weight="duotone" />}

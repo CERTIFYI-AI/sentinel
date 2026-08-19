@@ -308,7 +308,7 @@ export default function VendorSLA() {
       />
 
       {isError ? (
-        <ErrorState title="Could not load SLAs" error={error} onRetry={() => refetch()} />
+        <ErrorState title="Could not load SLAs" error={error} subject="vendor SLAs" onRetry={() => refetch()} />
       ) : (
         <>
           <StatCardRow cards={kpis} />

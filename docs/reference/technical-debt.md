@@ -1061,6 +1061,26 @@ and its live-lineage branch applied — see sub-item 2 below. `20260831000002`
 was applied 2026-08-18 in a **live-lineage variant** — see sub-item 3.
 
 **Open sub-items.**
+0. **Vendor / TPRM / Supply-Chain cluster is unprovisioned on live — root cause
+   is the `tenant_id` → `org_id` lineage gap (found 2026-08-18).** The app
+   500'd on `Could not find the table 'public.vendor_assessments' in the schema
+   cache`. Live inspection: `public.vendors` has `id text`, `risk_tier integer`
+   and **`tenant_id text`** — it has **no `org_id`** and none of the TPRM
+   write-path columns, so it predates the ws01 tenancy unify (`20260421000008`).
+   `vendor_assessments`, `vendor_slas`, `vendor_sla_status`, `vendor_documents`,
+   `supplier_components`, `provenance_records`, `emission_factors` and
+   `carbon_records.org_id` are all absent; `supply_chain_attestations` exists.
+   The repo's foundation migration (`20260822000001`) begins
+   `ALTER TABLE public.vendors ALTER COLUMN org_id SET DEFAULT …` and so **fails
+   at the first statement** against live (transactional — nothing was applied).
+   **Do not blind-apply.** This needs a reviewed live-lineage migration that
+   either (a) adds `org_id` to `vendors` and backfills it from `tenant_id`
+   (resolving `tenant_id`→`org_id` via `user_profiles`/`organizations`), then
+   creates the vendor tables org-scoped, or (b) creates the vendor tables scoped
+   on `tenant_id` to match live. Same drift family as sub-items 1–3. Until then
+   the UI degrades gracefully (missing table → "not set up yet"), so the cluster
+   no longer crashes; it simply shows the setup state.
+
 1. **Reconcile the migration lineage** so `db push` is safe: decide whether live
    converges onto the repo (add the `auth.*` helpers + `rbac_permissions`) or
    the repo is rebased onto live's `get_user_org_id()` reality. Until then,
