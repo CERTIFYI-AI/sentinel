@@ -1549,7 +1549,7 @@ function ModelDetailView({ model }: { model: Model }) {
                   <p style={{ fontSize: 10, color: 'hsl(var(--text-4))', marginTop: 2 }}>Linked {formatDate(doc.createdAt)}{doc.createdBy ? ` · ${doc.createdBy}` : ''}</p>
                 </div>
                 <button
-                  onClick={() => window.open(doc.url, '_blank', 'noopener')}
+                  onClick={() => { try { const u = new URL(doc.url); if (u.protocol === 'https:' || u.protocol === 'http:') window.open(doc.url, '_blank', 'noopener'); } catch { /* invalid URL */ } }}
                   style={{ padding: '6px 12px', background: 'none', border: '1px solid hsl(var(--border))', cursor: 'pointer', color: 'hsl(var(--text-2))', fontSize: 12, display: 'flex', alignItems: 'center', gap: 5, whiteSpace: 'nowrap' }}
                 >
                   <DownloadSimple size={13} /> Open

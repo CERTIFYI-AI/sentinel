@@ -46,7 +46,8 @@ async def list_incidents(req: Request, severity: Optional[str] = None, status: O
     if severity: w.append(f"severity=${i}"); p.append(severity); i += 1
     if status: w.append(f"status=${i}"); p.append(status); i += 1
     wc = " AND ".join(w); off = (page-1)*page_size
-    rows = await db.fetch(f"SELECT * FROM incidents WHERE {wc} ORDER BY created_at DESC LIMIT {page_size} OFFSET {off}", *p)
+    p.extend([page_size, off])
+    rows = await db.fetch(f"SELECT * FROM incidents WHERE {wc} ORDER BY created_at DESC LIMIT ${i} OFFSET ${i+1}", *p)
     total = await db.fetchval(f"SELECT COUNT(*) FROM incidents WHERE {wc}", *p)
     return {"success": True, "data": [dict(r) for r in rows], "meta": {"total": total, "page": page}}
 
@@ -84,7 +85,7 @@ async def update_incident(inc_id: str, req: Request, body: IncidentUpdate, db=De
     updates = {k: v for k, v in body.dict(exclude_unset=True).items() if v is not None}
     if not updates: return {"success": True, "data": dict(row)}
     sc = []; pp = []
-    for i, (k, v) in enumerate(updates.items(), 1): sc.append(f"{k}=${i}"); pp.append(v)
+    for i, (k, v) in enumerate(updates.items(), 1): sc.append(f'"{k}"=${i}'); pp.append(v)
     pp.extend([datetime.now(timezone.utc), inc_id, tid])
     n = len(pp)
     await db.execute(f"UPDATE incidents SET {', '.join(sc)}, updated_at=${n-2} WHERE id=${n-1} AND tenant_id=${n}", *pp)

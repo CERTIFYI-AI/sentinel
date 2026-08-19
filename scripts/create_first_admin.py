@@ -33,8 +33,13 @@ async def main():
     await pool.close()
     print(f"Admin created for {args.org_name}")
     print(f"Tenant ID: {tenant_id}")
-    print(f"API Key:   {raw_key}")
-    print("Store this key securely. It will not be shown again.")
+    print(f"API Key:   {raw_key[:8]}...{raw_key[-4:]}")
+    print(f"Full key written to: ./admin-key-{tenant_id[:12]}.secret")
+    key_path = f"./admin-key-{tenant_id[:12]}.secret"
+    with open(key_path, "w") as f:
+        f.write(raw_key + "\n")
+    os.chmod(key_path, 0o600)
+    print("Store this key securely and delete the file after retrieving it.")
 
 if __name__ == "__main__":
     asyncio.run(main())

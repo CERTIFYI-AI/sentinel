@@ -43,9 +43,7 @@ const CASCADE_DEPTH_LIMIT = 10
 // Helpers
 // ------------------------------------------------------------------
 function genTraceId(): string {
-  return typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? (crypto as { randomUUID(): string }).randomUUID()
-    : `trace-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`
+  return crypto.randomUUID()
 }
 
 function hashInput(obj: unknown): string {

@@ -97,7 +97,7 @@ async def update_control(ctrl_id: str, req: Request, body: ControlUpdate, db=Dep
     if not old: raise HTTPException(404,"Not found")
     updates={k:v for k,v in body.dict().items() if v is not None}
     if updates:
-        sets=", ".join(f"{k}=${i+2}" for i,k in enumerate(updates))
+        sets=", ".join(f'"{k}"=${i+2}' for i,k in enumerate(updates))
         await db.execute(f"UPDATE controls SET {sets}, updated_at=NOW() WHERE id=$1 AND tenant_id=${len(updates)+2}",ctrl_id,*updates.values(),tenant_id)
     if body.status and body.status!=old["status"]:
         await emit_control_status_changed(tenant_id,ctrl_id,old["status"],body.status,old["owner"] or user_id)

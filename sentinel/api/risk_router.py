@@ -64,8 +64,9 @@ async def list_risks(req: Request, search: Optional[str] = None, risk_level: Opt
     if search: where.append(f"(name ILIKE ${i} OR description ILIKE ${i})"); params.append(f"%{search}%"); i += 1
     w = " AND ".join(where)
     offset = (page-1)*page_size
-    rows = await db.fetch(f"SELECT * FROM risk_entries WHERE {w} ORDER BY created_at DESC LIMIT {page_size} OFFSET {offset}", *params)
-    total = await db.fetchval(f"SELECT COUNT(*) FROM risk_entries WHERE {w}", *params)
+    params.extend([page_size, offset])
+    rows = await db.fetch(f"SELECT * FROM risk_entries WHERE {w} ORDER BY created_at DESC LIMIT ${i} OFFSET ${i+1}", *params)
+    total = await db.fetchval(f"SELECT COUNT(*) FROM risk_entries WHERE {w}", *params[:-2])
     return {"success": True, "data": [dict(r) for r in rows], "meta": {"total": total, "page": page}}
 
 @router.get("/heatmap")
@@ -128,7 +129,7 @@ async def update_risk(risk_id: str, req: Request, body: RiskUpdate, db=Depends(g
     if not updates: return {"success": True, "data": dict(row)}
     set_clauses = []; params = []
     for i, (k, v) in enumerate(updates.items(), 1):
-        set_clauses.append(f"{k}=${i}"); params.append(v)
+        set_clauses.append(f'"{k}"=${i}'); params.append(v)
     params.extend([datetime.now(timezone.utc), risk_id, tenant_id])
     set_clauses.append(f"updated_at=${len(params)-1}")
     set_clause_str = ", ".join(set_clauses)

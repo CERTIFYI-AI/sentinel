@@ -57,7 +57,7 @@ const policyEnforcement: Sweep = async ({ sb, orgId, since, emit }) => {
     const missing = /schema cache|does not exist/i.test(error.message)
     return missing
       ? { status: 'skipped', findings: [], summary: 'No runtime trace telemetry provisioned (trust_traces absent).' }
-      : { status: 'failed', findings: [], summary: 'trust_traces query failed', error: error.message }
+      : { status: 'failed', findings: [], summary: 'trust_traces query failed' }
   }
   const flagged = (data ?? []).filter((t: any) => t.injection_detected || t.pii_detected || t.toxicity_detected || t.intent_violation)
   const findings: Finding[] = flagged.map((t: any) => ({
@@ -79,7 +79,7 @@ const policyEnforcement: Sweep = async ({ sb, orgId, since, emit }) => {
 const driftDetection: Sweep = async ({ sb, orgId, emit }) => {
   const { data, error } = await sb.from('ai_models')
     .select('id, name, is_active, drift_status, drift_score').eq('org_id', orgId)
-  if (error) return { status: 'failed', findings: [], summary: 'ai_models query failed', error: error.message }
+  if (error) return { status: 'failed', findings: [], summary: 'ai_models query failed' }
   const active = (data ?? []).filter((m: any) => m.is_active !== false)
   const measured = active.filter((m: any) => m.drift_score !== null || (m.drift_status && m.drift_status !== ''))
   const drifting = measured.filter((m: any) =>
@@ -110,7 +110,7 @@ const biasMonitor: Sweep = async ({ sb, orgId, emit }) => {
     sb.from('ai_models').select('id, name, is_active, fairness_score').eq('org_id', orgId),
     sb.from('bias_audits').select('model_id, status, created_at').eq('tenant_id', orgId).order('created_at', { ascending: false }).limit(1000),
   ])
-  if (modelsRes.error) return { status: 'failed', findings: [], summary: 'ai_models query failed', error: modelsRes.error.message }
+  if (modelsRes.error) return { status: 'failed', findings: [], summary: 'ai_models query failed' }
   const models = (modelsRes.data ?? []).filter((m: any) => m.is_active !== false)
   const audits = auditsRes.data ?? []
   const cutoff = Date.now() - 90 * 86400_000
@@ -151,7 +151,7 @@ const dataLineage: Sweep = async ({ sb, orgId, emit }) => {
     sb.from('datasets').select('id, name, contains_pii, last_audit_date, used_in_models').eq('tenant_id', orgId),
     sb.from('ai_models').select('id, name, is_active').eq('org_id', orgId),
   ])
-  if (dsRes.error) return { status: 'failed', findings: [], summary: 'datasets query failed', error: dsRes.error.message }
+  if (dsRes.error) return { status: 'failed', findings: [], summary: 'datasets query failed' }
   const datasets = dsRes.data ?? []
   const models = (mRes.data ?? []).filter((m: any) => m.is_active !== false)
   const cutoff = Date.now() - 180 * 86400_000
@@ -181,7 +181,7 @@ const incidentTriage: Sweep = async ({ sb, orgId, emit }) => {
   const { data, error } = await sb.from('incidents')
     .select('id, description, severity, status, incident_type, detected_date, occurred_date, created_at, affected_persons')
     .eq('tenant_id', orgId).in('status', ['open', 'OPEN', 'investigating', 'triage']).limit(500)
-  if (error) return { status: 'failed', findings: [], summary: 'incidents query failed', error: error.message }
+  if (error) return { status: 'failed', findings: [], summary: 'incidents query failed' }
   const findings: Finding[] = []
   let triaged = 0
   for (const inc of (data ?? []) as any[]) {
@@ -218,7 +218,7 @@ const complianceCheck: Sweep = async ({ sb, orgId, emit }) => {
     sb.from('ai_models').select('id, name, is_active, is_regulated, risk_tier').eq('org_id', orgId),
     sb.from('controls').select('id, framework, status, implementation_status').eq('tenant_id', orgId).limit(2000),
   ])
-  if (mRes.error) return { status: 'failed', findings: [], summary: 'ai_models query failed', error: mRes.error.message }
+  if (mRes.error) return { status: 'failed', findings: [], summary: 'ai_models query failed' }
   const models = (mRes.data ?? []).filter((m: any) => m.is_active !== false)
   const controls = cRes.data ?? []
   const highTier = (models as any[]).filter((m) => {
@@ -256,7 +256,7 @@ const accessAudit: Sweep = async ({ sb, orgId, emit }) => {
     sb.from('agent_gov_credentials').select('id, doc').eq('org_id', orgId).is('deleted_at', null).limit(1000),
     sb.from('agents').select('id, name, status, governance_status').eq('tenant_id', orgId).limit(1000),
   ])
-  if (credsRes.error) return { status: 'failed', findings: [], summary: 'credentials query failed', error: credsRes.error.message }
+  if (credsRes.error) return { status: 'failed', findings: [], summary: 'credentials query failed' }
   const findings: Finding[] = []
   for (const c of (credsRes.data ?? []) as any[]) {
     const d = c.doc ?? {}
@@ -291,7 +291,7 @@ const explainability: Sweep = async ({ sb, orgId, emit }) => {
     sb.from('ai_models').select('id, name, is_active, is_regulated, version').eq('org_id', orgId),
     sb.from('model_explanations').select('model_id, model_version, computed_at').eq('org_id', orgId).order('computed_at', { ascending: false }).limit(2000),
   ])
-  if (mRes.error) return { status: 'failed', findings: [], summary: 'ai_models query failed', error: mRes.error.message }
+  if (mRes.error) return { status: 'failed', findings: [], summary: 'ai_models query failed' }
   const models = (mRes.data ?? []).filter((m: any) => m.is_active !== false)
   const latest = new Map<string, any>()
   for (const e of (eRes.data ?? []) as any[]) if (!latest.has(e.model_id)) latest.set(e.model_id, e)
@@ -320,7 +320,7 @@ const changeDetection: Sweep = async ({ sb, orgId, emit }) => {
     sb.from('ai_models').select('id, name, version, provider, model_type').eq('org_id', orgId),
     sb.from('mesh_model_fingerprints').select('model_id, fingerprint, version_seen').eq('org_id', orgId),
   ])
-  if (mRes.error) return { status: 'failed', findings: [], summary: 'ai_models query failed', error: mRes.error.message }
+  if (mRes.error) return { status: 'failed', findings: [], summary: 'ai_models query failed' }
   const hash = (s: string) => { let h = 0; for (let i = 0; i < s.length; i++) h = ((h << 5) - h + s.charCodeAt(i)) | 0; return h.toString(36) }
   const known = new Map(((fRes.data ?? []) as any[]).map((p) => [p.model_id, p]))
   const findings: Finding[] = []
@@ -375,7 +375,7 @@ const reporting: Sweep = async ({ sb, orgId }) => {
     org_id: orgId, title: 'AI governance daily digest', message: content,
     type: 'info', source_module: 'mesh-digest', is_read: false,
   })
-  if (notif.error) return { status: 'failed', findings: [], summary: 'notifications write failed', error: notif.error.message }
+  if (notif.error) return { status: 'failed', findings: [], summary: 'notifications write failed' }
   // Server-only: executive digest row (service-role write policy).
   await sb.from('executive_digests').insert({ org_id: orgId, content, model_used: 'mesh-reporting-sentinel' })
   return { status: 'succeeded', findings: [{ title: 'Compiled daily governance digest', severity: 'INFO' }], summary: `Digest compiled: ${content}.` }
@@ -486,7 +486,7 @@ Deno.serve(async (req: Request) => {
       orgIds = [body.orgId]
     } else {
       const { data, error } = await sb.from('organizations').select('id')
-      if (error) throw new Error(error.message)
+      if (error) throw new Error('organizations query failed')
       orgIds = (data ?? []).map((o: any) => o.id)
     }
 

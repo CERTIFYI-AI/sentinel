@@ -28,9 +28,9 @@ import { encryptCredentials } from '../integrations-connect/crypto.ts'
 declare const Deno: { env: { get(k: string): string | undefined } }
 
 function corsHeaders(): Record<string, string> {
-  const origin = Deno.env.get('ALLOWED_ORIGIN') ?? '*'
+  const origin = Deno.env.get('ALLOWED_ORIGIN')
   return {
-    'Access-Control-Allow-Origin': origin,
+    ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}),
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Access-Control-Max-Age': '86400',

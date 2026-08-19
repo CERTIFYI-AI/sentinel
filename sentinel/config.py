@@ -316,13 +316,11 @@ def cors_config() -> dict:
 
     Reads a comma-separated allowlist from the ``CORS_ORIGINS`` env var. When
     explicit origins are configured, credentialed requests are allowed (the
-    valid, secure form). When no allowlist is set we fall back to a wildcard
-    with credentials DISABLED — because ``allow_origins=["*"]`` combined with
-    ``allow_credentials=True`` is rejected by browsers and is unsafe. Set
-    ``CORS_ORIGINS`` in any deployment that needs credentialed cross-origin
-    access.
+    valid, secure form). When no allowlist is set we default to no cross-origin
+    access — set ``CORS_ORIGINS`` to a comma-separated list of allowed origins
+    for any deployment that needs it.
     """
-    import os
+    import os, logging
 
     raw = os.environ.get("CORS_ORIGINS", "").strip()
     if raw and raw != "*":
@@ -333,8 +331,13 @@ def cors_config() -> dict:
             "allow_methods": ["*"],
             "allow_headers": ["*"],
         }
+    if not raw:
+        logging.getLogger(__name__).warning(
+            "CORS_ORIGINS not set — cross-origin requests will be blocked. "
+            "Set CORS_ORIGINS to a comma-separated allowlist for production."
+        )
     return {
-        "allow_origins": ["*"],
+        "allow_origins": [],
         "allow_credentials": False,
         "allow_methods": ["*"],
         "allow_headers": ["*"],

@@ -123,7 +123,7 @@ async function verifyIdToken(
   const jwksResp = await fetch(jwksUri, { signal: AbortSignal.timeout(5_000) })
   if (!jwksResp.ok) throw new Error('oidc_jwks_fetch_failed')
   const jwks = await jwksResp.json() as { keys: Array<Record<string, unknown>> }
-  const jwk = jwks.keys.find(k => k.kid === header.kid) ?? jwks.keys[0]
+  const jwk = jwks.keys.find(k => k.kid === header.kid)
   if (!jwk) throw new Error('oidc_no_matching_key')
 
   const key = await importRsaJwk(jwk)

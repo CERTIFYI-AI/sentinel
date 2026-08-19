@@ -22,6 +22,7 @@ from cryptography.hazmat.primitives.ciphers.aead import AESGCM
 
 _ENV_KEY = "SENTINEL_CREDENTIALS_KEY"
 _VERSION = 1
+_AAD = b"sentinel:integration_credentials:v1"
 
 
 class CredentialKeyMissing(RuntimeError):
@@ -52,7 +53,7 @@ def encrypt_credentials(credentials: dict) -> dict:
     key = _load_key()
     nonce = os.urandom(12)
     plaintext = json.dumps(credentials, separators=(",", ":")).encode()
-    ciphertext = AESGCM(key).encrypt(nonce, plaintext, None)
+    ciphertext = AESGCM(key).encrypt(nonce, plaintext, _AAD)
     return {
         "v": _VERSION,
         "nonce": base64.b64encode(nonce).decode(),
@@ -72,7 +73,7 @@ def decrypt_credentials(blob: dict) -> dict:
     try:
         nonce = base64.b64decode(blob["nonce"])
         ciphertext = base64.b64decode(blob["ciphertext"])
-        plaintext = AESGCM(key).decrypt(nonce, ciphertext, None)
+        plaintext = AESGCM(key).decrypt(nonce, ciphertext, _AAD)
     except KeyError as exc:
         raise ValueError(f"credential blob missing field: {exc}") from exc
     except Exception as exc:  # InvalidTag and friends

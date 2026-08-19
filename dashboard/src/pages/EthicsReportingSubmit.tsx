@@ -14,7 +14,9 @@ const CATEGORIES = [
 ];
 
 function generateRef(): string {
-  const num = Math.floor(Math.random() * 900) + 100;
+  const arr = new Uint16Array(1);
+  crypto.getRandomValues(arr);
+  const num = (arr[0] % 900) + 100;
   return `ER-${num}`;
 }
 

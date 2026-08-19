@@ -288,9 +288,12 @@ metadata:
     kubernetes.io/description: "Sentinel API secrets — populate via ESO or helm --set"
 type: Opaque
 stringData:
-  DATABASE_URL: "postgresql+asyncpg://user:CHANGEME@sentinel-postgres:5432/sentinel"
-  SECRET_KEY: "CHANGEME-min-32-chars-random-string"
-  OPENAI_API_KEY: "CHANGEME"
-  JWT_SECRET_KEY: "CHANGEME-min-32-chars"
-  AUDIT_EXPORT_SIGNING_KEY: "CHANGEME-min-32-chars"
-  REDIS_PASSWORD: "CHANGEME"
+  # SECURITY: Replace ALL values below with real secrets before deploying.
+  # Use External Secrets Operator (ESO) or Sealed Secrets in production —
+  # never commit real credentials to source control.
+  DATABASE_URL: "REPLACE_VIA_ESO"
+  SECRET_KEY: "REPLACE_VIA_ESO"
+  OPENAI_API_KEY: "REPLACE_VIA_ESO"
+  JWT_SECRET_KEY: "REPLACE_VIA_ESO"
+  AUDIT_EXPORT_SIGNING_KEY: "REPLACE_VIA_ESO"
+  REDIS_PASSWORD: "REPLACE_VIA_ESO"

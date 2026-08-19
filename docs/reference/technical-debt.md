@@ -1122,3 +1122,57 @@ was applied 2026-08-18 in a **live-lineage variant** — see sub-item 3.
    `compliance_evaluator.py` and only produce results when that worker runs with
    `OPENAI_API_KEY`. The DB layer is ready; the pipeline is not "on" until the
    key is present wherever the evaluator executes.
+
+---
+
+## TD-022 — WebSocket event stream has no authentication (M-6)
+
+**Status:** Open · **Severity:** P2 (security) · **Owner:** Platform team
+
+The WebSocket endpoint at `/api/events/ws` accepts a `tenant_id` query parameter
+but performs no JWT/token authentication. Any client that can reach the API and
+knows (or guesses) a tenant UUID receives real-time governance events for that
+organisation. The Supabase Realtime channels used by the dashboard are separately
+authenticated via the user's JWT, so the primary data path is secure — this
+affects only the custom Python WS endpoint used for event-bus telemetry.
+
+**Accepted constraint:** Fixing this requires WebSocket middleware that validates
+a JWT from the `Sec-WebSocket-Protocol` subprotocol header (query-param tokens
+are logged by proxies/CDNs). This is a planned change; until then the endpoint
+is only reachable from the internal network (the proxy rejects unauthenticated
+WS upgrades from external origins).
+
+---
+
+## TD-023 — integration_connections.credentials plaintext column (H-6)
+
+**Status:** Open (migration staged) · **Severity:** P1 (security) · **Owner:** Platform team
+
+The `integration_connections` table stores OAuth/API credentials as plaintext
+JSONB in the `credentials` column. Migration
+`20260919000002_integration_connections_credentials_encrypted.sql` adds a
+`credentials_encrypted` column for AES-256-GCM blobs (same pattern as
+`integrations.credentials_encrypted`). A data-migration script must:
+
+1. Encrypt each existing row's `credentials` into `credentials_encrypted`.
+2. NULL the plaintext `credentials` column on each encrypted row.
+3. After verification, add a NOT NULL constraint on `credentials_encrypted` and
+   drop the `credentials` column.
+
+The Python backend's `sentinel/integrations/crypto.py` already implements the
+encryption/decryption with AAD binding.
+
+---
+
+## TD-024 — Demo credentials in source control (L-2)
+
+**Status:** Mitigated · **Severity:** P3 · **Owner:** Platform team
+
+- `dashboard/src/lib/auth.ts` contains `DEMO_PASSWORD = 'Demo@12345'`, guarded
+  by `import.meta.env.DEV` (dead code in production builds).
+- `sentinel/api/deps.py` has `_DEV_FALLBACK_SECRET`, gated behind explicit
+  `SENTINEL_DEV=1` opt-in.
+- `k8s/sentinel-deployment.yaml` placeholder secrets changed to `REPLACE_VIA_ESO`
+  (2026-09-19) — must use External Secrets Operator or Sealed Secrets in production.
+
+No action required beyond ensuring production deployments use ESO/Sealed Secrets.

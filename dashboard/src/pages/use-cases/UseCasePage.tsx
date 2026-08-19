@@ -64,7 +64,7 @@ export default function UseCasePage() {
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
 
   const toast = useCallback((text: string, type: ToastMsg['type'] = 'success') => {
-    const id = Date.now() + Math.random();
+    const id = Date.now() + crypto.getRandomValues(new Uint32Array(1))[0];
     setToasts(prev => [...prev, { id, text, type }]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 4000);
   }, []);

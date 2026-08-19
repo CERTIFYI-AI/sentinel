@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 # Sentinel AI GRC - Pre-flight environment validation.
 # Run before docker-compose up. Exits non-zero on any failure.
 set -e
@@ -25,7 +25,7 @@ fi
 
 # Required vars
 for VAR in POSTGRES_PASSWORD REDIS_PASSWORD GRAFANA_PASSWORD JWT_SECRET_KEY; do
-  VAL=$(eval echo "\$$VAR")
+  VAL="${!VAR}"
   if [ -z "$VAL" ]; then
     check "$VAR set" "1" "$VAR is not set"
   else
@@ -35,7 +35,7 @@ done
 
 # Banned weak passwords
 for VAR in POSTGRES_PASSWORD REDIS_PASSWORD GRAFANA_PASSWORD; do
-  VAL=$(eval echo "\$$VAR")
+  VAL="${!VAR}"
   for WEAK in sentinel admin password changeme changeme 123456; do
     if [ "$VAL" = "$WEAK" ]; then
       check "$VAR not weak" "1" "$VAR must not be a well-known default value"
@@ -45,7 +45,7 @@ done
 
 # Minimum length checks
 for VAR in POSTGRES_PASSWORD REDIS_PASSWORD GRAFANA_PASSWORD; do
-  VAL=$(eval echo "\$$VAR")
+  VAL="${!VAR}"
   LEN=$(printf '%s' "$VAL" | wc -c)
   if [ "$LEN" -lt 12 ]; then
     check "$VAR length" "1" "$VAR must be at least 12 characters (got $LEN)"

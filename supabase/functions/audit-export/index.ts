@@ -33,8 +33,9 @@ const DEFAULT_LIMIT = 1_000
 const MAX_LIMIT = 10_000
 
 function cors(): Record<string, string> {
+  const origin = Deno.env.get('ALLOWED_ORIGIN')
   return {
-    'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
+    ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}),
     'Access-Control-Allow-Headers': 'authorization, content-type',
     'Access-Control-Allow-Methods': 'GET, OPTIONS',
   }
@@ -105,7 +106,8 @@ serve(async (req: Request): Promise<Response> => {
 
   const { data, error } = await query
   if (error) {
-    return new Response(`query_failed: ${error.message}`, {
+    console.error('audit-export query failed:', error.message)
+    return new Response('query_failed', {
       status: 500,
       headers: cors(),
     })

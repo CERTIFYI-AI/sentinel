@@ -51,9 +51,9 @@ const UUID_RE =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function corsHeaders(): Record<string, string> {
-  const origin = Deno.env.get('ALLOWED_ORIGIN') ?? '*'
+  const origin = Deno.env.get('ALLOWED_ORIGIN')
   return {
-    'Access-Control-Allow-Origin': origin,
+    ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}),
     'Access-Control-Allow-Headers':
       'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',

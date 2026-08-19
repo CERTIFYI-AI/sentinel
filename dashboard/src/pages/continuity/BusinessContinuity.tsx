@@ -206,7 +206,7 @@ function normalizeBcpPlan(plan: any): BCPPlan {
   }));
 
   return {
-    id: plan.id || `BCP-${Math.floor(Math.random() * 1000)}`,
+    id: plan.id || `BCP-${crypto.randomUUID().slice(0, 8)}`,
     name: plan.name || plan.title || 'Unnamed Plan',
     scope: plan.scope || plan.category || 'General',
     rto: plan.rto || (plan.rto_hours ? `${plan.rto_hours}h` : 'N/A'),

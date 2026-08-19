@@ -86,7 +86,7 @@ async def main():
             print(f"Seeded {len(GOLDEN_DOCS)} golden source documents (no embeddings - sentence-transformers not installed).")
 
     await pool.close()
-    print(f"Database seeded. API key: {raw_key}")
+    print(f"Database seeded. API key prefix: {raw_key[:8]}...")
 
 if __name__ == "__main__":
     asyncio.run(main())

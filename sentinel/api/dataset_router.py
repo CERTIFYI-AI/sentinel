@@ -75,7 +75,7 @@ async def update_dataset(ds_id: str, req: Request, body: DatasetUpdate, db=Depen
     tenant_id=get_tenant(req)
     updates={k:v for k,v in body.dict().items() if v is not None}
     if updates:
-        sets=", ".join(f"{k}=${i+2}" for i,k in enumerate(updates))
+        sets=", ".join(f'"{k}"=${i+2}' for i,k in enumerate(updates))
         await db.execute(f"UPDATE dataset_registry SET {sets},updated_at=NOW() WHERE id=$1 AND tenant_id=${len(updates)+2}",ds_id,*updates.values(),tenant_id)
     return await db.fetchrow("SELECT * FROM dataset_registry WHERE id=$1",ds_id)
 

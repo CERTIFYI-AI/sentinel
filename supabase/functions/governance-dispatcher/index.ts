@@ -42,7 +42,7 @@ const riskAssessmentAgent: AgentHandler = async (ctx: AgentContext): Promise<Age
     related_entity_type: 'model', related_entity_id: p.modelId,
     source_event_id: ctx.event.id,
   }).select().single()
-  if (error) return { status: 'failed', error: `risks insert: ${error.message}` }
+  if (error) return { status: 'failed', error: 'risks insert failed' }
   await ctx.emit('RISK_CREATED', 'edge-risk-agent', { riskId: risk?.id, modelId: p.modelId, severity: high ? 'HIGH' : 'MEDIUM' })
   return { status: 'succeeded', output: { riskId: risk?.id } }
 }
@@ -65,7 +65,7 @@ const hitlAgent: AgentHandler = async (ctx: AgentContext): Promise<AgentResult> 
     priority: p.severity === 'CRITICAL' ? 'P0' : 'P1',
     status: 'pending',
   })
-  if (error) return { status: 'failed', error: `hitl_reviews insert: ${error.message}` }
+  if (error) return { status: 'failed', error: 'hitl_reviews insert failed' }
   return { status: 'succeeded' }
 }
 Object.defineProperty(hitlAgent, 'name', { value: 'HITLAgent' })
@@ -94,7 +94,7 @@ const notificationAgent: AgentHandler = async (ctx: AgentContext): Promise<Agent
     is_read: false,
   })
   // Fail loudly: a dropped governance notification is a missed escalation.
-  if (error) return { status: 'failed', error: error.message }
+  if (error) return { status: 'failed', error: 'notifications insert failed' }
   return { status: 'succeeded' }
 }
 Object.defineProperty(notificationAgent, 'name', { value: 'NotificationAgent' })
@@ -138,7 +138,7 @@ Deno.serve(async (req: Request) => {
       headers: { 'Content-Type': 'application/json' },
     })
   } catch (e) {
-    return new Response(JSON.stringify({ ok: false, error: (e as Error).message }), {
+    return new Response(JSON.stringify({ ok: false, error: 'dispatch_failed' }), {
       status: 500, headers: { 'Content-Type': 'application/json' },
     })
   }

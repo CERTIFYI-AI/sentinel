@@ -64,8 +64,9 @@ async def list_use_cases(
         where.append(f"(title ILIKE ${i} OR description ILIKE ${i})"); params.append(f"%{search}%"); i += 1
     where_clause = " AND ".join(where)
     offset = (page - 1) * page_size
-    rows = await db.fetch(f"SELECT * FROM use_cases WHERE {where_clause} ORDER BY created_at DESC LIMIT {page_size} OFFSET {offset}", *params)
-    total = await db.fetchval(f"SELECT COUNT(*) FROM use_cases WHERE {where_clause}", *params)
+    params.extend([page_size, offset])
+    rows = await db.fetch(f"SELECT * FROM use_cases WHERE {where_clause} ORDER BY created_at DESC LIMIT ${i} OFFSET ${i+1}", *params)
+    total = await db.fetchval(f"SELECT COUNT(*) FROM use_cases WHERE {where_clause}", *params[:-2])
     return {"success": True, "data": [dict(r) for r in rows], "meta": {"total": total, "page": page, "page_size": page_size}}
 
 @router.get("/{uc_id}")
@@ -106,7 +107,7 @@ async def update_use_case(uc_id: str, req: Request, body: UseCaseUpdate, db=Depe
     set_clauses = []
     params = []
     for i, (k, v) in enumerate(updates.items(), 1):
-        set_clauses.append(f"{k}=${i}")
+        set_clauses.append(f'"{k}"=${i}')
         params.append(v)
     params.extend([datetime.now(timezone.utc), uc_id, tenant_id])
     set_clauses.append(f"updated_at=${len(params)-1}")

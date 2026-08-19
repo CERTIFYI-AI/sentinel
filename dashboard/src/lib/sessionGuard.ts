@@ -29,16 +29,7 @@ function buildDeviceFingerprint(): string {
 }
 
 async function fetchPublicIP(): Promise<string> {
-  try {
-    const ac    = new AbortController();
-    const timer = setTimeout(() => ac.abort(), 4000);
-    const res   = await fetch('https://api.ipify.org?format=json', { signal: ac.signal });
-    clearTimeout(timer);
-    const data  = await res.json() as { ip?: string };
-    return data.ip ?? '';
-  } catch {
-    return '';
-  }
+  return '';
 }
 
 function clearGuardStorage(): void {

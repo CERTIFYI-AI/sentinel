@@ -113,7 +113,7 @@ async def update_model(model_id: str, req: Request, body: ModelUpdate, db=Depend
     if not old: raise HTTPException(404,"Not found")
     updates = {k:v for k,v in body.dict(exclude={"change_summary"}).items() if v is not None}
     if updates:
-        sets = ", ".join(f"{k}=${i+2}" for i,k in enumerate(updates))
+        sets = ", ".join(f'"{k}"=${i+2}' for i,k in enumerate(updates))
         vals = list(updates.values())
         await db.execute(f"UPDATE model_inventory SET {sets}, updated_at=NOW() WHERE id=$1 AND tenant_id=${len(vals)+2}", model_id, *vals, tenant_id)
     await db.execute("""

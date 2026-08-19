@@ -76,7 +76,7 @@ async def confirm_agent(agent_id: str, req: Request, body: AgentConfirm, db=Depe
     updates["discovery_status"]="confirmed"
     updates["governance_status"]="active" if body.linked_policy_id else "no_policy"
     updates["confirmed_at"]=datetime.now(timezone.utc)
-    sets=", ".join(f"{k}=${i+2}" for i,k in enumerate(updates))
+    sets=", ".join(f'"{k}"=${i+2}' for i,k in enumerate(updates))
     await db.execute(f"UPDATE agents SET {sets},updated_at=NOW() WHERE id=$1 AND tenant_id=${len(updates)+2}",agent_id,*updates.values(),tenant_id)
     await db.execute("INSERT INTO compliance_audit_log(tenant_id,actor,action,entity_type,entity_id) VALUES($1,$2,'AGENT_CONFIRMED','agent',$3)",tenant_id,user_id,agent_id)
     # Flag if no policy

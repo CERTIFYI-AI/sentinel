@@ -52,7 +52,15 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'sentinel-auth',
-      partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
+      storage: {
+        getItem: (name) => {
+          const str = sessionStorage.getItem(name);
+          return str ? JSON.parse(str) : null;
+        },
+        setItem: (name, value) => sessionStorage.setItem(name, JSON.stringify(value)),
+        removeItem: (name) => sessionStorage.removeItem(name),
+      },
+      partialize: (state) => ({ isAuthenticated: state.isAuthenticated }) as unknown as AuthState,
     }
   )
 );

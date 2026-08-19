@@ -159,7 +159,7 @@ serve(async (req: Request): Promise<Response> => {
             q = q.eq('external_id', parsed.value)
         }
         const { data, count: total, error } = await q
-        if (error) throw new Error(error.message)
+        if (error) throw new Error('query_failed')
         const Resources = (data ?? []).map(r =>
           buildScimUser(r as Parameters<typeof buildScimUser>[0]),
         )
@@ -293,9 +293,11 @@ serve(async (req: Request): Promise<Response> => {
     return scimError(405, 'method_not_allowed')
   } catch (err) {
     audit.status_code = 500
-    audit.error_code = err instanceof Error ? err.message : 'unhandled'
+    const code = err instanceof Error ? err.message : 'unhandled'
+    const safe = /^[a-z_]+$/.test(code) ? code : 'internal'
+    audit.error_code = code
     audit.latency_ms = Date.now() - t0
     await logScimAudit(db, audit)
-    return scimError(500, audit.error_code ?? 'internal')
+    return scimError(500, safe)
   }
 })

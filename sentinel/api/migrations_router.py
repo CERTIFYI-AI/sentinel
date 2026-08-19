@@ -3,18 +3,42 @@ Migration runner endpoint.
 POST /api/migrate with {service_role_key: string} to apply the core GRC tables
 to the configured Supabase project.
 """
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
-import os, httpx, pathlib
+import ipaddress, logging, os, httpx, pathlib
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
+
+_ALLOWED_NETS_RAW = os.environ.get(
+    "MIGRATE_ALLOWED_CIDRS", "127.0.0.0/8,::1/128,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+)
+_ALLOWED_NETS = [
+    ipaddress.ip_network(n.strip(), strict=False)
+    for n in _ALLOWED_NETS_RAW.split(",") if n.strip()
+]
+
+
+def _check_ip(request: Request) -> None:
+    client = request.client
+    if not client:
+        raise HTTPException(403, "no_client_address")
+    try:
+        addr = ipaddress.ip_address(client.host)
+    except ValueError:
+        raise HTTPException(403, "invalid_client_address")
+    if not any(addr in net for net in _ALLOWED_NETS):
+        logger.warning("migrate request denied from %s", addr)
+        raise HTTPException(403, "ip_not_allowed")
+
 
 class MigrateRequest(BaseModel):
     service_role_key: str
     dry_run: bool = False
 
 @router.post("")
-async def run_migration(body: MigrateRequest):
+async def run_migration(body: MigrateRequest, request: Request):
+    _check_ip(request)
     supabase_url = os.environ.get("VITE_SUPABASE_URL", "")
     if not supabase_url:
         raise HTTPException(400, "VITE_SUPABASE_URL not configured")
@@ -65,14 +89,12 @@ async def run_migration(body: MigrateRequest):
                     raise HTTPException(401, "Invalid service role key — check Supabase dashboard > Project Settings > API > service_role")
                 else:
                     failed += 1
-                    err = resp.text[:200]
-                    if err not in errors:
-                        errors.append(f"Statement failed ({resp.status_code}): {err}")
+                    errors.append(f"Statement failed (HTTP {resp.status_code})")
             except HTTPException:
                 raise
-            except Exception as e:
+            except Exception:
                 failed += 1
-                errors.append(str(e)[:200])
+                errors.append("statement_execution_error")
     
     return {
         "success": True,
@@ -84,8 +106,9 @@ async def run_migration(body: MigrateRequest):
     }
 
 @router.get("/status")
-async def migration_status():
+async def migration_status(request: Request):
     """Check which tables exist in Supabase via anon key (SELECT only)."""
+    _check_ip(request)
     supabase_url = os.environ.get("VITE_SUPABASE_URL", "")
     anon_key = os.environ.get("VITE_SUPABASE_ANON_KEY", "")
     
@@ -116,9 +139,9 @@ async def migration_status():
                 elif resp.status_code == 404:
                     results[table] = {"exists": False, "error": "table not found"}
                 else:
-                    results[table] = {"exists": None, "status": resp.status_code, "error": resp.text[:100]}
-            except Exception as e:
-                results[table] = {"exists": None, "error": str(e)[:100]}
+                    results[table] = {"exists": None, "status": resp.status_code}
+            except Exception:
+                results[table] = {"exists": None, "error": "check_failed"}
     
     existing = sum(1 for v in results.values() if v.get("exists") is True)
     return {

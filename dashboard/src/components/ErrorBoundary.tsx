@@ -35,8 +35,9 @@ interface State {
 const isDev = import.meta.env?.DEV ?? false;
 
 function makeErrorId(): string {
-  // Short, human-quotable correlation id (e.g. ERR-7F3A9C).
-  return 'ERR-' + Math.random().toString(16).slice(2, 8).toUpperCase();
+  const arr = new Uint8Array(3);
+  crypto.getRandomValues(arr);
+  return 'ERR-' + Array.from(arr, b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
 }
 
 class ErrorBoundaryInner extends Component<Props, State> {

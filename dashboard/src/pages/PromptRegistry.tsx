@@ -57,10 +57,7 @@ function bumpVersion(v: string): string {
 function generateId(): string {
   // Collision-free id. The previous PR-NNN max()+1 scheme could reissue an id
   // after deletes or across concurrent clients, silently overwriting a prompt.
-  const rand = (typeof crypto !== 'undefined' && 'randomUUID' in crypto)
-    ? crypto.randomUUID().slice(0, 8)
-    : Math.random().toString(16).slice(2, 10);
-  return `PR-${rand.toUpperCase()}`;
+  return `PR-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
 }
 
 // ── Toaster ───────────────────────────────────────────────────────────────────

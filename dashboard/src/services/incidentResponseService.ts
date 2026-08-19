@@ -557,9 +557,7 @@ const mapException = (r: any): ExceptionRecord => ({
 
 export const fetchExceptions = () => selectAll('exceptions', mapException)
 export const saveException = (e: ExceptionRecord) => {
-  const id = e.id ?? (typeof crypto !== 'undefined' && 'randomUUID' in crypto
-    ? `exc-${crypto.randomUUID()}`
-    : `exc-${Date.now()}-${Math.floor(Math.random() * 1e6)}`)
+  const id = e.id ?? `exc-${crypto.randomUUID()}`
   return upsertRow('exceptions', {
     id,
     exception_id: e.exceptionId,

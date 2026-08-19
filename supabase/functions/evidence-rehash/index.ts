@@ -168,7 +168,7 @@ serve(async (req: Request) => {
     .order("enqueued_at", { ascending: true })
     .limit(BATCH_LIMIT);
 
-  if (error) return jsonResponse({ error: error.message }, 500);
+  if (error) { console.error('evidence-rehash query:', error.message); return jsonResponse({ error: 'query_failed' }, 500); }
   const queue = (rows ?? []) as QueueRow[];
 
   let ok = 0;

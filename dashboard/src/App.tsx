@@ -17,6 +17,7 @@ import { useAuthStore } from './store/authStore';
 import { initSessionGuard, destroySessionGuard } from './lib/sessionGuard';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { RightSidebar } from './components/shell/RightSidebar';
+import { ProtectedRoute } from './lib/rbac';
 
 const SecurityHome = lazy(() => import('./pages/security/SecurityHome'));
 const ThreatFeed = lazy(() => import('./pages/security/ThreatFeed'));
@@ -394,8 +395,8 @@ export default function App() {
           <Route path="/notifications" element={<Notifications />} />
           <Route path="/policy-editor" element={<PolicyEditor />} />
           <Route path="/remediation-tracker" element={<RemediationTracker />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/settings/sso" element={<Suspense fallback={<Loading />}><SsoProviders /></Suspense>} />
+          <Route path="/settings" element={<ProtectedRoute permissions={['admin:settings']}><Settings /></ProtectedRoute>} />
+          <Route path="/settings/sso" element={<ProtectedRoute permissions={['admin:settings']}><Suspense fallback={<Loading />}><SsoProviders /></Suspense></ProtectedRoute>} />
 
           {/* Governance */}
           <Route path="/controls" element={<Navigate to="/compliance/controls" replace />} />
@@ -438,11 +439,11 @@ export default function App() {
           <Route path="/trust-engine/tools" element={<ToolCallMonitor />} />
           <Route path="/trust-engine/config" element={<TrustConfig />} />
 
-          {/* Administration — Access Control */}
-          <Route path="/access-control" element={<AccessControlOverview />} />
-          <Route path="/access-control/roles" element={<RolesPage />} />
-          <Route path="/access-control/users" element={<UsersPage />} />
-          <Route path="/access-control/departments" element={<DepartmentsPage />} />
+          {/* Administration — Access Control (admin-only via RBAC) */}
+          <Route path="/access-control" element={<ProtectedRoute permissions={['admin:access_control']}><AccessControlOverview /></ProtectedRoute>} />
+          <Route path="/access-control/roles" element={<ProtectedRoute permissions={['admin:access_control']}><RolesPage /></ProtectedRoute>} />
+          <Route path="/access-control/users" element={<ProtectedRoute permissions={['admin:access_control']}><UsersPage /></ProtectedRoute>} />
+          <Route path="/access-control/departments" element={<ProtectedRoute permissions={['admin:access_control']}><DepartmentsPage /></ProtectedRoute>} />
           <Route path="/ai-advisor" element={<Suspense fallback={null}><AiAdvisor /></Suspense>} />
           <Route path="/compliance/policy-templates" element={<Suspense fallback={null}><PolicyTemplates /></Suspense>} />
           <Route path="/compliance/controls/:id" element={<ControlDetail />} />

@@ -29,8 +29,9 @@ export interface IdpLookup {
 }
 
 export function corsHeaders(): Record<string, string> {
+  const origin = Deno.env.get('ALLOWED_ORIGIN')
   return {
-    'Access-Control-Allow-Origin': Deno.env.get('ALLOWED_ORIGIN') ?? '*',
+    ...(origin ? { 'Access-Control-Allow-Origin': origin } : {}),
     'Access-Control-Allow-Headers':
       'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS',
