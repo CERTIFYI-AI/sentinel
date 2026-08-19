@@ -1475,8 +1475,16 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 60,
+  "entryCount": 61,
   "entries": [
+    {
+      "type": "feat",
+      "scope": "integrations",
+      "summary": "**Okta evidence adapter — real collection goes from three products to four.** The catalogue has been 217 wide and the collection engine 3 deep (`github`, `aws`, `microsoft_azure`); Okta is the highest-value gap, because it is the access-control system of record for most orgs and its evidence maps to more framework controls than any other single connector. `sentinel/integrations/okta/adapter.py` runs six checks against the documented Okta Management API v1 — MFA enrolment policy active, password minimum length ≥ 12 (taking the **weakest** of several active policies, not the first), administrator assignment count, ACTIVE accounts dormant 90+ days (the usual leaver-review evidence gap), applications on federated SAML/OIDC rather than stored passwords, and System Log retrievability — mapped to SOC 2 CC6.x/CC7.x, ISO 27001 A.9.x/A.12.4, HIPAA 164.308/312, PCI 7/8/10 and GDPR Art. 30. **Honesty is enforced in the code, not the copy:** a check the token cannot run reports `NOT_AVAILABLE`, never `PASSED` — and a password policy that declares no minimum length is treated as an unknown rather than a strong policy, which is the difference between an audit finding and a fabricated one. Ships as **`beta`, not `available`**: written against documented APIs and unit-tested against recorded payloads via `httpx.MockTransport` (16 tests exercising the real request path — SSWS auth, params, RFC 5988 Link pagination, 403/404 handling), but not yet run against a live tenant. Landed the full four-step way the registry docstring requires — adapter, registry entry, connect form (`dashboard/src/integrations/okta/config.ts`), and catalogue flip (`20260922000001`) — and the existing sync guards caught every place the two id-spaces had to agree, which is what they are for.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "fix",
       "scope": "security",

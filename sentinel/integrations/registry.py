@@ -26,12 +26,14 @@ from __future__ import annotations
 from sentinel.integrations.aws.adapter import AwsAdapter, AwsCredentials
 from sentinel.integrations.azure.adapter import AzureAdapter, AzureCredentials
 from sentinel.integrations.github.adapter import GithubAdapter, GithubCredentials
+from sentinel.integrations.okta.adapter import OktaAdapter, OktaCredentials
 
 _REGISTRY: dict[str, tuple[type, type]] = {
     "github": (GithubAdapter, GithubCredentials),
     "aws": (AwsAdapter, AwsCredentials),
     # Catalogue slug for Azure is `microsoft_azure`; `azure` is not a row.
     "microsoft_azure": (AzureAdapter, AzureCredentials),
+    "okta": (OktaAdapter, OktaCredentials),
 }
 
 

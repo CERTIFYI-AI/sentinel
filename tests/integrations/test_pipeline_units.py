@@ -93,8 +93,11 @@ class TestRegistry:
         assert "github" in available_slugs()
 
     def test_catalogued_only_slug_raises_lookup_error(self):
+        # `slack` is catalogued with no adapter. (This was `okta` until its
+        # adapter shipped in 20260922000001 — the assertion is about the
+        # refusal, not the product.)
         with pytest.raises(LookupError, match="catalogued only"):
-            get_adapter_class("okta")
+            get_adapter_class("slack")
 
 
 class TestBackoff:

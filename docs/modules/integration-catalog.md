@@ -27,10 +27,17 @@ evidence tables behind it — `integration_findings`, `control_finding_evidence`
 collection pipeline, a real control-mapping engine, and no way for a user to
 reach any of it. This module closes that gap.
 
-It also carries an honesty obligation. Of the 217 catalogued products, **three**
-ship an adapter today — `github`, `aws` and `microsoft_azure`. Rendering a
-Connect button on all 217 would promise evidence collection that cannot happen —
-the same class of defect as an unearned certification badge.
+It also carries an honesty obligation. Of the 217 catalogued products, **four**
+ship an adapter today — `github`, `aws`, `microsoft_azure` and `okta`. Rendering
+a Connect button on all 217 would promise evidence collection that cannot
+happen — the same class of defect as an unearned certification badge.
+
+That ratio is the number to watch: the catalogue is 217 wide and the collection
+engine is 4 deep. Every product has a real, product-specific connect form, but
+only these four *collect*; the rest register a governed source with a named
+owner and a review cadence. Closing the gap is per-product API work, and each
+adapter lands the same way — implementation, registry entry, connect form,
+catalogue flip — never by relaxing what "connected" means.
 
 ## How it works
 
@@ -380,6 +387,19 @@ normalized fields above.
   `connection_mode='automated'` and the recorded owner and cadence stay on it.
 
 ## History
+
+- **2026-08-19** — **Okta adapter shipped** (`beta`), taking real evidence
+  collection from three products to four. Okta is the access-control system of
+  record for most orgs, so its six checks — MFA enrolment policy, password
+  strength, administrator assignments, dormant active accounts, federated
+  application sign-on, System Log availability — map to more framework controls
+  than any other single connector (SOC 2 CC6.x, ISO 27001 A.9.x, HIPAA
+  164.308/312, PCI 7/8/10, GDPR Art. 30). Written against the documented Okta
+  Management API v1 and unit-tested against recorded payloads through
+  `httpx.MockTransport`; **not yet run against a live tenant**, which is why the
+  catalogue says `beta` and not `available`. A check the token cannot run
+  reports `NOT_AVAILABLE`, never `PASSED` — including a password policy that
+  declares no minimum length, which is an unknown rather than a strong policy.
 
 - **2026-08-19** — Product-specific connect for **all 217** evidence sources.
   `productProfiles.ts` now carries a verified identity + auth-method profile for

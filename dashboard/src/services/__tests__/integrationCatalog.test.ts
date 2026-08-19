@@ -254,8 +254,13 @@ describe('third-party GRC references', () => {
 describe('connect forms', () => {
   // A shipped adapter with no form renders a "packaging gap" message instead
   // of fields, so the registry is asserted rather than assumed.
-  it('ships a form for each cloud provider the server accepts', () => {
-    expect(INTEGRATIONS.map(i => i.id).sort()).toEqual(['aws', 'github', 'microsoft_azure'])
+  it('ships a form for each provider the server accepts', () => {
+    // Must stay in step with _REGISTRY in sentinel/integrations/registry.py —
+    // a slug in one and not the other is a dead Connect button or a hidden
+    // capability. `okta` joined in 20260922000001.
+    expect(INTEGRATIONS.map(i => i.id).sort()).toEqual(
+      ['aws', 'github', 'microsoft_azure', 'okta'],
+    )
   })
 
   it('keys Azure by its catalogue slug, not by "azure"', () => {

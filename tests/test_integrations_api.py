@@ -33,11 +33,13 @@ class TestAdapterGate:
         # Keep in step with sentinel/integrations/registry.py AND with the
         # migration that flips `adapter_status` — a slug connectable in one and
         # not the other is either a dead Connect button or a hidden capability.
-        assert available_slugs() == frozenset({"github", "aws", "microsoft_azure"})
+        assert available_slugs() == frozenset({"github", "aws", "microsoft_azure", "okta"})
 
     def test_catalogued_only_product_has_no_adapter(self):
-        # Okta is catalogued but no adapter ships; connecting must be refused.
-        assert "okta" not in available_slugs()
+        # Slack is catalogued but no adapter ships; connecting must be refused.
+        # (Okta used to be the example here until its adapter shipped in
+        # 20260922000001 — the point of the test is the refusal, not the slug.)
+        assert "slack" not in available_slugs()
 
     def test_azure_is_keyed_by_its_catalogue_slug(self):
         # The catalogue row is `microsoft_azure`. Registering it as `azure`
@@ -164,6 +166,9 @@ class TestConnectFormMatchesTheAdapter:
     def test_azure_form_matches_its_credentials(self):
         self._assert_parity("microsoft_azure", "dashboard/src/integrations/azure/config.ts")
 
+    def test_okta_form_matches_its_credentials(self):
+        self._assert_parity("okta", "dashboard/src/integrations/okta/config.ts")
+
     def test_every_shipped_adapter_has_a_connect_form(self):
         # A registered adapter with no form renders a "packaging gap" message
         # instead of fields. Catch it here rather than in front of a user.
@@ -173,6 +178,7 @@ class TestConnectFormMatchesTheAdapter:
             "github": "dashboard/src/integrations/github/config.ts",
             "aws": "dashboard/src/integrations/aws/config.ts",
             "microsoft_azure": "dashboard/src/integrations/azure/config.ts",
+            "okta": "dashboard/src/integrations/okta/config.ts",
         }
         assert set(paths) == set(available_slugs())
         for slug, path in paths.items():

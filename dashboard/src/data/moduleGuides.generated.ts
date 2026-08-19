@@ -10072,7 +10072,7 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "docPath": "docs/modules/integration-catalog.md",
         "title": "Integration Catalog & Collected Evidence",
         "purpose": "Browse the published catalogue of evidence sources, enable the ones that can actually collect, and see the evidence they produce mapped onto the org's controls.",
-        "why": "The catalogue held 219 products and nothing in the product read it. The evidence tables behind it — integration_findings, control_finding_evidence, background_jobs — had zero readers too. So the platform had a real collection pipeline, a real control-mapping engine, and no way for a user to reach any of it. This module closes that gap. It also carries an honesty obligation. Of the 217 catalogued products, three ship an adapter today — github, aws and microsoft_azure. Rendering a Connect button on all 217 would promise evidence collection that cannot happen — the same class of defect as an unea",
+        "why": "The catalogue held 219 products and nothing in the product read it. The evidence tables behind it — integration_findings, control_finding_evidence, background_jobs — had zero readers too. So the platform had a real collection pipeline, a real control-mapping engine, and no way for a user to reach any of it. This module closes that gap. It also carries an honesty obligation. Of the 217 catalogued products, four ship an adapter today — github, aws, microsoft_azure and okta. Rendering a Connect button on all 217 would promise evidence collection that cannot happen — the same class of defect as an",
         "how": [
           "### Three states, stated plainly",
           "| adapter_status | Meaning | UI |",
