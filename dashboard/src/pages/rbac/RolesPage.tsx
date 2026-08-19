@@ -162,15 +162,21 @@ export default function RolesPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const loadData = useCallback(async () => {
     setLoading(true)
+    setLoadError(null)
     try {
-      if (isSupabaseConfigured()) {
-        const [r, u] = await Promise.all([sbFetchRoles(), sbFetchUsers()])
-        setRoles(r); setUsers(u)
-      } else { setRoles(SEED_ROLES); setUsers(SEED_USERS) }
-    } catch(e) { logger.error(e); setRoles(SEED_ROLES); setUsers(SEED_USERS) }
-    finally { setLoading(false) }
+      if (!isSupabaseConfigured()) {
+        setRoles(SEED_ROLES); setUsers(SEED_USERS)
+        return
+      }
+      const [r, u] = await Promise.all([sbFetchRoles(), sbFetchUsers()])
+      setRoles(r); setUsers(u)
+    } catch(e) {
+      logger.error(e)
+      setLoadError(e instanceof Error ? e.message : 'Failed to load roles.')
+    } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -224,34 +230,53 @@ export default function RolesPage() {
     const err = validateForm()
     if (err) { setFormError(err); return }
     setSaving(true)
-    await new Promise(r => setTimeout(r, 400))
-    if (editTarget) {
-      const updated: Role = { ...editTarget, ...form, updatedAt: new Date().toISOString().split('T')[0] }
-      setRoles(p => p.map(r => r.id === editTarget.id ? updated : r))
-      if (selected?.id === editTarget.id) setSelected(updated)
-      toast.success('Role updated.')
-    } else {
-      const newR: Role = {
-        id: `role-${String(roles.length + 1).padStart(3, '0')}`,
-        ...form,
-        isSystem: false,
-        userCount: 0,
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
+    try {
+      if (editTarget) {
+        if (isSupabaseConfigured()) {
+          await sbUpdateRole(editTarget.id, form)
+        }
+        const updated: Role = { ...editTarget, ...form, updatedAt: new Date().toISOString().split('T')[0] }
+        setRoles(p => p.map(r => r.id === editTarget.id ? updated : r))
+        if (selected?.id === editTarget.id) setSelected(updated)
+        toast.success('Role updated.')
+      } else {
+        if (isSupabaseConfigured()) {
+          const created = await sbCreateRole(form)
+          if (created) setRoles(p => [created, ...p])
+        } else {
+          const newR: Role = {
+            id: `role-${String(roles.length + 1).padStart(3, '0')}`,
+            ...form,
+            isSystem: false,
+            userCount: 0,
+            createdAt: new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString().split('T')[0],
+          }
+          setRoles(p => [newR, ...p])
+        }
+        toast.success('Role created.')
       }
-      setRoles(p => [newR, ...p])
-      toast.success('Role created.')
+      setShowForm(false)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save role.')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
-    setShowForm(false)
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleteTarget) return
-    setRoles(p => p.filter(r => r.id !== deleteTarget.id))
-    if (selected?.id === deleteTarget.id) setSelected(null)
-    toast.success(`Role "${deleteTarget.name}" deleted.`)
-    setDeleteTarget(null)
+    try {
+      if (isSupabaseConfigured()) {
+        await sbDeleteRole(deleteTarget.id)
+      }
+      setRoles(p => p.filter(r => r.id !== deleteTarget.id))
+      if (selected?.id === deleteTarget.id) setSelected(null)
+      toast.success(`Role "${deleteTarget.name}" deleted.`)
+      setDeleteTarget(null)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete role.')
+    }
   }
 
   const roleUsers = selected ? users.filter(u => u.roleIds.includes(selected.id)) : []
@@ -273,6 +298,19 @@ export default function RolesPage() {
         </button>
       </div>
 
+      {loading && (
+        <div role="status" aria-live="polite" className="border px-4 py-8 text-sm text-center" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>
+          Loading roles…
+        </div>
+      )}
+      {loadError && (
+        <div role="alert" className="border px-4 py-3 text-sm flex items-start gap-2" style={{ borderColor: 'hsl(var(--s-er-tx))', color: 'hsl(var(--s-er-tx))' }}>
+          <Warning size={16} aria-hidden />
+          <span>{loadError}</span>
+        </div>
+      )}
+
+      {!loading && !loadError && (<>
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
         {[
@@ -495,6 +533,8 @@ export default function RolesPage() {
           </div>
         </div>
       )}
+
+      </>)}
 
       <ConfirmDialog
         open={!!deleteTarget}

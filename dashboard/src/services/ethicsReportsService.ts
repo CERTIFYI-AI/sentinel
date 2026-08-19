@@ -15,9 +15,9 @@ export async function fetchAllEthicsReports(filters: Record<string,any> = {}) {
     if (filters.status) q = q.eq('status', filters.status)
     if (filters.type) q = q.eq('type', filters.type)
     const { data, error } = await q
-    if (error) { console.warn('[ethicsReportsService] fetch:', error.message); return SEED_ETHICS_REPORTS }
-    return data && data.length > 0 ? data : SEED_ETHICS_REPORTS
-  } catch { return SEED_ETHICS_REPORTS }
+    if (error) throw error
+    return data ?? []
+  } catch (e) { console.warn('[ethicsReportsService] fetch:', e); throw e }
 }
 
 export async function fetchEthicsReportsById(id: string) {
@@ -31,11 +31,9 @@ export async function fetchEthicsReportsById(id: string) {
 
 export async function upsertEthicsReports(record: any) {
   if (!isSupabaseConfigured()) return record
-  try {
-    const { data, error } = await supabase.from('ethics_reports').upsert(record).select().single()
-    if (error) throw error
-    return data
-  } catch (e) { console.warn('[ethicsReportsService] upsert:', e); return record }
+  const { data, error } = await supabase.from('ethics_reports').upsert(record).select().single()
+  if (error) throw error
+  return data
 }
 
 export async function deleteEthicsReports(id: string) {

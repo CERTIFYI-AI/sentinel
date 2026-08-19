@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../components/ui/select';
 import { ShieldCheck, CheckCircle } from '@phosphor-icons/react';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 
 const CATEGORIES = [
@@ -31,6 +32,8 @@ export default function EthicsReportingSubmit() {
   const [email, setEmail] = useState('');
   const [org, setOrg] = useState('');
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
   const [ref] = useState(generateRef());
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -42,11 +45,39 @@ export default function EthicsReportingSubmit() {
     return errs;
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    setSubmitted(true);
+    setSubmitting(true);
+    setSubmitError('');
+    try {
+      if (!isSupabaseConfigured()) {
+        throw new Error('Ethics reporting is not available — Supabase is not configured.');
+      }
+      const record: Record<string, unknown> = {
+        category,
+        severity: severity.toLowerCase(),
+        description,
+        status: 'Open',
+        source: anonymous ? 'Anonymous' : (name || 'Named reporter'),
+        priority: severity === 'Critical' ? 'Critical' : severity === 'High' ? 'High' : 'Medium',
+      };
+      if (system) record.system = system;
+      if (dateObserved) record.date = dateObserved;
+      if (!anonymous) {
+        if (name) record.reporter_name = name;
+        if (email) record.reporter_email = email;
+        if (org) record.reporter_org = org;
+      }
+      const { error: insertError } = await supabase.from('ethics_reports').insert(record);
+      if (insertError) throw insertError;
+      setSubmitted(true);
+    } catch (err: unknown) {
+      setSubmitError(err instanceof Error ? err.message : 'Failed to submit report. Please try again.');
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   if (submitted) {
@@ -180,11 +211,19 @@ export default function EthicsReportingSubmit() {
             )}
           </div>
 
+          {/* Submit error */}
+          {submitError && (
+            <div className="px-4 py-3 border text-sm" style={{ borderRadius: 0, borderColor: 'hsl(var(--s-er-br))', background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--s-er-tx))' }}>
+              {submitError}
+            </div>
+          )}
+
           {/* Submit */}
           <button type="submit"
-            className="w-full py-3 text-sm font-semibold transition-colors"
+            disabled={submitting}
+            className="w-full py-3 text-sm font-semibold transition-colors disabled:opacity-60"
             style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'white' }}>
-            Submit Report
+            {submitting ? 'Submitting…' : 'Submit Report'}
           </button>
         </form>
 

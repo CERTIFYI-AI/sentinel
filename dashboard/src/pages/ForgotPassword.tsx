@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-
   ArrowLeft, EnvelopeSimple, ArrowRight, CheckCircle, ShieldCheck, Lock,
 } from '@phosphor-icons/react';
+import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 
 type Step = 'request' | 'sent';
 
@@ -24,9 +24,20 @@ export default function ForgotPassword() {
     if (!validate()) return;
     setLoading(true);
     setError('');
-    await new Promise(r => setTimeout(r, 1200));
-    setLoading(false);
-    setStep('sent');
+    try {
+      if (!isSupabaseConfigured()) {
+        throw new Error('Password reset is not available — Supabase is not configured.');
+      }
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+      if (resetError) throw resetError;
+      setStep('sent');
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to send reset link. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

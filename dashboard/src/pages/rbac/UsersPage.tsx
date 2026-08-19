@@ -89,15 +89,21 @@ export default function UsersPage() {
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const loadData = useCallback(async () => {
     setLoading(true)
+    setLoadError(null)
     try {
-      if (isSupabaseConfigured()) {
-        const [u, r, d] = await Promise.all([sbFetchUsers(), sbFetchRoles(), sbFetchDepts()])
-        setUsers(u); setRoles(r); setDepartments(d)
-      } else { setUsers(SEED_USERS); setRoles(SEED_ROLES); setDepartments(SEED_DEPARTMENTS) }
-    } catch(e) { logger.error(e); setUsers(SEED_USERS); setRoles(SEED_ROLES); setDepartments(SEED_DEPARTMENTS) }
-    finally { setLoading(false) }
+      if (!isSupabaseConfigured()) {
+        setUsers(SEED_USERS); setRoles(SEED_ROLES); setDepartments(SEED_DEPARTMENTS)
+        return
+      }
+      const [u, r, d] = await Promise.all([sbFetchUsers(), sbFetchRoles(), sbFetchDepts()])
+      setUsers(u); setRoles(r); setDepartments(d)
+    } catch(e) {
+      logger.error(e)
+      setLoadError(e instanceof Error ? e.message : 'Failed to load users.')
+    } finally { setLoading(false) }
   }, [])
   useEffect(() => { loadData() }, [loadData])
 
@@ -161,42 +167,68 @@ export default function UsersPage() {
     const err = validateStep(3)
     if (err) { setFormError(err); return }
     setSaving(true)
-    await new Promise(r => setTimeout(r, 400))
-    if (editTarget) {
-      const updated: ACUser = { ...editTarget, firstName: form.firstName, lastName: form.lastName, email: form.email, status: form.status, departmentId: form.departmentId, roleIds: form.roleIds, updatedAt: new Date().toISOString().split('T')[0] }
-      setUsers(p => p.map(u => u.id === editTarget.id ? updated : u))
-      if (selected?.id === editTarget.id) setSelected(updated)
-      toast.success('User updated.')
-    } else {
-      const newU: ACUser = {
-        id: `usr-${String(users.length + 1).padStart(3, '0')}`,
-        firstName: form.firstName, lastName: form.lastName, email: form.email,
-        status: form.status, departmentId: form.departmentId, roleIds: form.roleIds,
-        createdAt: new Date().toISOString().split('T')[0], updatedAt: new Date().toISOString().split('T')[0],
+    try {
+      if (editTarget) {
+        if (isSupabaseConfigured()) {
+          await sbUpdateUser(editTarget.id, form)
+        }
+        const updated: ACUser = { ...editTarget, firstName: form.firstName, lastName: form.lastName, email: form.email, status: form.status, departmentId: form.departmentId, roleIds: form.roleIds, updatedAt: new Date().toISOString().split('T')[0] }
+        setUsers(p => p.map(u => u.id === editTarget.id ? updated : u))
+        if (selected?.id === editTarget.id) setSelected(updated)
+        toast.success('User updated.')
+      } else {
+        if (isSupabaseConfigured()) {
+          const created = await sbCreateUser(form)
+          if (created) setUsers(p => [created, ...p])
+        } else {
+          const newU: ACUser = {
+            id: `usr-${String(users.length + 1).padStart(3, '0')}`,
+            firstName: form.firstName, lastName: form.lastName, email: form.email,
+            status: form.status, departmentId: form.departmentId, roleIds: form.roleIds,
+            createdAt: new Date().toISOString().split('T')[0], updatedAt: new Date().toISOString().split('T')[0],
+          }
+          setUsers(p => [newU, ...p])
+        }
+        toast.success('User created. An activation email will be sent.')
       }
-      setUsers(p => [newU, ...p])
-      toast.success('User created. An activation email will be sent.')
+      setShowCreate(false)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save user.')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
-    setShowCreate(false)
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleteTarget) return
-    setUsers(p => p.filter(u => u.id !== deleteTarget.id))
-    if (selected?.id === deleteTarget.id) setSelected(null)
-    toast.success(`${deleteTarget.firstName} ${deleteTarget.lastName} deleted.`)
-    setDeleteTarget(null)
+    try {
+      if (isSupabaseConfigured()) {
+        await sbDeleteUser(deleteTarget.id)
+      }
+      setUsers(p => p.filter(u => u.id !== deleteTarget.id))
+      if (selected?.id === deleteTarget.id) setSelected(null)
+      toast.success(`${deleteTarget.firstName} ${deleteTarget.lastName} deleted.`)
+      setDeleteTarget(null)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete user.')
+    }
   }
 
-  function handleSuspend() {
+  async function handleSuspend() {
     if (!suspendTarget) return
-    const newStatus: UserStatus = suspendTarget.status === 'suspended' ? 'active' : 'suspended'
-    const updated = { ...suspendTarget, status: newStatus, updatedAt: new Date().toISOString().split('T')[0] }
-    setUsers(p => p.map(u => u.id === suspendTarget.id ? updated : u))
-    if (selected?.id === suspendTarget.id) setSelected(updated)
-    toast.success(`${suspendTarget.firstName} ${suspendTarget.lastName} ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}.`)
-    setSuspendTarget(null)
+    try {
+      const newStatus: UserStatus = suspendTarget.status === 'suspended' ? 'active' : 'suspended'
+      if (isSupabaseConfigured()) {
+        await sbSuspendUser(suspendTarget.id, newStatus === 'suspended')
+      }
+      const updated = { ...suspendTarget, status: newStatus, updatedAt: new Date().toISOString().split('T')[0] }
+      setUsers(p => p.map(u => u.id === suspendTarget.id ? updated : u))
+      if (selected?.id === suspendTarget.id) setSelected(updated)
+      toast.success(`${suspendTarget.firstName} ${suspendTarget.lastName} ${newStatus === 'suspended' ? 'suspended' : 'reactivated'}.`)
+      setSuspendTarget(null)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to update user status.')
+    }
   }
 
   const getDept = (id: string) => departments.find(d => d.id === id)

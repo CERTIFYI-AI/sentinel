@@ -43,20 +43,20 @@ export default function DepartmentsPage() {
   const [form, setForm] = useState(BLANK)
   const [formError, setFormError] = useState<string | null>(null)
   const [saving, setSaving] = useState(false)
-  const { items: deptItems, isLoading: loading } = useDepartmentsData()
-  // Sync Supabase items into local state for editing; seed as fallback
+  const { items: deptItems, isLoading: loading, error: loadError } = useDepartmentsData()
+  const [userLoadError, setUserLoadError] = useState<string | null>(null)
   useEffect(() => {
     if (deptItems.length > 0) {
       setDepartments(deptItems as any[])
-    } else if (!loading) {
-      setDepartments(SEED_DEPARTMENTS)
+    } else if (!loading && !loadError) {
+      if (!isSupabaseConfigured()) setDepartments(SEED_DEPARTMENTS)
     }
-  }, [deptItems, loading])
+  }, [deptItems, loading, loadError])
   useEffect(() => {
-    // Users from access-control (keep existing logic)
+    if (!isSupabaseConfigured()) { setUsers(SEED_USERS); return }
     import('../../lib/supabase-access-control').then(({ fetchUsers }) => {
-      fetchUsers().then(u => setUsers(u)).catch(() => setUsers(SEED_USERS))
-    }).catch(() => setUsers(SEED_USERS))
+      fetchUsers().then(u => setUsers(u)).catch((e) => setUserLoadError(e instanceof Error ? e.message : 'Failed to load users.'))
+    }).catch((e) => setUserLoadError(e instanceof Error ? e.message : 'Failed to load users.'))
   }, [])
 
   const userCount = useMemo(() => {
@@ -106,34 +106,53 @@ export default function DepartmentsPage() {
     const err = validate(form, !!editTarget, departments, editTarget?.id)
     if (err) { setFormError(err); return }
     setSaving(true)
-    await new Promise(r => setTimeout(r, 400))
-    if (editTarget) {
-      const updated = { ...editTarget, ...form, code: form.code.toUpperCase(), updatedAt: new Date().toISOString().split('T')[0] }
-      setDepartments(p => p.map(d => d.id === editTarget.id ? updated : d))
-      if (selected?.id === editTarget.id) setSelected(updated)
-      toast.success('Department updated.')
-    } else {
-      const newD: Department = {
-        id: `dept-${String(departments.length + 1).padStart(3, '0')}`,
-        ...form,
-        code: form.code.toUpperCase(),
-        createdAt: new Date().toISOString().split('T')[0],
-        updatedAt: new Date().toISOString().split('T')[0],
+    try {
+      if (editTarget) {
+        if (isSupabaseConfigured()) {
+          await sbUpdateDept(editTarget.id, { ...form, code: form.code.toUpperCase() })
+        }
+        const updated = { ...editTarget, ...form, code: form.code.toUpperCase(), updatedAt: new Date().toISOString().split('T')[0] }
+        setDepartments(p => p.map(d => d.id === editTarget.id ? updated : d))
+        if (selected?.id === editTarget.id) setSelected(updated)
+        toast.success('Department updated.')
+      } else {
+        if (isSupabaseConfigured()) {
+          const created = await sbCreateDept({ ...form, code: form.code.toUpperCase() })
+          if (created) setDepartments(p => [created, ...p])
+        } else {
+          const newD: Department = {
+            id: `dept-${String(departments.length + 1).padStart(3, '0')}`,
+            ...form,
+            code: form.code.toUpperCase(),
+            createdAt: new Date().toISOString().split('T')[0],
+            updatedAt: new Date().toISOString().split('T')[0],
+          }
+          setDepartments(p => [newD, ...p])
+        }
+        toast.success('Department created.')
       }
-      setDepartments(p => [newD, ...p])
-      toast.success('Department created.')
+      setShowForm(false)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to save department.')
+    } finally {
+      setSaving(false)
     }
-    setSaving(false)
-    setShowForm(false)
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!deleteTarget) return
-    const inUse = users.filter(u => u.departmentId === deleteTarget.id).length
-    setDepartments(p => p.filter(d => d.id !== deleteTarget.id))
-    if (selected?.id === deleteTarget.id) setSelected(null)
-    toast.success(`${deleteTarget.name} deleted.${inUse > 0 ? ` ${inUse} user(s) now have no department.` : ''}`)
-    setDeleteTarget(null)
+    try {
+      if (isSupabaseConfigured()) {
+        await sbDeleteDept(deleteTarget.id)
+      }
+      const inUse = users.filter(u => u.departmentId === deleteTarget.id).length
+      setDepartments(p => p.filter(d => d.id !== deleteTarget.id))
+      if (selected?.id === deleteTarget.id) setSelected(null)
+      toast.success(`${deleteTarget.name} deleted.${inUse > 0 ? ` ${inUse} user(s) now have no department.` : ''}`)
+      setDeleteTarget(null)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Failed to delete department.')
+    }
   }
 
   function SortIcon({ k }: { k: SortKey }) {
