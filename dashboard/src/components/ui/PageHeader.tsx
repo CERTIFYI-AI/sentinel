@@ -7,9 +7,11 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 import { ChevronRight } from 'lucide-react'
-import type { Crumb } from '@/lib/breadcrumbs'
 
-export type BreadcrumbItem = Crumb
+export interface BreadcrumbItem {
+  label: string
+  href?: string
+}
 
 export interface PageHeaderAction {
   label: string
