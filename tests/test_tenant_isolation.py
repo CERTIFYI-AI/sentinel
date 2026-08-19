@@ -50,7 +50,10 @@ def test_no_token_is_rejected():
 
 
 def test_forged_token_is_rejected():
-    bad = jwt.encode({"sub": "u1", "tenant_id": "X"}, "not-the-secret", algorithm="HS256")
+    # Sign with a key that is deliberately NOT the server secret (derived, not a
+    # hardcoded literal) so the signature fails verification.
+    wrong_key = deps._SECRET_KEY + "-tampered"
+    bad = jwt.encode({"sub": "u1", "tenant_id": "X"}, wrong_key, algorithm="HS256")
     with pytest.raises(HTTPException):
         deps.get_current_tenant_id(_req(bad))
 
