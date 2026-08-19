@@ -31,6 +31,7 @@ import { useModelsData } from '../../hooks/useModelsData';
 import type { ConformityAssessmentRecord } from '../../services/conformityService';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import { safeExternalUrl } from '@/lib/url';
 
 function formatDate(d?: string | null): string {
   if (!d) return '—';
@@ -448,7 +449,7 @@ export default function ConformityAssessment() {
                 {selected.certificate_url && (
                   <div>
                     <h4 className="text-xs font-semibold mb-2" style={{ color: 'hsl(var(--text-4))' }}>CERTIFICATE</h4>
-                    <a href={selected.certificate_url} target="_blank" rel="noopener noreferrer" className="text-xs hover:underline inline-flex items-center gap-1" style={{ color: 'hsl(var(--brand))' }}>
+                    <a href={safeExternalUrl(selected.certificate_url) ?? undefined} target="_blank" rel="noopener noreferrer" className="text-xs hover:underline inline-flex items-center gap-1" style={{ color: 'hsl(var(--brand))' }}>
                       <ArrowSquareOut size={12} /> {selected.certificate_url}
                     </a>
                   </div>

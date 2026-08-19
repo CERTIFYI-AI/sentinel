@@ -56,6 +56,7 @@ import { useChartTheme } from '@/hooks/useChartTheme'
 import { citeFactor, type EmissionFactor } from '@/services/emissionFactorService'
 import { periodSortKey } from '@/services/reportingPeriod'
 import type { CarbonRecord, GhgScope, MeasurementMethod } from '@/services/carbonRecordsService'
+import { safeExternalUrl } from '@/lib/url';
 
 // ── formatting: null renders an em-dash, never 0 ────────────────────────────
 const DASH = '—'
@@ -636,7 +637,7 @@ export default function CarbonLedger() {
                   {factorFor(selected.emissionFactorId)?.sourceUrl && (
                     <>
                       {' · '}
-                      <a href={factorFor(selected.emissionFactorId)!.sourceUrl!} target="_blank" rel="noreferrer" className="underline">
+                      <a href={safeExternalUrl(factorFor(selected.emissionFactorId)?.sourceUrl ?? '') ?? undefined} target="_blank" rel="noreferrer" className="underline">
                         source
                       </a>
                     </>

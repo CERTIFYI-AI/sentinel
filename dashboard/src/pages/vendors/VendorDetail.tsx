@@ -48,6 +48,7 @@ import { useTiaRecords } from '@/hooks/useComplianceRecords'
 import { useVendorBacklinks } from '@/hooks/useVendorBacklinks'
 import type { BacklinkItem, BacklinkSource } from '@/hooks/useModelBacklinks'
 import { VendorEditSheet } from './VendorEditSheet'
+import { safeExternalUrl } from '@/lib/url'
 import {
   Pill, LinkPill, Fact, SectionTitle, tierTone, tierLabel, dpaTone, slaTone,
   assessmentTone, docTone, dash, fmtDate, fmtMoney, daysUntil, tone, type Tone,
@@ -283,7 +284,7 @@ export default function VendorDetail() {
               <Fact
                 label="Website"
                 value={vendor.website
-                  ? <a href={vendor.website} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline" style={{ color: 'hsl(var(--brand))' }}>{vendor.website}</a>
+                  ? <a href={safeExternalUrl(vendor.website) ?? undefined} target="_blank" rel="noreferrer" className="underline-offset-2 hover:underline" style={{ color: 'hsl(var(--brand))' }}>{vendor.website}</a>
                   : null}
               />
               <Fact label="Contact" value={vendor.contactEmail} />

@@ -15,6 +15,7 @@ import { useRegulationEntries } from '@/hooks/useRiskIncidents'
 import { useModelsData } from '@/hooks/useModelsData'
 import { useRisksData } from '@/hooks/useRisksData'
 import { daysUntil, type RegulationEntryRecord } from '@/services/riskGroupService'
+import { safeExternalUrl } from '@/lib/url';
 
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
   enacted:  { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
@@ -135,7 +136,7 @@ export default function RegDetail() {
           </p>
         </div>
         {regulation.sourceUrl && (
-          <a href={regulation.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-[hsl(var(--brand))] hover:underline">
+          <a href={safeExternalUrl(regulation.sourceUrl) ?? undefined} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-[hsl(var(--brand))] hover:underline">
             View official source <ArrowSquareOut size={12} />
           </a>
         )}

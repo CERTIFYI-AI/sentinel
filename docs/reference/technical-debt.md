@@ -4,7 +4,66 @@
 > auditor instead of by us. Every accepted shortcut belongs here with an owner
 > and a reason — see [`../contributing/review-process.md`](../contributing/review-process.md).
 
-Last reviewed: 2026-08 (public-repo security-audit remediation pass)
+Last reviewed: 2026-08 (second-pass security audit — Sentinel Threat Review)
+
+---
+
+## TD-025 — Self-host FastAPI backend lacks tenant scoping (audit H2/H3/M1/M4)
+
+**Owner:** backend. **Severity:** High *for the self-hosted deployment path*.
+The second-pass audit found the `sentinel/` FastAPI backend enforces
+authentication (a valid bearer) but **not tenant isolation**: `main.py`'s
+`_require_api_auth` never checks the token's tenant against the record, and
+several routers add no scoping of their own —
+
+- `rbac_router`, `trust_engine_router`, `reg_radar_router`,
+  `observability_router`, `shadow_ai_router`, `questionnaire_router` — no
+  `tenant_id` on the model or in any query, plus raw-dict mass assignment
+  (`Model(**data)` / `setattr`). Any authenticated user can cross tenants
+  (e.g. `PATCH /api/rbac/users/{id}` → self-grant Super Admin; read another
+  tenant's `TrustTrace` prompts/responses).
+- `tasks_router` / `evals_router` hardcode `_get_tenant_id() → "default-tenant"`.
+- `controls_router.add_test_result` writes evidence + effectiveness score with
+  no tenant check (`WHERE id=$2`, no `tenant_id`).
+- `dataset_router:80` / `agent_router:89` — scoped UPDATE followed by an
+  unscoped `SELECT * WHERE id=$1`, a read-only IDOR.
+
+**Deployment context (why not fixed this pass):** the managed SaaS plane is
+Cloudflare Workers (dashboard) + Supabase (Postgres/RLS/edge functions) — the
+dashboard build ships no `VITE_API_URL`, so this FastAPI is **not deployed
+there**. It is the self-hostable open-core API: it appears only in
+`docker-compose.yml`, bound to `127.0.0.1:8000` (loopback) with its own
+Postgres. So these are real vulnerabilities for anyone self-hosting the API
+multi-tenant, but not live on the managed plane and not internet-exposed by
+default. **Exit:** thread a tenant filter through the shared middleware (resolve
+tenant from the JWT and enforce it), give the SQLAlchemy models a `tenant_id`,
+and replace raw-dict assignment with explicit field lists — a dedicated pass,
+gated on confirming who runs the self-hosted API multi-tenant. Full write-up:
+Sentinel Threat Review (H2/H3/M1/M4).
+
+---
+
+## TD-024 — SSO callback links accounts by bare email (audit H1)
+
+**Owner:** platform / SSO. **Severity:** High (Critical-class, currently gated).
+`_shared/sso.ts jitProvision` links an existing Supabase user *globally by
+email* and force-overwrites their `org_id`/`provider_id`, with **no
+`email_verified` check**, no binding by `(provider_id, sub)`, and no
+consultation of `identity_provider_domains.is_verified` (a domain-ownership
+table that exists for exactly this). Combined with an `identity_providers`
+INSERT policy that lets any org member self-register a provider with
+attacker-controlled `issuer`/`jwks_uri`/`token_endpoint`, a malicious IdP could
+assert `email: victim@bigcorp.com` and take over that account across tenants.
+**Gating:** the callback requires a validly HMAC-signed `state`, and no in-repo
+endpoint mints one — the login-initiation path is external/unshipped — so
+end-to-end exploitation is not currently reachable from this repo. The trust
+boundary is nonetheless broken by design. **Exit (before any SSO GA):** require
+`email_verified === true` and a verified domain owned by the provider's org;
+bind identity by `(provider_id, sub)`, not email; admin-gate provider
+registration. Also **L5** (release.yml holds `issues`/`pull-requests: write`
+job-wide) — narrowing it safely needs `successComment:false`/`failComment:false`
+in `.releaserc`; deferred to avoid destabilising the freshly-fixed release
+pipeline. Full write-up: Sentinel Threat Review.
 
 ---
 

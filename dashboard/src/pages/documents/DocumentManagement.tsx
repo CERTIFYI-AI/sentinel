@@ -29,6 +29,7 @@ import { uploadFile } from '@/lib/storage';
 import { exportCsv } from '@/lib/exportUtils';
 import { useModelsData } from '@/hooks/useModelsData';
 import { usePolicies } from '@/hooks/queries/usePolicies';
+import { safeExternalUrl } from '@/lib/url';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const DOC_TYPES = ['policy', 'procedure', 'standard', 'guideline', 'template'];
@@ -643,7 +644,7 @@ export default function DocumentManagement() {
                   {selectedDoc.externalLink && (
                     <div className="p-2 border flex items-center gap-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
                       <ArrowSquareOut size={14} style={{ color: 'hsl(var(--brand))' }} />
-                      <a href={selectedDoc.externalLink} target="_blank" rel="noreferrer" className="text-xs underline break-all" style={{ color: 'hsl(var(--brand))' }}>
+                      <a href={safeExternalUrl(selectedDoc.externalLink) ?? undefined} target="_blank" rel="noreferrer" className="text-xs underline break-all" style={{ color: 'hsl(var(--brand))' }}>
                         {selectedDoc.externalLink}
                       </a>
                     </div>
@@ -652,7 +653,7 @@ export default function DocumentManagement() {
                     <div className="p-2 border flex items-center gap-2" style={{ borderRadius: 0, borderColor: 'hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
                       <FileText size={14} style={{ color: 'hsl(var(--brand))' }} />
                       {selectedDoc.uri ? (
-                        <a href={selectedDoc.uri} target="_blank" rel="noreferrer" className="text-xs underline break-all" style={{ color: 'hsl(var(--brand))' }}>
+                        <a href={safeExternalUrl(selectedDoc.uri) ?? undefined} target="_blank" rel="noreferrer" className="text-xs underline break-all" style={{ color: 'hsl(var(--brand))' }}>
                           {selectedDoc.storagePath ?? selectedDoc.uri}
                         </a>
                       ) : (

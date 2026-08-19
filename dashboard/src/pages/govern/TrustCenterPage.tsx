@@ -31,6 +31,7 @@ import {
 import { useModelOptions } from '@/hooks/useAiiaData'
 import { useFrameworksData } from '@/hooks/useFrameworksData'
 import { useRBAC } from '@/hooks/useRBAC'
+import { safeExternalUrl } from '@/lib/url'
 import {
   BADGE_CATALOG, EMPTY_TRUST_DOC,
   type TrustCenterDoc, type TrustResource, type TrustResourceKind,
@@ -135,7 +136,7 @@ function TrustPreview({ doc, stats, vendorNameById, resolveResource, publishedPo
                   {res.unresolvable ? (
                     <span className="text-[hsl(var(--text-4))]">Unavailable</span>
                   ) : res.uri ? (
-                    <a href={res.uri} target="_blank" rel="noreferrer" className="text-[hsl(var(--brand))] hover:underline">{res.title}</a>
+                    <a href={safeExternalUrl(res.uri) ?? undefined} target="_blank" rel="noreferrer" className="text-[hsl(var(--brand))] hover:underline">{res.title}</a>
                   ) : (
                     <span className="text-[hsl(var(--brand))]">{res.title}</span>
                   )}

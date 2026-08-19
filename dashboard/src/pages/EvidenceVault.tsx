@@ -38,6 +38,7 @@ import { PageHeader } from '../components/ui/PageHeader';
 import { StatCardRow } from '../components/ui/StatCardRow';
 import type { StatCardRowItem } from '../components/ui/StatCardRow';
 import { FilterBar } from '../components/ui/FilterBar';
+import { safeExternalUrl } from '@/lib/url';
 
 function exportCsv(rows: Record<string, unknown>[], filename: string) {
   if (!rows.length) return;
@@ -783,7 +784,7 @@ export default function EvidenceVault() {
                   <div className="pt-1">
                     <p className="text-xs font-semibold mb-1" style={{ color: 'hsl(var(--text-2))' }}>Artifact</p>
                     <a
-                      href={viewItem.url || viewItem.file_url || '#'}
+                      href={safeExternalUrl(viewItem.url || viewItem.file_url || '') ?? undefined}
                       target="_blank" rel="noopener noreferrer"
                       className="text-xs hover:underline inline-flex items-center gap-1"
                       style={{ color: 'hsl(var(--brand))' }}

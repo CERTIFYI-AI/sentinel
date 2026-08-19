@@ -21,6 +21,7 @@ import { exportCsv } from '@/lib/exportUtils'
 import { useRegulationEntries } from '@/hooks/useRiskIncidents'
 import { useModelsData } from '@/hooks/useModelsData'
 import { daysUntil, type RegulationEntryRecord } from '@/services/riskGroupService'
+import { safeExternalUrl } from '@/lib/url';
 
 const STATUS_STYLE: Record<string, React.CSSProperties> = {
   enacted:  { background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))' },
@@ -269,7 +270,7 @@ export default function RiskIntelligence() {
                   <div className="flex items-center gap-4 mt-2 pt-2 border-t border-[hsl(var(--border))]">
                     {reg.owner && <span className="text-[10px] text-[hsl(var(--text-4))]">Owner: {reg.owner}</span>}
                     {reg.sourceUrl && (
-                      <a href={reg.sourceUrl} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-[hsl(var(--brand))] hover:underline inline-flex items-center gap-1">
+                      <a href={safeExternalUrl(reg.sourceUrl) ?? undefined} target="_blank" rel="noreferrer" onClick={e => e.stopPropagation()} className="text-[10px] text-[hsl(var(--brand))] hover:underline inline-flex items-center gap-1">
                         Source <ArrowSquareOut size={10} />
                       </a>
                     )}
@@ -360,7 +361,7 @@ export default function RiskIntelligence() {
                 )}
 
                 {selected.sourceUrl && (
-                  <a href={selected.sourceUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-[hsl(var(--brand))] hover:underline">
+                  <a href={safeExternalUrl(selected.sourceUrl) ?? undefined} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-xs text-[hsl(var(--brand))] hover:underline">
                     View official source <ArrowSquareOut size={12} />
                   </a>
                 )}

@@ -34,6 +34,7 @@ import type { FrameworkRecord } from '@/services/frameworkService';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
 import { listFrameworks, FRAMEWORK_COUNT, TOTAL_CONTROL_COUNT, type FrameworkSummary } from '@/lib/frameworks';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
+import { safeExternalUrl } from '@/lib/url';
 
 function formatDate(d?: string | null): string {
   if (!d) return '—';
@@ -565,7 +566,7 @@ export default function Frameworks() {
                         <span className="text-xs flex-shrink-0" style={{ color: 'hsl(var(--text-4))' }}>{f.control_count} controls</span>
                       </div>
                       <p className="mt-1 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{f.authority} · {f.version}</p>
-                      <a href={f.url} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs underline" style={{ color: 'hsl(var(--brand))' }}>
+                      <a href={safeExternalUrl(f.url) ?? undefined} target="_blank" rel="noopener noreferrer" className="mt-2 inline-block text-xs underline" style={{ color: 'hsl(var(--brand))' }}>
                         View source →
                       </a>
                     </li>

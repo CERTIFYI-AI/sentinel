@@ -62,11 +62,12 @@ else
   check "JWT_SECRET_KEY length" "0" ""
 fi
 
-# CORS must not be wildcard
-if [ "${CORS_ORIGINS:-}" = "*" ]; then
-  check "CORS_ORIGINS not wildcard" "1" "CORS_ORIGINS must not be set to '*' in production"
+# CORS must be an explicit allowlist — reject both the literal wildcard AND an
+# empty value, which the app treats as a (non-credentialed) wildcard default.
+if [ "${CORS_ORIGINS:-}" = "*" ] || [ -z "${CORS_ORIGINS:-}" ]; then
+  check "CORS_ORIGINS is an explicit allowlist" "1" "CORS_ORIGINS must be an explicit origin list in production (not '*' or empty)"
 else
-  check "CORS_ORIGINS not wildcard" "0" ""
+  check "CORS_ORIGINS is an explicit allowlist" "0" ""
 fi
 
 if [ "$ERRORS" -gt 0 ]; then
