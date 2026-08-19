@@ -202,7 +202,7 @@ function PriorityBadge({ priority }: { priority: Severity }) {
 function AvatarInitials({ name }: { name?: string | null }) {
   const safeName = name ?? '';
   const initials = safeName.split(' ').filter(Boolean).map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
-  const colors = ['hsl(var(--brand))', 'hsl(var(--r-hi-tx))', 'hsl(var(--s-ok-tx))', 'hsl(var(--s-in-tx))', '#a855f7', 'hsl(var(--s-wn-tx))'];
+  const colors = ['hsl(var(--brand))', 'hsl(var(--r-hi-tx))', 'hsl(var(--s-ok-tx))', 'hsl(var(--s-in-tx))', 'hsl(var(--tag-purple))', 'hsl(var(--s-wn-tx))'];
   const idx = safeName.charCodeAt(0) % colors.length;
   return (
     <div title={safeName} style={{

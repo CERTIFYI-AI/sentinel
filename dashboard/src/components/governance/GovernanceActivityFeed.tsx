@@ -97,7 +97,7 @@ export function GovernanceActivityFeed({ orgId, limit = 30 }: Props) {
                       <StatusDot status={x.status} />
                       <span style={{ minWidth: 180 }}>{x.agent_name}</span>
                       <span style={{ opacity: 0.6 }}>{x.duration_ms ?? '-'} ms</span>
-                      {x.error && <span style={{ color: '#ff6b6b' }}>{x.error}</span>}
+                      {x.error && <span style={{ color: 'hsl(var(--s-er-tx))' }}>{x.error}</span>}
                     </div>
                   ))}
                 </div>
@@ -111,11 +111,11 @@ export function GovernanceActivityFeed({ orgId, limit = 30 }: Props) {
 }
 
 function StatusDot({ status }: { status: string }) {
-  const color = status === 'completed' || status === 'succeeded' ? '#4ade80'
-    : status === 'failed' ? '#ff6b6b'
-    : status === 'processing' || status === 'started' ? '#fbbf24'
-    : status === 'skipped' ? '#94a3b8'
-    : '#64748b'
+  const color = status === 'completed' || status === 'succeeded' ? 'hsl(var(--s-ok-tx))'
+    : status === 'failed' ? 'hsl(var(--s-er-tx))'
+    : status === 'processing' || status === 'started' ? 'hsl(var(--s-wn-tx))'
+    : status === 'skipped' ? 'hsl(var(--text-4))'
+    : 'hsl(var(--text-3))'
   return <span aria-hidden style={{
     display: 'inline-block', width: 8, height: 8, borderRadius: 4, background: color
   }} />

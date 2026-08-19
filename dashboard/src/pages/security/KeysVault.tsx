@@ -32,8 +32,8 @@ const STATUSES = ['active', 'rotated', 'expired', 'revoked'];
 function statusStyle(status?: string) {
   switch (status) {
     case 'active': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
-    case 'rotated': return { bg: '#3b82f620', text: '#3b82f6', border: '#3b82f640' };
-    case 'expired': return { bg: '#eab30820', text: '#eab308', border: '#eab30840' };
+    case 'rotated': return { bg: 'hsl(var(--s-in-bg))', text: 'hsl(var(--s-in-tx))', border: 'hsl(var(--s-in-br))' };
+    case 'expired': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' };
     case 'revoked': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
     default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
   }
@@ -41,8 +41,8 @@ function statusStyle(status?: string) {
 
 function statusIcon(status?: string) {
   if (status === 'active') return <CheckCircle size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
-  if (status === 'rotated') return <ArrowsClockwise size={14} style={{ color: '#3b82f6' }} />;
-  if (status === 'expired') return <Warning size={14} style={{ color: '#eab308' }} />;
+  if (status === 'rotated') return <ArrowsClockwise size={14} style={{ color: 'hsl(var(--s-in-tx))' }} />;
+  if (status === 'expired') return <Warning size={14} style={{ color: 'hsl(var(--s-wn-tx))' }} />;
   return <X size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
 }
 
@@ -334,7 +334,7 @@ export default function KeysVault() {
                       <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                         <Button size="sm" variant="ghost" style={{ padding: '4px 8px' }} onClick={() => setViewItem(k)}><Eye size={14} /></Button>
                         {k.status === 'active' && (
-                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: '#3b82f6' }} onClick={() => openRotate(k)}>
+                          <Button size="sm" variant="ghost" style={{ padding: '4px 8px', color: 'hsl(var(--s-in-tx))' }} onClick={() => openRotate(k)}>
                             <ArrowsClockwise size={14} />
                           </Button>
                         )}
@@ -537,7 +537,7 @@ export default function KeysVault() {
           </div>
           <AlertDialogFooter>
             <AlertDialogCancel style={{ borderRadius: 0 }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleRotate} disabled={isSaving} style={{ background: '#3b82f6', borderRadius: 0 }}>Rotate Key</AlertDialogAction>
+            <AlertDialogAction onClick={handleRotate} disabled={isSaving} style={{ background: 'hsl(var(--s-in-tx))', borderRadius: 0 }}>Rotate Key</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

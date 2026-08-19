@@ -47,7 +47,7 @@ function actionStyle(action: string) {
   switch (action) {
     case 'block': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
     case 'redact': return { bg: 'hsl(var(--r-hi-bg))', text: 'hsl(var(--r-hi-tx))', border: 'hsl(var(--r-hi-br))' };
-    case 'flag': return { bg: '#eab30820', text: '#eab308', border: '#eab30840' };
+    case 'flag': return { bg: 'hsl(var(--s-wn-bg))', text: 'hsl(var(--s-wn-tx))', border: 'hsl(var(--s-wn-br))' };
     case 'require_approval': return { bg: 'hsl(var(--s-in-bg))', text: 'hsl(var(--s-in-tx))', border: 'hsl(var(--s-in-bg))' };
     default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
   }
@@ -57,7 +57,7 @@ function typeIcon(type?: string) {
   if (type === 'pii' || type === 'data_exfil') return <Lock size={14} style={{ color: 'hsl(var(--s-er-tx))' }} />;
   if (type === 'prompt_injection') return <ShieldCheck size={14} style={{ color: 'hsl(var(--s-ok-tx))' }} />;
   if (type === 'jailbreak') return <Lightning size={14} style={{ color: 'hsl(var(--r-hi-tx))' }} />;
-  if (type === 'toxicity') return <Warning size={14} style={{ color: '#eab308' }} />;
+  if (type === 'toxicity') return <Warning size={14} style={{ color: 'hsl(var(--s-wn-tx))' }} />;
   return <Clock size={14} style={{ color: 'hsl(var(--text-3))' }} />;
 }
 

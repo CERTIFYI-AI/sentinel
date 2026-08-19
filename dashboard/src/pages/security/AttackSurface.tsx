@@ -222,7 +222,7 @@ export default function AttackSurface() {
     const sev = (a.severity || 'low').toLowerCase();
     if (sev === 'critical') return 'hsl(var(--s-er-tx))';
     if (sev === 'high') return 'hsl(var(--r-hi-tx))';
-    if (sev === 'medium') return '#eab308';
+    if (sev === 'medium') return 'hsl(var(--s-wn-tx))';
     return 'hsl(var(--s-ok-tx))';
   };
 
@@ -498,7 +498,7 @@ export default function AttackSurface() {
                       {[
                         { color: 'hsl(var(--s-er-tx))', label: 'Critical' },
                         { color: 'hsl(var(--r-hi-tx))', label: 'High' },
-                        { color: '#eab308', label: 'Medium' },
+                        { color: 'hsl(var(--s-wn-tx))', label: 'Medium' },
                         { color: 'hsl(var(--s-ok-tx))', label: 'Low' },
                       ].map(({ color, label }) => (
                         <div key={label} className="flex items-center gap-1.5">

@@ -17,14 +17,14 @@ interface GraphEdge {
 }
 
 const NODES: GraphNode[] = [
-  { id: 'model-inventory',   label: 'Model Inventory',    x: 400, y: 50,  color: '#368F4D' },
-  { id: 'risk-register',     label: 'Risk Register',      x: 150, y: 200, color: '#DC2626' },
-  { id: 'compliance',        label: 'Compliance',         x: 400, y: 200, color: '#2563EB' },
-  { id: 'vendors',           label: 'Vendor Registry',    x: 650, y: 200, color: '#D97706' },
-  { id: 'incidents',         label: 'Incidents',          x: 150, y: 350, color: '#7C3AED' },
-  { id: 'evidence',          label: 'Evidence Vault',     x: 400, y: 350, color: '#0891B2' },
-  { id: 'audit-log',         label: 'Audit Log',          x: 650, y: 350, color: '#64748B' },
-  { id: 'knowledge-graph',   label: 'Knowledge Graph',    x: 400, y: 500, color: '#F59E0B' },
+  { id: 'model-inventory',   label: 'Model Inventory',    x: 400, y: 50,  color: 'hsl(var(--s-ok-tx))' },
+  { id: 'risk-register',     label: 'Risk Register',      x: 150, y: 200, color: 'hsl(var(--s-er-tx))' },
+  { id: 'compliance',        label: 'Compliance',         x: 400, y: 200, color: 'hsl(var(--s-in-tx))' },
+  { id: 'vendors',           label: 'Vendor Registry',    x: 650, y: 200, color: 'hsl(var(--s-wn-tx))' },
+  { id: 'incidents',         label: 'Incidents',          x: 150, y: 350, color: 'hsl(var(--tag-purple))' },
+  { id: 'evidence',          label: 'Evidence Vault',     x: 400, y: 350, color: 'hsl(var(--s-in-tx))' },
+  { id: 'audit-log',         label: 'Audit Log',          x: 650, y: 350, color: 'hsl(var(--text-3))' },
+  { id: 'knowledge-graph',   label: 'Knowledge Graph',    x: 400, y: 500, color: 'hsl(var(--s-wn-tx))' },
 ]
 
 const EDGES: GraphEdge[] = [
@@ -70,7 +70,7 @@ export function CrossModuleDependencyGraph() {
           const isHighlighted = !hoveredNode || highlightedEdges.includes(e)
           return (
             <line key={i} x1={from.x} y1={from.y} x2={to.x} y2={to.y}
-              stroke={isHighlighted ? '#64748b' : '#e2e8f0'}
+              stroke={isHighlighted ? 'hsl(var(--text-3))' : 'hsl(var(--border))'}
               strokeWidth={isHighlighted ? 1.5 : 1}
               strokeOpacity={isHighlighted ? 0.8 : 0.3}
               markerEnd="url(#arrowhead)"

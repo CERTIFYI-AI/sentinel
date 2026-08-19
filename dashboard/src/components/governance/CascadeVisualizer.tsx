@@ -70,7 +70,7 @@ export function CascadeVisualizer({ rootEventId }: Props) {
 }
 
 function Node({ node }: { node: CascadeNode }) {
-  const color = node.status === 'completed' ? '#4ade80' : node.status === 'failed' ? '#ff6b6b' : '#fbbf24'
+  const color = node.status === 'completed' ? 'hsl(var(--s-ok-tx))' : node.status === 'failed' ? 'hsl(var(--s-er-tx))' : 'hsl(var(--s-wn-tx))'
   return (
     <div style={{ marginLeft: node.cascade_depth * 16, paddingLeft: 12, borderLeft: `2px solid ${color}`, marginTop: 6 }}>
       <div style={{ fontSize: 13 }}>

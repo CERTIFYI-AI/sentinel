@@ -250,8 +250,8 @@ export default function BenchmarkingMaturity() {
                 <Radar
                   name="Target Level"
                   dataKey="target"
-                  stroke="#3b82f6"
-                  fill="#3b82f6"
+                  stroke="hsl(var(--s-in-tx))"
+                  fill="hsl(var(--s-in-tx))"
                   fillOpacity={0.08}
                   strokeWidth={2}
                   strokeDasharray="6 3"
@@ -336,7 +336,7 @@ export default function BenchmarkingMaturity() {
                           left: `${(d.target / 5) * 100}%`,
                           width: 2,
                           height: 10,
-                          background: '#3b82f6',
+                          background: 'hsl(var(--s-in-tx))',
                         }}
                         title={`Target: ${d.target}`}
                       />
@@ -459,7 +459,7 @@ export default function BenchmarkingMaturity() {
                       <Badge
                         style={{
                           background: 'rgba(59,130,246,0.1)',
-                          color: '#3b82f6',
+                          color: 'hsl(var(--s-in-tx))',
                           border: '1px solid rgba(59,130,246,0.3)',
                           borderRadius: 0,
                           fontWeight: 700,

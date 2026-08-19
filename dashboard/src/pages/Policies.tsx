@@ -34,7 +34,7 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, BarChart, Bar, XAxis
 import { useOrgName } from '../hooks/useOrganization';
 import { useChartTheme } from '../hooks/useChartTheme';
 
-const CATEGORY_COLORS = ['#3b82f6', 'hsl(var(--tag-purple))', 'hsl(var(--r-hi-tx))', 'hsl(var(--s-ok-tx))', '#ec4899', 'hsl(var(--s-in-tx))', 'hsl(var(--s-wn-tx))'];
+const CATEGORY_COLORS = ['hsl(var(--s-in-tx))', 'hsl(var(--tag-purple))', 'hsl(var(--r-hi-tx))', 'hsl(var(--s-ok-tx))', 'hsl(var(--tag-purple))', 'hsl(var(--s-in-tx))', 'hsl(var(--s-wn-tx))'];
 const CATEGORIES = ['AI Usage', 'Risk', 'Data Privacy', 'AI Ethics', 'Regulatory', 'Vendor', 'Security', 'Governance'];
 
 function policyStatusColor(status: string) {

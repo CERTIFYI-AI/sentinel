@@ -57,7 +57,7 @@ const SECTION_KEYS = Object.keys(SECTION_LABELS);
 function statusStyle(status?: string) {
   switch (status) {
     case 'completed': return { bg: 'hsl(var(--s-ok-bg))', text: 'hsl(var(--s-ok-tx))', border: 'hsl(var(--s-ok-br))' };
-    case 'generating': return { bg: '#3b82f620', text: '#3b82f6', border: '#3b82f640' };
+    case 'generating': return { bg: 'hsl(var(--s-in-bg))', text: 'hsl(var(--s-in-tx))', border: 'hsl(var(--s-in-br))' };
     case 'failed': return { bg: 'hsl(var(--s-er-bg))', text: 'hsl(var(--s-er-tx))', border: 'hsl(var(--s-er-br))' };
     default: return { bg: 'hsl(var(--bg-muted))', text: 'hsl(var(--text-3))', border: 'hsl(var(--border))' };
   }

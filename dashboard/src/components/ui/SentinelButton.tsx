@@ -12,12 +12,12 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variantStyles: Record<Variant, React.CSSProperties> = {
-  primary: { background: 'hsl(var(--brand))', color: '#fff', border: 'none' },
+  primary: { background: 'hsl(var(--brand))', color: 'white', border: 'none' },
   secondary: { background: 'hsl(var(--bg-raised))', color: 'hsl(var(--text-2))', border: '1px solid hsl(var(--border))' },
   outline: { background: 'transparent', color: 'hsl(var(--text-2))', border: '1px solid hsl(var(--border-mid))' },
   ghost: { background: 'transparent', color: 'hsl(var(--text-3))', border: 'none' },
   danger: { background: 'transparent', color: 'hsl(var(--s-er-tx))', border: '1px solid hsl(var(--s-er-br))' },
-  'danger-solid': { background: 'hsl(var(--s-er-tx))', color: '#fff', border: 'none' },
+  'danger-solid': { background: 'hsl(var(--s-er-tx))', color: 'white', border: 'none' },
 };
 const sizeStyles: Record<Size, React.CSSProperties> = {
   xs: { fontSize: 11, padding: '2px 8px', gap: 4 },

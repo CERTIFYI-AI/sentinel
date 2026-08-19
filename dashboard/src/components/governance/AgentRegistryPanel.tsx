@@ -70,7 +70,7 @@ export function AgentRegistryPanel() {
                 <td>{a.priority}</td>
                 <td>{slo} {a.sla_ms}ms</td>
                 <td>{a.p95_execution_ms}ms</td>
-                <td style={{ color: a.error_rate > 0.05 ? '#ff6b6b' : 'inherit' }}>{(a.error_rate * 100).toFixed(2)}%</td>
+                <td style={{ color: a.error_rate > 0.05 ? 'hsl(var(--s-er-tx))' : 'inherit' }}>{(a.error_rate * 100).toFixed(2)}%</td>
                 <td>{a.total_executions}</td>
                 <td>{a.owner_team}</td>
                 <td>{a.is_enabled ? '🟢' : '⚪'}</td>

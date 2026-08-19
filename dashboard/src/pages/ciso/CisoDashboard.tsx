@@ -158,7 +158,7 @@ function OverviewTab() {
     : null;
 
   const topStats = [
-    { label: 'Models in Production', value: String(productionModels), icon: Robot, color: '#3b82f6' },
+    { label: 'Models in Production', value: String(productionModels), icon: Robot, color: 'hsl(var(--s-in-tx))' },
     { label: 'Open Risks', value: String(openRisks.length), icon: Warning, color: 'hsl(var(--s-er-tx))' },
     { label: 'Open Severity-5 Risks', value: String(openSevereRisks), icon: Gauge, color: 'hsl(var(--destructive))' },
     { label: 'Active Incidents', value: incidentsError ? '—' : String(activeIncidents), icon: Fire, color: 'hsl(var(--r-hi-tx))' },
@@ -178,7 +178,7 @@ function OverviewTab() {
   // Incidents by severity — computed from the live incidents table.
   const sevOrder = ['critical', 'high', 'medium', 'low'];
   const sevColors: Record<string, string> = {
-    critical: 'hsl(var(--s-er-tx))', high: 'hsl(var(--r-hi-tx))', medium: '#eab308', low: 'hsl(var(--s-ok-tx))',
+    critical: 'hsl(var(--s-er-tx))', high: 'hsl(var(--r-hi-tx))', medium: 'hsl(var(--s-wn-tx))', low: 'hsl(var(--s-ok-tx))',
   };
   const incidentSeverity = sevOrder
     .map(sev => ({
@@ -189,7 +189,7 @@ function OverviewTab() {
     .filter(d => d.value > 0);
 
   const quickNav = [
-    { label: 'Model Inventory', path: '/models', icon: Brain, count: `${models.length} models`, color: '#3b82f6' },
+    { label: 'Model Inventory', path: '/models', icon: Brain, count: `${models.length} models`, color: 'hsl(var(--s-in-tx))' },
     { label: 'Risk Register', path: '/risk', icon: Warning, count: `${openRisks.length} open risks`, color: 'hsl(var(--s-er-tx))' },
     { label: 'Compliance', path: '/compliance', icon: Shield, count: avgFrameworkScore != null ? `${avgFrameworkScore}% avg score` : `${frameworks.length} frameworks`, color: 'hsl(var(--s-ok-tx))' },
     { label: 'Incidents', path: '/risk/incidents', icon: Fire, count: incidentsError ? 'unavailable' : `${activeIncidents} active`, color: 'hsl(var(--r-hi-tx))' },

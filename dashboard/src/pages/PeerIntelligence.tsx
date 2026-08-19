@@ -186,7 +186,7 @@ export default function PeerIntelligence() {
                       <PolarAngleAxis dataKey="subject" tick={{ fill: ct.axis, fontSize: 10 }} />
                       <PolarRadiusAxis angle={30} domain={[0, 100]} tick={{ fill: ct.axis, fontSize: 9 }} />
                       <Radar name="You" dataKey="You" stroke="hsl(var(--brand))" fill="hsl(var(--brand))" fillOpacity={0.25} strokeWidth={2} />
-                      <Radar name="Sector Avg" dataKey="Sector Avg" stroke="#6b7280" fill="#6b7280" fillOpacity={0.1} strokeWidth={1.5} strokeDasharray="4 2" />
+                      <Radar name="Sector Avg" dataKey="Sector Avg" stroke="hsl(var(--text-4))" fill="hsl(var(--text-4))" fillOpacity={0.1} strokeWidth={1.5} strokeDasharray="4 2" />
                       <Radar name="Top 10%" dataKey="Top 10%" stroke="hsl(var(--s-ok-tx))" fill="hsl(var(--s-ok-tx))" fillOpacity={0.08} strokeWidth={1} strokeDasharray="2 4" />
                       <Legend wrapperStyle={{ fontSize: 11 }} />
                       <RTooltip contentStyle={{ background: ct.tooltipBg, border: `1px solid ${ct.tooltipBorder}`, borderRadius: 0, color: ct.tooltipText, fontSize: 11 }} />
