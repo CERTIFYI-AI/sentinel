@@ -1,5 +1,6 @@
 import { useState, useMemo, useCallback, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { usePromptRegistryData } from '@/hooks/usePromptRegistryData';
 import { useModelOptions, type ModelOption } from '@/hooks/useAiiaData';
 import { useAuthStore } from '../store/authStore';
@@ -892,7 +893,7 @@ export default function PromptRegistry() {
   }, [reviewer, savePrompt, toast]);
 
   if (isLoading && records.length === 0) {
-    return <div className="p-6 text-sm" style={{ color: 'hsl(var(--text-4))' }}>Loading prompts…</div>;
+    return <PageSkeleton />;
   }
 
   return (

@@ -7,6 +7,7 @@
 // and the inbound interlink footprint (trainings, AI apps, documents,
 // controls). No mocked versions/approvals/acks.
 import { useParams, useNavigate } from 'react-router-dom';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -132,12 +133,7 @@ export default function PolicyDetail() {
   });
 
   if (isLoading) {
-    return (
-      <div style={{ padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: 400 }}>
-        <FileText size={40} style={{ color: 'hsl(var(--text-4))', opacity: 0.5 }} />
-        <p style={{ marginTop: 16, fontSize: 14, color: 'hsl(var(--text-3))' }}>Loading policy…</p>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   if (error != null) {

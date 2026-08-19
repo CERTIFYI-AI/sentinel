@@ -6,6 +6,8 @@
 // data_quality_assessments; linked models resolve to ai_models pills.
 
 import { useNavigate, useParams } from 'react-router-dom'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { PageHeader } from '@/components/ui/PageHeader'
 import { ArrowLeft, ArrowSquareOut, Clock, Database, Lock, Robot } from '@phosphor-icons/react'
 import { Card } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -45,7 +47,7 @@ export default function DatasetDetail() {
     </Button>
   )
 
-  if (isLoading) return <div className="p-6 text-sm text-[hsl(var(--text-4))]">Loading dataset…</div>
+  if (isLoading) return <PageSkeleton />
   if (isError) return <div className="p-6">{back}<ErrorState message={error?.message} /></div>
   if (!dataset) {
     return (
@@ -112,7 +114,7 @@ export default function DatasetDetail() {
               <Database size={24} className="text-[hsl(var(--brand))]" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-[hsl(var(--text-1))]">{dataset.name}</h1>
+              <PageHeader title={dataset.name} />
               <div className="mt-1 flex items-center gap-2">
                 {dataset.version && <span className="font-mono text-xs text-[hsl(var(--text-4))]">{dataset.version}</span>}
                 <span className="px-2 py-0.5 text-xs" style={classStyle(dataset.classification)}>{dataset.classification ?? 'unclassified'}</span>

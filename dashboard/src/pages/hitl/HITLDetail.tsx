@@ -3,7 +3,7 @@
 // by uuid via useHitlReview(). Decisions persist through decide() (audited);
 // the timeline is derived from the record — nothing invented.
 import { useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -13,6 +13,7 @@ import {
 } from '@phosphor-icons/react';
 import { severityColor, statusColor, formatDate, timeAgo } from '../../data/seed';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { InterlinkChip } from '@/components/ui/InterlinkChip';
 import { useHitlReview, useHitlReviews } from '../../hooks/useRiskIncidents';
 import { useModelsData } from '@/hooks/useModelsData';
@@ -21,6 +22,7 @@ import { useAuthStore } from '../../stores/authStore';
 
 export default function HITLDetail() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: review, isLoading, error } = useHitlReview(id);
   const { decide, isDeciding } = useHitlReviews();
   const { models } = useModelsData();

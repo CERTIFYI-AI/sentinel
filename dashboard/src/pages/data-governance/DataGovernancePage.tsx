@@ -22,6 +22,7 @@ import { formatDate } from '../../data/seed';
 import { useDsarRequests, useUpsertDsarRequest } from '../../hooks/queries/useDataGovernance'
 import { useDatasets } from '../../hooks/useDatasetData'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 // Supabase-wired — no mock data
 
@@ -246,26 +247,24 @@ export default function DataGovernancePage() {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Database size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Data Governance</h1>
+      <PageHeader
+        title="Data Governance"
+        subtitle="Governance, consent, lineage, and DSAR management for AI data assets"
+        icon={Database}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => exportCsv(dataAssets, 'data-governance.csv')} style={{ borderRadius: 0 }}>
+              <Export size={14} />Export CSV
+            </Button>
+            <Button variant="outline" onClick={() => setDsarFormOpen(true)} style={{ borderRadius: 0 }}>
+              <UserCircle size={14} />New DSAR
+            </Button>
+            <Button onClick={() => nav('/datasets')} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
+              <Plus size={14} />Register Data Asset
+            </Button>
           </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>Governance, consent, lineage, and DSAR management for AI data assets</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => exportCsv(dataAssets, 'data-governance.csv')} style={{ borderRadius: 0 }}>
-            <Export size={14} />Export CSV
-          </Button>
-          <Button variant="outline" onClick={() => setDsarFormOpen(true)} style={{ borderRadius: 0 }}>
-            <UserCircle size={14} />New DSAR
-          </Button>
-          <Button onClick={() => nav('/datasets')} style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}>
-            <Plus size={14} />Register Data Asset
-          </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Metrics */}
       <div className="grid grid-cols-4 gap-4">

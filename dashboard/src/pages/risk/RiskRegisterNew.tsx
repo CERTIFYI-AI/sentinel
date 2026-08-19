@@ -24,6 +24,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '../../components/ui/select';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
 import { Checkbox } from '../../components/ui/checkbox';
@@ -660,12 +661,10 @@ export default function RiskRegisterNew() {
   if (error) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Risk Register</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-4))' }}>
-            {orgName} — Enterprise AI risk inventory and treatment tracking
-          </p>
-        </div>
+        <PageHeader
+          title="Risk Register"
+          subtitle={`${orgName} — Enterprise AI risk inventory and treatment tracking`}
+        />
         <div role="alert" className="p-4 flex items-center gap-2" style={{
           background: 'hsl(var(--s-er-bg))', border: '1px solid hsl(var(--destructive))', borderRadius: 0,
         }}>
@@ -681,34 +680,33 @@ export default function RiskRegisterNew() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Risk Register</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-4))' }}>
-            {orgName} — Enterprise AI risk inventory and treatment tracking
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            style={{ borderRadius: 0 }}
-            onClick={exportCSV}
-            disabled={filtered.length === 0}
-          >
-            <Export size={14} />
-            Export CSV
-          </Button>
-          <Button
-            size="sm"
-            style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
-            onClick={openCreate}
-          >
-            <Plus size={14} />
-            Add Risk
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Risk Register"
+        subtitle={`${orgName} — Enterprise AI risk inventory and treatment tracking`}
+        icon={ShieldCheck}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="outline"
+              style={{ borderRadius: 0 }}
+              onClick={exportCSV}
+              disabled={filtered.length === 0}
+            >
+              <Export size={14} />
+              Export CSV
+            </Button>
+            <Button
+              size="sm"
+              style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }}
+              onClick={openCreate}
+            >
+              <Plus size={14} />
+              Add Risk
+            </Button>
+          </div>
+        }
+      />
 
       {/* KPI Tiles — computed over the same filtered set the table shows */}
       <div className="grid grid-cols-5 gap-4">

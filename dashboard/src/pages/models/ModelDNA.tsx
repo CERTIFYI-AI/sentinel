@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -156,16 +157,7 @@ export default function ModelDNA() {
   };
 
   if (isLoading) {
-    return (
-      <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <PageHeader title="Model DNA & Provenance Chain"
-          subtitle={`${orgName} · Immutable fingerprinting & provenance`} />
-        <Card><CardContent style={{ padding: 48, textAlign: 'center', color: 'hsl(var(--text-4))' }}>
-          <Fingerprint size={26} style={{ opacity: 0.4, margin: '0 auto 10px', animation: 'pulse 1.4s ease-in-out infinite' }} />
-          <p style={{ fontSize: 13 }}>Loading model DNA…</p>
-        </CardContent></Card>
-      </div>
-    );
+    return <PageSkeleton />;
   }
   if (!model) {
     return (

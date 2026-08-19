@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useLifecycleData } from "@/hooks/useLifecycleData";
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { useNavigate } from "react-router-dom";
 import { GitBranch, ChevronRight, Clock, CheckCircle2, AlertTriangle, XCircle, PlayCircle, ArrowRight, Check, X, Info } from "lucide-react";
@@ -87,15 +88,7 @@ export default function ModelLifecycle() {
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <PageHeader title="Model Lifecycle" subtitle="Loading lifecycle tracking…" icon={GitBranch} />
-        <Card><CardContent className="py-16 text-center" style={{ color: "hsl(var(--text-4))" }}>
-          <GitBranch className="mx-auto mb-2 opacity-40 animate-pulse" />
-          <p className="text-sm">Loading lifecycle…</p>
-        </CardContent></Card>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   const selectedId = models.some(m => m.id === selectedIdState) ? selectedIdState : (models[0]?.id ?? "");

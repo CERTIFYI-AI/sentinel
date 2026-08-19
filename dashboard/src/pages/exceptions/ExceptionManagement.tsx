@@ -35,6 +35,7 @@ import { usePolicies } from '@/hooks/queries/usePolicies';
 import { InterlinkChip } from '@/components/ui/InterlinkChip';
 import { exportCsv } from '@/lib/exportUtils';
 import PageSkeleton from '../../components/ui/PageSkeleton';
+import { PageHeader } from '@/components/ui/PageHeader';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const STATUS_LABELS: Record<string, string> = {
@@ -505,22 +506,21 @@ export default function ExceptionManagement() {
     <div className="space-y-6">
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Exception Management</h1>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-            {orgName} · Policy exception requests, approval chains & compensating controls
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={handleExport}>
-            <Export size={14} />Export CSV
-          </Button>
-          <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => setCreateOpen(true)}>
-            <Plus size={14} />Request Exception
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Exception Management"
+        subtitle={`${orgName} · Policy exception requests, approval chains & compensating controls`}
+        icon={ShieldWarning}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" style={{ borderRadius: 0 }} onClick={handleExport}>
+              <Export size={14} />Export CSV
+            </Button>
+            <Button style={{ borderRadius: 0, background: 'hsl(var(--brand))', color: 'hsl(var(--bg-surface))' }} onClick={() => setCreateOpen(true)}>
+              <Plus size={14} />Request Exception
+            </Button>
+          </div>
+        }
+      />
 
       {/* Real query error state */}
       {error != null && (

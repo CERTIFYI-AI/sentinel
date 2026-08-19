@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { PageHeader } from '../../components/ui/PageHeader';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '../../components/ui/tabs';
 import { Badge } from '../../components/ui/badge';
@@ -79,12 +80,7 @@ export default function UseCaseDetail() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center h-[50vh] text-center" style={{ color: 'hsl(var(--text-4))' }}>
-        <CircleNotch size={32} className="animate-spin mb-3" />
-        <p className="text-sm">Loading use case…</p>
-      </div>
-    );
+    return <PageSkeleton />;
   }
 
   if (error) {

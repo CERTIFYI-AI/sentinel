@@ -1,4 +1,5 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
@@ -312,7 +313,7 @@ export default function ModelDetail() {
   );
 
   if (isLoading) {
-    return <div className="p-6 text-sm" style={{ color: 'hsl(var(--text-4))' }}>Loading model…</div>;
+    return <PageSkeleton />;
   }
   if (!model) {
     return (

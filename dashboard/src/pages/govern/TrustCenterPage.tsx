@@ -14,6 +14,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { toast } from 'sonner'
 import { ArrowSquareOut, Eye, EyeSlash, FloppyDisk, Plus, SealCheck, Trash } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
@@ -276,7 +277,7 @@ export default function TrustCenterPage() {
     patch({ resources: { ...doc.resources, items: doc.resources.items.map((x, j) => (j === i ? { ...x, ...p } : x)) } })
   }
 
-  if (isLoading) return <div className="p-4 text-sm text-[hsl(var(--text-3))]">Loading trust center…</div>
+  if (isLoading) return <PageSkeleton />
   if (isError) return <div className="p-6"><ErrorState message={error?.message} onRetry={() => refetch()} /></div>
 
   const availableBadges = BADGE_CATALOG.filter((c) => !doc.badges.items.some((b) => b.key === c.key))

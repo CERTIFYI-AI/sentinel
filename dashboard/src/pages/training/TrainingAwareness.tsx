@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTrainingData } from '../../hooks/useTrainingData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import { toast } from 'sonner';
@@ -259,9 +260,7 @@ export default function TrainingAwareness() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
-          Training &amp; Awareness
-        </h1>
+        <PageHeader title="Training & Awareness" />
         <ErrorState title="Could not load training courses" error={error} onRetry={() => refetch()} />
       </div>
     );
@@ -270,22 +269,21 @@ export default function TrainingAwareness() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Training & Awareness</h1>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-            {orgName} &middot; AI governance training programs & compliance awareness
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={exportCSV} variant="outline" style={{ borderRadius: 0 }}>
-            <Export size={14} />Export CSV
-          </Button>
-          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
-            <Plus size={14} />New Course
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Training & Awareness"
+        subtitle={`${orgName} · AI governance training programs & compliance awareness`}
+        icon={GraduationCap}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button onClick={exportCSV} variant="outline" style={{ borderRadius: 0 }}>
+              <Export size={14} />Export CSV
+            </Button>
+            <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
+              <Plus size={14} />New Course
+            </Button>
+          </div>
+        }
+      />
 
       {/* KPIs */}
       <div className="grid grid-cols-4 gap-4">

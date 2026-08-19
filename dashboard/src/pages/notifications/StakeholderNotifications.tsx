@@ -17,6 +17,7 @@ import {
 import { Label } from '../../components/ui/label';
 import { Textarea } from '../../components/ui/textarea';
 import { ConfirmDialog } from '../../components/ui/ConfirmDialog';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { NOTIFICATION_TEMPLATES, INCIDENTS, formatDate } from '../../data/seed';
 
 
@@ -184,18 +185,16 @@ export default function StakeholderNotifications() {
       </div>
 
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-3 mb-1">
-            <Megaphone size={22} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-            <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Stakeholder Notifications</h1>
-          </div>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>Regulatory incident notifications for DORA, NIS2, EU AI Act Art. 73</p>
-        </div>
-        <Button variant="outline" style={{ borderRadius: 0 }}>
-          <Gear size={14} />Configure Recipients
-        </Button>
-      </div>
+      <PageHeader
+        title="Stakeholder Notifications"
+        subtitle="Regulatory incident notifications for DORA, NIS2, EU AI Act Art. 73"
+        icon={Megaphone}
+        actions={
+          <Button variant="outline" style={{ borderRadius: 0 }}>
+            <Gear size={14} />Configure Recipients
+          </Button>
+        }
+      />
 
       {/* Simulation banner */}
       <div className="flex items-start gap-2 px-3 py-2 text-xs" style={{ border: '1px solid hsl(var(--s-wn-tx))', background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>

@@ -1,6 +1,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useBcpPlansData } from '../../hooks/useBcpPlansData';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { ErrorState } from '../../components/ui/ErrorState';
 import { EmptyState } from '../../components/ui/EmptyState';
 import {
@@ -368,9 +369,7 @@ export default function BusinessContinuity() {
   if (error) {
     return (
       <div className="space-y-6">
-        <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
-          Business Continuity &amp; DR
-        </h1>
+        <PageHeader title="Business Continuity & DR" />
         <ErrorState title="Could not load BCP plans" error={error} onRetry={() => refetch()} />
       </div>
     );
@@ -379,24 +378,21 @@ export default function BusinessContinuity() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
-            Business Continuity & DR
-          </h1>
-          <p className="text-sm" style={{ color: 'hsl(var(--text-4))' }}>
-            {orgName} · Disaster recovery plans, RTO/RPO tracking & test management
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button onClick={exportCSV} variant="outline" style={{ borderRadius: 0 }}>
-            <Export size={14} />Export CSV
-          </Button>
-          <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
-            <Plus size={14} />New BCP Plan
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Business Continuity & DR"
+        subtitle={`${orgName} · Disaster recovery plans, RTO/RPO tracking & test management`}
+        icon={Lifebuoy}
+        actions={
+          <div className="flex items-center gap-2">
+            <Button onClick={exportCSV} variant="outline" style={{ borderRadius: 0 }}>
+              <Export size={14} />Export CSV
+            </Button>
+            <Button onClick={() => setCreateOpen(true)} style={{ borderRadius: 0 }}>
+              <Plus size={14} />New BCP Plan
+            </Button>
+          </div>
+        }
+      />
 
       {/* KPI Metrics */}
       <div className="grid grid-cols-4 gap-4">

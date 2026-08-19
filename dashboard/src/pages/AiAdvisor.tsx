@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from "react"
 import { toast } from 'sonner'
 import {
-
   Brain, PaperPlaneRight, ArrowClockwise, Warning, CheckCircle,
   Clock, Lightbulb, ShieldWarning, ChartBar, X, Funnel,
 } from '@phosphor-icons/react'
+import { PageHeader } from '@/components/ui/PageHeader'
 
 const SUGGESTIONS = [
   { id: 1, category: "Policy Gap", severity: "Critical", title: "EU AI Act Article 13 — Transparency obligation not met for Credit Scoring Model v2.1", description: "Credit Scoring Model v2.1 lacks human-readable explanations for automated decisions. EU AI Act Article 13 requires high-risk AI systems to be transparent and auditable.", action: "Add SHAP-based explanation layer and update model card documentation by Apr 20.", status: "Open" },

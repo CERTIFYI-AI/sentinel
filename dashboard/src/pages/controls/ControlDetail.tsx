@@ -18,6 +18,7 @@ import {
 } from '@phosphor-icons/react';
 import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '@/components/ui/PageHeader';
 import { useControls } from '../../hooks/queries/useControls';
 import { useControlTests } from '../../hooks/useComplianceGroup';
 import { useControlAssurance, type AssuranceSource } from '../../hooks/useControlAssurance';
