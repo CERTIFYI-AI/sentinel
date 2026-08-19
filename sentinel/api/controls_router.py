@@ -13,14 +13,14 @@ router = APIRouter()
 def get_tenant(req): 
     token=req.headers.get("Authorization","").replace("Bearer ","")
     try:
-        p=jwt.decode(token,os.environ.get("JWT_SECRET","sentinel-secret"),algorithms=["HS256"])
+        p=jwt.decode(token,os.environ["JWT_SECRET"],algorithms=["HS256"])
         return p.get("tenant_id") or "unknown"
     except: raise HTTPException(401,"Invalid token")
 
 def get_user(req):
     token=req.headers.get("Authorization","").replace("Bearer ","")
     try:
-        p=jwt.decode(token,os.environ.get("JWT_SECRET","sentinel-secret"),algorithms=["HS256"])
+        p=jwt.decode(token,os.environ["JWT_SECRET"],algorithms=["HS256"])
         return p.get("sub") or "unknown"
     except: raise HTTPException(401,"Invalid token")
 
@@ -98,11 +98,11 @@ async def update_control(ctrl_id: str, req: Request, body: ControlUpdate, db=Dep
     updates={k:v for k,v in body.dict().items() if v is not None}
     if updates:
         sets=", ".join(f"{k}=${i+2}" for i,k in enumerate(updates))
-        await db.execute(f"UPDATE controls SET {sets}, updated_at=NOW() WHERE id=$1",ctrl_id,*updates.values())
+        await db.execute(f"UPDATE controls SET {sets}, updated_at=NOW() WHERE id=$1 AND tenant_id=${len(updates)+2}",ctrl_id,*updates.values(),tenant_id)
     if body.status and body.status!=old["status"]:
         await emit_control_status_changed(tenant_id,ctrl_id,old["status"],body.status,old["owner"] or user_id)
     await db.execute("INSERT INTO compliance_audit_log(tenant_id,actor,action,entity_type,entity_id,old_value,new_value) VALUES($1,$2,'CONTROL_UPDATED','control',$3,$4,$5)",tenant_id,user_id,ctrl_id,dict(old),updates)
-    return await db.fetchrow("SELECT * FROM controls WHERE id=$1",ctrl_id)
+    return await db.fetchrow("SELECT * FROM controls WHERE id=$1 AND tenant_id=$2",ctrl_id,tenant_id)
 
 @router.post("/{ctrl_id}/test")
 async def add_test_result(ctrl_id: str, req: Request, body: TestResult, db=Depends(get_db)):

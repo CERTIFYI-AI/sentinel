@@ -458,8 +458,25 @@ async function sweepOrg(sb: SupabaseClient, orgId: string, only?: string[]) {
   return results
 }
 
+const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 })
+
+  const secret = req.headers.get('x-cron-secret') ?? ''
+  if (!CRON_SECRET || !timingSafeEqual(secret, CRON_SECRET)) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   const body = (await req.json().catch(() => ({}))) as { orgId?: string; agents?: string[] }
   const sb = getSupabase()
 

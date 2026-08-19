@@ -29,9 +29,11 @@ compatibility_flags = ["nodejs_compat"]
 pattern = "1shield-oss.certifyi.ai"
 custom_domain = true
 
+# Secrets (SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL) must be set via:
+#   wrangler secret put SUPABASE_URL
+#   wrangler secret put SUPABASE_SERVICE_ROLE_KEY
+# Never put secrets in [vars] — they are committed to source control.
 [vars]
-SUPABASE_URL = ""
-SUPABASE_SERVICE_ROLE_KEY = ""
 NEXT_PUBLIC_SUPABASE_URL = ""
 NEXT_PUBLIC_SUPABASE_ANON_KEY = ""
 

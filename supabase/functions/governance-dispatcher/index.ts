@@ -105,9 +105,27 @@ const HANDLERS: Record<string, AgentHandler[]> = {
 }
 const WILDCARD: AgentHandler[] = [notificationAgent]
 
+// ---- Auth ----
+const CRON_SECRET = Deno.env.get('CRON_SECRET') ?? ''
+
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) return false
+  let diff = 0
+  for (let i = 0; i < a.length; i++) diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  return diff === 0
+}
+
 // ---- HTTP handler ----
 Deno.serve(async (req: Request) => {
   if (req.method !== 'POST') return new Response('Method Not Allowed', { status: 405 })
+
+  const secret = req.headers.get('x-cron-secret') ?? ''
+  if (!CRON_SECRET || !timingSafeEqual(secret, CRON_SECRET)) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401, headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
   const body = await req.json().catch(() => ({})) as { record?: GovernanceEvent; type?: string }
   // Supabase DB webhook payload: { type: 'INSERT', table, record, schema, old_record }
   const event = body.record

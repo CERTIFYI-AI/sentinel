@@ -11,6 +11,7 @@ from datetime import datetime, timedelta, timezone
 from typing import Optional
 
 import asyncpg
+import bcrypt
 from jose import jwt, JWTError
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -86,12 +87,20 @@ class TokenRequest(BaseModel):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def _hash_password(password: str, salt: str) -> str:
-    return hashlib.sha256(f"{salt}:{password}".encode()).hexdigest()
+def _hash_password(password: str, salt: str | None = None) -> str:
+    return bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
+
+
+def _verify_password(password: str, stored_hash: str, legacy_salt: str | None = None) -> bool:
+    if stored_hash.startswith("$2"):
+        return bcrypt.checkpw(password.encode(), stored_hash.encode())
+    if legacy_salt:
+        legacy = hashlib.sha256(f"{legacy_salt}:{password}".encode()).hexdigest()
+        return secrets.compare_digest(legacy, stored_hash)
+    return False
 
 
 def _create_jwt(user_id: str, email: str, role: str, tenant_id: str) -> tuple[str, str]:
-    settings = settings
     now = datetime.now(timezone.utc)
     access_payload = {
         "sub": user_id,
@@ -109,14 +118,13 @@ def _create_jwt(user_id: str, email: str, role: str, tenant_id: str) -> tuple[st
         "exp": now + timedelta(days=7),
         "type": "refresh",
     }
-    key = getattr(settings, "SECRET_KEY", getattr(settings, "secret_key", "dev-secret"))
+    key = settings.secret_key
     access = jwt.encode(access_payload, key, algorithm="HS256")
     refresh = jwt.encode(refresh_payload, key, algorithm="HS256")
     return access, refresh
 
 
 async def _get_db():
-    settings = settings
     pool = getattr(settings, "db_pool", None)
     if pool is None:
         raise HTTPException(503, "Database unavailable")
@@ -129,8 +137,7 @@ async def _get_current_user(
 ):
     if credentials is None:
         raise HTTPException(401, "Not authenticated")
-    settings = settings
-    key = getattr(settings, "SECRET_KEY", getattr(settings, "secret_key", "dev-secret"))
+    key = settings.secret_key
     try:
         payload = jwt.decode(credentials.credentials, key, algorithms=["HS256"])
     except jwt.ExpiredSignatureError:
@@ -166,9 +173,15 @@ async def login(
     if not row:
         raise HTTPException(401, "Invalid email or password")
 
-    expected = _hash_password(body.password, row["password_salt"])
-    if not secrets.compare_digest(expected, row["password_hash"]):
+    if not _verify_password(body.password, row["password_hash"], row["password_salt"]):
         raise HTTPException(401, "Invalid email or password")
+
+    if not row["password_hash"].startswith("$2"):
+        upgraded = _hash_password(body.password)
+        await db.execute(
+            "UPDATE users SET password_hash = $1, password_salt = NULL WHERE id = $2",
+            upgraded, row["id"],
+        )
 
     access, refresh = _create_jwt(
         str(row["id"]), row["email"], row["role"], row["tenant_id"]
@@ -195,8 +208,7 @@ async def register(
 
     tenant_id = f"tenant-{secrets.token_hex(8)}"
     user_id = str(uuid.uuid4())
-    salt = secrets.token_hex(16)
-    password_hash = _hash_password(body.password, salt)
+    password_hash = _hash_password(body.password)
 
     await db.execute(
         "INSERT INTO tenants (tenant_id, name, plan) VALUES ($1, $2, $3)",
@@ -204,8 +216,8 @@ async def register(
     )
     await db.execute(
         """INSERT INTO users (id, email, password_hash, password_salt, role, tenant_id)
-           VALUES ($1, $2, $3, $4, $5, $6)""",
-        user_id, body.email, password_hash, salt, "admin", tenant_id,
+           VALUES ($1, $2, $3, NULL, $4, $5)""",
+        user_id, body.email, password_hash, "admin", tenant_id,
     )
 
     # Post-signup side effects (non-blocking)
@@ -236,8 +248,7 @@ async def register(
 async def refresh_token(
     body: dict,
 ) -> dict:
-    settings = settings
-    key = getattr(settings, "SECRET_KEY", getattr(settings, "secret_key", "dev-secret"))
+    key = settings.secret_key
     token = body.get("refresh_token", "")
     try:
         payload = jwt.decode(token, key, algorithms=["HS256"])

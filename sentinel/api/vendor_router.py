@@ -11,11 +11,11 @@ router = APIRouter()
 
 def get_tenant(req):
     token=req.headers.get("Authorization","").replace("Bearer ","")
-    try: p=jwt.decode(token,os.environ.get("JWT_SECRET","sentinel-secret"),algorithms=["HS256"]); return p.get("tenant_id") or "unknown"
+    try: p=jwt.decode(token,os.environ["JWT_SECRET"],algorithms=["HS256"]); return p.get("tenant_id") or "unknown"
     except: raise HTTPException(401,"Invalid token")
 def get_user(req):
     token=req.headers.get("Authorization","").replace("Bearer ","")
-    try: p=jwt.decode(token,os.environ.get("JWT_SECRET","sentinel-secret"),algorithms=["HS256"]); return p.get("sub") or "unknown"
+    try: p=jwt.decode(token,os.environ["JWT_SECRET"],algorithms=["HS256"]); return p.get("sub") or "unknown"
     except: raise HTTPException(401,"Invalid token")
 
 class VendorCreate(BaseModel):
@@ -76,10 +76,10 @@ async def update_vendor(vendor_id: str, req: Request, body: VendorUpdate, db=Dep
     updates={k:v for k,v in body.dict().items() if v is not None}
     if updates:
         sets=", ".join(f"{k}=${i+2}" for i,k in enumerate(updates))
-        await db.execute(f"UPDATE vendors SET {sets},updated_at=NOW() WHERE id=$1",vendor_id,*updates.values())
+        await db.execute(f"UPDATE vendors SET {sets},updated_at=NOW() WHERE id=$1 AND tenant_id=${len(updates)+2}",vendor_id,*updates.values(),tenant_id)
     if body.status and body.status!=old["status"]:
         await emit_vendor_status_changed(tenant_id,vendor_id,old["name"],old["status"],body.status)
-    return await db.fetchrow("SELECT * FROM vendors WHERE id=$1",vendor_id)
+    return await db.fetchrow("SELECT * FROM vendors WHERE id=$1 AND tenant_id=$2",vendor_id,tenant_id)
 
 @router.delete("/{vendor_id}")
 async def delete_vendor(vendor_id: str, req: Request, db=Depends(get_db)):

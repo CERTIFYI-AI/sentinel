@@ -11,11 +11,11 @@ router = APIRouter()
 
 def get_tenant(req):
     token=req.headers.get("Authorization","").replace("Bearer ","")
-    try: p=jwt.decode(token,os.environ.get("JWT_SECRET","sentinel-secret"),algorithms=["HS256"]); return p.get("tenant_id") or "unknown"
+    try: p=jwt.decode(token,os.environ["JWT_SECRET"],algorithms=["HS256"]); return p.get("tenant_id") or "unknown"
     except: raise HTTPException(401,"Invalid token")
 def get_user(req):
     token=req.headers.get("Authorization","").replace("Bearer ","")
-    try: p=jwt.decode(token,os.environ.get("JWT_SECRET","sentinel-secret"),algorithms=["HS256"]); return p.get("sub") or "unknown"
+    try: p=jwt.decode(token,os.environ["JWT_SECRET"],algorithms=["HS256"]); return p.get("sub") or "unknown"
     except: raise HTTPException(401,"Invalid token")
 
 class AgentDiscover(BaseModel):

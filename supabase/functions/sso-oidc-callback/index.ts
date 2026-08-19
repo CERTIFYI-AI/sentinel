@@ -50,6 +50,8 @@ interface IdTokenPayload {
   [key: string]: unknown
 }
 
+const SSO_STATE_SECRET = Deno.env.get('SSO_STATE_SECRET') ?? Deno.env.get('CRON_SECRET') ?? ''
+
 function b64urlDecode(s: string): Uint8Array<ArrayBuffer> {
   const pad = '='.repeat((4 - (s.length % 4)) % 4)
   const bin = atob((s + pad).replace(/-/g, '+').replace(/_/g, '/'))
@@ -57,6 +59,27 @@ function b64urlDecode(s: string): Uint8Array<ArrayBuffer> {
   const out = new Uint8Array(buf)
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i)
   return out
+}
+
+async function verifyStateHmac(state: string): Promise<{ provider_id: string; nonce: string }> {
+  const dot = state.lastIndexOf('.')
+  if (dot < 0) throw new Error('state_no_sig')
+  const payloadB64 = state.slice(0, dot)
+  const sigB64 = state.slice(dot + 1)
+  const key = await crypto.subtle.importKey(
+    'raw', new TextEncoder().encode(SSO_STATE_SECRET),
+    { name: 'HMAC', hash: 'SHA-256' }, false, ['verify'],
+  )
+  const ok = await crypto.subtle.verify(
+    'HMAC', key, b64urlDecode(sigB64), new TextEncoder().encode(payloadB64),
+  )
+  if (!ok) throw new Error('state_bad_sig')
+  const decoded = JSON.parse(
+    new TextDecoder().decode(b64urlDecode(payloadB64)),
+  ) as { provider_id?: string; nonce?: string; exp?: number }
+  if (!decoded.provider_id) throw new Error('no_provider_id')
+  if (decoded.exp && decoded.exp < Math.floor(Date.now() / 1000)) throw new Error('state_expired')
+  return { provider_id: decoded.provider_id, nonce: decoded.nonce ?? '' }
 }
 
 async function importRsaJwk(jwk: Record<string, unknown>): Promise<CryptoKey> {
@@ -130,11 +153,16 @@ serve(async (req: Request): Promise<Response> => {
 
   let providerId: string
   try {
-    const decoded = JSON.parse(
-      new TextDecoder().decode(b64urlDecode(state)),
-    ) as { provider_id?: string; nonce?: string }
-    if (!decoded.provider_id) throw new Error('no_provider_id')
-    providerId = decoded.provider_id
+    if (SSO_STATE_SECRET) {
+      const parsed = await verifyStateHmac(state)
+      providerId = parsed.provider_id
+    } else {
+      const decoded = JSON.parse(
+        new TextDecoder().decode(b64urlDecode(state)),
+      ) as { provider_id?: string; nonce?: string }
+      if (!decoded.provider_id) throw new Error('no_provider_id')
+      providerId = decoded.provider_id
+    }
   } catch {
     return jsonResponse(400, { error: 'invalid_state' })
   }

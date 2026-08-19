@@ -17,7 +17,7 @@ engine = PolicyEngine()
 def get_tenant(request: Request) -> str:
     token = request.headers.get('Authorization', '').replace('Bearer ', '')
     try:
-        payload = jwt.decode(token, os.environ.get('JWT_SECRET','sentinel-secret'), algorithms=['HS256'])
+        payload = jwt.decode(token, os.environ['JWT_SECRET'], algorithms=['HS256'])
         return payload.get('tenant_id') or payload.get('org_id') or 'unknown'
     except Exception:
         raise HTTPException(401, 'Invalid token')
@@ -25,7 +25,7 @@ def get_tenant(request: Request) -> str:
 def get_user(request: Request) -> str:
     token = request.headers.get('Authorization', '').replace('Bearer ', '')
     try:
-        payload = jwt.decode(token, os.environ.get('JWT_SECRET','sentinel-secret'), algorithms=['HS256'])
+        payload = jwt.decode(token, os.environ['JWT_SECRET'], algorithms=['HS256'])
         return payload.get('sub') or payload.get('user_id') or 'unknown'
     except Exception:
         raise HTTPException(401, 'Invalid token')
@@ -143,7 +143,7 @@ async def update_notif_settings(request: Request, body: NotifSettingsBody, db=De
 @router.get('/shared/{token}')
 async def public_view(token: str, db=Depends(get_db)):
     try:
-        secret = os.environ.get('JWT_SECRET', 'sentinel-secret')
+        secret = os.environ['JWT_SECRET']
         payload = jwt.decode(token, secret, algorithms=['HS256'])
         policy_id = payload['policy_id']
         tenant_id = payload['tenant_id']

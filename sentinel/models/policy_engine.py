@@ -146,7 +146,7 @@ class PolicyEngine:
         import os as _os
         pol = await db.fetchrow("SELECT * FROM policy_templates WHERE id=$1 AND tenant_id=$2", policy_id, tenant_id)
         if not pol: raise ValueError('Policy not found')
-        secret = _os.environ.get('JWT_SECRET', 'sentinel-secret')
+        secret = _os.environ['JWT_SECRET']
         payload = {'policy_id': str(policy_id), 'version': pol['version'], 'tenant_id': tenant_id,
                    'exp': datetime.now(timezone.utc).timestamp() + (expires_hours or 72) * 3600}
         token = jwt.encode(payload, secret, algorithm='HS256')
