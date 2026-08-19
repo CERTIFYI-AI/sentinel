@@ -27,7 +27,8 @@ import {
   SortableContext, useSortable, verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { GAPS, RISKS, USERS, severityColor, statusColor, formatDate } from '../data/seed';
+import { GAPS, RISKS, severityColor, statusColor, formatDate } from '../data/seed';
+import { useUserOptions } from '../hooks/useUserOptions';
 import type { Severity } from '../data/seed';
 
 
@@ -251,6 +252,7 @@ export default function Tasks() {
   const { incidents } = useIncidentData();
   const { options: vendorOptions } = useVendorOptions();
   const controlsQuery = useControls();
+  const { options: userOptions } = useUserOptions();
 
   const entityOptions = useMemo((): Record<string, { id: string; name: string }[]> => ({
     model: models.map((m: any) => ({ id: m.id, name: m.name })),
@@ -947,7 +949,7 @@ export default function Tasks() {
                   <select value={form.assignee} onChange={e => setForm({ ...form, assignee: e.target.value })}
                     style={{ width: '100%', padding: '7px 10px', background: 'hsl(var(--bg-raised))', border: '1px solid hsl(var(--border))', color: 'hsl(var(--text-1))', fontSize: 13 }}>
                     <option value="">Select…</option>
-                    {USERS.map(u => <option key={u.id} value={u.name}>{u.name} — {u.role}</option>)}
+                    {userOptions.map(u => <option key={u.id} value={u.name}>{u.name} — {u.role}</option>)}
                   </select>
                 </div>
 
