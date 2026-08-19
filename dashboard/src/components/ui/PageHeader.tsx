@@ -7,7 +7,6 @@
 import React from 'react'
 import { cn } from '@/lib/utils'
 import { ChevronRight } from 'lucide-react'
-import Breadcrumbs from '@/components/Breadcrumbs'
 import type { Crumb } from '@/lib/breadcrumbs'
 
 export type BreadcrumbItem = Crumb
@@ -69,10 +68,7 @@ export function PageHeader({
       )}
       aria-labelledby="page-title"
     >
-      {/* Unified breadcrumbs: explicit trail if provided, else route-aware. */}
-      {!hideBreadcrumbs && (
-        <Breadcrumbs trail={breadcrumbs} className="mb-2" />
-      )}
+      {/* Breadcrumbs removed — navigation context lives in the sidebar. */}
 
       {/* Title row */}
       <div className="flex items-center justify-between gap-4">

@@ -10,7 +10,6 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
-import Breadcrumbs from "@/components/Breadcrumbs";
 import {
   StatusBadge, PaginationBar, CrudModal, CrudSlideOver, FormSection, FormFooter,
   MetaBar, useSortAndPage, Th, TInput, TSelect, TTextarea,
@@ -201,7 +200,6 @@ export default function TabletopExercises() {
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
-      <Breadcrumbs />
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2">

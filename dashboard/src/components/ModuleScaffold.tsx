@@ -74,26 +74,7 @@ export default function ModuleScaffold({
       className="px-6 py-6 max-w-[1400px] mx-auto space-y-5"
       aria-labelledby="module-heading"
     >
-      {breadcrumb && breadcrumb.length > 0 && (
-        <nav aria-label="Breadcrumb">
-          <ol className="flex items-center gap-2 text-xs" style={{ color: "hsl(var(--text-4))" }}>
-            {breadcrumb.map((crumb, i) => (
-              <li key={`${crumb.label}-${i}`} className="flex items-center gap-2">
-                {i > 0 && <span aria-hidden>/</span>}
-                {crumb.to ? (
-                  <a href={crumb.to} className="hover:underline">
-                    {crumb.label}
-                  </a>
-                ) : (
-                  <span aria-current={i === breadcrumb.length - 1 ? "page" : undefined}>
-                    {crumb.label}
-                  </span>
-                )}
-              </li>
-            ))}
-          </ol>
-        </nav>
-      )}
+      {/* Breadcrumbs removed — navigation context lives in the sidebar. */}
 
       <header className="flex items-start justify-between gap-4">
         <div className="flex items-start gap-3 min-w-0">
