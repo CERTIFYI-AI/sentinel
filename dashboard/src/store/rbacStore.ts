@@ -15,11 +15,11 @@ const rolePermissions: Record<RBACRole, Record<Resource, Permission[]>> = {
 };
 
 const mockUsers: User[] = [
-  { id: 'USR-001', name: 'Admin User', email: 'admin@sentinel.ai', role: 'admin', department: 'Engineering' },
-  { id: 'USR-002', name: 'Priya Sharma', email: 'priya@sentinel.ai', role: 'compliance_officer', department: 'Compliance' },
-  { id: 'USR-003', name: 'James Wilson', email: 'james@sentinel.ai', role: 'model_owner', department: 'ML Engineering' },
-  { id: 'USR-004', name: 'Elena Rodriguez', email: 'elena@sentinel.ai', role: 'auditor', department: 'Internal Audit' },
-  { id: 'USR-005', name: 'Sarah Chen', email: 'sarah@sentinel.ai', role: 'data_steward', department: 'Data Governance' },
+  { id: 'USR-001', name: 'Admin User', email: 'admin@certifyi.ai', role: 'admin', department: 'Engineering' },
+  { id: 'USR-002', name: 'Compliance Officer', email: 'compliance@certifyi.ai', role: 'compliance_officer', department: 'Compliance' },
+  { id: 'USR-003', name: 'Model Owner', email: 'model.owner@certifyi.ai', role: 'model_owner', department: 'ML Engineering' },
+  { id: 'USR-004', name: 'Internal Auditor', email: 'auditor@certifyi.ai', role: 'auditor', department: 'Internal Audit' },
+  { id: 'USR-005', name: 'Data Steward', email: 'data.steward@certifyi.ai', role: 'data_steward', department: 'Data Governance' },
 ];
 
 interface RBACState {

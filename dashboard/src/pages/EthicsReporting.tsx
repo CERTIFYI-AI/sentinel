@@ -45,14 +45,14 @@ interface EthicsReport {
 }
 
 const SEED: EthicsReport[] = [
-  { id: 'ER-001', date: '2026-03-15', category: 'AI Bias/Discrimination', severity: 'High', source: 'Anonymous', status: 'Under Investigation', assignedInvestigator: 'David Kim', priority: 'High', description: 'Credit scoring model appears to discriminate by zip code, resulting in higher rejection rates for certain geographic areas with no legitimate credit-risk basis.', system: 'Credit Risk Scorer' },
-  { id: 'ER-002', date: '2026-03-20', category: 'Privacy Violation', severity: 'Critical', source: 'Named (hidden)', status: 'Open', assignedInvestigator: 'James Patel', priority: 'High', description: 'Customer PII accessed by unauthorized agent process outside of documented data processing agreement.', system: 'AML Transaction Monitor' },
-  { id: 'ER-003', date: '2026-02-10', category: 'Regulatory Non-Compliance', severity: 'High', source: 'Anonymous', status: 'Resolved', assignedInvestigator: 'Emma Wilson', priority: 'Medium', description: 'Model deployed to production without completed bias audit as required by internal policy and EU AI Act.', resolution: 'Bias audit completed, model retrained and redeployed with appropriate controls.', system: 'HR Screening System' },
-  { id: 'ER-004', date: '2026-03-25', category: 'Misuse of AI', severity: 'Medium', source: 'Anonymous', status: 'Open', assignedInvestigator: 'Sarah Chen', priority: 'Medium', description: 'Shadow AI tool used to make employment screening decisions without approval, outside sanctioned AI systems.', system: 'Unknown' },
-  { id: 'ER-005', date: '2026-04-01', category: 'Safety Concern', severity: 'Critical', source: 'Anonymous', status: 'Under Investigation', assignedInvestigator: 'Maria Santos', priority: 'High', description: 'Hallucinating loan approval AI gave a customer incorrect legal advice, potentially causing financial harm.', system: 'Loan Approval Assistant' },
-  { id: 'ER-006', date: '2026-02-28', category: 'Ethical Concern', severity: 'Medium', source: 'Anonymous', status: 'Resolved', assignedInvestigator: 'James Patel', priority: 'Low', description: 'Concern raised about lack of human oversight in automated underwriting decisions for high-value loans.', resolution: 'Human review process added for loans above $500K threshold.' },
-  { id: 'ER-007', date: '2026-03-05', category: 'AI Bias/Discrimination', severity: 'Medium', source: 'Anonymous', status: 'Open', assignedInvestigator: 'David Kim', priority: 'Medium', description: 'Sentiment analysis model performing worse on non-native English speakers, creating service quality disparity.', system: 'Customer Sentiment Analyzer' },
-  { id: 'ER-008', date: '2026-01-20', category: 'Other', severity: 'Low', source: 'Anonymous', status: 'Closed', assignedInvestigator: 'Emma Wilson', priority: 'Low', description: 'Request for clearer documentation on how AI systems are used in customer interactions.' },
+  { id: 'ER-001', date: '2026-03-15', category: 'AI Bias/Discrimination', severity: 'High', source: 'Anonymous', status: 'Under Investigation', assignedInvestigator: 'Investigator A', priority: 'High', description: 'Credit scoring model appears to discriminate by zip code, resulting in higher rejection rates for certain geographic areas with no legitimate credit-risk basis.', system: 'Credit Risk Scorer' },
+  { id: 'ER-002', date: '2026-03-20', category: 'Privacy Violation', severity: 'Critical', source: 'Named (hidden)', status: 'Open', assignedInvestigator: 'Investigator B', priority: 'High', description: 'Customer PII accessed by unauthorized agent process outside of documented data processing agreement.', system: 'AML Transaction Monitor' },
+  { id: 'ER-003', date: '2026-02-10', category: 'Regulatory Non-Compliance', severity: 'High', source: 'Anonymous', status: 'Resolved', assignedInvestigator: 'Investigator C', priority: 'Medium', description: 'Model deployed to production without completed bias audit as required by internal policy and EU AI Act.', resolution: 'Bias audit completed, model retrained and redeployed with appropriate controls.', system: 'HR Screening System' },
+  { id: 'ER-004', date: '2026-03-25', category: 'Misuse of AI', severity: 'Medium', source: 'Anonymous', status: 'Open', assignedInvestigator: 'Investigator D', priority: 'Medium', description: 'Shadow AI tool used to make employment screening decisions without approval, outside sanctioned AI systems.', system: 'Unknown' },
+  { id: 'ER-005', date: '2026-04-01', category: 'Safety Concern', severity: 'Critical', source: 'Anonymous', status: 'Under Investigation', assignedInvestigator: 'Investigator E', priority: 'High', description: 'Hallucinating loan approval AI gave a customer incorrect legal advice, potentially causing financial harm.', system: 'Loan Approval Assistant' },
+  { id: 'ER-006', date: '2026-02-28', category: 'Ethical Concern', severity: 'Medium', source: 'Anonymous', status: 'Resolved', assignedInvestigator: 'Investigator B', priority: 'Low', description: 'Concern raised about lack of human oversight in automated underwriting decisions for high-value loans.', resolution: 'Human review process added for loans above $500K threshold.' },
+  { id: 'ER-007', date: '2026-03-05', category: 'AI Bias/Discrimination', severity: 'Medium', source: 'Anonymous', status: 'Open', assignedInvestigator: 'Investigator A', priority: 'Medium', description: 'Sentiment analysis model performing worse on non-native English speakers, creating service quality disparity.', system: 'Customer Sentiment Analyzer' },
+  { id: 'ER-008', date: '2026-01-20', category: 'Other', severity: 'Low', source: 'Anonymous', status: 'Closed', assignedInvestigator: 'Investigator C', priority: 'Low', description: 'Request for clearer documentation on how AI systems are used in customer interactions.' },
 ];
 
 function categoryColor(c: ReportCategory) {
@@ -131,7 +131,7 @@ export default function EthicsReporting() {
   const [wSource, setWSource] = useState<Source>('Anonymous');
   const [wDesc, setWDesc] = useState('');
   const [wSystem, setWSystem] = useState('');
-  const [wInvestigator, setWInvestigator] = useState('David Kim');
+  const [wInvestigator, setWInvestigator] = useState('Investigator A');
 
 
 

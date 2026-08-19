@@ -15,7 +15,7 @@ export const VALIDATION_RUNS: ValidationRun[] = [
   {
     id: 'VAL-2026-008', runId: 'VAL-2026-008', modelId: 'MDL-003',
     modelName: 'Credit Risk Scorer v4.0', modelVersion: 'v4.0.0-rc1',
-    validatorId: 'Raj Gupta', framework: 'SR 11-7 / OCC 2011-12',
+    validatorId: 'Validator A', framework: 'SR 11-7 / OCC 2011-12',
     state: 'CondApproved', overallScore: 87, recommendation: 'Conditional Approval', riskRating: 'medium',
     scope: {
       intendedUse: 'Consumer unsecured credit decisioning (approve/decline + line assignment).',
@@ -82,16 +82,16 @@ export const VALIDATION_RUNS: ValidationRun[] = [
       },
     ],
     evidence: [
-      { id: 'EV-09', kind: 'notebook', title: 'validation_credit_v4.ipynb', uri: '/evidence/EV-09', sha256: 'a1b2c3…', signedBy: 'Raj Gupta', signedAt: '2026-04-07T18:00:00Z' },
+      { id: 'EV-09', kind: 'notebook', title: 'validation_credit_v4.ipynb', uri: '/evidence/EV-09', sha256: 'a1b2c3…', signedBy: 'Validator A', signedAt: '2026-04-07T18:00:00Z' },
       { id: 'EV-10', kind: 'pdf', title: 'Validation Report VAL-2026-008.pdf', uri: '/evidence/EV-10' },
     ],
     workflowSteps: [
-      { id: 'WS-1', from: 'Draft', to: 'InReview', actor: 'Raj Gupta', role: 'validator', justification: 'Validation complete; submitting for independent review.', at: '2026-04-07T18:30:00Z' },
+      { id: 'WS-1', from: 'Draft', to: 'InReview', actor: 'Validator A', role: 'validator', justification: 'Validation complete; submitting for independent review.', at: '2026-04-07T18:30:00Z' },
       { id: 'WS-2', from: 'InReview', to: 'CondApproved', actor: 'Dana Lee', role: 'approver', decision: 'conditional', justification: 'Approve for shadow deployment subject to bias re-audit.', conditions: '30-day shadow; bias audit after 100K inferences; MRC sign-off before full traffic.', at: '2026-04-08T10:00:00Z' },
     ],
     auditTrail: [
-      { id: 'A1', actor: 'Raj Gupta', action: 'created run', at: '2026-03-25T09:00:00Z' },
-      { id: 'A2', actor: 'Raj Gupta', action: 'submitted for review', at: '2026-04-07T18:30:00Z' },
+      { id: 'A1', actor: 'Validator A', action: 'created run', at: '2026-03-25T09:00:00Z' },
+      { id: 'A2', actor: 'Validator A', action: 'submitted for review', at: '2026-04-07T18:30:00Z' },
       { id: 'A3', actor: 'Dana Lee', action: 'conditional approval', at: '2026-04-08T10:00:00Z', note: 'Shadow mode + bias re-audit.' },
     ],
     version: 3, updatedAt: '2026-04-08T10:00:00Z',
@@ -190,8 +190,8 @@ export const BIAS_AUDITS: BiasAudit[] = [
     remediationPlan: {
       id: 'RP-1', owner: 'Nia Okoro', state: 'InReview',
       tasks: [
-        { id: 'T1', title: 'Reweight training set for intersectional coverage', owner: 'Raj Gupta', due: '2026-07-15', status: 'in_progress', evidenceIds: [] },
-        { id: 'T2', title: 'Add fairness constraint (equalized odds) to objective', owner: 'Raj Gupta', due: '2026-07-30', status: 'open', evidenceIds: [] },
+        { id: 'T1', title: 'Reweight training set for intersectional coverage', owner: 'Validator A', due: '2026-07-15', status: 'in_progress', evidenceIds: [] },
+        { id: 'T2', title: 'Add fairness constraint (equalized odds) to objective', owner: 'Validator A', due: '2026-07-30', status: 'open', evidenceIds: [] },
         { id: 'T3', title: 'Re-audit post-mitigation', owner: 'Nia Okoro', due: '2026-08-15', status: 'open', evidenceIds: [] },
       ],
     },
@@ -214,7 +214,7 @@ export const BIAS_AUDITS: BiasAudit[] = [
 
 export const METRIC_PROFILES: MetricProfile[] = [
   {
-    id: 'MP-003', modelId: 'MDL-003', modelName: 'Credit Risk Scorer v4.0', modelVersion: 'v4.0.0', owner: 'Raj Gupta',
+    id: 'MP-003', modelId: 'MDL-003', modelName: 'Credit Risk Scorer v4.0', modelVersion: 'v4.0.0', owner: 'Validator A',
     state: 'Approved',
     current: { auc: 0.923, gini: 0.847, ks: 0.52, demographic_parity: 0.91, psi_max: 0.08 },
     thresholds: [
@@ -232,7 +232,7 @@ export const METRIC_PROFILES: MetricProfile[] = [
       { metric: 'psi_max', points: [{ at: '2026-04-01', value: 0.04 }, { at: '2026-05-01', value: 0.06 }, { at: '2026-06-01', value: 0.08 }] },
     ],
     objectives: { accuracy: 0.92, fairness: 0.87, robustness: 0.81, explainability: 0.89 },
-    auditTrail: [{ id: 'A1', actor: 'Raj Gupta', action: 'baseline captured', at: '2026-04-01T00:00:00Z' }],
+    auditTrail: [{ id: 'A1', actor: 'Validator A', action: 'baseline captured', at: '2026-04-01T00:00:00Z' }],
     version: 5, updatedAt: '2026-06-01T00:00:00Z',
   },
 ]

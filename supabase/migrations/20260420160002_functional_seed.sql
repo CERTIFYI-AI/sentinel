@@ -15,7 +15,7 @@ BEGIN
   
   -- Ensure default org exists
   insert into public.organizations (id, name, domain, industry)
-  values ('00000000-0000-0000-0000-000000000001', 'Demo Tenant', 'demo.sentinel.ai', 'Technology')
+  values ('00000000-0000-0000-0000-000000000001', 'Demo Tenant', 'demo.certifyi.ai', 'Technology')
   on conflict (id) do nothing;
 EXCEPTION WHEN OTHERS THEN
   RAISE WARNING 'legacy seed statement skipped in %: %', '20260420160002_functional_seed.sql', SQLERRM;

@@ -864,7 +864,7 @@ export default function ModelRiskCommittee() {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-xs font-semibold mb-1 block uppercase tracking-wide text-[hsl(var(--text-2))]">Presenter</label>
-                <input type="text" value={agPresenter} onChange={e => setAgPresenter(e.target.value)} placeholder="e.g. Maria Santos" className="w-full h-10 rounded-none border border-[hsl(var(--border))] bg-raised px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))] text-[hsl(var(--text-1))]" />
+                <input type="text" value={agPresenter} onChange={e => setAgPresenter(e.target.value)} placeholder="e.g. Presenter name" className="w-full h-10 rounded-none border border-[hsl(var(--border))] bg-raised px-3 text-sm focus:outline-none focus:ring-1 focus:ring-[hsl(var(--brand))] text-[hsl(var(--text-1))]" />
               </div>
               <div>
                 <label className="text-xs font-semibold mb-1 block uppercase tracking-wide text-[hsl(var(--text-2))]">Meeting</label>
