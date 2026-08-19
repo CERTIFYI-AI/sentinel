@@ -1,29 +1,36 @@
 ---
 name: Bug Report
-about: Report a bug in Sentinel
+about: Something is broken or behaving unexpectedly
 title: '[BUG] '
 labels: bug
 assignees: ''
 ---
 
 ## Describe the bug
-A clear and concise description of the bug.
+A clear description of the unexpected behaviour.
 
 ## To Reproduce
-Steps to reproduce the behavior:
-1. ...
-2. ...
+Steps to reproduce:
+1. Go to '...'
+2. Click on '...'
+3. See error
 
-## Expected behavior
-What you expected to happen.
+## Expected behaviour
+What you expected to happen instead.
+
+## Screenshots
+If applicable, add screenshots to help explain the problem.
 
 ## Environment
-- Sentinel version:
-- Python version:
-- OS:
-- Docker: yes/no
+- **Area:** Dashboard / Python backend / Edge function / Worker
+- **Browser** (if dashboard): Chrome / Firefox / Safari — version
+- **Sentinel version or commit:**
+- **OS:**
 
 ## Logs
 ```
-Paste relevant log output here
+Paste relevant browser console or server log output here
 ```
+
+## Additional context
+Any other context — e.g. does it reproduce with demo data?

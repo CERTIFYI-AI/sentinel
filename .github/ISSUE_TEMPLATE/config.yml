@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Documentation
+    url: https://github.com/CERTIFYI-AI/sentinel/tree/main/docs
+    about: Browse the docs before opening an issue — your question may already be answered.
+  - name: Live Demo
+    url: https://1shield-oss.certifyi.ai
+    about: Try the live demo to see if the behaviour you're reporting is by design.
+  - name: Security Vulnerability
+    url: https://github.com/CERTIFYI-AI/sentinel/blob/main/SECURITY.md
+    about: Found a vulnerability? Please report it privately — do not open a public issue.
