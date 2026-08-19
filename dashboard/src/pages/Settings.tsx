@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
-import { Settings as SettingsIcon, User, Bell, Database, Lock } from "lucide-react";
+import { Settings as SettingsIcon, User, Bell, Database, Lock, Brain } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/card";
@@ -21,18 +21,21 @@ import {
   NOTIFICATION_CHANNELS, CHANNEL_LABEL, byEventType,
   type NotificationChannel,
 } from "../services/notificationPrefsService";
+import { useAiBrainConfig, useSaveAiBrainConfig } from "../hooks/useAiBrainConfig";
+import type { AiBrainSaveInput } from "../services/aiBrainConfigService";
 
 // "team", "api-keys" and "compliance" are retired: each rendered a hardcoded
 // array with buttons that did nothing, duplicating a module that already exists
 // and works. They stay routable so old links and bookmarks land somewhere that
 // says where the subject went, but they are no longer offered in the sidebar.
-type Tab = "general" | "notifications" | "demo-data";
+type Tab = "general" | "notifications" | "ai-brain" | "demo-data";
 type RetiredTab = "team" | "api-keys" | "compliance";
 type AnyTab = Tab | RetiredTab;
 
 const TABS: { id: Tab; label: string; icon: typeof User }[] = [
   { id: "general", label: "General", icon: User },
   { id: "notifications", label: "Notifications", icon: Bell },
+  { id: "ai-brain", label: "AI Brain", icon: Brain },
   { id: "demo-data", label: "Demo data", icon: Database },
 ];
 
@@ -604,6 +607,317 @@ function NotificationsSection() {
   );
 }
 
+// ── AI Brain configuration ──────────────────────────────────────────────────
+
+const PROVIDERS = [
+  { value: 'openai', label: 'OpenAI' },
+  { value: 'anthropic', label: 'Anthropic' },
+  { value: 'google', label: 'Google AI' },
+  { value: 'azure', label: 'Azure OpenAI' },
+] as const;
+
+const JUDGE_MODELS: Record<string, { value: string; label: string }[]> = {
+  openai: [
+    { value: 'gpt-4o-mini', label: 'GPT-4o Mini' },
+    { value: 'gpt-4o', label: 'GPT-4o' },
+    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo' },
+  ],
+  anthropic: [
+    { value: 'claude-sonnet-4-20250514', label: 'Claude Sonnet 4' },
+    { value: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5' },
+  ],
+  google: [
+    { value: 'gemini/gemini-1.5-flash', label: 'Gemini 1.5 Flash' },
+    { value: 'gemini/gemini-1.5-pro', label: 'Gemini 1.5 Pro' },
+  ],
+  azure: [
+    { value: 'azure/gpt-4o-mini', label: 'Azure GPT-4o Mini' },
+    { value: 'azure/gpt-4o', label: 'Azure GPT-4o' },
+  ],
+};
+
+const EMBEDDING_MODELS: Record<string, { value: string; label: string }[]> = {
+  openai: [
+    { value: 'text-embedding-3-small', label: 'text-embedding-3-small' },
+    { value: 'text-embedding-3-large', label: 'text-embedding-3-large' },
+  ],
+  anthropic: [
+    { value: 'text-embedding-3-small', label: 'text-embedding-3-small (via OpenAI-compat)' },
+  ],
+  google: [
+    { value: 'gemini/text-embedding-004', label: 'text-embedding-004' },
+  ],
+  azure: [
+    { value: 'azure/text-embedding-3-small', label: 'Azure text-embedding-3-small' },
+  ],
+};
+
+const AI_BRAIN_FEATURES = [
+  {
+    title: 'Automated compliance evaluation',
+    desc: 'Evaluates AI model compliance against EU AI Act, ISO 42001, and internal policies using an LLM judge.',
+  },
+  {
+    title: 'Semantic search across governance records',
+    desc: 'Embeds policies, controls, risk descriptions and evidence so the platform can surface relevant context automatically.',
+  },
+  {
+    title: 'Auto-action on routine findings',
+    desc: 'When evaluation confidence exceeds the threshold, low-risk findings are triaged automatically — flagged, routed or resolved — without waiting for human review.',
+  },
+  {
+    title: 'Trust Engine scoring',
+    desc: 'Powers the continuous trust-score computation that feeds the Trust Engine dashboard, Safety Firewall and Guardrail Studio.',
+  },
+  {
+    title: 'Intelligent evidence mapping',
+    desc: 'Maps incoming integration evidence to the correct compliance controls, reducing manual tagging.',
+  },
+];
+
+function AiBrainSection() {
+  const { data: config, isLoading, isError, error, refetch } = useAiBrainConfig();
+  const save = useSaveAiBrainConfig();
+
+  const [provider, setProvider] = useState('openai');
+  const [apiKey, setApiKey] = useState('');
+  const [judgeModel, setJudgeModel] = useState('gpt-4o-mini');
+  const [embeddingModel, setEmbeddingModel] = useState('text-embedding-3-small');
+  const [confidence, setConfidence] = useState(0.85);
+  const [enabled, setEnabled] = useState(false);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (!config || hydrated) return;
+    setProvider(config.provider);
+    setJudgeModel(config.judgeModel);
+    setEmbeddingModel(config.embeddingModel);
+    setConfidence(config.autoActionConfidence);
+    setEnabled(config.enabled);
+    setHydrated(true);
+  }, [config, hydrated]);
+
+  const handleProviderChange = (p: string) => {
+    setProvider(p);
+    const judges = JUDGE_MODELS[p];
+    if (judges?.length) setJudgeModel(judges[0].value);
+    const embeds = EMBEDDING_MODELS[p];
+    if (embeds?.length) setEmbeddingModel(embeds[0].value);
+  };
+
+  const submit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const input: AiBrainSaveInput = {
+      provider,
+      judgeModel,
+      embeddingModel,
+      autoActionConfidence: confidence,
+      enabled,
+    };
+    if (apiKey.trim()) input.apiKey = apiKey.trim();
+
+    save.mutate(input, {
+      onSuccess: (res) => {
+        toast.success(res.message);
+        setApiKey('');
+        setHydrated(false);
+      },
+      onError: (err: Error) => toast.error(err.message),
+    });
+  };
+
+  if (isLoading) {
+    return (
+      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
+        <CardHeader><CardTitle className="text-sm">AI Brain Configuration</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {[0, 1, 2, 3].map(i => (
+            <div key={i} className="h-14 max-w-sm animate-pulse rounded-lg bg-[hsl(var(--bg-muted))]" />
+          ))}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (isError) {
+    return (
+      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
+        <CardHeader><CardTitle className="text-sm">AI Brain Configuration</CardTitle></CardHeader>
+        <CardContent>
+          <p className="text-sm text-[hsl(var(--s-er-tx))]">
+            Could not load AI Brain configuration: {error?.message}
+          </p>
+          <button
+            onClick={() => refetch()}
+            className="mt-3 text-xs px-3 py-1.5 rounded-lg border border-[hsl(var(--border))] text-[hsl(var(--text-2))] hover:bg-[hsl(var(--bg-muted))]"
+          >
+            Try again
+          </button>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const judges = JUDGE_MODELS[provider] ?? JUDGE_MODELS.openai;
+  const embeds = EMBEDDING_MODELS[provider] ?? EMBEDDING_MODELS.openai;
+
+  return (
+    <div className="space-y-5">
+      {/* Feature explanation */}
+      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
+        <CardHeader>
+          <CardTitle className="text-sm flex items-center gap-2">
+            <Brain size={16} className="text-[hsl(var(--brand))]" />
+            What AI Brain enables
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-[hsl(var(--text-3))] leading-relaxed mb-4 max-w-xl">
+            AI Brain is the platform&rsquo;s evaluation and reasoning engine. Connecting a provider
+            API key activates real-time compliance checks, semantic search, and autonomous
+            triage across all governed AI systems. Without a key, these capabilities remain
+            dormant and the platform operates in manual-only mode.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {AI_BRAIN_FEATURES.map(f => (
+              <div
+                key={f.title}
+                className="rounded-lg border border-[hsl(var(--border))] px-3 py-2.5"
+              >
+                <p className="text-xs font-medium text-[hsl(var(--text-1))] mb-0.5">{f.title}</p>
+                <p className="text-[11px] text-[hsl(var(--text-4))] leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Configuration form */}
+      <Card className="bg-[hsl(var(--bg-surface))] border-[hsl(var(--border))]">
+        <CardHeader><CardTitle className="text-sm">Provider Configuration</CardTitle></CardHeader>
+        <CardContent>
+          <form onSubmit={submit} className="space-y-4">
+            <Field label="AI Provider">
+              <select
+                value={provider}
+                onChange={e => handleProviderChange(e.target.value)}
+                className={FIELD_CLS}
+              >
+                {PROVIDERS.map(p => (
+                  <option key={p.value} value={p.value}>{p.label}</option>
+                ))}
+              </select>
+            </Field>
+
+            <Field
+              label="API Key"
+              hint={
+                config?.keyPrefix
+                  ? `Current key: ${config.keyPrefix} — leave blank to keep it. Enter a new key to replace it.`
+                  : 'Your API key is encrypted with AES-256-GCM before storage. The plaintext never reaches the database.'
+              }
+            >
+              <input
+                type="password"
+                value={apiKey}
+                onChange={e => setApiKey(e.target.value)}
+                placeholder={config?.keyPrefix ? `${config.keyPrefix} (stored)` : 'sk-...'}
+                autoComplete="off"
+                className={FIELD_CLS + " font-mono"}
+              />
+            </Field>
+
+            <Field
+              label="Judge Model"
+              hint="The LLM used for compliance evaluation, risk scoring, and policy-check reasoning."
+            >
+              <select
+                value={judgeModel}
+                onChange={e => setJudgeModel(e.target.value)}
+                className={FIELD_CLS}
+              >
+                {judges.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </Field>
+
+            <Field
+              label="Embedding Model"
+              hint="Used for semantic search across policies, controls, evidence and risk descriptions."
+            >
+              <select
+                value={embeddingModel}
+                onChange={e => setEmbeddingModel(e.target.value)}
+                className={FIELD_CLS}
+              >
+                {embeds.map(m => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </Field>
+
+            <Field
+              label={`Auto-action confidence threshold: ${(confidence * 100).toFixed(0)}%`}
+              hint="Findings above this confidence are triaged automatically. Lower values mean more automation; higher values require more human review."
+            >
+              <input
+                type="range"
+                min={0.5}
+                max={1.0}
+                step={0.01}
+                value={confidence}
+                onChange={e => setConfidence(parseFloat(e.target.value))}
+                className="w-full max-w-sm accent-[hsl(var(--brand))]"
+              />
+              <div className="flex justify-between text-[10px] text-[hsl(var(--text-4))] max-w-sm mt-0.5">
+                <span>50% — more auto</span>
+                <span>100% — manual only</span>
+              </div>
+            </Field>
+
+            <Field label="Enable AI Brain">
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={enabled}
+                  aria-label="Enable AI Brain"
+                  onClick={() => setEnabled(e => !e)}
+                  className={`w-10 h-5 rounded-full relative transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--brand))] ${
+                    enabled ? "bg-[hsl(var(--s-ok-tx))]" : "bg-[hsl(var(--bg-muted))]"
+                  }`}
+                >
+                  <div className={`w-4 h-4 rounded-full bg-[hsl(var(--bg-surface))] absolute top-0.5 transition-all ${enabled ? "left-5" : "left-0.5"}`} />
+                </button>
+                <span className="text-xs text-[hsl(var(--text-3))]">
+                  {enabled ? 'AI Brain is active — evaluations will run automatically.' : 'AI Brain is disabled — all evaluations require manual action.'}
+                </span>
+              </div>
+            </Field>
+
+            <div className="flex items-center gap-3 pt-1">
+              <button
+                type="submit"
+                disabled={save.isPending}
+                className="bg-[hsl(var(--s-ok-tx))] text-[hsl(var(--bg-surface))] px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[hsl(var(--brand))]"
+              >
+                {save.isPending ? 'Saving…' : 'Save Configuration'}
+              </button>
+            </div>
+
+            <p className="text-[11px] text-[hsl(var(--text-4))] leading-relaxed max-w-lg">
+              The API key is encrypted server-side with AES-256-GCM before reaching the database.
+              Only the Python evaluation backend decrypts it at runtime — the key is never
+              returned to the browser and never appears in any log.
+            </p>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ── Retired tabs ─────────────────────────────────────────────────────────────
 //
 // Team, API Keys and Compliance each rendered a hardcoded array with buttons
@@ -647,7 +961,7 @@ function MovedTo({
 // explanation rather than silently on General, which would look like the
 // setting had been removed without trace.
 const TAB_IDS = new Set<AnyTab>([
-  "general", "notifications", "demo-data", "team", "api-keys", "compliance",
+  "general", "notifications", "ai-brain", "demo-data", "team", "api-keys", "compliance",
 ]);
 
 export default function SettingsPage() {
@@ -717,6 +1031,7 @@ export default function SettingsPage() {
           )}
 
           {activeTab === "notifications" && <NotificationsSection />}
+          {activeTab === "ai-brain" && <AiBrainSection />}
 
           {activeTab === "compliance" && (
             <MovedTo
