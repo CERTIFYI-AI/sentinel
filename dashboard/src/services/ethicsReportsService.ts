@@ -22,11 +22,9 @@ export async function fetchAllEthicsReports(filters: Record<string,any> = {}) {
 
 export async function fetchEthicsReportsById(id: string) {
   if (!isSupabaseConfigured() || !id) return null
-  try {
-    const { data, error } = await supabase.from('ethics_reports').select('*').eq('id', id).single()
-    if (error) return null
-    return data
-  } catch { return null }
+  const { data, error } = await supabase.from('ethics_reports').select('*').eq('id', id).single()
+  if (error) throw error
+  return data
 }
 
 export async function upsertEthicsReports(record: any) {
@@ -38,9 +36,7 @@ export async function upsertEthicsReports(record: any) {
 
 export async function deleteEthicsReports(id: string) {
   if (!isSupabaseConfigured()) return true
-  try {
-    const { error } = await supabase.from('ethics_reports').delete().eq('id', id)
-    if (error) throw error
-    return true
-  } catch { return false }
+  const { error } = await supabase.from('ethics_reports').delete().eq('id', id)
+  if (error) throw error
+  return true
 }
