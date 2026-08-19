@@ -63,6 +63,19 @@ Browser → Sentinel /sso/oidc/callback?code=…&state=…
   **fails closed** (503) rather than trusting an unauthenticated blob.
 - The ID token's `nonce` claim must equal the nonce we minted into the signed
   state (OIDC Core §3.1.3.7), defeating ID-token replay.
+- **`email_verified` must be true**, and the email's **domain must be a
+  verified domain owned by the provider's org** (`identity_provider_domains`
+  with `is_verified = true`). This is the account-takeover defence: a provider —
+  including a self-registered malicious one — can only assert addresses in a
+  domain it has proven (via DNS) it controls, so it cannot mint
+  `victim@bigcorp.com` unless it owns `bigcorp.com`. Without a verified domain,
+  JIT provisioning is refused (403 `email_domain_not_verified`).
+- A user already bound to a **different** org is never silently re-homed by an
+  SSO login (`jitProvision` refuses with 409 `user_bound_to_other_org`).
+- **Registering an identity provider, and marking a domain verified, are
+  admin-only** (`public.is_org_admin()`, migration
+  `20260921000001`) — a non-admin can no longer stand up a provider pointing at
+  an IdP they control, which was the enabling condition for the whole attack.
 
 ## 4. SCIM 2.0 Surface
 

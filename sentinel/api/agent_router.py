@@ -86,7 +86,7 @@ async def confirm_agent(agent_id: str, req: Request, body: AgentConfirm, db=Depe
             VALUES($1,'agent',$2,'AGENT_NO_POLICY','medium','pending',120)
             ON CONFLICT DO NOTHING
         """,tenant_id,agent_id)
-    return await db.fetchrow("SELECT * FROM agents WHERE id=$1",agent_id)
+    return await db.fetchrow("SELECT * FROM agents WHERE id=$1 AND tenant_id=$2",agent_id,tenant_id)
 
 @router.post("/{agent_id}/reject")
 async def reject_agent(agent_id: str, req: Request, body: AgentReject, db=Depends(get_db)):

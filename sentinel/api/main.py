@@ -98,6 +98,21 @@ async def _require_api_auth(request: Request, call_next):
                 content={"detail": exc.detail},
                 headers=exc.headers or None,
             )
+    # Populate request.state.user from the verified token for EVERY request that
+    # carries one (exempt or not). Without this, get_tenant() across the routers
+    # read a never-set request.state.user and silently resolved every caller to
+    # the "default" tenant — i.e. no tenant isolation at all. Best-effort: an
+    # absent/invalid token leaves state.user None and auth enforcement above
+    # still applies to protected paths.
+    from sentinel.api.deps import decode_request_claims  # noqa: PLC0415
+    claims = decode_request_claims(request)
+    if claims:
+        request.state.user = {
+            "id": claims.get("sub") or claims.get("user_id"),
+            "tenant_id": claims.get("tenant_id") or claims.get("org_id"),
+            "role": claims.get("role", "viewer"),
+            "email": claims.get("email", ""),
+        }
     return await call_next(request)
 
 # ---- Auth ----

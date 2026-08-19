@@ -28,6 +28,11 @@
     [
       "@semantic-release/github",
       {
+        "successComment": false,
+        "failComment": false,
+        "failTitle": false,
+        "labels": false,
+        "releasedLabels": false,
         "assets": [
           { "path": "sbom/sbom-*.cdx.json", "label": "CycloneDX SBOM" },
           { "path": "sbom/sbom-*.spdx.json", "label": "SPDX SBOM" },

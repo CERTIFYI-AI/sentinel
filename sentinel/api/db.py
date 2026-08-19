@@ -277,6 +277,7 @@ async def init_db():
 # ---- Additional Models for full lifecycle ----
 class TrustTrace(Base):
     __tablename__ = "trust_traces"
+    tenant_id = Column(String, default="default", index=True)
     id = Column(String, primary_key=True, default=new_id)
     trust_id = Column(String, unique=True, index=True, default=lambda: f"TRX-{int(__import__('time').time())}-{new_id()[:8]}")
     model_id = Column(String, nullable=True)
@@ -317,6 +318,7 @@ class GuardrailRule(Base):
 
 class ShadowAIFinding(Base):
     __tablename__ = "shadow_ai_findings"
+    tenant_id = Column(String, default="default", index=True)
     id = Column(String, primary_key=True, default=new_id)
     source_type = Column(String)  # api_call/library_import/saas_oauth
     endpoint = Column(String, nullable=True)
@@ -332,6 +334,7 @@ class ShadowAIFinding(Base):
 
 class RegulationEntry(Base):
     __tablename__ = "regulation_entries"
+    tenant_id = Column(String, default="default", index=True)
     id = Column(String, primary_key=True, default=new_id)
     name = Column(String, nullable=False)
     jurisdiction = Column(String, default="EU")
@@ -350,6 +353,7 @@ class RegulationEntry(Base):
 
 class RBACRole(Base):
     __tablename__ = "rbac_roles"
+    tenant_id = Column(String, default="default", index=True)
     id = Column(String, primary_key=True, default=new_id)
     name = Column(String, unique=True, nullable=False)
     description = Column(Text, nullable=True)
@@ -359,6 +363,7 @@ class RBACRole(Base):
 
 class RBACUser(Base):
     __tablename__ = "rbac_users"
+    tenant_id = Column(String, default="default", index=True)
     id = Column(String, primary_key=True, default=new_id)
     email = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=True)
@@ -389,6 +394,7 @@ class ModelTrustConfig(Base):
 
 class VendorQuestionnaire(Base):
     __tablename__ = "vendor_questionnaires"
+    tenant_id = Column(String, default="default", index=True)
     id = Column(String, primary_key=True, default=new_id)
     vendor_id = Column(String, nullable=False)
     template = Column(String, default="CAIQ")
@@ -403,6 +409,7 @@ class VendorQuestionnaire(Base):
 
 class ObservabilityMetric(Base):
     __tablename__ = "observability_metrics"
+    tenant_id = Column(String, default="default", index=True)
     id = Column(String, primary_key=True, default=new_id)
     model_id = Column(String, nullable=False, index=True)
     timestamp = Column(DateTime, default=now)

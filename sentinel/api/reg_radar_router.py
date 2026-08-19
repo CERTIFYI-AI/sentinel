@@ -1,49 +1,89 @@
-
-from sentinel.api.event_helpers import emit
+# SPDX-License-Identifier: Apache-2.0
+# Tenant-scoped CRUD for RegulationEntry.
+#
+# Every query is filtered by the caller's tenant (resolved from the verified
+# JWT via get_current_tenant_id); writes bind tenant_id server-side and
+# whitelist columns to the model's own fields. A caller can neither read,
+# mutate nor delete another tenant's rows, nor mass-assign protected columns
+# (TD-025 / audit H2).
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, desc
-from sentinel.api.db import get_db, RegulationEntry, new_id, now
-from typing import Optional
+from sqlalchemy import select, desc
+from sentinel.api.db import get_db, RegulationEntry, new_id
+from sentinel.api.deps import get_current_tenant_id
+from sentinel.api.event_helpers import emit
 
 router = APIRouter()
 
+# Columns a client may set; id/tenant_id/timestamps are server-owned.
+_WRITABLE = {c.name for c in RegulationEntry.__table__.columns} - {"id", "tenant_id", "created_at", "updated_at"}
+
+
+def _clean(data: dict) -> dict:
+    return {k: v for k, v in (data or {}).items() if k in _WRITABLE}
+
+
+def _dump(item) -> dict:
+    return {k: v for k, v in item.__dict__.items() if not k.startswith("_")}
+
+
 @router.get("")
-async def list_items(skip: int=0, limit: int=100, db: AsyncSession=Depends(get_db)):
-    r = await db.execute(select(RegulationEntry).order_by(desc(RegulationEntry.created_at)).offset(skip).limit(limit))
-    items = r.scalars().all()
-    return [{k:v for k,v in item.__dict__.items() if not k.startswith("_")} for item in items]
+async def list_items(skip: int = 0, limit: int = 100,
+                     tenant: str = Depends(get_current_tenant_id),
+                     db: AsyncSession = Depends(get_db)):
+    limit = max(1, min(limit, 500))
+    skip = max(0, skip)
+    r = await db.execute(
+        select(RegulationEntry).where(RegulationEntry.tenant_id == tenant)
+        .order_by(desc(RegulationEntry.created_at)).offset(skip).limit(limit)
+    )
+    return [_dump(i) for i in r.scalars().all()]
+
 
 @router.post("")
-async def create_item(data: dict, db: AsyncSession=Depends(get_db)):
-    item = RegulationEntry(id=new_id(), **{k:v for k,v in data.items() if k != "id"})
+async def create_item(data: dict,
+                      tenant: str = Depends(get_current_tenant_id),
+                      db: AsyncSession = Depends(get_db)):
+    item = RegulationEntry(id=new_id(), tenant_id=tenant, **_clean(data))
     db.add(item)
     await db.flush()
     await emit("reg_radar.created", "reg_radar", payload={"id": item.id})
-    return {k:v for k,v in item.__dict__.items() if not k.startswith("_")}
+    return _dump(item)
+
 
 @router.get("/{item_id}")
-async def get_item(item_id: str, db: AsyncSession=Depends(get_db)):
-    r = await db.execute(select(RegulationEntry).where(RegulationEntry.id==item_id))
+async def get_item(item_id: str,
+                   tenant: str = Depends(get_current_tenant_id),
+                   db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(RegulationEntry).where(RegulationEntry.id == item_id, RegulationEntry.tenant_id == tenant))
     item = r.scalar_one_or_none()
-    if not item: raise HTTPException(404, "RegulationEntry not found")
-    return {k:v for k,v in item.__dict__.items() if not k.startswith("_")}
+    if not item:
+        raise HTTPException(404, "RegulationEntry not found")
+    return _dump(item)
+
 
 @router.patch("/{item_id}")
-async def update_item(item_id: str, data: dict, db: AsyncSession=Depends(get_db)):
-    r = await db.execute(select(RegulationEntry).where(RegulationEntry.id==item_id))
+async def update_item(item_id: str, data: dict,
+                      tenant: str = Depends(get_current_tenant_id),
+                      db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(RegulationEntry).where(RegulationEntry.id == item_id, RegulationEntry.tenant_id == tenant))
     item = r.scalar_one_or_none()
-    if not item: raise HTTPException(404, "RegulationEntry not found")
-    for k,v in data.items():
-        if k not in ("id","created_at"): setattr(item,k,v)
+    if not item:
+        raise HTTPException(404, "RegulationEntry not found")
+    for k, v in _clean(data).items():
+        setattr(item, k, v)
     await db.flush()
     await emit("reg_radar.updated", "reg_radar", payload={"id": item_id})
-    return {k:v for k,v in item.__dict__.items() if not k.startswith("_")}
+    return _dump(item)
+
 
 @router.delete("/{item_id}")
-async def delete_item(item_id: str, db: AsyncSession=Depends(get_db)):
-    r = await db.execute(select(RegulationEntry).where(RegulationEntry.id==item_id))
+async def delete_item(item_id: str,
+                      tenant: str = Depends(get_current_tenant_id),
+                      db: AsyncSession = Depends(get_db)):
+    r = await db.execute(select(RegulationEntry).where(RegulationEntry.id == item_id, RegulationEntry.tenant_id == tenant))
     item = r.scalar_one_or_none()
-    if not item: raise HTTPException(404, "RegulationEntry not found")
+    if not item:
+        raise HTTPException(404, "RegulationEntry not found")
     await db.delete(item)
     return {"deleted": item_id}

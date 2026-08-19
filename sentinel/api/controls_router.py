@@ -108,13 +108,19 @@ async def update_control(ctrl_id: str, req: Request, body: ControlUpdate, db=Dep
 async def add_test_result(ctrl_id: str, req: Request, body: TestResult, db=Depends(get_db)):
     tenant_id=get_tenant(req)
     user_id=get_user(req)
+    # The control must belong to the caller's tenant — otherwise a user could
+    # attach test evidence to, and overwrite the effectiveness score of, another
+    # tenant's control (cross-tenant evidence tampering, audit M1).
+    owner=await db.fetchrow("SELECT id FROM controls WHERE id=$1 AND tenant_id=$2",ctrl_id,tenant_id)
+    if not owner:
+        raise HTTPException(404,"Control not found")
     row=await db.fetchrow("INSERT INTO control_tests(control_id,tenant_id,result,tester,notes) VALUES($1,$2,$3,$4,$5) RETURNING *",ctrl_id,tenant_id,body.result,body.tester or user_id,body.notes)
-    # Update effectiveness score based on recent tests
-    recent=await db.fetch("SELECT result FROM control_tests WHERE control_id=$1 ORDER BY tested_at DESC LIMIT 10",ctrl_id)
+    # Update effectiveness score based on recent tests — tenant-scoped both ways.
+    recent=await db.fetch("SELECT result FROM control_tests WHERE control_id=$1 AND tenant_id=$2 ORDER BY tested_at DESC LIMIT 10",ctrl_id,tenant_id)
     if recent:
         passed=sum(1 for r in recent if r["result"]=="pass")
         score=round((passed/len(recent))*100,1)
-        await db.execute("UPDATE controls SET effectiveness_score=$1,updated_at=NOW() WHERE id=$2",score,ctrl_id)
+        await db.execute("UPDATE controls SET effectiveness_score=$1,updated_at=NOW() WHERE id=$2 AND tenant_id=$3",score,ctrl_id,tenant_id)
     return dict(row)
 
 @router.delete("/{ctrl_id}")

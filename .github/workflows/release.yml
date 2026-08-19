@@ -26,9 +26,11 @@ concurrency:
   cancel-in-progress: false
 
 permissions:
+  # Minimal scope: semantic-release only creates the tag + GitHub Release
+  # (comment-back and label management are disabled in .releaserc.json), so it
+  # needs neither issues nor pull-requests write. id-token/attestations are for
+  # keyless cosign signing + build provenance.
   contents: write
-  issues: write
-  pull-requests: write
   id-token: write
   attestations: write
 

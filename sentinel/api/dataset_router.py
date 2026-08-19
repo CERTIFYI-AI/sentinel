@@ -77,7 +77,7 @@ async def update_dataset(ds_id: str, req: Request, body: DatasetUpdate, db=Depen
     if updates:
         sets=", ".join(f'"{k}"=${i+2}' for i,k in enumerate(updates))
         await db.execute(f"UPDATE dataset_registry SET {sets},updated_at=NOW() WHERE id=$1 AND tenant_id=${len(updates)+2}",ds_id,*updates.values(),tenant_id)
-    return await db.fetchrow("SELECT * FROM dataset_registry WHERE id=$1",ds_id)
+    return await db.fetchrow("SELECT * FROM dataset_registry WHERE id=$1 AND tenant_id=$2",ds_id,tenant_id)
 
 @router.delete("/{ds_id}")
 async def delete_dataset(ds_id: str, req: Request, db=Depends(get_db)):

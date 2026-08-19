@@ -254,18 +254,70 @@ serve(async (req: Request): Promise<Response> => {
     })
   }
 
-  const email = typeof claims.email === 'string' ? claims.email : null
+  const email = typeof claims.email === 'string' ? claims.email.trim().toLowerCase() : null
   if (!email) {
     return jsonResponse(400, { error: 'missing_email_claim' })
   }
 
-  const { user_id, created } = await jitProvision(db, {
-    org_id: provider.org_id,
-    provider_id: provider.id,
-    email,
-    external_subject: claims.sub,
-    display_name: typeof claims.name === 'string' ? claims.name : undefined,
-  })
+  // The IdP must assert the email is verified. Without this an IdP (or a
+  // self-registered malicious provider) could claim any address it likes.
+  // OIDC sends email_verified as a boolean; some IdPs stringify it.
+  const emailVerified = claims.email_verified === true || claims.email_verified === 'true'
+  if (!emailVerified) {
+    await logScimAudit(db, {
+      org_id: provider.org_id, provider_id: provider.id, token_id: null,
+      method: 'POST', path: '/sso/oidc/callback', status_code: 403,
+      error_code: 'email_not_verified', latency_ms: Date.now() - t0,
+    })
+    return jsonResponse(403, { error: 'email_not_verified' })
+  }
+
+  // The account-takeover defence: the email's domain must be one this org has
+  // PROVEN it owns (identity_provider_domains.is_verified). A provider can only
+  // ever assert addresses in a domain it verified via DNS — so it cannot mint
+  // `victim@bigcorp.com` unless it controls bigcorp.com. Without a verified
+  // domain, JIT is refused rather than trusting the raw email claim.
+  const emailDomain = email.split('@')[1] ?? ''
+  const { data: verifiedDomain, error: domErr } = await db
+    .from('identity_provider_domains')
+    .select('id')
+    .eq('provider_id', provider.id)
+    .eq('org_id', provider.org_id)
+    .eq('domain', emailDomain)
+    .eq('is_verified', true)
+    .is('deleted_at', null)
+    .maybeSingle()
+  if (domErr || !verifiedDomain) {
+    await logScimAudit(db, {
+      org_id: provider.org_id, provider_id: provider.id, token_id: null,
+      method: 'POST', path: '/sso/oidc/callback', status_code: 403,
+      error_code: 'email_domain_not_verified', latency_ms: Date.now() - t0,
+    })
+    return jsonResponse(403, { error: 'email_domain_not_verified' })
+  }
+
+  let user_id: string
+  let created: boolean
+  try {
+    ({ user_id, created } = await jitProvision(db, {
+      org_id: provider.org_id,
+      provider_id: provider.id,
+      email,
+      external_subject: claims.sub,
+      display_name: typeof claims.name === 'string' ? claims.name : undefined,
+    }))
+  } catch (err) {
+    const code = err instanceof Error ? err.message : 'jit_failed'
+    // A user already bound to another org (account-takeover backstop) reads as
+    // 409; anything else in provisioning is a 500.
+    const status = code === 'user_bound_to_other_org' ? 409 : 500
+    await logScimAudit(db, {
+      org_id: provider.org_id, provider_id: provider.id, token_id: null,
+      method: 'POST', path: '/sso/oidc/callback', status_code: status,
+      error_code: code, latency_ms: Date.now() - t0,
+    })
+    return jsonResponse(status, { error: code })
+  }
 
   // Mint a Supabase magic link that carries the fresh app_metadata.
   // The caller (login page) redirects to this URL to complete the flow.

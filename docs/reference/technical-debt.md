@@ -10,6 +10,30 @@ Last reviewed: 2026-08 (second-pass security audit — Sentinel Threat Review)
 
 ## TD-025 — Self-host FastAPI backend lacks tenant scoping (audit H2/H3/M1/M4)
 
+**Status: RESOLVED (2026-08-19).** Root cause turned out deeper than the audit
+stated: the auth middleware never populated `request.state.user`, so *every*
+router's `get_tenant()` silently resolved to the `"default"` tenant — the
+backend was effectively single-tenant, not just leaky on the flagged routers.
+Fixes shipped: (1) `_require_api_auth` now decodes the verified JWT and sets
+`request.state.user`, so `get_tenant()` returns the real tenant everywhere;
+(2) new `get_current_tenant_id`/`get_current_user` dependencies resolve the
+tenant from the signed token and **reject a token that carries none** (no
+shared-tenant fallback); (3) the six ORM routers (trust_engine, reg_radar,
+observability, shadow_ai, questionnaire, rbac) were rewritten to filter every
+query by tenant, bind `tenant_id` server-side, and whitelist writable columns
+(no more `Model(**data)`/`setattr` mass assignment); their models gained a
+`tenant_id` column; (4) `rbac` mutations additionally require the caller to hold
+rbac-write in their own role (no self-escalation); (5) `tasks`/`evals` dropped
+the hardcoded `"default-tenant"` for the real JWT tenant; (6) `controls.add_test_result`
+now verifies control ownership and scopes the score UPDATE + test read by tenant;
+(7) the `dataset`/`agent` trailing `SELECT * WHERE id=$1` gained `AND tenant_id`.
+7 tests in `tests/test_tenant_isolation.py`. **Note for existing self-host
+deployments:** rows written before this fix carry `tenant_id='default'`; the
+new `tenant_id` columns are created by `create_all` on fresh DBs, so an existing
+DB needs the column added and legacy rows re-homed. Original write-up below.
+
+---
+
 **Owner:** backend. **Severity:** High *for the self-hosted deployment path*.
 The second-pass audit found the `sentinel/` FastAPI backend enforces
 authentication (a valid bearer) but **not tenant isolation**: `main.py`'s
@@ -44,6 +68,20 @@ Sentinel Threat Review (H2/H3/M1/M4).
 ---
 
 ## TD-024 — SSO callback links accounts by bare email (audit H1)
+
+**Status: RESOLVED (2026-08-19).** The callback now requires `email_verified`
+and verifies the email's domain against `identity_provider_domains.is_verified`
+(a provider can only assert addresses in a domain it has proven, via DNS, it
+owns — so it cannot mint `victim@bigcorp.com` without owning `bigcorp.com`);
+`jitProvision` refuses to re-home a user already bound to another org (409);
+and migration `20260921000001` admin-gates `identity_providers` /
+`identity_provider_domains` writes on `public.is_org_admin()`, so a non-admin
+can no longer stand up a malicious provider — the attack's enabling condition.
+**L5** (release.yml token scope) is also now closed — `.releaserc.json` sets
+`successComment:false`/`failComment:false` and the workflow drops
+`issues`/`pull-requests: write`. Original write-up below.
+
+---
 
 **Owner:** platform / SSO. **Severity:** High (Critical-class, currently gated).
 `_shared/sso.ts jitProvision` links an existing Supabase user *globally by

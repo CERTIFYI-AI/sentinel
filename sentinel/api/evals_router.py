@@ -13,7 +13,9 @@ import logging
 from dataclasses import asdict
 from typing import Any
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
+
+from sentinel.api.deps import get_current_tenant_id
 from pydantic import BaseModel
 
 from sentinel.evals.eval_runner import EvalRunner
@@ -26,10 +28,6 @@ _eval_runner = EvalRunner()
 _eval_store = EvalStore()
 
 
-def _get_tenant_id() -> str:
-    return "default-tenant"
-
-
 class CreateEvalRunRequest(BaseModel):
     dataset_id: str
     model_id: str | None = None
@@ -37,15 +35,13 @@ class CreateEvalRunRequest(BaseModel):
 
 
 @router.get("/runs")
-async def list_runs(page: int = Query(1, ge=1)):
-    tenant_id = _get_tenant_id()
+async def list_runs(page: int = Query(1, ge=1), tenant_id: str = Depends(get_current_tenant_id)):
     runs = await _eval_runner.get_all_runs(tenant_id, page=page)
     return {"runs": [asdict(r) for r in runs], "total": len(runs)}
 
 
 @router.post("/runs", status_code=201)
-async def create_run(req: CreateEvalRunRequest):
-    tenant_id = _get_tenant_id()
+async def create_run(req: CreateEvalRunRequest, tenant_id: str = Depends(get_current_tenant_id)):
     run = await _eval_runner.create_run(
         tenant_id=tenant_id,
         dataset_id=req.dataset_id,
@@ -56,8 +52,7 @@ async def create_run(req: CreateEvalRunRequest):
 
 
 @router.get("/runs/{run_id}")
-async def get_run(run_id: str):
-    tenant_id = _get_tenant_id()
+async def get_run(run_id: str, tenant_id: str = Depends(get_current_tenant_id)):
     run = await _eval_runner.get_run(tenant_id, run_id)
     if not run:
         raise HTTPException(status_code=404, detail="Eval run not found")
@@ -65,15 +60,13 @@ async def get_run(run_id: str):
 
 
 @router.get("/runs/{run_id}/results")
-async def get_run_results(run_id: str):
-    tenant_id = _get_tenant_id()
+async def get_run_results(run_id: str, tenant_id: str = Depends(get_current_tenant_id)):
     results = await _eval_runner.get_run_results(tenant_id, run_id)
     return {"results": [asdict(r) for r in results], "total": len(results)}
 
 
 @router.post("/runs/{run_id}/execute")
-async def execute_run(run_id: str):
-    tenant_id = _get_tenant_id()
+async def execute_run(run_id: str, tenant_id: str = Depends(get_current_tenant_id)):
     run = await _eval_runner.execute_run(tenant_id, run_id)
     if not run:
         raise HTTPException(status_code=404, detail="Eval run not found")
@@ -81,21 +74,18 @@ async def execute_run(run_id: str):
 
 
 @router.get("/datasets")
-async def list_datasets():
-    tenant_id = _get_tenant_id()
+async def list_datasets(tenant_id: str = Depends(get_current_tenant_id)):
     datasets = await _eval_store.get_datasets(tenant_id)
     return {"datasets": datasets}
 
 
 @router.get("/metrics")
-async def list_metrics():
-    tenant_id = _get_tenant_id()
+async def list_metrics(tenant_id: str = Depends(get_current_tenant_id)):
     metrics = await _eval_store.get_metrics(tenant_id)
     return {"metrics": metrics}
 
 
 @router.get("/pass-rate")
-async def get_pass_rate(days: int = Query(30, ge=1)):
-    tenant_id = _get_tenant_id()
+async def get_pass_rate(days: int = Query(30, ge=1), tenant_id: str = Depends(get_current_tenant_id)):
     rate = await _eval_store.get_recent_pass_rate(tenant_id, days=days)
     return {"pass_rate": rate, "period_days": days}

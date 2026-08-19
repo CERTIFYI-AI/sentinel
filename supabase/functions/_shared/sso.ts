@@ -200,10 +200,13 @@ export async function jitProvision(
   let created = false
   if (existing?.id) {
     userId = existing.id as string
-    // Force app_metadata.org_id to match the SSO org.
     const adminAny = (db as unknown as {
       auth: {
         admin: {
+          getUserById(id: string): Promise<{
+            data: { user: { app_metadata?: { org_id?: string } } | null }
+            error: { message: string } | null
+          }>
           updateUserById(
             id: string,
             payload: Record<string, unknown>,
@@ -211,6 +214,15 @@ export async function jitProvision(
         }
       }
     }).auth
+    // Defence in depth: never silently move a user who already belongs to a
+    // different org into this SSO org. The callback's domain check should make
+    // this unreachable, but a user pre-existing under another tenant must not
+    // be captured by an SSO login here (account-takeover backstop).
+    const cur = await adminAny.admin.getUserById(userId)
+    const curOrg = cur.data.user?.app_metadata?.org_id
+    if (curOrg && curOrg !== params.org_id) {
+      throw new Error('user_bound_to_other_org')
+    }
     await adminAny.admin.updateUserById(userId, {
       app_metadata: { org_id: params.org_id, provider_id: params.provider_id },
     })

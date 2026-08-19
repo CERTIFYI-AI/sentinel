@@ -16,6 +16,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel
 
+from sentinel.api.deps import get_current_tenant_id
 from sentinel.tasks.task_store import TaskStore
 
 logger = logging.getLogger(__name__)
@@ -24,9 +25,9 @@ router = APIRouter(tags=["tasks"])
 _task_store = TaskStore()
 
 
-def _get_tenant_id() -> str:
-    """Placeholder: extract from JWT in production."""
-    return "default-tenant"
+def _safe_patch(patch: dict) -> dict:
+    """Drop server-owned keys so a patch cannot move a task across tenants."""
+    return {k: v for k, v in (patch or {}).items() if k not in ("tenant_id", "id")}
 
 
 class CreateTaskRequest(BaseModel):
@@ -62,8 +63,8 @@ async def list_tasks(
     status: str | None = Query(None),
     priority: str | None = Query(None),
     source_module: str | None = Query(None),
+    tenant_id: str = Depends(get_current_tenant_id),
 ):
-    tenant_id = _get_tenant_id()
     filters: dict[str, Any] = {}
     if status:
         filters["status"] = status
@@ -76,8 +77,7 @@ async def list_tasks(
 
 
 @router.post("", status_code=201)
-async def create_task(req: CreateTaskRequest):
-    tenant_id = _get_tenant_id()
+async def create_task(req: CreateTaskRequest, tenant_id: str = Depends(get_current_tenant_id)):
     task = await _task_store.create(
         tenant_id=tenant_id,
         title=req.title,
@@ -94,8 +94,7 @@ async def create_task(req: CreateTaskRequest):
 
 
 @router.get("/{task_id}")
-async def get_task(task_id: str):
-    tenant_id = _get_tenant_id()
+async def get_task(task_id: str, tenant_id: str = Depends(get_current_tenant_id)):
     tasks = await _task_store.get_all(tenant_id)
     for t in tasks:
         if t.id == task_id:
@@ -104,9 +103,8 @@ async def get_task(task_id: str):
 
 
 @router.patch("/{task_id}")
-async def update_task(task_id: str, req: UpdateTaskRequest):
-    tenant_id = _get_tenant_id()
-    patch = {k: v for k, v in req.model_dump().items() if v is not None}
+async def update_task(task_id: str, req: UpdateTaskRequest, tenant_id: str = Depends(get_current_tenant_id)):
+    patch = _safe_patch({k: v for k, v in req.model_dump().items() if v is not None})
     task = await _task_store.update(tenant_id, task_id, patch)
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -114,11 +112,10 @@ async def update_task(task_id: str, req: UpdateTaskRequest):
 
 
 @router.post("/bulk-update")
-async def bulk_update(req: BulkUpdateRequest):
-    tenant_id = _get_tenant_id()
+async def bulk_update(req: BulkUpdateRequest, tenant_id: str = Depends(get_current_tenant_id)):
     updated = []
     for task_id in req.task_ids:
-        task = await _task_store.update(tenant_id, task_id, req.patch)
+        task = await _task_store.update(tenant_id, task_id, _safe_patch(req.patch))
         if task:
             updated.append(asdict(task))
     return {"updated": len(updated), "tasks": updated}
