@@ -2,8 +2,12 @@
 # WS0.6 — Automated, signed, SBOM-attached releases.
 #
 # Triggered on pushes to main after CI gates succeed. Produces:
-#   - Semantic version bump + CHANGELOG update + GitHub Release
+#   - Semantic version tag (vX.Y.Z) + GitHub Release with generated notes
 #     (@semantic-release with Conventional Commits).
+#     NOTE: does NOT commit a version/CHANGELOG bump back to main —
+#     @semantic-release/git was removed because main is a protected branch
+#     (a bot push is rejected with GH006), and CHANGELOG.md is curated by hand
+#     in this repo. The git tag is the authoritative version record.
 #   - CycloneDX + SPDX SBOMs attached to the release.
 #   - Sigstore cosign keyless signatures for each artifact.
 #   - SLSA v1 build provenance attestation.
@@ -106,8 +110,6 @@ jobs:
         run: |
           npm install -g \
             semantic-release@24 \
-            @semantic-release/changelog@6 \
-            @semantic-release/git@10 \
             @semantic-release/github@10 \
             @semantic-release/commit-analyzer@12 \
             @semantic-release/release-notes-generator@13 \
