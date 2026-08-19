@@ -1287,3 +1287,27 @@ encryption/decryption with AAD binding.
   (2026-09-19) — must use External Secrets Operator or Sealed Secrets in production.
 
 No action required beyond ensuring production deployments use ESO/Sealed Secrets.
+
+## TD-025 — Three modules have UI but no backing data pipeline
+
+**Status:** Open · **Severity:** P2 · **Owner:** Platform team
+
+`AiAdvisor`, `PeerIntelligence` and `ExaminationManager` are routed and reachable
+from the sidebar, but none of them has a table, service or hook behind it. Each
+previously shipped hardcoded arrays rendered as if measured, and two of them
+fired success toasts for writes that never happened:
+
+| Module | Route | What was removed |
+|---|---|---|
+| AI Governance Advisor | `/ai-advisor` | 8 invented findings with specific metrics (18.3% parity gap, 87.4%→71.2% drift), keyword-matched canned answers asserting org-level scores (EU AI Act readiness 67%, risk 7.2/10, MTTR 4.2h), and a "Take action" button whose `toast.success('Task created…')` created nothing |
+| Peer Benchmarking | `/peer-intelligence` | 4 arrays behind an "illustrative preview" toggle, including invented ROI (`$240K risk reduction`, `$180K audit cost savings`) and a fabricated peer cohort |
+| Regulatory Examination Manager | `/examination-manager` | 4 hardcoded regulator examinations (Fed SR 11-7, OCC AI/ML) with literal counts driving the KPI strip; `toast.success('New examination registered')` and `toast.success('Response submitted for …')`, neither of which persisted anything |
+
+All three now render an honest empty state naming what is missing and pointing
+at the live modules that hold the real equivalent data (Risk Register, Bias
+Audits, Incident Log, Evidence Vault, CISO Dashboard, Benchmarking & Maturity).
+
+**To close:** either build the backing tables + services and wire each module to
+real, org-scoped data per First principle #3, or retire the routes. Leaving them
+as empty states indefinitely is a dead-end for the user and fails the "no
+dead-end records" UI/UX gate.
