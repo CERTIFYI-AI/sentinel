@@ -1056,7 +1056,9 @@ via the Supabase management API, each verified after:
 guard), `20260830000001` (aws/azure catalogue → `beta`), `20260905000001`
 (pgvector + `policy_knowledge_base` + `ai_compliance_verdicts` +
 `match_policy_chunks`). `20260901000003` was **rewritten to be lineage-agnostic**
-and its live-lineage branch applied — see sub-item 2 below.
+and its live-lineage branch applied — see sub-item 2 below. `20260831000002`
+(MCP gateway enforcement: `mcp_policy_decisions` + `mcp_tools.rate_limit_per_hour`)
+was applied 2026-08-18 in a **live-lineage variant** — see sub-item 3.
 
 **Open sub-items.**
 1. **Reconcile the migration lineage** so `db push` is safe: decide whether live
@@ -1073,6 +1075,21 @@ and its live-lineage branch applied — see sub-item 2 below.
    admin still saves (`admin_rows=1`), the auditor is blocked (`auditor_rows=0`).
    Confirmed the org retains an admin before gating, so it is never locked out of
    its own settings.
+
+3. **MCP gateway enforcement — APPLIED live-adapted 2026-08-18.** The repo
+   migration `20260831000002` declares
+   `hitl_item_id uuid references public.hitl_items(id) on delete set null`, but
+   **`public.hitl_items` does not exist on live** (repo-vs-live lineage drift —
+   the repo creates it in `20260418000002`, live never did). Applying the repo
+   file verbatim would fail on that FK. Applied a live-lineage variant identical
+   to the repo file except `hitl_item_id` is a plain `uuid` with **no FK** — the
+   column still stores the review id, it is just not FK-enforced against an
+   absent table. The migration's own self-verification block passed (table
+   created, `org_id` DB-defaulted, no client write policy, read policy carries a
+   tenant predicate). This lights up the `/mcp-gateway/decisions` evidence store
+   that PR #86 shipped the UI for. **Repo file unchanged** — it is correct for
+   from-zero replay, where `hitl_items` exists; the divergence is live-only and
+   is the same class as sub-item 2. Reconciling it is part of sub-item 1.
 
    **Latent bug fixed in passing:** `public.is_org_admin()` was `SECURITY DEFINER
    SET search_path=''` but referenced `user_profiles` **unqualified**, so every
