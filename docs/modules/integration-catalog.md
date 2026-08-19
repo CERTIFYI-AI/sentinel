@@ -11,7 +11,7 @@ instances), `integration_findings`, `control_finding_evidence` ·
 `dashboard/src/integrations/connectionProfiles.ts`,
 `dashboard/src/pages/controls/ControlDetail.tsx` (Automated Evidence tab) ·
 **Server:** `sentinel/integrations/` (registry, worker, crypto, control mapping),
-`sentinel/integrations/{github,aws,azure}/adapter.py`
+`sentinel/integrations/{github,aws,azure,okta}/adapter.py`
 
 ## Purpose
 
@@ -38,6 +38,13 @@ only these four *collect*; the rest register a governed source with a named
 owner and a review cadence. Closing the gap is per-product API work, and each
 adapter lands the same way — implementation, registry entry, connect form,
 catalogue flip — never by relaxing what "connected" means.
+
+The remaining 215 are phased in
+[`../integrations/connector-rollout-plan.md`](../integrations/connector-rollout-plan.md),
+ordered by shared-API leverage, evidence value and API confidence. That plan is
+also explicit about where it stops: for much of the long tail a full adapter
+will never pay for itself, and monitored mode is the correct end state rather
+than a placeholder.
 
 ## How it works
 
