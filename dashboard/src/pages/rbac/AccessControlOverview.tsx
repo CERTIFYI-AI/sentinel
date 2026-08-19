@@ -1,17 +1,74 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ShieldCheck, Users, Buildings, Key, CaretRight, UserPlus, Warning } from '@phosphor-icons/react'
 import { useNavigate } from 'react-router-dom'
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { PageHeader } from '../../components/ui/PageHeader'
+import { PageSkeleton } from '../../components/ui/PageSkeleton'
+import { EmptyState } from '../../components/ui/EmptyState'
 import { SEED_USERS, SEED_ROLES, SEED_DEPARTMENTS } from '../../features/access-control/seed'
 import { PERMISSIONS } from '../../features/access-control/permissions'
 import { useChartTheme } from '../../hooks/useChartTheme'
+import { isSupabaseConfigured } from '../../lib/supabase'
+import { fetchUsers as sbFetchUsers, fetchRoles as sbFetchRoles, fetchDepartments as sbFetchDepts } from '../../lib/supabase-access-control'
+import type { ACUser, Role, Department } from '../../features/access-control/types'
 
 export default function AccessControlOverview() {
   const navigate = useNavigate()
   const chart = useChartTheme()
-  const [users] = useState(SEED_USERS)
-  const [roles] = useState(SEED_ROLES)
-  const [departments] = useState(SEED_DEPARTMENTS)
+  const [users, setUsers] = useState<ACUser[]>([])
+  const [roles, setRoles] = useState<Role[]>([])
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      setLoading(true)
+      setLoadError('')
+      try {
+        if (!isSupabaseConfigured()) {
+          setUsers(SEED_USERS as ACUser[])
+          setRoles(SEED_ROLES as Role[])
+          setDepartments(SEED_DEPARTMENTS as Department[])
+        } else {
+          const [u, r, d] = await Promise.all([sbFetchUsers(), sbFetchRoles(), sbFetchDepts()])
+          if (!cancelled) {
+            setUsers(u)
+            setRoles(r)
+            setDepartments(d)
+          }
+        }
+      } catch (e: unknown) {
+        if (!cancelled) setLoadError(e instanceof Error ? e.message : 'Failed to load access control data.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    load()
+    return () => { cancelled = true }
+  }, [])
+
+  if (loading) return <PageSkeleton />
+
+  if (loadError) {
+    return (
+      <div className="space-y-5">
+        <PageHeader
+          title="Access Control"
+          subtitle="RBAC governance — users, roles, departments, and permission coverage"
+          icon={Key}
+        />
+        <div className="p-6 border text-center" style={{ background: 'hsl(var(--s-er-bg))', borderColor: 'hsl(var(--s-er-br))' }}>
+          <Warning size={24} className="mx-auto mb-2" style={{ color: 'hsl(var(--destructive))' }} />
+          <p className="text-sm font-medium" style={{ color: 'hsl(var(--destructive))' }}>{loadError}</p>
+          <button onClick={() => window.location.reload()} className="mt-3 text-xs px-3 py-1.5 border" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
+            Retry
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   const stats = {
     totalUsers: users.length,
@@ -25,7 +82,6 @@ export default function AccessControlOverview() {
     activeDepts: departments.filter(d => d.status === 'active').length,
   }
 
-  // Permissions coverage by section
   const sectionCoverage = Array.from(new Set(PERMISSIONS.map(p => p.section))).map(section => {
     const permsInSection = PERMISSIONS.filter(p => p.section === section)
     const covered = permsInSection.filter(p => {
@@ -46,22 +102,38 @@ export default function AccessControlOverview() {
     { icon: Buildings, label: 'Departments', desc: `${stats.totalDepts} total · ${stats.activeDepts} active`, path: '/access-control/departments', color: 'hsl(var(--s-ok-tx))' },
   ]
 
+  const isEmpty = users.length === 0 && roles.length === 0 && departments.length === 0
+
+  if (isEmpty) {
+    return (
+      <div className="space-y-5">
+        <PageHeader
+          title="Access Control"
+          subtitle="RBAC governance — users, roles, departments, and permission coverage"
+          icon={Key}
+          actions={
+            <button onClick={() => navigate('/access-control/users')} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
+              <UserPlus size={14} /> Invite User
+            </button>
+          }
+        />
+        <EmptyState icon={<Users size={32} />} title="No access control data" description="Create users, roles, and departments to get started." />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-            <Key size={20} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-            Access Control
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
-            RBAC governance — users, roles, departments, and permission coverage
-          </p>
-        </div>
-        <button onClick={() => navigate('/access-control/users')} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
-          <UserPlus size={14} /> Invite User
-        </button>
-      </div>
+      <PageHeader
+        title="Access Control"
+        subtitle="RBAC governance — users, roles, departments, and permission coverage"
+        icon={Key}
+        actions={
+          <button onClick={() => navigate('/access-control/users')} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
+            <UserPlus size={14} /> Invite User
+          </button>
+        }
+      />
 
       {/* KPI tiles */}
       <div className="grid grid-cols-4 gap-4">

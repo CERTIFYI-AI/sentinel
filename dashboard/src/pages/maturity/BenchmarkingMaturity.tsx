@@ -13,6 +13,7 @@ import { useOrgName } from '../../hooks/useOrganization';
 import { useChartTheme } from '../../hooks/useChartTheme';
 import { useMaturityData } from '../../hooks/useMaturityData';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
+import { PageHeader } from '../../components/ui/PageHeader';
 import { toast } from 'sonner';
 
 // Supabase-wired — no mock data
@@ -156,33 +157,30 @@ export default function BenchmarkingMaturity() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
-            Benchmarking & Maturity
-          </h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            Acme Financial Corp · AI governance maturity assessment across 8 dimensions
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            style={{ borderRadius: 0 }}
-            onClick={() => exportCsv(DIMENSIONS, 'maturity-dimensions.csv')}
-          >
-            <Export size={14} /> Export Report
-          </Button>
-          <Button
-            size="sm"
-            style={{ borderRadius: 0 }}
-            onClick={() => { setShowAssessment(true); setAssessStep(0); setAnswers({}); setAssessDone(false); }}
-          >
-            <ChartBar size={14} /> Run Assessment
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Benchmarking & Maturity"
+        subtitle="Acme Financial Corp · AI governance maturity assessment across 8 dimensions"
+        icon={ChartBar}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              style={{ borderRadius: 0 }}
+              onClick={() => exportCsv(DIMENSIONS, 'maturity-dimensions.csv')}
+            >
+              <Export size={14} /> Export Report
+            </Button>
+            <Button
+              size="sm"
+              style={{ borderRadius: 0 }}
+              onClick={() => { setShowAssessment(true); setAssessStep(0); setAnswers({}); setAssessDone(false); }}
+            >
+              <ChartBar size={14} /> Run Assessment
+            </Button>
+          </>
+        }
+      />
 
       {/* KPI Tiles */}
       <div className="grid grid-cols-4 gap-4">

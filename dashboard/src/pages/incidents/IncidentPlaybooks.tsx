@@ -28,6 +28,7 @@ import { useModelsData } from '@/hooks/useModelsData';
 import { InterlinkChip } from '@/components/ui/InterlinkChip';
 import { exportJson } from '@/lib/exportUtils';
 import PageSkeleton from '../../components/ui/PageSkeleton';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 // Phase accent colors cycle by position — phase names are data, not code.
 const PHASE_PALETTE = [
@@ -293,26 +294,24 @@ export default function IncidentPlaybooks() {
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <Siren size={20} weight="duotone" className="text-[hsl(var(--brand))]" />
-            Incident Response Playbooks
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Playbooks · escalation chains · regulatory notification templates</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={handleExport}>
-            <Export size={14} /> Export JSON
-          </Button>
-          <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={openCreate}>
-            <Plus size={14} /> New Playbook
-          </Button>
-          <Button size="sm" className="gap-1.5 rounded-none bg-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.9)]" onClick={() => openActivate()}>
-            <Play size={14} /> Activate Playbook
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Incident Response Playbooks"
+        subtitle="Playbooks · escalation chains · regulatory notification templates"
+        icon={Siren}
+        actions={
+          <>
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={handleExport}>
+              <Export size={14} /> Export JSON
+            </Button>
+            <Button variant="outline" size="sm" className="gap-1.5 rounded-none" onClick={openCreate}>
+              <Plus size={14} /> New Playbook
+            </Button>
+            <Button size="sm" className="gap-1.5 rounded-none bg-[hsl(var(--destructive))] hover:bg-[hsl(var(--destructive)/0.9)]" onClick={() => openActivate()}>
+              <Play size={14} /> Activate Playbook
+            </Button>
+          </>
+        }
+      />
 
       {/* Real query error state */}
       {error != null && (

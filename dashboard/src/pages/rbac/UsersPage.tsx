@@ -1,6 +1,7 @@
 import logger from '@/lib/logger';
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Users, MagnifyingGlass, Plus, PencilSimple, Trash, X, Warning, CaretLeft, CaretRight, Eye, Export } from '@phosphor-icons/react'
+import { PageHeader } from '../../components/ui/PageHeader'
 import { PageSkeleton } from '../../components/ui/PageSkeleton'
 import { toast } from 'sonner'
 import { SEED_USERS, SEED_ROLES, SEED_DEPARTMENTS } from '../../features/access-control/seed'
@@ -267,25 +268,21 @@ export default function UsersPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-            <Users size={20} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-            Users
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
-            Manage platform users, role assignments, and access status
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-            <Export size={14} /> Export CSV
-          </button>
-          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
-            <Plus size={14} weight="bold" /> Invite User
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Users"
+        subtitle="Manage platform users, role assignments, and access status"
+        icon={Users}
+        actions={
+          <div className="flex items-center gap-2">
+            <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
+              <Export size={14} /> Export CSV
+            </button>
+            <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
+              <Plus size={14} weight="bold" /> Invite User
+            </button>
+          </div>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-4 gap-4">

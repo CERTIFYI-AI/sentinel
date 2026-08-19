@@ -8,7 +8,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { Key } from "@phosphor-icons/react";
-import ModuleScaffold from "@/components/ModuleScaffold";
+import { PageHeader } from "@/components/ui/PageHeader";
+import { PageSkeleton } from "@/components/ui/PageSkeleton";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import { useTenant } from "@/hooks/useTenant";
 import { telemetry } from "@/lib/telemetry";
@@ -75,50 +76,90 @@ export default function MfaEnrollment() {
 
   const verified = rows.filter((r) => r.verified_at).length;
 
+  if (loading) return <PageSkeleton title="Multi-Factor Authentication" showStats rows={3} />;
+
   return (
-    <ModuleScaffold
-      title="Multi-Factor Authentication"
-      subtitle="Your enrolled factors. Secrets are stored in Supabase Auth; this page shows metadata only."
-      icon={Key}
-      breadcrumb={[{ label: "Security" }, { label: "MFA" }]}
-      state={{ loading, error, empty: !loading && !error && rows.length === 0 }}
-      emptyMessage="No MFA factors enrolled yet. Add a TOTP or WebAuthn factor to get started."
-      emptyAction={
-        <Link
-          to="/settings"
-          className="text-sm font-medium underline"
-          style={{ color: "hsl(var(--brand))" }}
+    <div className="space-y-6">
+      <PageHeader
+        title="Multi-Factor Authentication"
+        subtitle="Your enrolled factors. Secrets are stored in Supabase Auth; this page shows metadata only."
+        icon={Key}
+      />
+
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-3">
+        {[
+          { label: "Factors enrolled", value: rows.length, tone: rows.length > 0 ? "positive" : "warn" },
+          { label: "Verified", value: verified, tone: verified === rows.length ? "positive" : "warn" },
+        ].map((k) => (
+          <div
+            key={k.label}
+            className="rounded border px-4 py-3"
+            style={{ borderColor: "hsl(var(--border))", background: "hsl(var(--bg-raised))" }}
+          >
+            <div className="text-xs uppercase tracking-wide mb-1" style={{ color: "hsl(var(--text-4))" }}>
+              {k.label}
+            </div>
+            <div
+              className="text-xl font-semibold"
+              style={{ color: k.tone === "positive" ? "hsl(var(--brand))" : "hsl(var(--s-wn-tx))" }}
+            >
+              {k.value}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {error ? (
+        <div
+          role="alert"
+          className="rounded border px-4 py-3 text-sm flex items-start gap-2"
+          style={{ borderColor: "hsl(var(--s-er-tx))", color: "hsl(var(--s-er-tx))" }}
         >
-          Go to Settings
-        </Link>
-      }
-      kpis={[
-        { label: "Factors enrolled", value: rows.length, tone: rows.length > 0 ? "positive" : "warn" },
-        { label: "Verified", value: verified, tone: verified === rows.length ? "positive" : "warn" },
-      ]}
-    >
-      <section aria-label="Enrolled factors">
-        <ul role="list" className="space-y-2">
-          {rows.map((r) => (
-            <li key={r.id} className="rounded border px-4 py-3 text-sm"
-              style={{ borderColor: "hsl(var(--border))" }}>
-              <div className="flex justify-between gap-3">
-                <strong>{LABELS[r.factor_type]}</strong>
-                <span style={{ color: "hsl(var(--text-4))" }}>
-                  {r.verified_at ? "verified" : "pending"}
-                </span>
-              </div>
-              {r.factor_label && (
-                <p className="mt-1" style={{ color: "hsl(var(--text-2))" }}>{r.factor_label}</p>
-              )}
-              <p className="mt-1 text-xs" style={{ color: "hsl(var(--text-4))" }}>
-                enrolled {new Date(r.enrolled_at).toUTCString()}
-                {r.last_used_at ? ` · last used ${new Date(r.last_used_at).toUTCString()}` : ""}
-              </p>
-            </li>
-          ))}
-        </ul>
-      </section>
-    </ModuleScaffold>
+          {error}
+        </div>
+      ) : rows.length === 0 ? (
+        <div
+          className="rounded border px-4 py-10 text-center"
+          style={{ borderColor: "hsl(var(--border))", background: "hsl(var(--bg-raised))" }}
+        >
+          <p className="text-sm" style={{ color: "hsl(var(--text-2))" }}>
+            No MFA factors enrolled yet. Add a TOTP or WebAuthn factor to get started.
+          </p>
+          <div className="mt-3">
+            <Link
+              to="/settings"
+              className="text-sm font-medium underline"
+              style={{ color: "hsl(var(--brand))" }}
+            >
+              Go to Settings
+            </Link>
+          </div>
+        </div>
+      ) : (
+        <section aria-label="Enrolled factors">
+          <ul role="list" className="space-y-2">
+            {rows.map((r) => (
+              <li key={r.id} className="rounded border px-4 py-3 text-sm"
+                style={{ borderColor: "hsl(var(--border))" }}>
+                <div className="flex justify-between gap-3">
+                  <strong>{LABELS[r.factor_type]}</strong>
+                  <span style={{ color: "hsl(var(--text-4))" }}>
+                    {r.verified_at ? "verified" : "pending"}
+                  </span>
+                </div>
+                {r.factor_label && (
+                  <p className="mt-1" style={{ color: "hsl(var(--text-2))" }}>{r.factor_label}</p>
+                )}
+                <p className="mt-1 text-xs" style={{ color: "hsl(var(--text-4))" }}>
+                  enrolled {new Date(r.enrolled_at).toUTCString()}
+                  {r.last_used_at ? ` · last used ${new Date(r.last_used_at).toUTCString()}` : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
   );
 }

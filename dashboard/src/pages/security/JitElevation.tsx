@@ -9,6 +9,7 @@ import { CANONICAL_ROLES, ROLE_DISPLAY, type OrgRole } from '../../lib/rbac'
 import { Button } from '../../components/ui/button'
 import { toast } from 'sonner'
 import { ShieldCheck, Clock, AlertTriangle } from 'lucide-react'
+import { PageHeader } from '../../components/ui/PageHeader'
 
 interface JitRow {
   id: string
@@ -106,16 +107,12 @@ export default function JitElevation() {
 
   return (
     <main id="main-content" className="p-6 max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <ShieldCheck className="text-[#368F4D]" size={22} />
-            JIT Elevation
-          </h1>
-          <p className="text-[hsl(var(--text-3))] text-sm mt-1">Request time-boxed privileged access. Every grant is org-scoped and auto-expires.</p>
-        </div>
-        <Button onClick={() => setShowForm(true)} size="sm">Request Elevation</Button>
-      </div>
+      <PageHeader
+        title="JIT Elevation"
+        subtitle="Request time-boxed privileged access. Every grant is org-scoped and auto-expires."
+        icon={ShieldCheck}
+        actions={<Button onClick={() => setShowForm(true)} size="sm">Request Elevation</Button>}
+      />
 
       {/* Info banner — reflects what the schema actually enforces */}
       <div className="flex items-start gap-3 p-3 bg-[hsl(var(--s-in-bg))] border border-[hsl(var(--s-in-br))] rounded text-sm text-[hsl(var(--s-in-tx))]">

@@ -25,6 +25,7 @@ import { useChartTheme } from '../../hooks/useChartTheme';
 import { useKeys } from '../../hooks/useSecurityGroup';
 import type { KeyRecord } from '../../services/securityGroupService';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 const PROVIDERS = ['OpenAI', 'Anthropic', 'AWS', 'Azure', 'GCP', 'Pinecone', 'HuggingFace', 'LangChain', 'Cohere', 'Other'];
 const STATUSES = ['active', 'rotated', 'expired', 'revoked'];
@@ -184,19 +185,16 @@ export default function KeysVault() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Keys Vault</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · API key management, rotation & access control
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader
+        title="Keys Vault"
+        subtitle={`${orgName} · API key management, rotation & access control`}
+        icon={Key}
+        actions={
           <Button size="sm" onClick={() => { setFormData(EMPTY_CREATE); setCreateOpen(true); }}>
             <Plus size={14} /> Add Key
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Query error state */}
       {error && (

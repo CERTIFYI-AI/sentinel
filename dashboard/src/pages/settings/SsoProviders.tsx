@@ -13,6 +13,7 @@ import { z } from 'zod'
 import { supabase } from '../../lib/supabase'
 import { useTenant } from '../../hooks/useTenant'
 import { PageSkeleton } from '../../components/ui/PageSkeleton'
+import { PageHeader } from '../../components/ui/PageHeader'
 
 const providerSchema = z.object({
   kind: z.enum(['saml', 'oidc']),
@@ -165,12 +166,10 @@ export default function SsoProviders() {
 
   return (
     <div className="p-6 max-w-3xl">
-      <h1 className="text-xl font-semibold mb-1">Identity Providers</h1>
-      <p className="text-sm text-[hsl(var(--text-4))] mb-6">
-        Connect SAML or OIDC identity providers for enterprise single
-        sign-on. Users with verified email domains will be routed to the
-        correct provider at login.
-      </p>
+      <PageHeader
+        title="Identity Providers"
+        subtitle="Connect SAML or OIDC identity providers for enterprise single sign-on. Users with verified email domains will be routed to the correct provider at login."
+      />
 
       <form
         onSubmit={handleSubmit(onSubmit)}

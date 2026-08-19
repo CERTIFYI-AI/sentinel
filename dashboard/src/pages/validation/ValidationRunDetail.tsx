@@ -11,6 +11,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ArrowSquareOut, CheckCircle, Gavel, Warning } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -46,7 +47,7 @@ export default function ValidationRunDetail() {
     [role, user, run],
   )
 
-  if (isLoading) return <div className="p-4 text-sm text-[hsl(var(--text-3))]">Loading validation run…</div>
+  if (isLoading) return <PageSkeleton />
   if (isError) {
     return (
       <div className="p-6">

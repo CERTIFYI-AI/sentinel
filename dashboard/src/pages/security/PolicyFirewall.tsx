@@ -27,6 +27,7 @@ import type { FirewallRecord } from '../../services/securityGroupService';
 import { useModelsData } from '../../hooks/useModelsData';
 import { InterlinkChip } from '../../components/ui/InterlinkChip';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 // Canonical vocabulary (matches the policy_firewall_rules migration/seeds).
 // Comparisons, writes and select values use these; display is prettified.
@@ -186,20 +187,19 @@ export default function PolicyFirewall() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Policy Firewall</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · AI guardrail rules, filters & enforcement policies
-          </p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={handleExport}><Download size={14} /> Export</Button>
-          <Button size="sm" onClick={() => { setFormData(EMPTY_RULE); setCreateOpen(true); }}>
-            <Plus size={14} /> Add Rule
-          </Button>
-        </div>
-      </div>
+      <PageHeader
+        title="Policy Firewall"
+        subtitle={`${orgName} · AI guardrail rules, filters & enforcement policies`}
+        icon={ShieldCheck}
+        actions={
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={handleExport}><Download size={14} /> Export</Button>
+            <Button size="sm" onClick={() => { setFormData(EMPTY_RULE); setCreateOpen(true); }}>
+              <Plus size={14} /> Add Rule
+            </Button>
+          </div>
+        }
+      />
 
       {/* Query error state */}
       {error && (

@@ -7,6 +7,8 @@
 
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { ErrorState } from '@/components/ui/ErrorState'
 import {
   LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as RTooltip, ResponsiveContainer,
   RadarChart, PolarGrid, PolarAngleAxis, Radar, ReferenceLine,
@@ -32,12 +34,14 @@ function thresholdVerdict(value: number, t: MetricThresholdConfig) {
 export default function MetricProfileDetail() {
   const { id } = useParams()
   const nav = useNavigate()
-  const { data: mp } = metricProfileHooks.useGet(id)
+  const { data: mp, isLoading, error } = metricProfileHooks.useGet(id)
   const { models } = useModelOptions()
   const ct = useChartTheme()
   const [tab, setTab] = useState('overview')
 
-  if (!mp) return <div className="p-4 text-sm text-[hsl(var(--text-3))]">Loading metric profile…</div>
+  if (isLoading) return <PageSkeleton />
+  if (error) return <ErrorState title="Failed to load metric profile" error={error} onRetry={() => window.location.reload()} />
+  if (!mp) return <ErrorState title="Metric profile not found" description={`No metric profile found with ID "${id}".`} />
 
   const model = models.find((m) => m.id === mp.modelId)
   const radarData = Object.entries(mp.objectives ?? {})

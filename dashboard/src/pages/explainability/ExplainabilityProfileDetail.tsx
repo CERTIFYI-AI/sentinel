@@ -10,6 +10,7 @@ import { useMemo, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowSquareOut } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
@@ -34,7 +35,7 @@ export default function ExplainabilityProfileDetail() {
     [p, jur],
   )
 
-  if (isLoading) return <div className="p-4 text-sm text-[hsl(var(--text-3))]">Loading explainability profile…</div>
+  if (isLoading) return <PageSkeleton />
   if (isError) {
     return (
       <div className="p-6">

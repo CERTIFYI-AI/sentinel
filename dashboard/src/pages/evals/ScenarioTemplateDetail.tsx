@@ -7,6 +7,8 @@
 
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { Warning } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
@@ -18,11 +20,13 @@ import { useModelOptions } from '@/hooks/useAiiaData'
 export default function ScenarioTemplateDetail() {
   const { id } = useParams()
   const nav = useNavigate()
-  const { data: sc } = scenarioTemplateHooks.useGet(id)
+  const { data: sc, isLoading, error } = scenarioTemplateHooks.useGet(id)
   const { models } = useModelOptions()
   const [tab, setTab] = useState('script')
 
-  if (!sc) return <div className="p-4 text-sm text-[hsl(var(--text-3))]">Loading scenario…</div>
+  if (isLoading) return <PageSkeleton />
+  if (error) return <ErrorState title="Failed to load scenario" error={error} onRetry={() => window.location.reload()} />
+  if (!sc) return <ErrorState title="Scenario not found" description={`No scenario template found with ID "${id}".`} />
 
   const model = sc.modelId ? models.find((m) => m.id === sc.modelId) : undefined
 

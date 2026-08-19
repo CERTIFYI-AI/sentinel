@@ -15,6 +15,7 @@ import { useMeshFleet } from '../hooks/useMeshFleet';
 import type { MeshSentinel, MeshExecution, MeshFinding } from '../services/meshFleetService';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { PageSkeleton } from '../components/ui/PageSkeleton';
+import { PageHeader } from '../components/ui/PageHeader';
 
 // ── status helpers ───────────────────────────────────────────────────────────
 
@@ -164,40 +165,37 @@ export default function GovernanceMesh() {
   return (
     <main id="main-content" style={{ padding: '24px', maxWidth: 1280, margin: '0 auto' }} className="space-y-6">
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-        <div>
-          <h1 style={{ fontSize: 22, fontWeight: 600, color: 'hsl(var(--text-1))' }}>Agentic Mesh</h1>
-          <p style={{ fontSize: 13, color: 'hsl(var(--text-4))', marginTop: 4, maxWidth: 640 }}>
-            {fleet.length} always-on governance sentinels and the reactive cascade agents share one event bus.
-            Every sweep, interception and cascade below is read from the live execution ledger.
-          </p>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button
-            onClick={sweepAll}
-            disabled={runClientSweep.isPending}
-            style={{
-              fontSize: 13, fontWeight: 600, padding: '8px 14px', cursor: 'pointer',
-              background: 'hsl(var(--brand))', color: 'hsl(var(--brand-fg, 0 0% 100%))', border: 'none',
-              opacity: runClientSweep.isPending ? 0.6 : 1,
-            }}
-          >
-            {runClientSweep.isPending ? 'Sweeping…' : 'Run fleet sweep'}
-          </button>
-          <button
-            onClick={serverSweep}
-            disabled={runServerSweep.isPending}
-            style={{
-              fontSize: 13, fontWeight: 500, padding: '8px 14px', cursor: 'pointer',
-              background: 'transparent', color: 'hsl(var(--text-2))', border: '1px solid hsl(var(--border))',
-              opacity: runServerSweep.isPending ? 0.6 : 1,
-            }}
-            title="Invoke the mesh-sentinels edge function (server-side, service-role)"
-          >
-            Server sweep
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Agentic Mesh"
+        subtitle={`${fleet.length} always-on governance sentinels and the reactive cascade agents share one event bus. Every sweep, interception and cascade below is read from the live execution ledger.`}
+        actions={
+          <>
+            <button
+              onClick={sweepAll}
+              disabled={runClientSweep.isPending}
+              style={{
+                fontSize: 13, fontWeight: 600, padding: '8px 14px', cursor: 'pointer',
+                background: 'hsl(var(--brand))', color: 'hsl(var(--brand-fg, 0 0% 100%))', border: 'none',
+                opacity: runClientSweep.isPending ? 0.6 : 1,
+              }}
+            >
+              {runClientSweep.isPending ? 'Sweeping…' : 'Run fleet sweep'}
+            </button>
+            <button
+              onClick={serverSweep}
+              disabled={runServerSweep.isPending}
+              style={{
+                fontSize: 13, fontWeight: 500, padding: '8px 14px', cursor: 'pointer',
+                background: 'transparent', color: 'hsl(var(--text-2))', border: '1px solid hsl(var(--border))',
+                opacity: runServerSweep.isPending ? 0.6 : 1,
+              }}
+              title="Invoke the mesh-sentinels edge function (server-side, service-role)"
+            >
+              Server sweep
+            </button>
+          </>
+        }
+      />
 
       {fleetError && (
         <p style={{ fontSize: 13, color: 'hsl(var(--s-er-tx))' }}>Failed to load fleet: {fleetError.message}</p>

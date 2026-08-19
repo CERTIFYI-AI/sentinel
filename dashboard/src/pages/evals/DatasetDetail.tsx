@@ -10,6 +10,8 @@
 import { useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
 import { PageHeader } from '@/components/ui/PageHeader'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
@@ -40,7 +42,7 @@ export default function DatasetDetail() {
   const { models } = useModelOptions()
   const [tab, setTab] = useState('lineage')
 
-  if (isLoading) return <div className="p-4 text-sm text-[hsl(var(--text-3))]">Loading dataset…</div>
+  if (isLoading) return <PageSkeleton />
   if (isError || !data) {
     return (
       <div className="p-4 space-y-3">

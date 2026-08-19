@@ -1,6 +1,7 @@
 import logger from '@/lib/logger';
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { ShieldCheck, Plus, PencilSimple, Trash, Copy, X, Check, CaretDown, CaretRight, MagnifyingGlass, Warning } from '@phosphor-icons/react'
+import { PageHeader } from '../../components/ui/PageHeader'
 import { toast } from 'sonner'
 import { SEED_ROLES, SEED_USERS } from '../../features/access-control/seed'
 import { PERMISSIONS, PERMISSION_SECTIONS, PERMISSION_MODULES_BY_SECTION } from '../../features/access-control/permissions'
@@ -283,20 +284,16 @@ export default function RolesPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-            <ShieldCheck size={20} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-            Roles & Permissions
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
-            Define roles and configure granular module-level permissions
-          </p>
-        </div>
-        <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
-          <Plus size={14} weight="bold" /> New Role
-        </button>
-      </div>
+      <PageHeader
+        title="Roles & Permissions"
+        subtitle="Define roles and configure granular module-level permissions"
+        icon={ShieldCheck}
+        actions={
+          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
+            <Plus size={14} weight="bold" /> New Role
+          </button>
+        }
+      />
 
       {loading && (
         <div role="status" aria-live="polite" className="border px-4 py-8 text-sm text-center" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-4))' }}>

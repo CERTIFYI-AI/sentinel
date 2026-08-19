@@ -2,6 +2,7 @@ import logger from '@/lib/logger';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Buildings, MagnifyingGlass, Plus, PencilSimple, Trash, Users, X, CaretDown, CaretUp, Export } from '@phosphor-icons/react'
+import { PageHeader } from '../../components/ui/PageHeader'
 import { PageSkeleton } from '../../components/ui/PageSkeleton'
 import { useDepartmentsData } from '../../hooks/useDepartmentsData'
 import { toast } from 'sonner'
@@ -176,25 +177,21 @@ export default function DepartmentsPage() {
 
   return (
     <div className="space-y-5">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
-            <Buildings size={20} weight="fill" style={{ color: 'hsl(var(--brand))' }} />
-            Departments
-          </h1>
-          <p className="text-sm mt-0.5" style={{ color: 'hsl(var(--text-4))' }}>
-            Manage organizational departments and their user assignments
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
-            <Export size={14} /> Export CSV
-          </button>
-          <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
-            <Plus size={14} weight="bold" /> New Department
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Departments"
+        subtitle="Manage organizational departments and their user assignments"
+        icon={Buildings}
+        actions={
+          <div className="flex items-center gap-2">
+            <button onClick={exportCsv} className="flex items-center gap-1.5 px-3 py-2 text-sm border hover:opacity-80" style={{ borderColor: 'hsl(var(--border))', color: 'hsl(var(--text-2))' }}>
+              <Export size={14} /> Export CSV
+            </button>
+            <button onClick={openCreate} className="flex items-center gap-1.5 px-3 py-2 text-sm font-medium text-[hsl(var(--bg-surface))] hover:opacity-90" style={{ background: 'hsl(var(--brand))' }}>
+              <Plus size={14} weight="bold" /> New Department
+            </button>
+          </div>
+        }
+      />
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">

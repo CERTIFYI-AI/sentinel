@@ -25,6 +25,7 @@ import { supabase } from '../../lib/supabase';
 import { useReports, useReportRuns, useGenerateReport } from '../../hooks/useSecurityGroup';
 import type { ReportTemplate, ReportRun } from '../../services/securityGroupService';
 import { PageSkeleton } from '../../components/ui/PageSkeleton';
+import { PageHeader } from '../../components/ui/PageHeader';
 
 // Canonical vocabulary (matches the security_reports migration/seeds).
 // Values are stored canonically; display labels are prettified.
@@ -190,19 +191,16 @@ export default function ReportGenerator() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>Report Generator</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · Security report templates & data-snapshot generation
-          </p>
-        </div>
-        <div className="flex gap-2">
+      <PageHeader
+        title="Report Generator"
+        subtitle={`${orgName} · Security report templates & data-snapshot generation`}
+        icon={FileText}
+        actions={
           <Button size="sm" onClick={() => { setFormData(EMPTY_TEMPLATE); setCreateOpen(true); }}>
             <Plus size={14} /> New Template
           </Button>
-        </div>
-      </div>
+        }
+      />
 
       {/* Query error state */}
       {(error || runsQuery.error) && (

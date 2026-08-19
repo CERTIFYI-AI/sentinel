@@ -6,6 +6,8 @@
 // overrides.
 
 import { useParams, useNavigate } from 'react-router-dom'
+import { PageSkeleton } from '@/components/ui/PageSkeleton'
+import { ErrorState } from '@/components/ui/ErrorState'
 import { Warning } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Button } from '@/components/ui/button'
@@ -18,10 +20,12 @@ import { cn } from '@/lib/utils'
 export default function SessionTraceDetail() {
   const { id } = useParams()
   const nav = useNavigate()
-  const { data: tr } = sessionTraceHooks.useGet(id)
+  const { data: tr, isLoading, error } = sessionTraceHooks.useGet(id)
   const { models } = useModelOptions()
 
-  if (!tr) return <div className="p-4 text-sm text-[hsl(var(--text-3))]">Loading session trace…</div>
+  if (isLoading) return <PageSkeleton />
+  if (error) return <ErrorState title="Failed to load session trace" error={error} onRetry={() => window.location.reload()} />
+  if (!tr) return <ErrorState title="Session trace not found" description={`No session trace found with ID "${id}".`} />
 
   const model = models.find((m) => m.id === tr.modelId)
 

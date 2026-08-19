@@ -20,6 +20,7 @@ import type { TabletopRecord } from "@/services/incidentResponseService";
 import { InterlinkChip } from "@/components/ui/InterlinkChip";
 import { exportCsv } from "@/lib/exportUtils";
 import PageSkeleton from "@/components/ui/PageSkeleton";
+import { PageHeader } from '../components/ui/PageHeader';
 
 // DB CHECK constraint values, with display labels.
 const TYPE_OPTIONS = [
@@ -200,18 +201,16 @@ export default function TabletopExercises() {
 
   return (
     <div className="p-6 space-y-5 max-w-[1400px]">
-      <div className="flex items-start justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-[hsl(var(--text-1))] flex items-center gap-2">
-            <Target size={24} weight="duotone" className="text-[hsl(var(--brand))]" />
-            Tabletop Exercises
-          </h1>
-          <p className="text-sm text-[hsl(var(--text-3))] mt-0.5">Plan and track AI incident response simulations for team readiness</p>
-        </div>
-        <Button onClick={() => { setForm(EMPTY_FORM); setModal("create"); }} className="gap-2">
-          <Plus weight="bold" size={16} /> Plan Exercise
-        </Button>
-      </div>
+      <PageHeader
+        title="Tabletop Exercises"
+        subtitle="Plan and track AI incident response simulations for team readiness"
+        icon={Target}
+        actions={
+          <Button onClick={() => { setForm(EMPTY_FORM); setModal("create"); }} className="gap-2">
+            <Plus weight="bold" size={16} /> Plan Exercise
+          </Button>
+        }
+      />
 
       {error != null && (
         <div className="border border-[hsl(var(--destructive)/0.4)] bg-[hsl(var(--destructive)/0.06)] p-4">
