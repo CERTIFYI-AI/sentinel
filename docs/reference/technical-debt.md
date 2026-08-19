@@ -202,16 +202,18 @@ recorded.
 
 ---
 
-## TD-001 — Modules still reading generic demo tables (P0, 12 remaining of 19)
+## TD-001 — ~~Modules still reading generic demo tables~~ (CLOSED, 19/19 migrated)
 
-**Status:** Open · **Severity:** P0 · **Owner:** Platform team
+**Status:** CLOSED (2026-08-19) · **Severity:** was P0 · **Owner:** Platform team
 
 ### What
 
-Nineteen modules still read a generic `<name>_table (id, doc jsonb)` demo
+Nineteen modules formerly read a generic `<name>_table (id, doc jsonb)` demo
 table via `useSupabaseTable(...)`, seeded from a hardcoded in-file array. This
-violates the platform's first-principle contract (*"Never wire a page to a
+violated the platform's first-principle contract (*"Never wire a page to a
 generic `<name>_table (id, doc jsonb)` demo table"*) in `CLAUDE.md`.
+**All 19 are now migrated and `useSupabaseTable` has been deleted from the
+codebase.**
 
 ### Why it matters
 
@@ -269,21 +271,21 @@ that has no provenance.
 |---|---|---|
 | ~~Asset Management~~ | ~~`pages/AssetManagement.tsx`~~ | **migrated** → `assets` (2026-08-23) |
 | ~~Business Impact Analysis~~ | ~~`pages/BIA.tsx`~~ | **migrated** → `bia_processes` (2026-08-23) |
-| DPIA | `pages/DPIA.tsx` | `dpia_table` |
+| ~~DPIA~~ | ~~`pages/DPIA.tsx`~~ | **migrated** → `useDpiaRecords` hook / `dpia_records` table |
 | ~~Identity Governance (IGA)~~ | ~~`pages/IGA.tsx`~~ | **migrated** → `identities` + `sod_*` + `access_reviews` (2026-08-23) |
 | ~~Model Risk Committee~~ | ~~`pages/ModelRiskCommittee.tsx`~~ | **migrated** → `mrc_meetings` / `mrc_agenda_items` / `mrc_votes` / `mrc_committee_members` (2026-08-25) |
-| Regulator Filings | `pages/RegulatorFilings.tsx` | `regulatorfilings_table` |
-| Tabletop Exercises | `pages/TabletopExercises.tsx` | `tabletopexercises_table` |
-| Transparency Reports | `pages/TransparencyReports.tsx` | `transparencyreports_table` |
-| Committee Management | `pages/committee/CommitteeManagement.tsx` | `committeemanagement_table` |
-| Regulatory Radar | `pages/governance/RegRadar.tsx` | `regradar_table` |
-| HITL Review Center | `pages/hitl/HITLReviewCenter.tsx` | `hitlreviewcenter_table` |
+| ~~Regulator Filings~~ | ~~`pages/RegulatorFilings.tsx`~~ | **migrated** → `useFilings` hook / `regulator_filings` table |
+| ~~Tabletop Exercises~~ | ~~`pages/TabletopExercises.tsx`~~ | **migrated** → `useTabletops` hook / `tabletop_exercises` + `playbooks` tables |
+| ~~Transparency Reports~~ | ~~`pages/TransparencyReports.tsx`~~ | **migrated** → `useTransparencyReports` hook / `transparency_reports` table |
+| ~~Committee Management~~ | ~~`pages/ModelRiskCommittee.tsx`~~ | **migrated** → `useMrc` hook (same as MRC above; no separate committee page exists) |
+| ~~Regulatory Radar~~ | ~~`pages/governance/RegRadar.tsx`~~ | **migrated** → `useRegulationEntries` hook / `regulation_entries` table |
+| ~~HITL Review Center~~ | ~~`pages/hitl/HITLReviewCenter.tsx`~~ | **migrated** → `useHitlReviews` hook / `hitl_reviews` table |
 | ~~Reporting~~ | ~~`pages/reporting/Reporting.tsx`~~ | **migrated** → `security_reports` / `security_report_runs` (2026-08-25) |
-| Attack Surface | `pages/security/AttackSurface.tsx` | `attacksurface_table` |
-| Keys Vault | `pages/security/KeysVault.tsx` | `keysvault_table` |
-| Policy Firewall | `pages/security/PolicyFirewall.tsx` | `policyfirewall_table` |
-| Red Team Lab | `pages/security/RedTeamLab.tsx` | `redteamlab_table` |
-| Report Generator | `pages/security/ReportGenerator.tsx` | `reportgenerator_table` |
+| ~~Attack Surface~~ | ~~`pages/security/AttackSurface.tsx`~~ | **migrated** → `useAssets` hook / `attack_surface_assets` table |
+| ~~Keys Vault~~ | ~~`pages/security/KeysVault.tsx`~~ | **migrated** → `useKeys` hook / `api_keys` table |
+| ~~Policy Firewall~~ | ~~`pages/security/PolicyFirewall.tsx`~~ | **migrated** → `useFirewall` hook / `policy_firewall_rules` table |
+| ~~Red Team Lab~~ | ~~`pages/security/RedTeamLab.tsx`~~ | **migrated** → `useCampaigns` hook / `red_team_campaigns` table |
+| ~~Report Generator~~ | ~~`pages/security/ReportGenerator.tsx`~~ | **migrated** → `useReports` + `useReportRuns` hooks / `security_reports` table |
 | ~~Vendor Assessments~~ | ~~`pages/vendors/VendorAssessments.tsx`~~ | **migrated** → `vendor_assessments` (2026-08-16) |
 | ~~Vendor SLA~~ | ~~`pages/vendors/VendorSLA.tsx`~~ | **migrated** → `vendor_slas` (2026-08-16) |
 | ~~AIBOM Registry~~ | ~~`pages/AibomRegistry.tsx`~~ | **migrated** → `aibom_records` (2026-08-16) |
@@ -328,31 +330,28 @@ that has no provenance.
 Ordered by regulatory exposure — how directly a fabricated record in that module
 would mislead an assessor:
 
-**Tier 1 — statutory records (do first)**
-Remaining: `DPIA`, `Regulator Filings`, `HITL Review Center`.
-(`RoPA`, `TIA` and `Compliance Controls` migrated 2026-08-16.) These are named artefacts under GDPR Arts. 30/35, the AI
-Act's Art. 14 oversight record, and conformity evidence. A seeded row here is the
-highest-consequence defect in the register.
+**Tier 1 — statutory records** — ALL MIGRATED.
+`DPIA` → `useDpiaRecords`; `Regulator Filings` → `useFilings`;
+`HITL Review Center` → `useHitlReviews`.
+(`RoPA`, `TIA` and `Compliance Controls` migrated 2026-08-16.)
 
-**Tier 2 — governance process records**
-Remaining: `Committee Management`, `Tabletop Exercises`, `Transparency Reports`.
+**Tier 2 — governance process records** — ALL MIGRATED.
+`Committee Management` → `useMrc` (same page as MRC);
+`Tabletop Exercises` → `useTabletops`; `Transparency Reports` → `useTransparencyReports`.
 (`Model Risk Committee` migrated 2026-08-25; `BIA` migrated 2026-08-23;
 `Vendor Assessments` and `Vendor SLA` migrated 2026-08-16.)
 
-**Tier 3 — operational surfaces**
-Remaining: `Report Generator`, `Regulatory Radar`, `Attack Surface`,
-`Keys Vault`, `Policy Firewall`, `Red Team Lab`.
+**Tier 3 — operational surfaces** — ALL MIGRATED.
+`Report Generator` → `useReports`/`useReportRuns`; `Regulatory Radar` → `useRegulationEntries`;
+`Attack Surface` → `useAssets`; `Keys Vault` → `useKeys`;
+`Policy Firewall` → `useFirewall`; `Red Team Lab` → `useCampaigns`.
 (`Asset Management` and `IGA` migrated 2026-08-23; `Reporting` migrated 2026-08-25.)
 
-> **Remaining after the 2026-08-23/25 waves (12 modules):** `DPIA`,
-> `Regulator Filings`, `HITL Review Center` (Tier 1); `Committee Management`,
-> `Tabletop Exercises`, `Transparency Reports` (Tier 2); `Report Generator`,
-> `Regulatory Radar`, `Attack Surface`, `Keys Vault`, `Policy Firewall`,
-> `Red Team Lab` (Tier 3). TD-001 is **not** closed — these still render seeded
-> fiction through `useSupabaseTable`. Asset Management, BIA and IGA were
-> migrated on main (2026-08-23, ADMIN registers wave); Model Risk Committee and
-> Reporting in the 2026-08-25 wave — the last ones whose real tables already
-> existed and sat unread.
+> **CLOSED 2026-08-19.** All 19 modules migrated across four waves (2026-08-16,
+> 2026-08-23, 2026-08-25, and incremental service hookups). The `useSupabaseTable`
+> hook has been deleted from the codebase — verified by `grep -r useSupabaseTable`
+> returning zero matches across the entire repo. Every page now reads from a
+> dedicated React Query hook backed by a real org-scoped Supabase table with RLS.
 
 ### Known-good remediation pattern
 

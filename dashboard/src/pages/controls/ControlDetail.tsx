@@ -199,32 +199,27 @@ export default function ControlDetail() {
 
   return (
     <div className="space-y-6">
-      <Button variant="ghost" size="sm" onClick={() => navigate('/compliance/controls')} style={{ padding: '4px 8px' }}>
-        <ArrowLeft size={14} /> Back to Controls
-      </Button>
-
       {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>{control.name || control.title || 'Untitled control'}</h1>
-          <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-            {orgName} · {control.framework || 'No framework'} · {control.clauseRef || 'No clause'} · Ref: {displayRef(control)}
-          </p>
-        </div>
-        <div className="flex gap-2 items-center">
-          <Badge style={{ background: statusTone.bg, color: statusTone.tx, borderRadius: 0 }}>
-            {prettyStatus(status)}
-          </Badge>
-          {testResult ? (
-            <Badge style={{ background: `${trColor}20`, color: trColor, border: `1px solid ${trColor}`, borderRadius: 0 }}>
-              {testResult === 'pass' ? <CheckCircle size={11} style={{ display: 'inline', marginRight: 3 }} /> : testResult === 'fail' ? <XCircle size={11} style={{ display: 'inline', marginRight: 3 }} /> : <Clock size={11} style={{ display: 'inline', marginRight: 3 }} />}
-              {testResult.toUpperCase()}
+      <PageHeader
+        title={control.name || control.title || 'Untitled control'}
+        subtitle={`${orgName} · ${control.framework || 'No framework'} · ${control.clauseRef || 'No clause'} · Ref: ${displayRef(control)}`}
+        onBack={() => navigate('/compliance/controls')}
+        actions={
+          <div className="flex gap-2 items-center">
+            <Badge style={{ background: statusTone.bg, color: statusTone.tx, borderRadius: 0 }}>
+              {prettyStatus(status)}
             </Badge>
-          ) : (
-            <Badge variant="outline" style={{ borderRadius: 0 }}>Never tested</Badge>
-          )}
-        </div>
-      </div>
+            {testResult ? (
+              <Badge style={{ background: `${trColor}20`, color: trColor, border: `1px solid ${trColor}`, borderRadius: 0 }}>
+                {testResult === 'pass' ? <CheckCircle size={11} style={{ display: 'inline', marginRight: 3 }} /> : testResult === 'fail' ? <XCircle size={11} style={{ display: 'inline', marginRight: 3 }} /> : <Clock size={11} style={{ display: 'inline', marginRight: 3 }} />}
+                {testResult.toUpperCase()}
+              </Badge>
+            ) : (
+              <Badge variant="outline" style={{ borderRadius: 0 }}>Never tested</Badge>
+            )}
+          </div>
+        }
+      />
 
       {/* Tabs */}
       <Tabs defaultValue="overview">

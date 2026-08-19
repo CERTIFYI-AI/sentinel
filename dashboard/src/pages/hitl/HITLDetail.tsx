@@ -126,17 +126,13 @@ export default function HITLDetail() {
 
   return (
     <div className="space-y-6">
-      {/* Back */}
-      <Link to="/hitl">
-        <Button variant="outline" size="sm" style={{ borderRadius: 0 }}>
-          <ArrowLeft size={14} /> Back to HITL Reviews
-        </Button>
-      </Link>
-
-      {/* Header row */}
-      <div className="flex items-start justify-between gap-4 flex-wrap">
-        <div>
-          <div className="flex items-center gap-2 mb-1 flex-wrap">
+      {/* Header */}
+      <PageHeader
+        title={review.title}
+        subtitle={review.description || undefined}
+        onBack={() => navigate('/hitl')}
+        badge={
+          <div className="flex items-center gap-2 flex-wrap">
             <Badge style={{ background: sc.bg, color: sc.text, border: `1px solid ${sc.border}`, borderRadius: 0, fontSize: 10 }}>
               {review.priority.toUpperCase()} PRIORITY
             </Badge>
@@ -154,17 +150,11 @@ export default function HITLDetail() {
               </Badge>
             )}
           </div>
-          <h1 className="text-2xl font-bold" style={{ color: 'hsl(var(--text-1))' }}>
-            {review.title}
-          </h1>
-          {review.description && (
-            <p className="text-sm mt-1" style={{ color: 'hsl(var(--text-3))' }}>{review.description}</p>
-          )}
-          <div className="flex items-center gap-2 mt-2 flex-wrap">
-            {entityChip}
-            {review.linkedRiskId && <InterlinkChip label="Linked risk" to={`/risks?open=${review.linkedRiskId}`} />}
-          </div>
-        </div>
+        }
+      />
+      <div className="flex items-center gap-2 flex-wrap">
+        {entityChip}
+        {review.linkedRiskId && <InterlinkChip label="Linked risk" to={`/risks?open=${review.linkedRiskId}`} />}
       </div>
 
       {/* SLA banner */}

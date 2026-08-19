@@ -129,27 +129,25 @@ export default function AiAdvisor() {
       {/* Left — Chat */}
       <div className="flex flex-col flex-1 min-w-0 gap-3">
         {/* Header */}
-        <div className="rounded border border-[hsl(var(--border))] bg-surface p-4 flex items-center gap-3">
-          <div className="w-10 h-10 bg-[hsl(var(--brand))] flex items-center justify-center flex-shrink-0">
-            <Brain size={20} weight="fill" className="text-[hsl(var(--bg-surface))]" />
-          </div>
-          <div className="flex-1">
-            <h1 className="text-base font-semibold text-[hsl(var(--text-1))]">AI Governance Advisor</h1>
-            <p className="text-xs text-[hsl(var(--text-4))]">Sentinel AI Co-Pilot</p>
-          </div>
-          <div className="flex items-center gap-3 text-xs text-[hsl(var(--text-4))]">
-            {criticalCount > 0 && (
-              <span className="flex items-center gap-1 px-2 py-1" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>
-                <Warning size={12} /> {criticalCount} Critical
-              </span>
-            )}
-            {highCount > 0 && (
-              <span className="flex items-center gap-1 px-2 py-1" style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>
-                <ShieldWarning size={12} /> {highCount} High
-              </span>
-            )}
-          </div>
-        </div>
+        <PageHeader
+          title="AI Governance Advisor"
+          subtitle="Sentinel AI Co-Pilot"
+          icon={Brain}
+          actions={
+            <div className="flex items-center gap-3 text-xs text-[hsl(var(--text-4))]">
+              {criticalCount > 0 && (
+                <span className="flex items-center gap-1 px-2 py-1" style={{ background: 'hsl(var(--s-er-bg))', color: 'hsl(var(--destructive))' }}>
+                  <Warning size={12} /> {criticalCount} Critical
+                </span>
+              )}
+              {highCount > 0 && (
+                <span className="flex items-center gap-1 px-2 py-1" style={{ background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>
+                  <ShieldWarning size={12} /> {highCount} High
+                </span>
+              )}
+            </div>
+          }
+        />
 
         {/* Simulation banner */}
         <div className="flex items-start gap-2 px-3 py-2 text-xs" style={{ border: '1px solid hsl(var(--s-wn-tx))', background: 'hsl(var(--s-wn-bg))', color: 'hsl(var(--s-wn-tx))' }}>
