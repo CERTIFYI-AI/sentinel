@@ -29,6 +29,9 @@ import {
 } from '@phosphor-icons/react';
 import { useFrameworksData } from '@/hooks/useFrameworksData';
 import { useFrameworkCatalog } from '@/hooks/useFrameworkCatalog';
+import { useFrameworkAdoptions, useAdoptFramework, useSetAdoptionStatus } from '@/hooks/queries/useFrameworkAdoptions';
+import { useAllControlLinks, useRemoveLinkGlobal } from '@/hooks/queries/useControlCollab';
+import { useAuthStore } from '@/store/authStore';
 import { InterlinkChip } from '../components/ui/InterlinkChip';
 import type { FrameworkRecord } from '@/services/frameworkService';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -76,12 +79,21 @@ interface OrgControlRow {
 
 async function fetchOrgControls(): Promise<OrgControlRow[]> {
   if (!isSupabaseConfigured() || !supabase) return [];
-  const { data, error } = await supabase
-    .from('controls')
-    .select('id, control_id, control_ref, name, framework, framework_id, clause_ref, status')
-    .order('control_id', { ascending: true });
-  if (error) throw new Error(error.message);
-  return (data ?? []) as OrgControlRow[];
+  // >1,000 controls org-wide; PostgREST caps one response at 1,000 and
+  // truncates silently, so page until a short page returns.
+  const PAGE = 1000;
+  const all: OrgControlRow[] = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('controls')
+      .select('id, control_id, control_ref, name, framework, framework_id, clause_ref, status')
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) throw new Error(error.message);
+    all.push(...((data ?? []) as OrgControlRow[]));
+    if ((data ?? []).length < PAGE) break;
+  }
+  return all;
 }
 
 const norm = (s: string | null | undefined) => (s ?? '').toLowerCase().trim();
@@ -285,6 +297,20 @@ function FrameworkRequirements({
 
 export default function Frameworks() {
   const { frameworks, isLoading, error, save, remove } = useFrameworksData();
+  // Compliance scope (ISO/IEC 42001 4.3): adoption records decide which
+  // frameworks count toward posture. Adopt/retire is a governed, audit-logged
+  // act; frameworks.is_active is derived from it.
+  const adoptionsQuery = useFrameworkAdoptions();
+  const adoptMutation = useAdoptFramework();
+  const setAdoption = useSetAdoptionStatus();
+  const authUser = useAuthStore((s) => s.user);
+  const adoptionFor = (frameworkId?: string | null) =>
+    (adoptionsQuery.data ?? []).find((a) => a.frameworkId === frameworkId);
+
+  // Org-specific crosswalk (control_links), resolved to refs/names via the
+  // same orgControls set the portfolio derives from — never a raw uuid.
+  const linksQuery = useAllControlLinks();
+  const removeLinkGlobal = useRemoveLinkGlobal();
   const nav = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -470,8 +496,10 @@ export default function Frameworks() {
                           {fw.jurisdiction && (
                             <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>{fw.jurisdiction}</Badge>
                           )}
-                          {fw.is_active === false && (
-                            <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>Inactive</Badge>
+                          {fw.is_active === false ? (
+                            <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>In library — not adopted</Badge>
+                          ) : (
+                            <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Adopted</Badge>
                           )}
                         </div>
                         <div className="flex gap-1" onClick={e => e.stopPropagation()}>
@@ -527,6 +555,29 @@ export default function Frameworks() {
                         {fw.code && <span className="font-mono text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{fw.code}</span>}
                         <AuditDateDisplay dateStr={fw.next_audit_at} />
                       </div>
+
+                      {/* Adoption is the card's primary action — full width, never hidden in a corner */}
+                      <div className="mt-3" onClick={e => e.stopPropagation()}>
+                        {(() => {
+                          const adoption = adoptionFor(fw.id);
+                          const adopted = adoption?.status === 'adopted';
+                          return adopted ? (
+                            <Button size="sm" variant="outline" className="w-full" style={{ borderRadius: 0 }}
+                              title="Retire this framework from your compliance scope — its controls are kept, just hidden from posture"
+                              disabled={setAdoption.isPending}
+                              onClick={() => adoption && setAdoption.mutate({ adoptionId: adoption.id, frameworkId: fw.id!, status: 'retired' })}>
+                              Retire from scope
+                            </Button>
+                          ) : (
+                            <Button size="sm" className="w-full" style={{ borderRadius: 0 }}
+                              title="Adopt this framework into your compliance scope — its controls start counting toward posture"
+                              disabled={adoptMutation.isPending}
+                              onClick={() => adoptMutation.mutate({ frameworkId: fw.id!, adoptedBy: authUser?.name ?? authUser?.email })}>
+                              Adopt into scope
+                            </Button>
+                          );
+                        })()}
+                      </div>
                     </CardContent>
                   </Card>
                 );
@@ -579,23 +630,95 @@ export default function Frameworks() {
 
         {/* ── Mapping ── */}
         <TabsContent value="mapping" className="mt-4 space-y-4">
-          <div className="p-4 flex items-start gap-3" style={{ background: 'hsl(var(--bg-muted))', border: '1px solid hsl(var(--border))' }}>
-            <ArrowsLeftRight size={20} style={{ color: 'hsl(var(--text-3))', flexShrink: 0, marginTop: 2 }} />
-            <div>
-              <p className="text-sm font-medium" style={{ color: 'hsl(var(--text-1))' }}>Org-specific control mappings are not wired up yet</p>
-              <p className="text-xs mt-1" style={{ color: 'hsl(var(--text-3))' }}>
-                Cross-framework mappings of your organization's controls (which control satisfies
-                which clause, with coverage and gaps) require the control-mapping backend, which has
-                not shipped. Until then, the static reference crosswalk below shows commonly cited
-                equivalences between major frameworks.
-              </p>
-            </div>
-          </div>
+          {/* ── Org-specific crosswalk — real control_links rows ── */}
+          <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+            <CardContent className="p-0">
+              <div className="px-4 py-3 flex items-center justify-between" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
+                <div>
+                  <p className="text-sm font-bold flex items-center gap-2" style={{ color: 'hsl(var(--text-1))' }}>
+                    <ArrowsLeftRight size={15} style={{ color: 'hsl(var(--brand))' }} />
+                    Your organization's control mappings
+                    {linksQuery.data && (
+                      <Badge style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))', borderRadius: 0, fontSize: 10 }}>
+                        {linksQuery.data.length}
+                      </Badge>
+                    )}
+                  </p>
+                  <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
+                    Which of your controls satisfies, supports or overlaps which counterpart in another
+                    framework. Add mappings from a control's detail sheet on the Controls page.
+                  </p>
+                </div>
+                <Button size="sm" variant="outline" style={{ borderRadius: 0 }} onClick={() => nav('/compliance/controls')}>
+                  Open Controls
+                </Button>
+              </div>
+              {linksQuery.isLoading ? (
+                <p className="px-4 py-6 text-xs" style={{ color: 'hsl(var(--text-4))' }}>Loading mappings…</p>
+              ) : linksQuery.isError ? (
+                <p className="px-4 py-6 text-xs" style={{ color: 'hsl(var(--s-er-tx))' }}>
+                  Mappings failed to load: {(linksQuery.error as Error)?.message}
+                </p>
+              ) : (linksQuery.data ?? []).length === 0 ? (
+                <p className="px-4 py-6 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+                  No mappings yet. Open a control on the Controls page and use its
+                  &ldquo;Cross-framework mappings&rdquo; panel to map it to counterparts in other frameworks.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr style={{ borderBottom: '2px solid hsl(var(--border))', background: 'hsl(var(--bg-muted))' }}>
+                        {['Control', 'Framework', 'Relation', 'Maps to', 'Framework', 'Note', ''].map((h, i) => (
+                          <th key={i} className="px-3 py-2.5 text-left font-semibold" style={{ color: 'hsl(var(--text-4))' }}>{h}</th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {(linksQuery.data ?? []).map((l, idx) => {
+                        const a = orgControls.find(c => c.id === l.controlId);
+                        const b = orgControls.find(c => c.id === l.relatedControlId);
+                        const cell = (c?: OrgControlRow) => c
+                          ? (
+                            <InterlinkChip
+                              label={`${c.control_ref || '—'} · ${c.name}`}
+                              to={`/compliance/controls?open=${c.id}`}
+                            />
+                          )
+                          : <span style={{ color: 'hsl(var(--text-4))' }}>Unavailable</span>;
+                        return (
+                          <tr key={l.id} style={{ borderBottom: '1px solid hsl(var(--border))', background: idx % 2 === 0 ? 'transparent' : 'hsl(var(--bg-muted))' }}>
+                            <td className="px-3 py-2 max-w-56">{cell(a)}</td>
+                            <td className="px-3 py-2" style={{ color: 'hsl(var(--text-3))' }}>{a?.framework || '—'}</td>
+                            <td className="px-3 py-2">
+                              <span className="px-1.5 py-0.5 text-[10px] uppercase tracking-wide" style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', border: '1px solid hsl(var(--border))' }}>
+                                {l.relation}
+                              </span>
+                            </td>
+                            <td className="px-3 py-2 max-w-56">{cell(b)}</td>
+                            <td className="px-3 py-2" style={{ color: 'hsl(var(--text-3))' }}>{b?.framework || '—'}</td>
+                            <td className="px-3 py-2 max-w-64 truncate" title={l.note ?? undefined} style={{ color: 'hsl(var(--text-4))' }}>{l.note || '—'}</td>
+                            <td className="px-3 py-2 text-right">
+                              <Button size="sm" variant="ghost" style={{ padding: '2px 6px', color: 'hsl(var(--destructive))' }}
+                                title="Remove this mapping" disabled={removeLinkGlobal.isPending}
+                                onClick={() => removeLinkGlobal.mutate({ id: l.id, controlId: l.controlId })}>
+                                <Trash size={12} />
+                              </Button>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </CardContent>
+          </Card>
 
           <Card style={{ borderRadius: 0, background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
             <CardContent className="p-0">
               <div className="px-4 py-3" style={{ borderBottom: '1px solid hsl(var(--border))' }}>
-                <p className="text-sm font-bold" style={{ color: 'hsl(var(--text-1))' }}>Reference Crosswalk (static)</p>
+                <p className="text-sm font-bold" style={{ color: 'hsl(var(--text-1))' }}>Reference crosswalk (static, for orientation)</p>
                 <p className="text-xs mt-0.5" style={{ color: 'hsl(var(--text-3))' }}>
                   Control-domain equivalences across ISO 27001, SOC 2, NIST AI RMF, and the EU AI Act
                 </p>

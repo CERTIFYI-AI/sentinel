@@ -25,9 +25,9 @@ It came from a **hardcoded default in a browser localStorage store**:
 
 ```ts
 // dashboard/src/stores/settingsStore.ts — deleted by this change
-orgName: 'Sentinel Financial Corp',
-domain: 'sentinel-grc.com',
-primaryContact: 'admin@sentinel-grc.com',
+orgName: 'Dignep Group Pvt.Ltd.',
+domain: 'certifyi.ai',
+primaryContact: 'admin@certifyi.ai',
 ```
 
 Three things were wrong with that, and they compound:

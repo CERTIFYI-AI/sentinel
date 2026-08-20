@@ -51,6 +51,7 @@ const RemediationTracker = lazy(() => import('./pages/RemediationTracker'));
 const Settings = lazy(() => import('./pages/Settings'));
 const SsoProviders = lazy(() => import('./pages/settings/SsoProviders'));
 const Login = lazy(() => import('./pages/Login'));
+const QuestionnaireRespond = lazy(() => import('./pages/public/QuestionnaireRespond'));
 const Signup = lazy(() => import('./pages/Signup'));
 const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
 
@@ -329,6 +330,9 @@ export default function App() {
           <Route path="/signup" element={<Suspense fallback={<Loading />}><Signup /></Suspense>} />
           <Route path="/forgot-password" element={<Suspense fallback={<Loading />}><ForgotPassword /></Suspense>} />
         </Route>
+
+        {/* Vendor questionnaire fill — tokenized, works with or without a session */}
+        <Route path="/questionnaire/respond" element={<Suspense fallback={<Loading />}><QuestionnaireRespond /></Suspense>} />
 
         {/* Fully public — no auth required */}
         <Route path="/ethics-reporting/submit" element={<Suspense fallback={<Loading />}><EthicsReportingSubmit /></Suspense>} />

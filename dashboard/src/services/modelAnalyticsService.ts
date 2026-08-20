@@ -172,3 +172,22 @@ export async function fetchLineage(modelId: string, modelName: string): Promise<
     provenance: Array.isArray(data.lineage) ? data.lineage : [],
   }
 }
+
+/**
+ * Schedule (queue) a bias audit for a model — a REAL bias_audits row with
+ * status 'Queued', the same shape the BiasMonitor sentinel inserts, so the
+ * Bias History tab and /bias-audits list pick it up immediately. Throws on
+ * failure; the caller owns the toast.
+ */
+export async function scheduleBiasAudit(modelId: string, triggeredBy: string): Promise<{ id: string }> {
+  if (!isSupabaseConfigured() || !supabase) {
+    throw new Error('Supabase is not configured — bias audits are unavailable')
+  }
+  const { data, error } = await supabase
+    .from('bias_audits')
+    .insert({ model_id: modelId, status: 'Queued', triggered_by: triggeredBy })
+    .select('id')
+    .single()
+  if (error) throw new Error(`The audit was not scheduled: ${error.message}`)
+  return { id: data.id }
+}

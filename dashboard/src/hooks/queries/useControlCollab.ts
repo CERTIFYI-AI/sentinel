@@ -10,7 +10,7 @@ import { toast } from 'sonner'
 import {
   fetchAssignments, addAssignment, removeAssignment,
   fetchComments, addComment, setCommentStatus,
-  fetchLinks, addLink, removeLink,
+  fetchLinks, fetchAllLinks, addLink, removeLink,
   fetchLinkedEvidence, linkEvidence, unlinkEvidence,
   type ControlAssignment, type ControlComment, type ControlLink,
 } from '../../services/controlCollabService'
@@ -76,6 +76,21 @@ export function useSetCommentStatus(controlId: string) {
     mutationFn: (p: { id: string; status: 'open' | 'resolved' }) =>
       setCommentStatus(p.id, controlId, p.status),
     onSuccess: () => qc.invalidateQueries({ queryKey: keys.comments(controlId) }),
+    onError: (e: Error) => toast.error(e.message),
+  })
+}
+
+/** Org-wide crosswalk for the Frameworks → Mapping tab. */
+export function useAllControlLinks() {
+  return useQuery({ queryKey: ['control-links-all'], queryFn: fetchAllLinks, staleTime: 30_000 })
+}
+
+/** Remove a link from the org-wide view (invalidates the global key). */
+export function useRemoveLinkGlobal() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: (p: { id: string; controlId: string }) => removeLink(p.id, p.controlId),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['control-links-all'] }); toast.success('Mapping removed') },
     onError: (e: Error) => toast.error(e.message),
   })
 }

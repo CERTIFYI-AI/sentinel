@@ -35,7 +35,7 @@ multiple requirements simultaneously.
 | Framework cards | card grid | Each framework with score, control count, last scored | Read-only |
 | Controls coverage | bar | Implemented vs total controls | Read-only derived |
 | Framework catalog | tab | Browse and add frameworks | Reads/writes `frameworks` |
-| Framework mapping | crosswalk table | Many-to-many control ↔ framework mapping | Read-only from `framework_controls` |
+| Framework mapping | crosswalk table | Your org's real control↔control mappings from `control_links` (resolved refs, remove action, deep links), with the static reference crosswalk kept below for orientation | Reads `control_links`; removals audit-logged |
 | Mesh recalculations | table | Recent `compliance_scores` with timestamp and source | Read-only |
 | Gap Analysis link | InterlinkChip | Navigate to derived gap view | → `/compliance/gap-analysis` |
 | Controls link | InterlinkChip | Navigate to control library | → `/compliance/controls` |
@@ -68,6 +68,15 @@ list shows an honest empty state.
 - **Coverage** — all 15 frameworks carry posture controls (1,017 total);
   the 6 security frameworks were backfilled from the catalog at
   'not_implemented' — posture is evidenced, never imported.
+- **Scope (adoption)** — `framework_adoptions` records which frameworks the
+  org manages against (ISO/IEC 42001 4.3): who adopted, when, scope note,
+  target audit date. The controls library and its KPIs count only adopted
+  frameworks; out-of-scope controls stay one toggle away, never deleted.
+  Adopt/Retire lives on the Frameworks portfolio cards and is audit-logged;
+  `frameworks.is_active` is derived from adoption state. Initial scope is
+  seeded (EU AI Act, ISO/IEC 42001, NIST AI RMF, GDPR, SOC 2, ISO 27001),
+  labelled "Platform seed (initial scope)" so a human adoption is
+  distinguishable from the default.
 
 ## Compliance
 - **EU AI Act** — Art. 43 (conformity assessment), Art. 9 (risk management

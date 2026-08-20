@@ -2,6 +2,8 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { PageSkeleton } from '@/components/ui/PageSkeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../components/ui/select';
 import { useState, useMemo } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { scheduleBiasAudit } from '../../services/modelAnalyticsService';
 import { Card, CardContent, CardHeader, CardTitle } from '../../components/ui/card';
 import { Badge } from '../../components/ui/badge';
 import { Button } from '../../components/ui/button';
@@ -331,6 +333,7 @@ export default function ModelDetail() {
 
 function ModelDetailView({ model }: { model: Model }) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
   const ct = useChartTheme();
   const [tab, setTab] = useState<Tab>('Model Card');
   const [showDriftModal, setShowDriftModal] = useState(false);
@@ -455,10 +458,18 @@ function ModelDetailView({ model }: { model: Model }) {
     logActivity({ modelId: model.id, event: 'EU AI Act Annex IV package exported (JSON)', actor, kind: 'info' }).catch(() => {});
     toast.success('Annex IV package exported');
   };
+  // Scheduling creates a REAL bias_audits row (status 'Queued') — the same
+  // shape the BiasMonitor sentinel queues — so the Bias History tab and the
+  // /bias-audits list update immediately. The activity-log line is the audit
+  // trail of the action, not the action itself.
   const scheduleAudit = () => {
-    logActivity({ modelId: model.id, event: 'Bias audit scheduled', actor, kind: 'info' })
-      .then(() => toast.success('Bias audit scheduled — recorded in the activity log'))
-      .catch(() => toast.error('Failed to schedule audit'));
+    scheduleBiasAudit(model.id, actor || 'model-detail')
+      .then(({ id }) => {
+        void logActivity({ modelId: model.id, event: `Bias audit queued (${id})`, actor, kind: 'info' }).catch(() => {});
+        qc.invalidateQueries({ queryKey: ['model-bias', model.id] });
+        toast.success('Bias audit queued', { description: 'It now appears in Bias History and on the Bias Audits page.' });
+      })
+      .catch((e: Error) => toast.error(e.message));
   };
 
   // Real analytics — Performance / Bias / Explainability / Lineage are read live

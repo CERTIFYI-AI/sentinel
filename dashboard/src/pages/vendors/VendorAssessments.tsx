@@ -18,6 +18,7 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ClipboardText, Plus, Export, CheckCircle, Warning, Clock } from '@phosphor-icons/react'
+import { TemplateLibrary } from '@/components/vendors/TemplateLibrary'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { StatCardRow, type StatCardRowItem } from '@/components/ui/StatCardRow'
 import { DataTable, type Column } from '@/components/ui/DataTable'
@@ -292,6 +293,9 @@ export default function VendorAssessments() {
       ) : (
         <>
           <StatCardRow cards={kpis} />
+
+          {/* Built-in questionnaire packs (vendor_assessment_templates) */}
+          <TemplateLibrary />
 
           {vendorParam && (
             <FilterChip label="Vendor" value={resolveName(vendorParam)} onClear={clearVendorFilter} />

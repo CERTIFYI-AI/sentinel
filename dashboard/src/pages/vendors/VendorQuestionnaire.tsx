@@ -37,6 +37,10 @@ import { FormDialog, Field } from '@/components/evals/FormDialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useVendor } from '@/hooks/useVendorsData'
 import { useVendorQuestionnaires } from '@/hooks/useVendorQuestionnaires'
+import { useAssessmentTemplates } from '@/hooks/queries/useAssessmentTemplates'
+import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { fetchInvites, sendInviteEmail, buildFillUrl } from '@/services/vendorInviteService'
 import type { QuestionnaireDecision } from '@/services/vendorQuestionnaireService'
 import { Pill, LinkPill, Fact, tone, fmtDate } from './vendorUi'
 
@@ -45,7 +49,7 @@ const TEMPLATE = 'Sentinel VSQ'
 const TEMPLATE_VERSION = 'v1.0'
 
 interface QuestionOption { value: string; label: string; points: number }
-interface Question { id: string; text: string; icon: React.ElementType; category: string; options: QuestionOption[] }
+interface Question { id: string; text: string; icon?: React.ElementType; category: string; options: QuestionOption[] }
 
 const QUESTIONS: Question[] = [
   {
@@ -150,6 +154,20 @@ export default function VendorQuestionnaire() {
   const [answers, setAnswers] = useState<Answers>({})
   const [respondent, setRespondent] = useState('')
   const [respondentEmail, setRespondentEmail] = useState('')
+
+  // Questionnaire packs from vendor_assessment_templates. ?template=<slug>
+  // preselects a pack (deep link from the pack library); the hardcoded VSQ
+  // stays as the fallback so the page still works if templates fail to load.
+  const templatesQuery = useAssessmentTemplates()
+  const [templateSlug, setTemplateSlug] = useState<string>(params.get('template') || 'vsq-core')
+  const activeTemplate = (templatesQuery.data ?? []).find((t) => t.slug === templateSlug) ?? null
+  const activeQuestions: Question[] = activeTemplate
+    ? activeTemplate.questions.map((q) => ({ id: q.id, text: q.text, category: q.category, options: q.options }))
+    : QUESTIONS
+  const activeName = activeTemplate?.name ?? TEMPLATE
+  const activeVersion = activeTemplate?.version ?? TEMPLATE_VERSION
+  const activeMaxScore = activeQuestions.reduce((sum, q) => sum + Math.max(...q.options.map((o) => o.points)), 0)
+  const switchTemplate = (slug: string) => { setTemplateSlug(slug); setAnswers({}) }
   const [reviewFor, setReviewFor] = useState<string | null>(null)
   const [reviewer, setReviewer] = useState('')
   const [decision, setDecision] = useState<QuestionnaireDecision>('approved')
@@ -157,11 +175,11 @@ export default function VendorQuestionnaire() {
   const viewing = openParam ? questionnaires.find((q) => q.id === openParam) ?? null : null
 
   const answeredCount = Object.keys(answers).filter((k) => answers[k]?.value).length
-  const score = useMemo(() => QUESTIONS.reduce((sum, q) => {
+  const score = useMemo(() => activeQuestions.reduce((sum, q) => {
     const a = answers[q.id]?.value
     return sum + (q.options.find((o) => o.value === a)?.points ?? 0)
-  }, 0), [answers])
-  const pct = Math.round((score / MAX_SCORE) * 100)
+  }, 0), [answers, activeQuestions])
+  const pct = activeMaxScore > 0 ? Math.round((score / activeMaxScore) * 100) : 0
 
   if (isLoading) return <PageSkeleton title="Vendor questionnaire" rows={6} />
 
@@ -196,20 +214,20 @@ export default function VendorQuestionnaire() {
     if (!vendor) return
     submit.mutate({
       vendorId: vendor.id,
-      template: TEMPLATE,
-      templateVersion: TEMPLATE_VERSION,
-      questions: QUESTIONS.map((q) => ({ id: q.id, text: q.text, category: q.category, options: q.options })),
+      template: activeName,
+      templateVersion: activeVersion,
+      questions: activeQuestions.map((q) => ({ id: q.id, text: q.text, category: q.category, options: q.options })),
       answers: Object.fromEntries(
         Object.entries(answers)
           .filter(([, a]) => !!a.value)
           .map(([qid, a]) => {
-            const q = QUESTIONS.find((x) => x.id === qid)
+            const q = activeQuestions.find((x) => x.id === qid)
             const opt = q?.options.find((o) => o.value === a.value)
             return [qid, { value: a.value, label: opt?.label, points: opt?.points, notes: a.notes || undefined }]
           }),
       ),
       score,
-      maxScore: MAX_SCORE,
+      maxScore: activeMaxScore,
       respondent,
       respondentEmail: respondentEmail || undefined,
     }, {
@@ -237,7 +255,7 @@ export default function VendorQuestionnaire() {
     <div className="space-y-6">
       <PageHeader
         title="Vendor security questionnaire"
-        subtitle={`${TEMPLATE} ${TEMPLATE_VERSION} · ${vendor.name || 'Unnamed vendor'}`}
+        subtitle={`${activeName} ${activeVersion} · ${vendor.name || 'Unnamed vendor'}`}
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Vendors', href: '/vendors' },
@@ -251,6 +269,9 @@ export default function VendorQuestionnaire() {
           </Button>
         }
       />
+
+      {/* ── Outstanding invitations (tokenized no-login links, 24h window) ── */}
+      <InvitesCard vendorId={vendor.id} />
 
       {/* ── Existing submissions ─────────────────────────────────────────── */}
       <Card style={{ borderRadius: 0, border: '1px solid hsl(var(--border))' }}>
@@ -354,10 +375,28 @@ export default function VendorQuestionnaire() {
       <Card style={{ borderRadius: 0, border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>New response</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>New response</h2>
+              {/* Questionnaire pack picker — switching packs clears the draft */}
+              <Select value={templateSlug} onValueChange={switchTemplate}>
+                <SelectTrigger className="h-8 w-80 text-xs">
+                  <SelectValue placeholder={templatesQuery.isLoading ? 'Loading packs…' : 'Questionnaire pack'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(templatesQuery.data ?? []).map((t) => (
+                    <SelectItem key={t.slug} value={t.slug}>
+                      {t.name} · {t.version} ({t.questions.length} questions)
+                    </SelectItem>
+                  ))}
+                  {(templatesQuery.data ?? []).length === 0 && (
+                    <SelectItem value="vsq-core">{TEMPLATE} {TEMPLATE_VERSION}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center gap-3">
               <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                {answeredCount} of {QUESTIONS.length} answered
+                {answeredCount} of {activeQuestions.length} answered
               </span>
               <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
                 {answeredCount === 0 ? '—' : `${pct}%`}
@@ -379,9 +418,13 @@ export default function VendorQuestionnaire() {
             </Field>
           </div>
 
+          {activeTemplate?.description && (
+            <p className="mt-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{activeTemplate.description}</p>
+          )}
+
           <div className="mt-5 space-y-4">
-            {QUESTIONS.map((q) => {
-              const Icon = q.icon
+            {activeQuestions.map((q) => {
+              const Icon = q.icon ?? ClipboardText
               const a = answers[q.id]
               return (
                 <div key={q.id} className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>
@@ -484,5 +527,77 @@ export default function VendorQuestionnaire() {
         record deliberately when you accept the attestation.
       </p>
     </div>
+  )
+}
+
+/**
+ * InvitesCard — the vendor's questionnaire invitations: what was sent to
+ * whom, its 24-hour window, and whether it came back. Completed invites link
+ * to nothing extra here because the submission appears in "Submitted
+ * responses" above. Resend re-issues the email for a pending invite; when
+ * email is not configured the link is copyable instead — never a fake sent.
+ */
+function InvitesCard({ vendorId }: { vendorId: string }) {
+  const invites = useQuery({
+    queryKey: ['vendor-invites', vendorId],
+    queryFn: () => fetchInvites(vendorId),
+    staleTime: 30_000,
+  })
+
+  if (invites.isLoading || (invites.data ?? []).length === 0) return null
+
+  const toneFor = (s: string) =>
+    s === 'completed' ? tone('ok') : s === 'pending' ? tone('warn') : tone('err')
+
+  return (
+    <Card style={{ borderRadius: 0, border: '1px solid hsl(var(--border))' }}>
+      <CardContent className="p-5">
+        <h2 className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Invitations</h2>
+        <p className="mt-0.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+          Tokenized links sent to the vendor contact — filled without login, valid for 24 hours.
+        </p>
+        <div className="mt-3 space-y-1.5">
+          {(invites.data ?? []).map((inv) => (
+            <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+              style={{ border: '1px solid hsl(var(--border))' }}>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>
+                  {inv.templateName} <span style={{ color: 'hsl(var(--text-4))' }}>{inv.templateVersion}</span>
+                </p>
+                <p className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>
+                  to {inv.sentTo} · {inv.status === 'pending'
+                    ? `expires ${fmtDate(inv.expiresAt)}`
+                    : inv.status === 'completed'
+                      ? `completed ${fmtDate(inv.completedAt)}`
+                      : inv.status}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Pill tone={toneFor(inv.status)}>{inv.status}</Pill>
+                {inv.status === 'pending' && (
+                  <>
+                    <Button size="sm" variant="ghost"
+                      onClick={() => { void navigator.clipboard.writeText(buildFillUrl(inv.token)); toast.success('Link copied') }}>
+                      Copy link
+                    </Button>
+                    <Button size="sm" variant="outline"
+                      onClick={() =>
+                        sendInviteEmail(inv.token)
+                          .then((r) => r.sent
+                            ? toast.success('Invitation email re-sent')
+                            : toast.warning(r.reason === 'email-not-configured'
+                                ? 'Email is not configured — use Copy link instead'
+                                : `Not sent: ${r.reason}`))
+                          .catch((e: Error) => toast.error(e.message))}>
+                      Resend
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }
