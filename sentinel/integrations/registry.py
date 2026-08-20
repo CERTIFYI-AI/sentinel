@@ -29,6 +29,21 @@ from sentinel.integrations.aws_secrets_manager.adapter import (
     AwsSecretsManagerAdapter,
     AwsSecretsManagerCredentials,
 )
+# Phase 3: AI platforms
+from sentinel.integrations.openai_platform.adapter import OpenAiAdapter, OpenAiCredentials
+from sentinel.integrations.azure_openai.adapter import AzureOpenAiAdapter, AzureOpenAiCredentials
+from sentinel.integrations.anthropic_api.adapter import AnthropicApiAdapter, AnthropicApiCredentials
+from sentinel.integrations.anthropic_console.adapter import AnthropicConsoleAdapter, AnthropicConsoleCredentials
+from sentinel.integrations.hugging_face.adapter import HuggingFaceAdapter, HuggingFaceCredentials
+from sentinel.integrations.github_copilot.adapter import GithubCopilotAdapter, GithubCopilotCredentials
+from sentinel.integrations.cursor_codeium.adapter import CursorCodeiumAdapter, CursorCodeiumCredentials
+from sentinel.integrations.langsmith.adapter import LangSmithAdapter, LangSmithCredentials
+from sentinel.integrations.arize.adapter import ArizeAdapter, ArizeCredentials
+from sentinel.integrations.wandb.adapter import WandbAdapter, WandbCredentials
+from sentinel.integrations.pinecone.adapter import PineconeAdapter, PineconeCredentials
+from sentinel.integrations.weaviate.adapter import WeaviateAdapter, WeaviateCredentials
+from sentinel.integrations.lakera.adapter import LakeraAdapter, LakeraCredentials
+from sentinel.integrations.hiddenlayer.adapter import HiddenLayerAdapter, HiddenLayerCredentials
 from sentinel.integrations.azure.adapter import AzureAdapter, AzureCredentials
 from sentinel.integrations.bitbucket.adapter import BitbucketAdapter, BitbucketCredentials
 from sentinel.integrations.chronicle.adapter import ChronicleAdapter, ChronicleCredentials
@@ -115,6 +130,21 @@ _REGISTRY: dict[str, tuple[type, type]] = {
     # Phase 2: AWS AI / secrets
     "aws_bedrock": (AwsBedrockAdapter, AwsBedrockCredentials),
     "aws_secrets_manager": (AwsSecretsManagerAdapter, AwsSecretsManagerCredentials),
+    # Phase 3: AI platforms
+    "openai": (OpenAiAdapter, OpenAiCredentials),
+    "openai_azure_openai": (AzureOpenAiAdapter, AzureOpenAiCredentials),
+    "anthropic_claude_api": (AnthropicApiAdapter, AnthropicApiCredentials),
+    "anthropic_claude_console": (AnthropicConsoleAdapter, AnthropicConsoleCredentials),
+    "hugging_face_enterprise": (HuggingFaceAdapter, HuggingFaceCredentials),
+    "github_copilot": (GithubCopilotAdapter, GithubCopilotCredentials),
+    "cursor_codeium": (CursorCodeiumAdapter, CursorCodeiumCredentials),
+    "langsmith_langfuse": (LangSmithAdapter, LangSmithCredentials),
+    "arize_ai_phoenix": (ArizeAdapter, ArizeCredentials),
+    "weights_biases_w_b": (WandbAdapter, WandbCredentials),
+    "pinecone": (PineconeAdapter, PineconeCredentials),
+    "weaviate": (WeaviateAdapter, WeaviateCredentials),
+    "lakera_protect_ai": (LakeraAdapter, LakeraCredentials),
+    "hiddenlayer": (HiddenLayerAdapter, HiddenLayerCredentials),
 }
 
 

@@ -51,6 +51,12 @@ class TestAdapterGate:
             "gitlab_cloud", "gitlab_self_managed", "gitlab_ci_cd",
             # Phase 2: AWS AI / secrets
             "aws_bedrock", "aws_secrets_manager",
+            # Phase 3: AI platforms
+            "openai", "openai_azure_openai", "anthropic_claude_api",
+            "anthropic_claude_console", "hugging_face_enterprise",
+            "github_copilot", "cursor_codeium", "langsmith_langfuse",
+            "arize_ai_phoenix", "weights_biases_w_b", "pinecone",
+            "weaviate", "lakera_protect_ai", "hiddenlayer",
         })
 
     def test_catalogued_only_product_has_no_adapter(self):
@@ -272,6 +278,49 @@ class TestConnectFormMatchesTheAdapter:
     def test_aws_secrets_manager_form_matches_its_credentials(self):
         self._assert_parity("aws_secrets_manager", "dashboard/src/integrations/aws_secrets_manager/config.ts")
 
+    # Phase 3: AI platforms
+    def test_openai_form_matches_its_credentials(self):
+        self._assert_parity("openai", "dashboard/src/integrations/openai_platform/config.ts")
+
+    def test_azure_openai_form_matches_its_credentials(self):
+        self._assert_parity("openai_azure_openai", "dashboard/src/integrations/azure_openai/config.ts")
+
+    def test_anthropic_api_form_matches_its_credentials(self):
+        self._assert_parity("anthropic_claude_api", "dashboard/src/integrations/anthropic_api/config.ts")
+
+    def test_anthropic_console_form_matches_its_credentials(self):
+        self._assert_parity("anthropic_claude_console", "dashboard/src/integrations/anthropic_console/config.ts")
+
+    def test_hugging_face_form_matches_its_credentials(self):
+        self._assert_parity("hugging_face_enterprise", "dashboard/src/integrations/hugging_face/config.ts")
+
+    def test_github_copilot_form_matches_its_credentials(self):
+        self._assert_parity("github_copilot", "dashboard/src/integrations/github_copilot/config.ts")
+
+    def test_cursor_codeium_form_matches_its_credentials(self):
+        self._assert_parity("cursor_codeium", "dashboard/src/integrations/cursor_codeium/config.ts")
+
+    def test_langsmith_form_matches_its_credentials(self):
+        self._assert_parity("langsmith_langfuse", "dashboard/src/integrations/langsmith/config.ts")
+
+    def test_arize_form_matches_its_credentials(self):
+        self._assert_parity("arize_ai_phoenix", "dashboard/src/integrations/arize/config.ts")
+
+    def test_wandb_form_matches_its_credentials(self):
+        self._assert_parity("weights_biases_w_b", "dashboard/src/integrations/wandb/config.ts")
+
+    def test_pinecone_form_matches_its_credentials(self):
+        self._assert_parity("pinecone", "dashboard/src/integrations/pinecone/config.ts")
+
+    def test_weaviate_form_matches_its_credentials(self):
+        self._assert_parity("weaviate", "dashboard/src/integrations/weaviate/config.ts")
+
+    def test_lakera_form_matches_its_credentials(self):
+        self._assert_parity("lakera_protect_ai", "dashboard/src/integrations/lakera/config.ts")
+
+    def test_hiddenlayer_form_matches_its_credentials(self):
+        self._assert_parity("hiddenlayer", "dashboard/src/integrations/hiddenlayer/config.ts")
+
     def test_every_shipped_adapter_has_a_connect_form(self):
         # A registered adapter with no form renders a "packaging gap" message
         # instead of fields. Catch it here rather than in front of a user.
@@ -316,6 +365,21 @@ class TestConnectFormMatchesTheAdapter:
             # Phase 2: AWS AI / secrets
             "aws_bedrock": "dashboard/src/integrations/aws_bedrock/config.ts",
             "aws_secrets_manager": "dashboard/src/integrations/aws_secrets_manager/config.ts",
+            # Phase 3: AI platforms
+            "openai": "dashboard/src/integrations/openai_platform/config.ts",
+            "openai_azure_openai": "dashboard/src/integrations/azure_openai/config.ts",
+            "anthropic_claude_api": "dashboard/src/integrations/anthropic_api/config.ts",
+            "anthropic_claude_console": "dashboard/src/integrations/anthropic_console/config.ts",
+            "hugging_face_enterprise": "dashboard/src/integrations/hugging_face/config.ts",
+            "github_copilot": "dashboard/src/integrations/github_copilot/config.ts",
+            "cursor_codeium": "dashboard/src/integrations/cursor_codeium/config.ts",
+            "langsmith_langfuse": "dashboard/src/integrations/langsmith/config.ts",
+            "arize_ai_phoenix": "dashboard/src/integrations/arize/config.ts",
+            "weights_biases_w_b": "dashboard/src/integrations/wandb/config.ts",
+            "pinecone": "dashboard/src/integrations/pinecone/config.ts",
+            "weaviate": "dashboard/src/integrations/weaviate/config.ts",
+            "lakera_protect_ai": "dashboard/src/integrations/lakera/config.ts",
+            "hiddenlayer": "dashboard/src/integrations/hiddenlayer/config.ts",
         }
         assert set(paths) == set(available_slugs())
         for slug, path in paths.items():

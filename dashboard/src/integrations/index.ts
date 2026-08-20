@@ -40,6 +40,21 @@ import { GitLabSmConfig } from './gitlab_sm/config'
 import { GitLabCiCdConfig } from './gitlab_cicd/config'
 import { AwsBedrockConfig } from './aws_bedrock/config'
 import { AwsSecretsManagerConfig } from './aws_secrets_manager/config'
+// Phase 3: AI platforms
+import { OpenAiConfig } from './openai_platform/config'
+import { AzureOpenAiConfig } from './azure_openai/config'
+import { AnthropicApiConfig } from './anthropic_api/config'
+import { AnthropicConsoleConfig } from './anthropic_console/config'
+import { HuggingFaceConfig } from './hugging_face/config'
+import { GithubCopilotConfig } from './github_copilot/config'
+import { CursorCodeiumConfig } from './cursor_codeium/config'
+import { LangSmithConfig } from './langsmith/config'
+import { ArizeConfig } from './arize/config'
+import { WandbConfig } from './wandb/config'
+import { PineconeConfig } from './pinecone/config'
+import { WeaviateConfig } from './weaviate/config'
+import { LakeraConfig } from './lakera/config'
+import { HiddenLayerConfig } from './hiddenlayer/config'
 
 export type { IntegrationConfig, CredentialField, IntegrationCategory, AuthMethod } from './types'
 
@@ -76,6 +91,21 @@ export const INTEGRATIONS: IntegrationConfig[] = [
   GitLabCiCdConfig,
   AwsBedrockConfig,
   AwsSecretsManagerConfig,
+  // Phase 3: AI platforms
+  OpenAiConfig,
+  AzureOpenAiConfig,
+  AnthropicApiConfig,
+  AnthropicConsoleConfig,
+  HuggingFaceConfig,
+  GithubCopilotConfig,
+  CursorCodeiumConfig,
+  LangSmithConfig,
+  ArizeConfig,
+  WandbConfig,
+  PineconeConfig,
+  WeaviateConfig,
+  LakeraConfig,
+  HiddenLayerConfig,
 ]
 
 export function getIntegrationConfig(id: string): IntegrationConfig | undefined {
