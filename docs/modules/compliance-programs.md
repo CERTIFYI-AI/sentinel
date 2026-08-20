@@ -2,7 +2,7 @@
 
 **Routes:** `/compliance`, `/compliance-dashboard`, `/compliance-autopilot`, `/compliance-frameworks`, `/framework-mapping`, `/frameworks`, `/gap-analysis`, `/maturity`, `/conformity-assessment`
 **Status:** Production
-**Owner:** Compliance · **Backing table(s):** `frameworks`, `controls`, `compliance_scores`, `framework_controls`, `conformity_assessments`, `maturity_assessments` (org-scoped, RLS)
+**Owner:** Compliance · **Backing table(s):** `frameworks`, `controls`, `compliance_scores`, `framework_controls`, `conformity_assessments`, `maturity_assessments`, `control_assignments`, `control_comments`, `control_links` (org-scoped, RLS)
 
 ## Purpose
 Single control universe mapped to multiple frameworks, with live posture,
@@ -41,6 +41,12 @@ multiple requirements simultaneously.
 | Controls link | InterlinkChip | Navigate to control library | → `/compliance/controls` |
 | Risk posture | strip | Risk metrics linking to risk register | → `/risks` |
 | JSON export | button | Downloads compliance snapshot | Real file |
+| List / Board toggle | view switch | Control library as a table or a kanban board (one column per implementation status, quick status change on card) | Writes `controls.status` |
+| Framework filter | select | Scopes the control library to one of the 15 frameworks, with per-framework counts | Read-only filter |
+| Assignees | panel | Multi-user assignment per control (owner / reviewer / approver / contributor); reassign = add/remove | Reads/writes `control_assignments`, audit-logged |
+| Comments & recommendations | panel | Threaded discussion; recommendations carry open/resolved | Reads/writes `control_comments`, audit-logged |
+| Evidence | panel | Link/unlink Evidence Vault records to the control | Writes `evidence.linked_controls`, audit-logged |
+| Cross-framework mappings | panel | Crosswalk this control to its counterparts in other frameworks (equivalent / supports / overlaps) | Reads/writes `control_links`, audit-logged |
 
 Nulls: a framework with no scored controls shows `—`. An empty framework
 list shows an honest empty state.
@@ -48,9 +54,20 @@ list shows an honest empty state.
 ## Interlinks
 - **Outbound** — InterlinkChip to `/compliance/gap-analysis`,
   `/compliance/controls`, `/risks`, `/frameworks?open=<id>`,
-  `/frameworks?tab=catalog`.
+  `/frameworks?tab=catalog`; from a control: linked models
+  (`/models/inventory/:id`), risks, policies, evidence
+  (`/evidence-vault?open=<id>`), and crosswalked controls
+  (`/compliance/controls?open=<id>`).
 - **Inbound** — serves as the Compliance & Regulatory group landing page;
-  mesh agents write `compliance_scores`; sidebar nav.
+  mesh agents write `compliance_scores`; sidebar nav; Evidence Vault records
+  reach their controls through `evidence.linked_controls`.
+- **Crosswalk** — `control_links` maps controls across frameworks
+  (equivalent / supports / overlaps). Seeded with 21 published
+  EU AI Act ↔ ISO/IEC 42001 ↔ NIST AI RMF correspondences, every one
+  verified to resolve on both ends (21/21); users extend it per control.
+- **Coverage** — all 15 frameworks carry posture controls (1,017 total);
+  the 6 security frameworks were backfilled from the catalog at
+  'not_implemented' — posture is evidenced, never imported.
 
 ## Compliance
 - **EU AI Act** — Art. 43 (conformity assessment), Art. 9 (risk management
