@@ -166,6 +166,46 @@ from sentinel.integrations.trufflehog.adapter import TrufflehogAdapter, Truffleh
 from sentinel.integrations.veracode.adapter import VeracodeAdapter, VeracodeCredentials
 from sentinel.integrations.wiz.adapter import WizAdapter, WizCredentials
 
+# Phase 7: HRIS / people
+from sentinel.integrations.adp.adapter import AdpAdapter, AdpCredentials
+from sentinel.integrations.adp_workforce_now.adapter import (
+    AdpWorkforceNowAdapter,
+    AdpWorkforceNowCredentials,
+)
+from sentinel.integrations.alexishr.adapter import AlexisHRAdapter, AlexisHRCredentials
+from sentinel.integrations.bamboohr.adapter import BamboohrAdapter, BamboohrCredentials
+from sentinel.integrations.charthop.adapter import CharthopAdapter, CharthopCredentials
+from sentinel.integrations.deel.adapter import DeelAdapter, DeelCredentials
+from sentinel.integrations.employment_hero.adapter import (
+    EmploymentHeroAdapter,
+    EmploymentHeroCredentials,
+)
+from sentinel.integrations.factorial.adapter import FactorialAdapter, FactorialCredentials
+from sentinel.integrations.gusto.adapter import GustoAdapter, GustoCredentials
+from sentinel.integrations.hibob.adapter import HibobAdapter, HibobCredentials
+from sentinel.integrations.humaans.adapter import HumaansAdapter, HumaansCredentials
+from sentinel.integrations.isolved.adapter import IsolvedAdapter, IsolvedCredentials
+from sentinel.integrations.justworks.adapter import JustworksAdapter, JustworksCredentials
+from sentinel.integrations.kenjo.adapter import KenjoAdapter, KenjoCredentials
+from sentinel.integrations.netsuite.adapter import NetsuiteAdapter, NetsuiteCredentials
+from sentinel.integrations.paychex.adapter import PaychexAdapter, PaychexCredentials
+from sentinel.integrations.payfit.adapter import PayfitAdapter, PayfitCredentials
+from sentinel.integrations.personio.adapter import PersonioAdapter, PersonioCredentials
+from sentinel.integrations.proliant.adapter import ProliantAdapter, ProliantCredentials
+from sentinel.integrations.rippling.adapter import RipplingAdapter, RipplingCredentials
+from sentinel.integrations.sap_successfactors.adapter import (
+    SapSuccessfactorsAdapter,
+    SapSuccessfactorsCredentials,
+)
+from sentinel.integrations.seven_shifts.adapter import SevenShiftsAdapter, SevenShiftsCredentials
+from sentinel.integrations.square_payroll.adapter import (
+    SquarePayrollAdapter,
+    SquarePayrollCredentials,
+)
+from sentinel.integrations.trinet.adapter import TrinetAdapter, TrinetCredentials
+from sentinel.integrations.ukg.adapter import UkgAdapter, UkgCredentials
+from sentinel.integrations.workday.adapter import WorkdayAdapter, WorkdayCredentials
+
 _REGISTRY: dict[str, tuple[type, type]] = {
     "github": (GithubAdapter, GithubCredentials),
     "aws": (AwsAdapter, AwsCredentials),
@@ -287,6 +327,33 @@ _REGISTRY: dict[str, tuple[type, type]] = {
     "trufflehog": (TrufflehogAdapter, TrufflehogCredentials),
     "veracode": (VeracodeAdapter, VeracodeCredentials),
     "wiz": (WizAdapter, WizCredentials),
+    # Phase 7: HRIS / people
+    "workday": (WorkdayAdapter, WorkdayCredentials),
+    "sap_successfactors": (SapSuccessfactorsAdapter, SapSuccessfactorsCredentials),
+    "adp": (AdpAdapter, AdpCredentials),
+    "adp_workforce_now": (AdpWorkforceNowAdapter, AdpWorkforceNowCredentials),
+    "ukg": (UkgAdapter, UkgCredentials),
+    "paychex": (PaychexAdapter, PaychexCredentials),
+    "bamboohr": (BamboohrAdapter, BamboohrCredentials),
+    "hibob": (HibobAdapter, HibobCredentials),
+    "personio": (PersonioAdapter, PersonioCredentials),
+    "rippling": (RipplingAdapter, RipplingCredentials),
+    "gusto": (GustoAdapter, GustoCredentials),
+    "deel": (DeelAdapter, DeelCredentials),
+    "trinet": (TrinetAdapter, TrinetCredentials),
+    "justworks": (JustworksAdapter, JustworksCredentials),
+    "isolved": (IsolvedAdapter, IsolvedCredentials),
+    "payfit": (PayfitAdapter, PayfitCredentials),
+    "square_payroll": (SquarePayrollAdapter, SquarePayrollCredentials),
+    "kenjo": (KenjoAdapter, KenjoCredentials),
+    "netsuite": (NetsuiteAdapter, NetsuiteCredentials),
+    "factorial": (FactorialAdapter, FactorialCredentials),
+    "charthop": (CharthopAdapter, CharthopCredentials),
+    "humaans": (HumaansAdapter, HumaansCredentials),
+    "proliant": (ProliantAdapter, ProliantCredentials),
+    "alexishr": (AlexisHRAdapter, AlexisHRCredentials),
+    "employment_hero": (EmploymentHeroAdapter, EmploymentHeroCredentials),
+    "7shifts": (SevenShiftsAdapter, SevenShiftsCredentials),
 }
 
 

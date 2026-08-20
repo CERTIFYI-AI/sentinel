@@ -120,6 +120,33 @@ import { TrivyConfig } from './trivy/config'
 import { TrufflehogConfig } from './trufflehog/config'
 import { VeracodeConfig } from './veracode/config'
 import { WizConfig } from './wiz/config'
+// Phase 7: HRIS / people
+import { WorkdayConfig } from './workday/config'
+import { SapSuccessfactorsConfig } from './sap_successfactors/config'
+import { AdpConfig } from './adp/config'
+import { AdpWorkforceNowConfig } from './adp_workforce_now/config'
+import { UkgConfig } from './ukg/config'
+import { PaychexConfig } from './paychex/config'
+import { BamboohrConfig } from './bamboohr/config'
+import { HibobConfig } from './hibob/config'
+import { PersonioConfig } from './personio/config'
+import { RipplingConfig } from './rippling/config'
+import { GustoConfig } from './gusto/config'
+import { DeelConfig } from './deel/config'
+import { TrinetConfig } from './trinet/config'
+import { JustworksConfig } from './justworks/config'
+import { IsolvedConfig } from './isolved/config'
+import { PayfitConfig } from './payfit/config'
+import { SquarePayrollConfig } from './square_payroll/config'
+import { KenjoConfig } from './kenjo/config'
+import { NetsuiteConfig } from './netsuite/config'
+import { FactorialConfig } from './factorial/config'
+import { CharthopConfig } from './charthop/config'
+import { HumaansConfig } from './humaans/config'
+import { ProliantConfig } from './proliant/config'
+import { AlexisHRConfig } from './alexishr/config'
+import { EmploymentHeroConfig } from './employment_hero/config'
+import { SevenShiftsConfig } from './seven_shifts/config'
 
 export type { IntegrationConfig, CredentialField, IntegrationCategory, AuthMethod } from './types'
 
@@ -236,6 +263,33 @@ export const INTEGRATIONS: IntegrationConfig[] = [
   TrufflehogConfig,
   VeracodeConfig,
   WizConfig,
+  // Phase 7: HRIS / people
+  WorkdayConfig,
+  SapSuccessfactorsConfig,
+  AdpConfig,
+  AdpWorkforceNowConfig,
+  UkgConfig,
+  PaychexConfig,
+  BamboohrConfig,
+  HibobConfig,
+  PersonioConfig,
+  RipplingConfig,
+  GustoConfig,
+  DeelConfig,
+  TrinetConfig,
+  JustworksConfig,
+  IsolvedConfig,
+  PayfitConfig,
+  SquarePayrollConfig,
+  KenjoConfig,
+  NetsuiteConfig,
+  FactorialConfig,
+  CharthopConfig,
+  HumaansConfig,
+  ProliantConfig,
+  AlexisHRConfig,
+  EmploymentHeroConfig,
+  SevenShiftsConfig,
 ]
 
 export function getIntegrationConfig(id: string): IntegrationConfig | undefined {

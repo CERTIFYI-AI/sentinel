@@ -79,6 +79,13 @@ class TestAdapterGate:
             "sumo_logic", "tailscale", "tenable",
             "tenable_vulnerability_management_fedramp",
             "trivy", "trufflehog", "veracode", "wiz",
+            # Phase 7: HRIS / people
+            "workday", "sap_successfactors", "adp", "adp_workforce_now",
+            "ukg", "paychex", "bamboohr", "hibob", "personio",
+            "rippling", "gusto", "deel", "trinet", "justworks",
+            "isolved", "payfit", "square_payroll", "kenjo", "netsuite",
+            "factorial", "charthop", "humaans", "proliant", "alexishr",
+            "employment_hero", "7shifts",
         })
 
     def test_catalogued_only_product_has_no_adapter(self):
@@ -532,6 +539,92 @@ class TestConnectFormMatchesTheAdapter:
     def test_wiz_form_matches_its_credentials(self):
         self._assert_parity("wiz", "dashboard/src/integrations/wiz/config.ts")
 
+    def test_workday_form_matches_its_credentials(self):
+        self._assert_parity("workday", "dashboard/src/integrations/workday/config.ts")
+
+    def test_sap_successfactors_form_matches_its_credentials(self):
+        self._assert_parity(
+            "sap_successfactors", "dashboard/src/integrations/sap_successfactors/config.ts"
+        )
+
+    def test_adp_form_matches_its_credentials(self):
+        self._assert_parity("adp", "dashboard/src/integrations/adp/config.ts")
+
+    def test_adp_workforce_now_form_matches_its_credentials(self):
+        self._assert_parity(
+            "adp_workforce_now", "dashboard/src/integrations/adp_workforce_now/config.ts"
+        )
+
+    def test_ukg_form_matches_its_credentials(self):
+        self._assert_parity("ukg", "dashboard/src/integrations/ukg/config.ts")
+
+    def test_paychex_form_matches_its_credentials(self):
+        self._assert_parity("paychex", "dashboard/src/integrations/paychex/config.ts")
+
+    def test_bamboohr_form_matches_its_credentials(self):
+        self._assert_parity("bamboohr", "dashboard/src/integrations/bamboohr/config.ts")
+
+    def test_hibob_form_matches_its_credentials(self):
+        self._assert_parity("hibob", "dashboard/src/integrations/hibob/config.ts")
+
+    def test_personio_form_matches_its_credentials(self):
+        self._assert_parity("personio", "dashboard/src/integrations/personio/config.ts")
+
+    def test_rippling_form_matches_its_credentials(self):
+        self._assert_parity("rippling", "dashboard/src/integrations/rippling/config.ts")
+
+    def test_gusto_form_matches_its_credentials(self):
+        self._assert_parity("gusto", "dashboard/src/integrations/gusto/config.ts")
+
+    def test_deel_form_matches_its_credentials(self):
+        self._assert_parity("deel", "dashboard/src/integrations/deel/config.ts")
+
+    def test_trinet_form_matches_its_credentials(self):
+        self._assert_parity("trinet", "dashboard/src/integrations/trinet/config.ts")
+
+    def test_justworks_form_matches_its_credentials(self):
+        self._assert_parity("justworks", "dashboard/src/integrations/justworks/config.ts")
+
+    def test_isolved_form_matches_its_credentials(self):
+        self._assert_parity("isolved", "dashboard/src/integrations/isolved/config.ts")
+
+    def test_payfit_form_matches_its_credentials(self):
+        self._assert_parity("payfit", "dashboard/src/integrations/payfit/config.ts")
+
+    def test_square_payroll_form_matches_its_credentials(self):
+        self._assert_parity(
+            "square_payroll", "dashboard/src/integrations/square_payroll/config.ts"
+        )
+
+    def test_kenjo_form_matches_its_credentials(self):
+        self._assert_parity("kenjo", "dashboard/src/integrations/kenjo/config.ts")
+
+    def test_netsuite_form_matches_its_credentials(self):
+        self._assert_parity("netsuite", "dashboard/src/integrations/netsuite/config.ts")
+
+    def test_factorial_form_matches_its_credentials(self):
+        self._assert_parity("factorial", "dashboard/src/integrations/factorial/config.ts")
+
+    def test_charthop_form_matches_its_credentials(self):
+        self._assert_parity("charthop", "dashboard/src/integrations/charthop/config.ts")
+
+    def test_humaans_form_matches_its_credentials(self):
+        self._assert_parity("humaans", "dashboard/src/integrations/humaans/config.ts")
+
+    def test_proliant_form_matches_its_credentials(self):
+        self._assert_parity("proliant", "dashboard/src/integrations/proliant/config.ts")
+
+    def test_alexishr_form_matches_its_credentials(self):
+        self._assert_parity("alexishr", "dashboard/src/integrations/alexishr/config.ts")
+
+    def test_employment_hero_form_matches_its_credentials(self):
+        self._assert_parity(
+            "employment_hero", "dashboard/src/integrations/employment_hero/config.ts"
+        )
+
+    def test_seven_shifts_form_matches_its_credentials(self):
+        self._assert_parity("7shifts", "dashboard/src/integrations/seven_shifts/config.ts")
+
     def test_every_shipped_adapter_has_a_connect_form(self):
         # A registered adapter with no form renders a "packaging gap" message
         # instead of fields. Catch it here rather than in front of a user.
@@ -656,6 +749,33 @@ class TestConnectFormMatchesTheAdapter:
             "trufflehog": "dashboard/src/integrations/trufflehog/config.ts",
             "veracode": "dashboard/src/integrations/veracode/config.ts",
             "wiz": "dashboard/src/integrations/wiz/config.ts",
+            # Phase 7: HRIS / people
+            "workday": "dashboard/src/integrations/workday/config.ts",
+            "sap_successfactors": "dashboard/src/integrations/sap_successfactors/config.ts",
+            "adp": "dashboard/src/integrations/adp/config.ts",
+            "adp_workforce_now": "dashboard/src/integrations/adp_workforce_now/config.ts",
+            "ukg": "dashboard/src/integrations/ukg/config.ts",
+            "paychex": "dashboard/src/integrations/paychex/config.ts",
+            "bamboohr": "dashboard/src/integrations/bamboohr/config.ts",
+            "hibob": "dashboard/src/integrations/hibob/config.ts",
+            "personio": "dashboard/src/integrations/personio/config.ts",
+            "rippling": "dashboard/src/integrations/rippling/config.ts",
+            "gusto": "dashboard/src/integrations/gusto/config.ts",
+            "deel": "dashboard/src/integrations/deel/config.ts",
+            "trinet": "dashboard/src/integrations/trinet/config.ts",
+            "justworks": "dashboard/src/integrations/justworks/config.ts",
+            "isolved": "dashboard/src/integrations/isolved/config.ts",
+            "payfit": "dashboard/src/integrations/payfit/config.ts",
+            "square_payroll": "dashboard/src/integrations/square_payroll/config.ts",
+            "kenjo": "dashboard/src/integrations/kenjo/config.ts",
+            "netsuite": "dashboard/src/integrations/netsuite/config.ts",
+            "factorial": "dashboard/src/integrations/factorial/config.ts",
+            "charthop": "dashboard/src/integrations/charthop/config.ts",
+            "humaans": "dashboard/src/integrations/humaans/config.ts",
+            "proliant": "dashboard/src/integrations/proliant/config.ts",
+            "alexishr": "dashboard/src/integrations/alexishr/config.ts",
+            "employment_hero": "dashboard/src/integrations/employment_hero/config.ts",
+            "7shifts": "dashboard/src/integrations/seven_shifts/config.ts",
         }
         assert set(paths) == set(available_slugs())
         for slug, path in paths.items():
