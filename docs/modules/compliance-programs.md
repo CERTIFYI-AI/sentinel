@@ -35,7 +35,7 @@ multiple requirements simultaneously.
 | Framework cards | card grid | Each framework with score, control count, last scored | Read-only |
 | Controls coverage | bar | Implemented vs total controls | Read-only derived |
 | Framework catalog | tab | Browse and add frameworks | Reads/writes `frameworks` |
-| Framework mapping | crosswalk table | Many-to-many control ↔ framework mapping | Read-only from `framework_controls` |
+| Framework mapping | crosswalk table | Your org's real control↔control mappings from `control_links` (resolved refs, remove action, deep links), with the static reference crosswalk kept below for orientation | Reads `control_links`; removals audit-logged |
 | Mesh recalculations | table | Recent `compliance_scores` with timestamp and source | Read-only |
 | Gap Analysis link | InterlinkChip | Navigate to derived gap view | → `/compliance/gap-analysis` |
 | Controls link | InterlinkChip | Navigate to control library | → `/compliance/controls` |

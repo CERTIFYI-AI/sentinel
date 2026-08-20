@@ -122,6 +122,14 @@ const mapLink = (r: any): ControlLink => ({
   relation: r.relation, note: r.note ?? null, createdAt: r.created_at,
 })
 
+/** Every crosswalk link in the org — the Frameworks → Mapping tab's data. */
+export async function fetchAllLinks(): Promise<ControlLink[]> {
+  const { data, error } = await client()
+    .from('control_links').select('*').order('created_at', { ascending: false })
+  if (error) throw new Error(`Crosswalk failed to load: ${error.message}`)
+  return (data ?? []).map(mapLink)
+}
+
 /** Links where the control appears on either end — the crosswalk is symmetric to read. */
 export async function fetchLinks(controlId: string): Promise<ControlLink[]> {
   const { data, error } = await client()
