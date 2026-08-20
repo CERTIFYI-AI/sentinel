@@ -100,15 +100,25 @@ const mapControl = (r: any): ControlRecord => ({
 })
 
 export async function fetchAllControls(): Promise<ControlRecord[]> {
-  const { data, error } = await client()
-    .from('controls')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) {
-    console.warn('[controlService] fetch failed: %s', error.message)
-    throw new Error(`Could not load controls: ${error.message}`)
+  // The library is >1,000 rows (all 15 frameworks); PostgREST caps a single
+  // select at 1,000 and truncates SILENTLY, so page explicitly until a short
+  // page comes back.
+  const PAGE = 1000
+  const all: any[] = []
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await client()
+      .from('controls')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .range(from, from + PAGE - 1)
+    if (error) {
+      console.warn('[controlService] fetch failed: %s', error.message)
+      throw new Error(`Could not load controls: ${error.message}`)
+    }
+    all.push(...(data ?? []))
+    if ((data ?? []).length < PAGE) break
   }
-  return (data ?? []).filter((r: any) => !r.is_deleted).map(mapControl)
+  return all.filter((r: any) => !r.is_deleted).map(mapControl)
 }
 
 export async function upsertControl(c: Partial<ControlRecord>): Promise<ControlRecord> {

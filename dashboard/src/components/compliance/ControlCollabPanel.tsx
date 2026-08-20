@@ -50,14 +50,34 @@ export function ControlCollabPanel({
   const me = useAuthStore((s) => s.user)
   const { options: people } = useUserOptions()
 
-  // ── Assignees ──
+  // ── Assignees (multi-select: pick several people, assign in one action) ──
   const assignments = useControlAssignments(controlId)
   const addAssign = useAddAssignment(controlId)
   const rmAssign = useRemoveAssignment(controlId)
-  const [pickUser, setPickUser] = useState('')
+  const [pickedUsers, setPickedUsers] = useState<string[]>([])
   const [pickRole, setPickRole] = useState<(typeof ROLES)[number]>('contributor')
+  const [assigning, setAssigning] = useState(false)
   const personName = (userId: string, fallback: string | null) =>
     people.find((p) => p.id === userId)?.name ?? fallback ?? 'Unavailable'
+  const togglePicked = (id: string) =>
+    setPickedUsers((cur) => (cur.includes(id) ? cur.filter((x) => x !== id) : [...cur, id]))
+  // People not yet holding the picked role on this control.
+  const assignedForRole = useMemo(
+    () => new Set((assignments.data ?? []).filter((a) => a.role === pickRole).map((a) => a.userId)),
+    [assignments.data, pickRole],
+  )
+  const assignPicked = async () => {
+    setAssigning(true)
+    try {
+      for (const userId of pickedUsers) {
+        if (assignedForRole.has(userId)) continue
+        const p = people.find((x) => x.id === userId)
+        await addAssign.mutateAsync({ userId, userName: p?.name, role: pickRole, assignedBy: me?.name })
+      }
+      setPickedUsers([])
+    } catch { /* hook toasts the error; keep remaining picks so the user can retry */ }
+    finally { setAssigning(false) }
+  }
 
   // ── Comments & recommendations ──
   const comments = useControlComments(controlId)
@@ -118,29 +138,38 @@ export function ControlCollabPanel({
           </div>
         )}
         {canEdit && (
-          <div className="mt-2 flex gap-2">
-            <Select value={pickUser || undefined} onValueChange={setPickUser}>
-              <SelectTrigger className="flex-1 h-8 text-xs"><SelectValue placeholder="Select person…" /></SelectTrigger>
-              <SelectContent>
-                {people.map((p) => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Select value={pickRole} onValueChange={(v) => setPickRole(v as (typeof ROLES)[number])}>
-              <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            <Button size="sm" variant="outline" disabled={!pickUser || addAssign.isPending}
-              onClick={() => {
-                const p = people.find((x) => x.id === pickUser)
-                addAssign.mutate(
-                  { userId: pickUser, userName: p?.name, role: pickRole, assignedBy: me?.name },
-                  { onSuccess: () => setPickUser('') },
+          <div className="mt-2 space-y-2">
+            {/* Multi-select: check several people, assign them in one action */}
+            <div className="max-h-36 overflow-y-auto p-2 space-y-1" style={{ border: '1px solid hsl(var(--border))' }}>
+              {people.length === 0 ? (
+                <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No people in the directory yet.</p>
+              ) : people.map((p) => {
+                const already = assignedForRole.has(p.id)
+                return (
+                  <label key={p.id}
+                    className={`flex items-center gap-2 text-xs ${already ? 'opacity-50' : 'cursor-pointer'}`}
+                    style={{ color: 'hsl(var(--text-2))' }}>
+                    <input type="checkbox" className="rounded-none border-[hsl(var(--border))]"
+                      checked={pickedUsers.includes(p.id)} disabled={already}
+                      onChange={() => togglePicked(p.id)} />
+                    {p.name}
+                    {already && <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>already {pickRole}</span>}
+                  </label>
                 )
-              }}>
-              <Plus size={12} /> Assign
-            </Button>
+              })}
+            </div>
+            <div className="flex gap-2">
+              <Select value={pickRole} onValueChange={(v) => setPickRole(v as (typeof ROLES)[number])}>
+                <SelectTrigger className="w-36 h-8 text-xs"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {ROLES.map((r) => <SelectItem key={r} value={r}>{r}</SelectItem>)}
+                </SelectContent>
+              </Select>
+              <Button size="sm" variant="outline" disabled={pickedUsers.length === 0 || assigning}
+                onClick={assignPicked}>
+                <Plus size={12} /> Assign{pickedUsers.length > 1 ? ` ${pickedUsers.length} people` : ''}
+              </Button>
+            </div>
           </div>
         )}
       </div>
