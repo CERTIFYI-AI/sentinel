@@ -68,6 +68,19 @@ import { KeeperConfig } from './keeper/config'
 import { CyberArkConfig } from './cyberark/config'
 import { SailPointConfig } from './sailpoint/config'
 import { OneIdentityConfig } from './one_identity/config'
+// Phase 5: Device / MDM
+import { JamfProConfig } from './jamf_pro/config'
+import { KandjiIruConfig } from './kandji_iru/config'
+import { MosyleConfig } from './mosyle/config'
+import { AddigyConfig } from './addigy/config'
+import { HexnodeConfig } from './hexnode/config'
+import { FleetDMConfig } from './fleetdm/config'
+import { NinjaOneConfig } from './ninjaone/config'
+import { MiradoreConfig } from './miradore/config'
+import { ManageEngineConfig } from './manageengine/config'
+import { OmnissaWorkspaceOneConfig } from './omnissa_workspace_one/config'
+import { VMwareWorkspaceOneConfig } from './vmware_workspace_one/config'
+import { JumpCloudMDMConfig } from './jumpcloud_mdm/config'
 
 export type { IntegrationConfig, CredentialField, IntegrationCategory, AuthMethod } from './types'
 
@@ -132,6 +145,19 @@ export const INTEGRATIONS: IntegrationConfig[] = [
   CyberArkConfig,
   SailPointConfig,
   OneIdentityConfig,
+  // Phase 5: Device / MDM
+  JamfProConfig,
+  KandjiIruConfig,
+  MosyleConfig,
+  AddigyConfig,
+  HexnodeConfig,
+  FleetDMConfig,
+  NinjaOneConfig,
+  MiradoreConfig,
+  ManageEngineConfig,
+  OmnissaWorkspaceOneConfig,
+  VMwareWorkspaceOneConfig,
+  JumpCloudMDMConfig,
 ]
 
 export function getIntegrationConfig(id: string): IntegrationConfig | undefined {

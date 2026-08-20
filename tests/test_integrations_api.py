@@ -62,6 +62,11 @@ class TestAdapterGate:
             "jumpcloud", "duo", "1password",
             "1password_device_trust_kolide", "keeper", "cyberark",
             "sailpoint", "one_identity",
+            # Phase 5: Device / MDM
+            "jamf_pro", "kandji_iru", "mosyle", "addigy",
+            "hexnode", "fleetdm", "ninjaone", "miradore",
+            "manageengine", "omnissa_workspace_one",
+            "vmware_workspace_one", "jumpcloud_mdm",
         })
 
     def test_catalogued_only_product_has_no_adapter(self):
@@ -363,6 +368,43 @@ class TestConnectFormMatchesTheAdapter:
     def test_one_identity_form_matches_its_credentials(self):
         self._assert_parity("one_identity", "dashboard/src/integrations/one_identity/config.ts")
 
+    # Phase 5: Device / MDM
+    def test_jamf_pro_form_matches_its_credentials(self):
+        self._assert_parity("jamf_pro", "dashboard/src/integrations/jamf_pro/config.ts")
+
+    def test_kandji_iru_form_matches_its_credentials(self):
+        self._assert_parity("kandji_iru", "dashboard/src/integrations/kandji_iru/config.ts")
+
+    def test_mosyle_form_matches_its_credentials(self):
+        self._assert_parity("mosyle", "dashboard/src/integrations/mosyle/config.ts")
+
+    def test_addigy_form_matches_its_credentials(self):
+        self._assert_parity("addigy", "dashboard/src/integrations/addigy/config.ts")
+
+    def test_hexnode_form_matches_its_credentials(self):
+        self._assert_parity("hexnode", "dashboard/src/integrations/hexnode/config.ts")
+
+    def test_fleetdm_form_matches_its_credentials(self):
+        self._assert_parity("fleetdm", "dashboard/src/integrations/fleetdm/config.ts")
+
+    def test_ninjaone_form_matches_its_credentials(self):
+        self._assert_parity("ninjaone", "dashboard/src/integrations/ninjaone/config.ts")
+
+    def test_miradore_form_matches_its_credentials(self):
+        self._assert_parity("miradore", "dashboard/src/integrations/miradore/config.ts")
+
+    def test_manageengine_form_matches_its_credentials(self):
+        self._assert_parity("manageengine", "dashboard/src/integrations/manageengine/config.ts")
+
+    def test_omnissa_workspace_one_form_matches_its_credentials(self):
+        self._assert_parity("omnissa_workspace_one", "dashboard/src/integrations/omnissa_workspace_one/config.ts")
+
+    def test_vmware_workspace_one_form_matches_its_credentials(self):
+        self._assert_parity("vmware_workspace_one", "dashboard/src/integrations/vmware_workspace_one/config.ts")
+
+    def test_jumpcloud_mdm_form_matches_its_credentials(self):
+        self._assert_parity("jumpcloud_mdm", "dashboard/src/integrations/jumpcloud_mdm/config.ts")
+
     def test_every_shipped_adapter_has_a_connect_form(self):
         # A registered adapter with no form renders a "packaging gap" message
         # instead of fields. Catch it here rather than in front of a user.
@@ -435,6 +477,19 @@ class TestConnectFormMatchesTheAdapter:
             "cyberark": "dashboard/src/integrations/cyberark/config.ts",
             "sailpoint": "dashboard/src/integrations/sailpoint/config.ts",
             "one_identity": "dashboard/src/integrations/one_identity/config.ts",
+            # Phase 5: Device / MDM
+            "jamf_pro": "dashboard/src/integrations/jamf_pro/config.ts",
+            "kandji_iru": "dashboard/src/integrations/kandji_iru/config.ts",
+            "mosyle": "dashboard/src/integrations/mosyle/config.ts",
+            "addigy": "dashboard/src/integrations/addigy/config.ts",
+            "hexnode": "dashboard/src/integrations/hexnode/config.ts",
+            "fleetdm": "dashboard/src/integrations/fleetdm/config.ts",
+            "ninjaone": "dashboard/src/integrations/ninjaone/config.ts",
+            "miradore": "dashboard/src/integrations/miradore/config.ts",
+            "manageengine": "dashboard/src/integrations/manageengine/config.ts",
+            "omnissa_workspace_one": "dashboard/src/integrations/omnissa_workspace_one/config.ts",
+            "vmware_workspace_one": "dashboard/src/integrations/vmware_workspace_one/config.ts",
+            "jumpcloud_mdm": "dashboard/src/integrations/jumpcloud_mdm/config.ts",
         }
         assert set(paths) == set(available_slugs())
         for slug, path in paths.items():

@@ -104,6 +104,25 @@ from sentinel.integrations.keeper.adapter import KeeperAdapter, KeeperCredential
 from sentinel.integrations.cyberark.adapter import CyberArkAdapter, CyberArkCredentials
 from sentinel.integrations.sailpoint.adapter import SailPointAdapter, SailPointCredentials
 from sentinel.integrations.one_identity.adapter import OneIdentityAdapter, OneIdentityCredentials
+# Phase 5: Device / MDM
+from sentinel.integrations.jamf_pro.adapter import JamfProAdapter, JamfProCredentials
+from sentinel.integrations.kandji_iru.adapter import KandjiIruAdapter, KandjiIruCredentials
+from sentinel.integrations.mosyle.adapter import MosyleAdapter, MosyleCredentials
+from sentinel.integrations.addigy.adapter import AddigyAdapter, AddigyCredentials
+from sentinel.integrations.hexnode.adapter import HexnodeAdapter, HexnodeCredentials
+from sentinel.integrations.fleetdm.adapter import FleetDMAdapter, FleetDMCredentials
+from sentinel.integrations.ninjaone.adapter import NinjaOneAdapter, NinjaOneCredentials
+from sentinel.integrations.miradore.adapter import MiradoreAdapter, MiradoreCredentials
+from sentinel.integrations.manageengine.adapter import ManageEngineAdapter, ManageEngineCredentials
+from sentinel.integrations.omnissa_workspace_one.adapter import (
+    OmnissaWorkspaceOneAdapter,
+    OmnissaWorkspaceOneCredentials,
+)
+from sentinel.integrations.vmware_workspace_one.adapter import (
+    VMwareWorkspaceOneAdapter,
+    VMwareWorkspaceOneCredentials,
+)
+from sentinel.integrations.jumpcloud_mdm.adapter import JumpCloudMDMAdapter, JumpCloudMDMCredentials
 
 _REGISTRY: dict[str, tuple[type, type]] = {
     "github": (GithubAdapter, GithubCredentials),
@@ -174,6 +193,19 @@ _REGISTRY: dict[str, tuple[type, type]] = {
     "cyberark": (CyberArkAdapter, CyberArkCredentials),
     "sailpoint": (SailPointAdapter, SailPointCredentials),
     "one_identity": (OneIdentityAdapter, OneIdentityCredentials),
+    # Phase 5: Device / MDM
+    "jamf_pro": (JamfProAdapter, JamfProCredentials),
+    "kandji_iru": (KandjiIruAdapter, KandjiIruCredentials),
+    "mosyle": (MosyleAdapter, MosyleCredentials),
+    "addigy": (AddigyAdapter, AddigyCredentials),
+    "hexnode": (HexnodeAdapter, HexnodeCredentials),
+    "fleetdm": (FleetDMAdapter, FleetDMCredentials),
+    "ninjaone": (NinjaOneAdapter, NinjaOneCredentials),
+    "miradore": (MiradoreAdapter, MiradoreCredentials),
+    "manageengine": (ManageEngineAdapter, ManageEngineCredentials),
+    "omnissa_workspace_one": (OmnissaWorkspaceOneAdapter, OmnissaWorkspaceOneCredentials),
+    "vmware_workspace_one": (VMwareWorkspaceOneAdapter, VMwareWorkspaceOneCredentials),
+    "jumpcloud_mdm": (JumpCloudMDMAdapter, JumpCloudMDMCredentials),
 }
 
 
