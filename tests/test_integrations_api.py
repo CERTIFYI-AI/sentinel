@@ -33,8 +33,11 @@ class TestAdapterGate:
         # Keep in step with sentinel/integrations/registry.py AND with the
         # migration that flips `adapter_status` — a slug connectable in one and
         # not the other is either a dead Connect button or a hidden capability.
-        assert available_slugs() == frozenset({"github", "aws", "microsoft_azure", "okta",
-                                     "microsoft_entra_id", "microsoft_entra_id_gcc_high"})
+        assert available_slugs() == frozenset({
+            "github", "aws", "microsoft_azure", "okta",
+            "microsoft_entra_id", "microsoft_entra_id_gcc_high",
+            "microsoft_intune", "microsoft_intune_gcc_high",
+        })
 
     def test_catalogued_only_product_has_no_adapter(self):
         # Slack is catalogued but no adapter ships; connecting must be refused.
@@ -133,7 +136,20 @@ class TestConnectFormMatchesTheAdapter:
 
         source = pathlib.Path(config_path).read_text()
         body = source.split("credentialFields:", 1)[1].split("checkCategories:", 1)[0]
-        return set(re.findall(r"^\s*id: '([a-z_]+)'", body, re.MULTILINE))
+        ids = set(re.findall(r"^\s*id: '([a-z_]+)'", body, re.MULTILINE))
+        if not ids:
+            m = re.search(r"credentialFields[^=]*=\s*\[", source)
+            if m:
+                arr_start = m.end()
+                depth, i = 1, arr_start
+                while i < len(source) and depth > 0:
+                    if source[i] == "[":
+                        depth += 1
+                    elif source[i] == "]":
+                        depth -= 1
+                    i += 1
+                ids = set(re.findall(r"id:\s*'([a-z_]+)'", source[arr_start:i]))
+        return ids
 
     @staticmethod
     def _credential_fields(credentials_cls) -> tuple[set[str], set[str]]:
@@ -170,6 +186,9 @@ class TestConnectFormMatchesTheAdapter:
     def test_okta_form_matches_its_credentials(self):
         self._assert_parity("okta", "dashboard/src/integrations/okta/config.ts")
 
+    def test_intune_form_matches_its_credentials(self):
+        self._assert_parity("microsoft_intune", "dashboard/src/integrations/intune/config.ts")
+
     def test_every_shipped_adapter_has_a_connect_form(self):
         # A registered adapter with no form renders a "packaging gap" message
         # instead of fields. Catch it here rather than in front of a user.
@@ -183,6 +202,8 @@ class TestConnectFormMatchesTheAdapter:
             # Two slugs, one adapter — the connect forms differ only by cloud.
             "microsoft_entra_id": "dashboard/src/integrations/entra/config.ts",
             "microsoft_entra_id_gcc_high": "dashboard/src/integrations/entra/config.ts",
+            "microsoft_intune": "dashboard/src/integrations/intune/config.ts",
+            "microsoft_intune_gcc_high": "dashboard/src/integrations/intune/config.ts",
         }
         assert set(paths) == set(available_slugs())
         for slug, path in paths.items():
