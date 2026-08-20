@@ -81,6 +81,45 @@ import { ManageEngineConfig } from './manageengine/config'
 import { OmnissaWorkspaceOneConfig } from './omnissa_workspace_one/config'
 import { VMwareWorkspaceOneConfig } from './vmware_workspace_one/config'
 import { JumpCloudMDMConfig } from './jumpcloud_mdm/config'
+// Phase 6: Security / SIEM
+import { AikidoConfig } from './aikido/config'
+import { AquaSecurityConfig } from './aqua_security/config'
+import { BitsightConfig } from './bitsight/config'
+import { CheckmarxConfig } from './checkmarx/config'
+import { CrowdStrikeConfig } from './crowdstrike/config'
+import { DatadogConfig } from './datadog/config'
+import { ElasticSecurityConfig } from './elastic_security/config'
+import { GitGuardianConfig } from './gitguardian/config'
+import { GitleaksConfig } from './gitleaks/config'
+import { GrafanaConfig } from './grafana/config'
+import { GraylogConfig } from './graylog/config'
+import { LaceworkConfig } from './lacework/config'
+import { LaunchDarklyConfig } from './launchdarkly/config'
+import { LogRhythmConfig } from './logrhythm/config'
+import { NessusConfig } from './nessus/config'
+import { NewRelicConfig } from './new_relic/config'
+import { OpenVasConfig } from './openvas/config'
+import { OrcaSecurityConfig } from './orca_security/config'
+import { PrismaCloudConfig } from './prisma_cloud/config'
+import { QualysConfig } from './qualys/config'
+import { Rapid7InsightVmConfig } from './rapid7_insightvm/config'
+import { RollbarConfig } from './rollbar/config'
+import { SecurityScorecardConfig } from './securityscorecard/config'
+import { SemgrepConfig } from './semgrep/config'
+import { SentinelOneConfig } from './sentinelone/config'
+import { SentryConfig } from './sentry/config'
+import { SnykConfig } from './snyk/config'
+import { SonarQubeConfig } from './sonarqube/config'
+import { SplunkConfig } from './splunk/config'
+import { SplunkEnterpriseConfig } from './splunk_enterprise/config'
+import { SumoLogicConfig } from './sumo_logic/config'
+import { TailscaleConfig } from './tailscale/config'
+import { TenableConfig } from './tenable/config'
+import { TenableFedRampConfig } from './tenable_vulnerability_management_fedramp/config'
+import { TrivyConfig } from './trivy/config'
+import { TrufflehogConfig } from './trufflehog/config'
+import { VeracodeConfig } from './veracode/config'
+import { WizConfig } from './wiz/config'
 
 export type { IntegrationConfig, CredentialField, IntegrationCategory, AuthMethod } from './types'
 
@@ -158,6 +197,45 @@ export const INTEGRATIONS: IntegrationConfig[] = [
   OmnissaWorkspaceOneConfig,
   VMwareWorkspaceOneConfig,
   JumpCloudMDMConfig,
+  // Phase 6: Security / SIEM
+  AikidoConfig,
+  AquaSecurityConfig,
+  BitsightConfig,
+  CheckmarxConfig,
+  CrowdStrikeConfig,
+  DatadogConfig,
+  ElasticSecurityConfig,
+  GitGuardianConfig,
+  GitleaksConfig,
+  GrafanaConfig,
+  GraylogConfig,
+  LaceworkConfig,
+  LaunchDarklyConfig,
+  LogRhythmConfig,
+  NessusConfig,
+  NewRelicConfig,
+  OpenVasConfig,
+  OrcaSecurityConfig,
+  PrismaCloudConfig,
+  QualysConfig,
+  Rapid7InsightVmConfig,
+  RollbarConfig,
+  SecurityScorecardConfig,
+  SemgrepConfig,
+  SentinelOneConfig,
+  SentryConfig,
+  SnykConfig,
+  SonarQubeConfig,
+  SplunkConfig,
+  SplunkEnterpriseConfig,
+  SumoLogicConfig,
+  TailscaleConfig,
+  TenableConfig,
+  TenableFedRampConfig,
+  TrivyConfig,
+  TrufflehogConfig,
+  VeracodeConfig,
+  WizConfig,
 ]
 
 export function getIntegrationConfig(id: string): IntegrationConfig | undefined {

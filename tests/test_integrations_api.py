@@ -67,6 +67,18 @@ class TestAdapterGate:
             "hexnode", "fleetdm", "ninjaone", "miradore",
             "manageengine", "omnissa_workspace_one",
             "vmware_workspace_one", "jumpcloud_mdm",
+            # Phase 6: Security / SIEM
+            "aikido", "aqua_security", "bitsight", "checkmarx",
+            "crowdstrike", "datadog", "elastic_security",
+            "gitguardian", "gitleaks", "grafana", "graylog",
+            "lacework", "launchdarkly", "logrhythm", "nessus",
+            "new_relic", "openvas", "orca_security", "prisma_cloud",
+            "qualys", "rapid7_insightvm", "rollbar",
+            "securityscorecard", "semgrep", "sentinelone", "sentry",
+            "snyk", "sonarqube", "splunk", "splunk_enterprise",
+            "sumo_logic", "tailscale", "tenable",
+            "tenable_vulnerability_management_fedramp",
+            "trivy", "trufflehog", "veracode", "wiz",
         })
 
     def test_catalogued_only_product_has_no_adapter(self):
@@ -405,6 +417,121 @@ class TestConnectFormMatchesTheAdapter:
     def test_jumpcloud_mdm_form_matches_its_credentials(self):
         self._assert_parity("jumpcloud_mdm", "dashboard/src/integrations/jumpcloud_mdm/config.ts")
 
+    # Phase 6: Security / SIEM
+    def test_aikido_form_matches_its_credentials(self):
+        self._assert_parity("aikido", "dashboard/src/integrations/aikido/config.ts")
+
+    def test_aqua_security_form_matches_its_credentials(self):
+        self._assert_parity("aqua_security", "dashboard/src/integrations/aqua_security/config.ts")
+
+    def test_bitsight_form_matches_its_credentials(self):
+        self._assert_parity("bitsight", "dashboard/src/integrations/bitsight/config.ts")
+
+    def test_checkmarx_form_matches_its_credentials(self):
+        self._assert_parity("checkmarx", "dashboard/src/integrations/checkmarx/config.ts")
+
+    def test_crowdstrike_form_matches_its_credentials(self):
+        self._assert_parity("crowdstrike", "dashboard/src/integrations/crowdstrike/config.ts")
+
+    def test_datadog_form_matches_its_credentials(self):
+        self._assert_parity("datadog", "dashboard/src/integrations/datadog/config.ts")
+
+    def test_elastic_security_form_matches_its_credentials(self):
+        self._assert_parity("elastic_security", "dashboard/src/integrations/elastic_security/config.ts")
+
+    def test_gitguardian_form_matches_its_credentials(self):
+        self._assert_parity("gitguardian", "dashboard/src/integrations/gitguardian/config.ts")
+
+    def test_gitleaks_form_matches_its_credentials(self):
+        self._assert_parity("gitleaks", "dashboard/src/integrations/gitleaks/config.ts")
+
+    def test_grafana_form_matches_its_credentials(self):
+        self._assert_parity("grafana", "dashboard/src/integrations/grafana/config.ts")
+
+    def test_graylog_form_matches_its_credentials(self):
+        self._assert_parity("graylog", "dashboard/src/integrations/graylog/config.ts")
+
+    def test_lacework_form_matches_its_credentials(self):
+        self._assert_parity("lacework", "dashboard/src/integrations/lacework/config.ts")
+
+    def test_launchdarkly_form_matches_its_credentials(self):
+        self._assert_parity("launchdarkly", "dashboard/src/integrations/launchdarkly/config.ts")
+
+    def test_logrhythm_form_matches_its_credentials(self):
+        self._assert_parity("logrhythm", "dashboard/src/integrations/logrhythm/config.ts")
+
+    def test_nessus_form_matches_its_credentials(self):
+        self._assert_parity("nessus", "dashboard/src/integrations/nessus/config.ts")
+
+    def test_new_relic_form_matches_its_credentials(self):
+        self._assert_parity("new_relic", "dashboard/src/integrations/new_relic/config.ts")
+
+    def test_openvas_form_matches_its_credentials(self):
+        self._assert_parity("openvas", "dashboard/src/integrations/openvas/config.ts")
+
+    def test_orca_security_form_matches_its_credentials(self):
+        self._assert_parity("orca_security", "dashboard/src/integrations/orca_security/config.ts")
+
+    def test_prisma_cloud_form_matches_its_credentials(self):
+        self._assert_parity("prisma_cloud", "dashboard/src/integrations/prisma_cloud/config.ts")
+
+    def test_qualys_form_matches_its_credentials(self):
+        self._assert_parity("qualys", "dashboard/src/integrations/qualys/config.ts")
+
+    def test_rapid7_insightvm_form_matches_its_credentials(self):
+        self._assert_parity("rapid7_insightvm", "dashboard/src/integrations/rapid7_insightvm/config.ts")
+
+    def test_rollbar_form_matches_its_credentials(self):
+        self._assert_parity("rollbar", "dashboard/src/integrations/rollbar/config.ts")
+
+    def test_securityscorecard_form_matches_its_credentials(self):
+        self._assert_parity("securityscorecard", "dashboard/src/integrations/securityscorecard/config.ts")
+
+    def test_semgrep_form_matches_its_credentials(self):
+        self._assert_parity("semgrep", "dashboard/src/integrations/semgrep/config.ts")
+
+    def test_sentinelone_form_matches_its_credentials(self):
+        self._assert_parity("sentinelone", "dashboard/src/integrations/sentinelone/config.ts")
+
+    def test_sentry_form_matches_its_credentials(self):
+        self._assert_parity("sentry", "dashboard/src/integrations/sentry/config.ts")
+
+    def test_snyk_form_matches_its_credentials(self):
+        self._assert_parity("snyk", "dashboard/src/integrations/snyk/config.ts")
+
+    def test_sonarqube_form_matches_its_credentials(self):
+        self._assert_parity("sonarqube", "dashboard/src/integrations/sonarqube/config.ts")
+
+    def test_splunk_form_matches_its_credentials(self):
+        self._assert_parity("splunk", "dashboard/src/integrations/splunk/config.ts")
+
+    def test_splunk_enterprise_form_matches_its_credentials(self):
+        self._assert_parity("splunk_enterprise", "dashboard/src/integrations/splunk_enterprise/config.ts")
+
+    def test_sumo_logic_form_matches_its_credentials(self):
+        self._assert_parity("sumo_logic", "dashboard/src/integrations/sumo_logic/config.ts")
+
+    def test_tailscale_form_matches_its_credentials(self):
+        self._assert_parity("tailscale", "dashboard/src/integrations/tailscale/config.ts")
+
+    def test_tenable_form_matches_its_credentials(self):
+        self._assert_parity("tenable", "dashboard/src/integrations/tenable/config.ts")
+
+    def test_tenable_fedramp_form_matches_its_credentials(self):
+        self._assert_parity("tenable_vulnerability_management_fedramp", "dashboard/src/integrations/tenable_vulnerability_management_fedramp/config.ts")
+
+    def test_trivy_form_matches_its_credentials(self):
+        self._assert_parity("trivy", "dashboard/src/integrations/trivy/config.ts")
+
+    def test_trufflehog_form_matches_its_credentials(self):
+        self._assert_parity("trufflehog", "dashboard/src/integrations/trufflehog/config.ts")
+
+    def test_veracode_form_matches_its_credentials(self):
+        self._assert_parity("veracode", "dashboard/src/integrations/veracode/config.ts")
+
+    def test_wiz_form_matches_its_credentials(self):
+        self._assert_parity("wiz", "dashboard/src/integrations/wiz/config.ts")
+
     def test_every_shipped_adapter_has_a_connect_form(self):
         # A registered adapter with no form renders a "packaging gap" message
         # instead of fields. Catch it here rather than in front of a user.
@@ -490,6 +617,45 @@ class TestConnectFormMatchesTheAdapter:
             "omnissa_workspace_one": "dashboard/src/integrations/omnissa_workspace_one/config.ts",
             "vmware_workspace_one": "dashboard/src/integrations/vmware_workspace_one/config.ts",
             "jumpcloud_mdm": "dashboard/src/integrations/jumpcloud_mdm/config.ts",
+            # Phase 6: Security / SIEM
+            "aikido": "dashboard/src/integrations/aikido/config.ts",
+            "aqua_security": "dashboard/src/integrations/aqua_security/config.ts",
+            "bitsight": "dashboard/src/integrations/bitsight/config.ts",
+            "checkmarx": "dashboard/src/integrations/checkmarx/config.ts",
+            "crowdstrike": "dashboard/src/integrations/crowdstrike/config.ts",
+            "datadog": "dashboard/src/integrations/datadog/config.ts",
+            "elastic_security": "dashboard/src/integrations/elastic_security/config.ts",
+            "gitguardian": "dashboard/src/integrations/gitguardian/config.ts",
+            "gitleaks": "dashboard/src/integrations/gitleaks/config.ts",
+            "grafana": "dashboard/src/integrations/grafana/config.ts",
+            "graylog": "dashboard/src/integrations/graylog/config.ts",
+            "lacework": "dashboard/src/integrations/lacework/config.ts",
+            "launchdarkly": "dashboard/src/integrations/launchdarkly/config.ts",
+            "logrhythm": "dashboard/src/integrations/logrhythm/config.ts",
+            "nessus": "dashboard/src/integrations/nessus/config.ts",
+            "new_relic": "dashboard/src/integrations/new_relic/config.ts",
+            "openvas": "dashboard/src/integrations/openvas/config.ts",
+            "orca_security": "dashboard/src/integrations/orca_security/config.ts",
+            "prisma_cloud": "dashboard/src/integrations/prisma_cloud/config.ts",
+            "qualys": "dashboard/src/integrations/qualys/config.ts",
+            "rapid7_insightvm": "dashboard/src/integrations/rapid7_insightvm/config.ts",
+            "rollbar": "dashboard/src/integrations/rollbar/config.ts",
+            "securityscorecard": "dashboard/src/integrations/securityscorecard/config.ts",
+            "semgrep": "dashboard/src/integrations/semgrep/config.ts",
+            "sentinelone": "dashboard/src/integrations/sentinelone/config.ts",
+            "sentry": "dashboard/src/integrations/sentry/config.ts",
+            "snyk": "dashboard/src/integrations/snyk/config.ts",
+            "sonarqube": "dashboard/src/integrations/sonarqube/config.ts",
+            "splunk": "dashboard/src/integrations/splunk/config.ts",
+            "splunk_enterprise": "dashboard/src/integrations/splunk_enterprise/config.ts",
+            "sumo_logic": "dashboard/src/integrations/sumo_logic/config.ts",
+            "tailscale": "dashboard/src/integrations/tailscale/config.ts",
+            "tenable": "dashboard/src/integrations/tenable/config.ts",
+            "tenable_vulnerability_management_fedramp": "dashboard/src/integrations/tenable_vulnerability_management_fedramp/config.ts",
+            "trivy": "dashboard/src/integrations/trivy/config.ts",
+            "trufflehog": "dashboard/src/integrations/trufflehog/config.ts",
+            "veracode": "dashboard/src/integrations/veracode/config.ts",
+            "wiz": "dashboard/src/integrations/wiz/config.ts",
         }
         assert set(paths) == set(available_slugs())
         for slug, path in paths.items():

@@ -123,6 +123,48 @@ from sentinel.integrations.vmware_workspace_one.adapter import (
     VMwareWorkspaceOneCredentials,
 )
 from sentinel.integrations.jumpcloud_mdm.adapter import JumpCloudMDMAdapter, JumpCloudMDMCredentials
+# Phase 6: Security / SIEM
+from sentinel.integrations.aikido.adapter import AikidoAdapter, AikidoCredentials
+from sentinel.integrations.aqua_security.adapter import AquaSecurityAdapter, AquaSecurityCredentials
+from sentinel.integrations.bitsight.adapter import BitsightAdapter, BitsightCredentials
+from sentinel.integrations.checkmarx.adapter import CheckmarxAdapter, CheckmarxCredentials
+from sentinel.integrations.crowdstrike.adapter import CrowdStrikeAdapter, CrowdStrikeCredentials
+from sentinel.integrations.datadog.adapter import DatadogAdapter, DatadogCredentials
+from sentinel.integrations.elastic_security.adapter import ElasticSecurityAdapter, ElasticSecurityCredentials
+from sentinel.integrations.gitguardian.adapter import GitGuardianAdapter, GitGuardianCredentials
+from sentinel.integrations.gitleaks.adapter import GitleaksAdapter, GitleaksCredentials
+from sentinel.integrations.grafana.adapter import GrafanaAdapter, GrafanaCredentials
+from sentinel.integrations.graylog.adapter import GraylogAdapter, GraylogCredentials
+from sentinel.integrations.lacework.adapter import LaceworkAdapter, LaceworkCredentials
+from sentinel.integrations.launchdarkly.adapter import LaunchDarklyAdapter, LaunchDarklyCredentials
+from sentinel.integrations.logrhythm.adapter import LogRhythmAdapter, LogRhythmCredentials
+from sentinel.integrations.nessus.adapter import NessusAdapter, NessusCredentials
+from sentinel.integrations.new_relic.adapter import NewRelicAdapter, NewRelicCredentials
+from sentinel.integrations.openvas.adapter import OpenVasAdapter, OpenVasCredentials
+from sentinel.integrations.orca_security.adapter import OrcaSecurityAdapter, OrcaSecurityCredentials
+from sentinel.integrations.prisma_cloud.adapter import PrismaCloudAdapter, PrismaCloudCredentials
+from sentinel.integrations.qualys.adapter import QualysAdapter, QualysCredentials
+from sentinel.integrations.rapid7_insightvm.adapter import Rapid7InsightVmAdapter, Rapid7InsightVmCredentials
+from sentinel.integrations.rollbar.adapter import RollbarAdapter, RollbarCredentials
+from sentinel.integrations.securityscorecard.adapter import SecurityScorecardAdapter, SecurityScorecardCredentials
+from sentinel.integrations.semgrep.adapter import SemgrepAdapter, SemgrepCredentials
+from sentinel.integrations.sentinelone.adapter import SentinelOneAdapter, SentinelOneCredentials
+from sentinel.integrations.sentry.adapter import SentryAdapter, SentryCredentials
+from sentinel.integrations.snyk.adapter import SnykAdapter, SnykCredentials
+from sentinel.integrations.sonarqube.adapter import SonarQubeAdapter, SonarQubeCredentials
+from sentinel.integrations.splunk.adapter import SplunkAdapter, SplunkCredentials
+from sentinel.integrations.splunk_enterprise.adapter import SplunkEnterpriseAdapter, SplunkEnterpriseCredentials
+from sentinel.integrations.sumo_logic.adapter import SumoLogicAdapter, SumoLogicCredentials
+from sentinel.integrations.tailscale.adapter import TailscaleAdapter, TailscaleCredentials
+from sentinel.integrations.tenable.adapter import TenableAdapter, TenableCredentials
+from sentinel.integrations.tenable_vulnerability_management_fedramp.adapter import (
+    TenableFedRampAdapter,
+    TenableFedRampCredentials,
+)
+from sentinel.integrations.trivy.adapter import TrivyAdapter, TrivyCredentials
+from sentinel.integrations.trufflehog.adapter import TrufflehogAdapter, TrufflehogCredentials
+from sentinel.integrations.veracode.adapter import VeracodeAdapter, VeracodeCredentials
+from sentinel.integrations.wiz.adapter import WizAdapter, WizCredentials
 
 _REGISTRY: dict[str, tuple[type, type]] = {
     "github": (GithubAdapter, GithubCredentials),
@@ -206,6 +248,45 @@ _REGISTRY: dict[str, tuple[type, type]] = {
     "omnissa_workspace_one": (OmnissaWorkspaceOneAdapter, OmnissaWorkspaceOneCredentials),
     "vmware_workspace_one": (VMwareWorkspaceOneAdapter, VMwareWorkspaceOneCredentials),
     "jumpcloud_mdm": (JumpCloudMDMAdapter, JumpCloudMDMCredentials),
+    # Phase 6: Security / SIEM
+    "aikido": (AikidoAdapter, AikidoCredentials),
+    "aqua_security": (AquaSecurityAdapter, AquaSecurityCredentials),
+    "bitsight": (BitsightAdapter, BitsightCredentials),
+    "checkmarx": (CheckmarxAdapter, CheckmarxCredentials),
+    "crowdstrike": (CrowdStrikeAdapter, CrowdStrikeCredentials),
+    "datadog": (DatadogAdapter, DatadogCredentials),
+    "elastic_security": (ElasticSecurityAdapter, ElasticSecurityCredentials),
+    "gitguardian": (GitGuardianAdapter, GitGuardianCredentials),
+    "gitleaks": (GitleaksAdapter, GitleaksCredentials),
+    "grafana": (GrafanaAdapter, GrafanaCredentials),
+    "graylog": (GraylogAdapter, GraylogCredentials),
+    "lacework": (LaceworkAdapter, LaceworkCredentials),
+    "launchdarkly": (LaunchDarklyAdapter, LaunchDarklyCredentials),
+    "logrhythm": (LogRhythmAdapter, LogRhythmCredentials),
+    "nessus": (NessusAdapter, NessusCredentials),
+    "new_relic": (NewRelicAdapter, NewRelicCredentials),
+    "openvas": (OpenVasAdapter, OpenVasCredentials),
+    "orca_security": (OrcaSecurityAdapter, OrcaSecurityCredentials),
+    "prisma_cloud": (PrismaCloudAdapter, PrismaCloudCredentials),
+    "qualys": (QualysAdapter, QualysCredentials),
+    "rapid7_insightvm": (Rapid7InsightVmAdapter, Rapid7InsightVmCredentials),
+    "rollbar": (RollbarAdapter, RollbarCredentials),
+    "securityscorecard": (SecurityScorecardAdapter, SecurityScorecardCredentials),
+    "semgrep": (SemgrepAdapter, SemgrepCredentials),
+    "sentinelone": (SentinelOneAdapter, SentinelOneCredentials),
+    "sentry": (SentryAdapter, SentryCredentials),
+    "snyk": (SnykAdapter, SnykCredentials),
+    "sonarqube": (SonarQubeAdapter, SonarQubeCredentials),
+    "splunk": (SplunkAdapter, SplunkCredentials),
+    "splunk_enterprise": (SplunkEnterpriseAdapter, SplunkEnterpriseCredentials),
+    "sumo_logic": (SumoLogicAdapter, SumoLogicCredentials),
+    "tailscale": (TailscaleAdapter, TailscaleCredentials),
+    "tenable": (TenableAdapter, TenableCredentials),
+    "tenable_vulnerability_management_fedramp": (TenableFedRampAdapter, TenableFedRampCredentials),
+    "trivy": (TrivyAdapter, TrivyCredentials),
+    "trufflehog": (TrufflehogAdapter, TrufflehogCredentials),
+    "veracode": (VeracodeAdapter, VeracodeCredentials),
+    "wiz": (WizAdapter, WizCredentials),
 }
 
 
