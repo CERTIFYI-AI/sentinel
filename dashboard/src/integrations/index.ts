@@ -55,6 +55,19 @@ import { PineconeConfig } from './pinecone/config'
 import { WeaviateConfig } from './weaviate/config'
 import { LakeraConfig } from './lakera/config'
 import { HiddenLayerConfig } from './hiddenlayer/config'
+// Phase 4: Identity providers
+import { Auth0Config } from './auth0/config'
+import { OneLoginConfig } from './onelogin/config'
+import { PingOneConfig } from './pingone/config'
+import { PingIdentityConfig } from './ping_identity/config'
+import { JumpCloudConfig } from './jumpcloud/config'
+import { DuoConfig } from './duo/config'
+import { OnePasswordConfig } from './onepassword/config'
+import { OnePasswordDeviceTrustConfig } from './onepassword_device_trust/config'
+import { KeeperConfig } from './keeper/config'
+import { CyberArkConfig } from './cyberark/config'
+import { SailPointConfig } from './sailpoint/config'
+import { OneIdentityConfig } from './one_identity/config'
 
 export type { IntegrationConfig, CredentialField, IntegrationCategory, AuthMethod } from './types'
 
@@ -106,6 +119,19 @@ export const INTEGRATIONS: IntegrationConfig[] = [
   WeaviateConfig,
   LakeraConfig,
   HiddenLayerConfig,
+  // Phase 4: Identity providers
+  Auth0Config,
+  OneLoginConfig,
+  PingOneConfig,
+  PingIdentityConfig,
+  JumpCloudConfig,
+  DuoConfig,
+  OnePasswordConfig,
+  OnePasswordDeviceTrustConfig,
+  KeeperConfig,
+  CyberArkConfig,
+  SailPointConfig,
+  OneIdentityConfig,
 ]
 
 export function getIntegrationConfig(id: string): IntegrationConfig | undefined {

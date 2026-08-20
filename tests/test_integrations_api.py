@@ -57,6 +57,11 @@ class TestAdapterGate:
             "github_copilot", "cursor_codeium", "langsmith_langfuse",
             "arize_ai_phoenix", "weights_biases_w_b", "pinecone",
             "weaviate", "lakera_protect_ai", "hiddenlayer",
+            # Phase 4: Identity providers
+            "auth0", "onelogin", "pingone", "ping_identity",
+            "jumpcloud", "duo", "1password",
+            "1password_device_trust_kolide", "keeper", "cyberark",
+            "sailpoint", "one_identity",
         })
 
     def test_catalogued_only_product_has_no_adapter(self):
@@ -321,6 +326,43 @@ class TestConnectFormMatchesTheAdapter:
     def test_hiddenlayer_form_matches_its_credentials(self):
         self._assert_parity("hiddenlayer", "dashboard/src/integrations/hiddenlayer/config.ts")
 
+    # Phase 4: Identity providers
+    def test_auth0_form_matches_its_credentials(self):
+        self._assert_parity("auth0", "dashboard/src/integrations/auth0/config.ts")
+
+    def test_onelogin_form_matches_its_credentials(self):
+        self._assert_parity("onelogin", "dashboard/src/integrations/onelogin/config.ts")
+
+    def test_pingone_form_matches_its_credentials(self):
+        self._assert_parity("pingone", "dashboard/src/integrations/pingone/config.ts")
+
+    def test_ping_identity_form_matches_its_credentials(self):
+        self._assert_parity("ping_identity", "dashboard/src/integrations/ping_identity/config.ts")
+
+    def test_jumpcloud_form_matches_its_credentials(self):
+        self._assert_parity("jumpcloud", "dashboard/src/integrations/jumpcloud/config.ts")
+
+    def test_duo_form_matches_its_credentials(self):
+        self._assert_parity("duo", "dashboard/src/integrations/duo/config.ts")
+
+    def test_onepassword_form_matches_its_credentials(self):
+        self._assert_parity("1password", "dashboard/src/integrations/onepassword/config.ts")
+
+    def test_onepassword_device_trust_form_matches_its_credentials(self):
+        self._assert_parity("1password_device_trust_kolide", "dashboard/src/integrations/onepassword_device_trust/config.ts")
+
+    def test_keeper_form_matches_its_credentials(self):
+        self._assert_parity("keeper", "dashboard/src/integrations/keeper/config.ts")
+
+    def test_cyberark_form_matches_its_credentials(self):
+        self._assert_parity("cyberark", "dashboard/src/integrations/cyberark/config.ts")
+
+    def test_sailpoint_form_matches_its_credentials(self):
+        self._assert_parity("sailpoint", "dashboard/src/integrations/sailpoint/config.ts")
+
+    def test_one_identity_form_matches_its_credentials(self):
+        self._assert_parity("one_identity", "dashboard/src/integrations/one_identity/config.ts")
+
     def test_every_shipped_adapter_has_a_connect_form(self):
         # A registered adapter with no form renders a "packaging gap" message
         # instead of fields. Catch it here rather than in front of a user.
@@ -380,6 +422,19 @@ class TestConnectFormMatchesTheAdapter:
             "weaviate": "dashboard/src/integrations/weaviate/config.ts",
             "lakera_protect_ai": "dashboard/src/integrations/lakera/config.ts",
             "hiddenlayer": "dashboard/src/integrations/hiddenlayer/config.ts",
+            # Phase 4: Identity providers
+            "auth0": "dashboard/src/integrations/auth0/config.ts",
+            "onelogin": "dashboard/src/integrations/onelogin/config.ts",
+            "pingone": "dashboard/src/integrations/pingone/config.ts",
+            "ping_identity": "dashboard/src/integrations/ping_identity/config.ts",
+            "jumpcloud": "dashboard/src/integrations/jumpcloud/config.ts",
+            "duo": "dashboard/src/integrations/duo/config.ts",
+            "1password": "dashboard/src/integrations/onepassword/config.ts",
+            "1password_device_trust_kolide": "dashboard/src/integrations/onepassword_device_trust/config.ts",
+            "keeper": "dashboard/src/integrations/keeper/config.ts",
+            "cyberark": "dashboard/src/integrations/cyberark/config.ts",
+            "sailpoint": "dashboard/src/integrations/sailpoint/config.ts",
+            "one_identity": "dashboard/src/integrations/one_identity/config.ts",
         }
         assert set(paths) == set(available_slugs())
         for slug, path in paths.items():

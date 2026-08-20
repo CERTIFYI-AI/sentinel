@@ -88,6 +88,22 @@ from sentinel.integrations.sentinel_siem.adapter import SentinelSiemAdapter, Sen
 from sentinel.integrations.sharepoint.adapter import SharePointAdapter, SharePointCredentials
 from sentinel.integrations.teams.adapter import TeamsAdapter, TeamsCredentials
 from sentinel.integrations.vertex_ai.adapter import VertexAiAdapter, VertexAiCredentials
+# Phase 4: Identity providers
+from sentinel.integrations.auth0.adapter import Auth0Adapter, Auth0Credentials
+from sentinel.integrations.onelogin.adapter import OneLoginAdapter, OneLoginCredentials
+from sentinel.integrations.pingone.adapter import PingOneAdapter, PingOneCredentials
+from sentinel.integrations.ping_identity.adapter import PingIdentityAdapter, PingIdentityCredentials
+from sentinel.integrations.jumpcloud.adapter import JumpCloudAdapter, JumpCloudCredentials
+from sentinel.integrations.duo.adapter import DuoAdapter, DuoCredentials
+from sentinel.integrations.onepassword.adapter import OnePasswordAdapter, OnePasswordCredentials
+from sentinel.integrations.onepassword_device_trust.adapter import (
+    OnePasswordDeviceTrustAdapter,
+    OnePasswordDeviceTrustCredentials,
+)
+from sentinel.integrations.keeper.adapter import KeeperAdapter, KeeperCredentials
+from sentinel.integrations.cyberark.adapter import CyberArkAdapter, CyberArkCredentials
+from sentinel.integrations.sailpoint.adapter import SailPointAdapter, SailPointCredentials
+from sentinel.integrations.one_identity.adapter import OneIdentityAdapter, OneIdentityCredentials
 
 _REGISTRY: dict[str, tuple[type, type]] = {
     "github": (GithubAdapter, GithubCredentials),
@@ -145,6 +161,19 @@ _REGISTRY: dict[str, tuple[type, type]] = {
     "weaviate": (WeaviateAdapter, WeaviateCredentials),
     "lakera_protect_ai": (LakeraAdapter, LakeraCredentials),
     "hiddenlayer": (HiddenLayerAdapter, HiddenLayerCredentials),
+    # Phase 4: Identity providers
+    "auth0": (Auth0Adapter, Auth0Credentials),
+    "onelogin": (OneLoginAdapter, OneLoginCredentials),
+    "pingone": (PingOneAdapter, PingOneCredentials),
+    "ping_identity": (PingIdentityAdapter, PingIdentityCredentials),
+    "jumpcloud": (JumpCloudAdapter, JumpCloudCredentials),
+    "duo": (DuoAdapter, DuoCredentials),
+    "1password": (OnePasswordAdapter, OnePasswordCredentials),
+    "1password_device_trust_kolide": (OnePasswordDeviceTrustAdapter, OnePasswordDeviceTrustCredentials),
+    "keeper": (KeeperAdapter, KeeperCredentials),
+    "cyberark": (CyberArkAdapter, CyberArkCredentials),
+    "sailpoint": (SailPointAdapter, SailPointCredentials),
+    "one_identity": (OneIdentityAdapter, OneIdentityCredentials),
 }
 
 

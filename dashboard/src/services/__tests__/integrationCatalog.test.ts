@@ -259,26 +259,29 @@ describe('connect forms', () => {
     // a slug in one and not the other is a dead Connect button or a hidden
     // capability. `okta` joined in 20260922000001.
     expect(INTEGRATIONS.map(i => i.id).sort()).toEqual(
-      ['anthropic_claude_api', 'anthropic_claude_console',
-       'arize_ai_phoenix', 'aws', 'aws_bedrock', 'aws_secrets_manager',
+      ['1password', '1password_device_trust_kolide',
+       'anthropic_claude_api', 'anthropic_claude_console',
+       'arize_ai_phoenix', 'auth0', 'aws', 'aws_bedrock', 'aws_secrets_manager',
        'azure_devops', 'azure_key_vault', 'bitbucket_pipelines',
        'confluence', 'confluence_access_control', 'cursor_codeium',
+       'cyberark', 'duo',
        'github', 'github_copilot',
        'gitlab_ci_cd', 'gitlab_cloud', 'gitlab_self_managed',
        'google_chronicle', 'google_cloud_identity',
        'google_cloud_platform', 'google_cloud_vertex_ai',
        'google_drive', 'google_workspace',
        'hiddenlayer', 'hugging_face_enterprise',
-       'jira', 'jira_service_management',
-       'lakera_protect_ai', 'langsmith_langfuse',
+       'jira', 'jira_service_management', 'jumpcloud',
+       'keeper', 'lakera_protect_ai', 'langsmith_langfuse',
        'microsoft_azure', 'microsoft_defender_for_endpoint',
        'microsoft_defender_for_endpoint_gcc_high', 'microsoft_entra_id',
        'microsoft_entra_id_gcc_high', 'microsoft_intune',
        'microsoft_intune_gcc_high', 'microsoft_onedrive',
        'microsoft_sentinel', 'microsoft_sharepoint',
-       'microsoft_teams', 'okta',
+       'microsoft_teams', 'okta', 'one_identity', 'onelogin',
        'openai', 'openai_azure_openai',
-       'pinecone', 'weaviate', 'weights_biases_w_b'],
+       'pinecone', 'ping_identity', 'pingone',
+       'sailpoint', 'weaviate', 'weights_biases_w_b'],
     )
   })
 
