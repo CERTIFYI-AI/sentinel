@@ -31,6 +31,11 @@ from sentinel.integrations.entra.adapter import (
     EntraGccHighCredentials,
 )
 from sentinel.integrations.github.adapter import GithubAdapter, GithubCredentials
+from sentinel.integrations.intune.adapter import (
+    IntuneAdapter,
+    IntuneCredentials,
+    IntuneGccHighCredentials,
+)
 from sentinel.integrations.okta.adapter import OktaAdapter, OktaCredentials
 
 _REGISTRY: dict[str, tuple[type, type]] = {
@@ -43,6 +48,8 @@ _REGISTRY: dict[str, tuple[type, type]] = {
     # credentials, so GCC High cannot silently query commercial endpoints.
     "microsoft_entra_id": (EntraAdapter, EntraCredentials),
     "microsoft_entra_id_gcc_high": (EntraAdapter, EntraGccHighCredentials),
+    "microsoft_intune": (IntuneAdapter, IntuneCredentials),
+    "microsoft_intune_gcc_high": (IntuneAdapter, IntuneGccHighCredentials),
 }
 
 

@@ -10026,10 +10026,10 @@ export const GUIDE_COLLECTIONS: GuideCollection[] = [
         "hasDoc": true,
         "docPath": "docs/modules/ai-advisor-narrative.md",
         "title": "AI Advisor & Narrative Engine",
-        "purpose": "AI Advisor is a simulated compliance co-pilot that responds to GRC questions with keyword-matched canned text. Narrative Engine composes governance narratives from real structured data for board reports and regulator disclosures.",
+        "purpose": "AI Advisor is not connected. It previously shipped a keyword-matched simulation whose canned answers asserted specific organisation-level figures, and a \"Take action\" button that reported success while writing nothing. Both were removed (TD-025); the route now renders an empty state naming the missing pipeline. What follows describes the intended module, not current behaviour. When built, AI Advisor is a compliance co-pilot that responds to GRC questions with keyword-matched canned text. Narrative Engine composes governance narratives from real structured data for board reports and regulator d",
         "why": "EU AI Act Art. 13 and Art. 15 require transparency and robustness. ISO/IEC 42001 A.6.2.5–6 covers AI system design and operation. A compliance officer needs a way to query the organisation's governance posture and generate regulator-ready prose. The Narrative Engine is the production component; the AI Advisor is a placeholder for a future RAG-backed assistant (AI Brain).",
         "how": [
-          "### AI Advisor (Simulated)",
+          "### AI Advisor (not connected — target design)",
           "1. Chat panel with keyword-matched responses from a hardcoded RESPONSES",
           "array — not a live AI model.",
           "2. Advisory queue with SUGGESTIONS cards (static, illustrative).",
