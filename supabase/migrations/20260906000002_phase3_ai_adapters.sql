@@ -1,4 +1,4 @@
--- 20260906000001_phase3_ai_adapters.sql
+-- 20260906000002_phase3_ai_adapters.sql
 --
 -- Flip adapter_status for Phase 3: AI platform adapters.
 -- Idempotent.
