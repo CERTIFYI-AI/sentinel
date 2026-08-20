@@ -1363,3 +1363,34 @@ a decision to suffix the later entries (TD-016b, etc.).
 
 **To pick a free id:** `grep -o '^## TD-[0-9]*' docs/reference/technical-debt.md | sort -u | tail -1`
 — sort first, never trust file order.
+
+## TD-028 — Controls exist in two parallel stores (catalog vs posture)
+
+**Status:** Open · **Severity:** P2 · **Owner:** Compliance platform
+
+The final compliance audit (2026-09-26) fixed the acute defects on the
+`controls` posture table — see migration
+`20260926000001_controls_collab_backfill_crosswalk.sql`: the write contract
+was healed (upsert previously failed on ~20 phantom columns, so control
+create/edit was broken end-to-end and interlink chips could never populate),
+all 15 frameworks now carry posture rows (1,017 controls), collaboration
+tables exist (`control_assignments`, `control_comments`, `control_links`),
+and evidence rows that linked controls by dead business codes (`AI-CTL-007`)
+were stripped to empty rather than left dangling.
+
+What remains open is structural: `framework_controls` (the catalog, 936 rows,
+text framework_id) and `controls` (posture, uuid framework_id) are separate
+stores with no key between them, and for the 9 AI frameworks their counts
+disagree (EU AI Act: 34 catalog vs 55 posture). The Frameworks page reads the
+catalog; /compliance/controls reads posture. A control edited in one is
+invisible in the other.
+
+Also found and not yet removed: legacy `Control` (331 rows), `Framework`
+(10), and `compliancecontrols_table` (530) still exist in the live DB with
+data. Nothing in the codebase reads them, but dropping live tables is
+destructive — needs explicit sign-off, then a lockdown/drop migration.
+
+**To close:** pick `controls` as the single source (it now carries the
+catalog's rows), repoint the Frameworks catalog tab at it, add a
+`catalog_ref` reconciliation for the 9 AI frameworks whose refs differ, and
+retire `framework_controls` + the three legacy tables behind a sign-off.

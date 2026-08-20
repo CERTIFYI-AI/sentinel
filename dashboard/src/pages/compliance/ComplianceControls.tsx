@@ -10,7 +10,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
-import { CheckSquare, Plus, Warning, X, ArrowSquareOut } from '@phosphor-icons/react'
+import { CheckSquare, Plus, Warning, X, ArrowSquareOut, ListBullets, Kanban } from '@phosphor-icons/react'
 import { PageHeader } from '@/components/ui/PageHeader'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -30,6 +30,7 @@ import { useModelsData } from '@/hooks/useModelsData'
 import { useRisksData } from '@/hooks/useRisksData'
 import { usePolicies } from '@/hooks/queries/usePolicies'
 import { useRBAC } from '@/hooks/useRBAC'
+import { ControlCollabPanel } from '@/components/compliance/ControlCollabPanel'
 import type { ControlRecord } from '@/services/controlService'
 
 const STATUS_OPTIONS = [
@@ -97,6 +98,8 @@ export default function ComplianceControls() {
   const [form, setForm] = useState<Partial<ControlRecord>>(EMPTY_FORM)
   const [toDelete, setToDelete] = useState<ControlRecord | null>(null)
   const [sheetId, setSheetId] = useState<string | null>(null)
+  const [view, setView] = useState<'list' | 'board'>('list')
+  const [frameworkFilter, setFrameworkFilter] = useState<string>('all')
 
   const rows = useMemo(() => controlsQuery.data ?? [], [controlsQuery.data])
   const modelName = (id: string) => models.find((m) => m.id === id)?.name ?? 'Unavailable'
@@ -130,10 +133,16 @@ export default function ComplianceControls() {
     setSearchParams(next, { replace: true })
   }
 
-  const filtered = useMemo(
-    () => (modelParam ? rows.filter((c) => (c.linkedModelIds ?? []).includes(modelParam)) : rows),
-    [rows, modelParam],
+  const frameworks = useMemo(
+    () => Array.from(new Set(rows.map((c) => c.framework).filter(Boolean) as string[])).sort(),
+    [rows],
   )
+
+  const filtered = useMemo(() => {
+    let out = modelParam ? rows.filter((c) => (c.linkedModelIds ?? []).includes(modelParam)) : rows
+    if (frameworkFilter !== 'all') out = out.filter((c) => c.framework === frameworkFilter)
+    return out
+  }, [rows, modelParam, frameworkFilter])
 
   const set = <K extends keyof ControlRecord>(k: K, v: ControlRecord[K] | undefined) =>
     setForm((f) => ({ ...f, [k]: v }))
@@ -270,6 +279,29 @@ export default function ComplianceControls() {
 
       <div className="mb-4"><StatCardRow cards={kpiCards} /></div>
 
+      {/* View toggle + framework filter — the library covers all 15 frameworks */}
+      <div className="mb-3 flex items-center justify-between gap-2 flex-wrap">
+        <div className="flex items-center gap-1">
+          <Button variant={view === 'list' ? 'secondary' : 'ghost'} size="sm" onClick={() => setView('list')} aria-pressed={view === 'list'}>
+            <ListBullets size={13} /> List
+          </Button>
+          <Button variant={view === 'board' ? 'secondary' : 'ghost'} size="sm" onClick={() => setView('board')} aria-pressed={view === 'board'}>
+            <Kanban size={13} /> Board
+          </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
+            <SelectTrigger className="w-72 h-8 text-xs"><SelectValue placeholder="All frameworks" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All frameworks ({rows.length} controls)</SelectItem>
+              {frameworks.map((f) => (
+                <SelectItem key={f} value={f}>{f} ({rows.filter((c) => c.framework === f).length})</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
+
       <Card className="p-4">
         {controlsQuery.isLoading ? <TableSkeleton cols={9} />
           : controlsQuery.isError ? <ErrorState message={controlsQuery.error?.message} onRetry={() => controlsQuery.refetch()} />
@@ -284,7 +316,7 @@ export default function ComplianceControls() {
             ) : (
               <EmptyState title="No controls linked to this model" message="Clear the model filter to see the full control library." />
             )
-          ) : (
+          ) : view === 'list' ? (
             <DataTable
               data={filtered} columns={columns} searchKey="name" searchPlaceholder="Search controls…"
               onRowClick={(c) => setSheetId(c.id ?? null)}
@@ -297,6 +329,53 @@ export default function ComplianceControls() {
                 </Button>
               )}
             />
+          ) : (
+            /* ── Board view: one column per implementation status ── */
+            <div className="overflow-x-auto">
+              <div className="flex gap-3 min-w-max pb-2">
+                {STATUS_OPTIONS.map((s) => {
+                  const cards = filtered.filter((c) => effectiveStatus(c) === s.value)
+                  return (
+                    <div key={s.value} className="w-64 shrink-0">
+                      <div className="mb-2 flex items-center justify-between px-1">
+                        <span className={`inline-flex px-2 py-0.5 text-[11px] font-medium ${STATUS_TONE[s.value] ?? ''}`}>{s.label}</span>
+                        <span className="text-[11px] font-mono" style={{ color: 'hsl(var(--text-4))' }}>{cards.length}</span>
+                      </div>
+                      <div className="space-y-2 min-h-24 p-1" style={{ background: 'hsl(var(--bg-muted) / 0.4)' }}>
+                        {cards.length === 0 ? (
+                          <p className="p-2 text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>No controls</p>
+                        ) : cards.map((c) => (
+                          <div key={c.id} role="button" tabIndex={0}
+                            onClick={() => setSheetId(c.id ?? null)}
+                            onKeyDown={(e) => e.key === 'Enter' && setSheetId(c.id ?? null)}
+                            className="cursor-pointer p-2 focus:outline-2 focus:outline-[hsl(var(--brand))]"
+                            style={{ background: 'hsl(var(--bg-surface))', border: '1px solid hsl(var(--border))' }}>
+                            <p className="font-mono text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{displayRef(c)}</p>
+                            <p className="mt-0.5 text-xs font-medium leading-snug" style={{ color: 'hsl(var(--text-1))' }}>
+                              {c.name || c.title || 'Untitled control'}
+                            </p>
+                            {c.framework && (
+                              <p className="mt-1 truncate text-[10px]" style={{ color: 'hsl(var(--text-3))' }}>{c.framework}</p>
+                            )}
+                            {can('update') && (
+                              <div className="mt-1.5" onClick={(e) => e.stopPropagation()}>
+                                <Select value={effectiveStatus(c) || 'not_implemented'}
+                                  onValueChange={(v) => upsert.mutate({ id: c.id, name: c.name, status: v, implementationStatus: v })}>
+                                  <SelectTrigger className="h-6 text-[10px]"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    {STATUS_OPTIONS.map((o) => <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>)}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
           )}
       </Card>
 
@@ -373,6 +452,12 @@ export default function ComplianceControls() {
                         ))
                       : <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No policies linked yet.</span>}
                   </div>
+                </div>
+
+                {/* Collaboration: multi-user assignees, comments & recommendations,
+                    evidence, cross-framework mappings — all persisted + audit-logged */}
+                <div className="pt-2" style={{ borderTop: '1px solid hsl(var(--border))' }}>
+                  <ControlCollabPanel control={selected} allControls={rows} canEdit={can('update')} />
                 </div>
 
                 <div className="flex gap-2 pt-2">
