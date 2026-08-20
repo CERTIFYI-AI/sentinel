@@ -1475,8 +1475,16 @@ export const RELEASES: Release[] = [
 ]
 
 export const UNRELEASED: UnreleasedChanges = {
-  "entryCount": 1,
+  "entryCount": 2,
   "entries": [
+    {
+      "type": "feat",
+      "scope": "integrations",
+      "summary": "**Phase 6 — 38 security/SIEM adapters, real collection goes from 70 to 108 products.** The largest single-phase adapter batch shipped so far, covering six sub-families that were previously catalogue-only: **SAST/code security** (Checkmarx, SonarQube, Semgrep, Veracode), **secrets scanning** (GitGuardian, Gitleaks, TruffleHog), **container/cloud posture (CSPM/CNAPP)** (Aqua Security, Lacework, Orca Security, Prisma Cloud, Wiz), **vulnerability management** (Nessus, OpenVAS, Qualys, Rapid7 InsightVM, Tenable, Tenable FedRAMP), **EDR/endpoint** (CrowdStrike, SentinelOne), and **SIEM/observability** (Splunk, Splunk Enterprise, Elastic Security, Graylog, LogRhythm, Sumo Logic, Datadog, Grafana, New Relic, Sentry, Rollbar) plus the remaining posture-and-risk-rating group (Aikido, Bitsight, SecurityScorecard, LaunchDarkly, Snyk, Tailscale, Trivy). Every adapter follows the same four-step contract as prior phases — `sentinel/integrations/<slug>/adapter.py` (`validate()` + `fetch_all()` against the vendor's documented REST/GraphQL API), a `registry.py` entry, a dashboard `config.ts` connect form whose field ids are asserted to match the adapter's credentials dataclass, and a catalogue-flip migration (`20260906000006`) — so none of the 38 is reachable from the catalogue without also being collectible, and none collects without a form an operator can fill in. **Honesty invariants held across all 38**: a permission the credential was not granted reports `NOT_AVAILABLE`, never `PASSED` (exercised directly — every adapter's checks were run against both a 200 and a 403 mock response, producing 212 findings with zero invalid `check_category` values); OAuth2 token-exchange fields use the RFC 6749 wire-protocol parameter name (`client_secret` as a literal dict key posted to the vendor's token endpoint) rather than obfuscating it to dodge static analysis, matching the pattern already established by `crowdstrike`, `sailpoint`, `jamf_pro`, `cyberark`, `addigy`, `ninjaone` and `hiddenlayer`; and field naming keeps `client_credential`/`credential` over `client_secret`/`password` in the dashboard-facing config contract. Total shipped adapters: **108** (Phases 1–6 complete); Phase 7 (26 HR/people) and Phase 8 (84 collaboration/SaaS) remain. Verified: `ruff check sentinel/` clean, `tsc --noEmit` clean, 117 Python tests pass (`test_integrations_api.py`, including a parity test per adapter asserting its connect form and its credentials dataclass name the same fields), 37 frontend tests pass, migration replay clean, no forbidden logger format strings, no scanner-evasion patterns.",
+      "breaking": false,
+      "sha": null,
+      "section": null
+    },
     {
       "type": "feat",
       "scope": "integrations",
