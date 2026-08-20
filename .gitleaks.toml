@@ -11,7 +11,7 @@ regexes = [
   "your-project.supabase.co",
   "your-anon-key",
   "example.com",
-  "admin@sentinel-financial.com",
+  "admin@certifyi.ai",
   "MOCK_",
   "placeholder",
 ]
