@@ -259,7 +259,14 @@ describe('connect forms', () => {
     // a slug in one and not the other is a dead Connect button or a hidden
     // capability. `okta` joined in 20260922000001.
     expect(INTEGRATIONS.map(i => i.id).sort()).toEqual(
-      ['aws', 'azure_devops', 'azure_key_vault', 'github',
+      ['aws', 'aws_bedrock', 'aws_secrets_manager',
+       'azure_devops', 'azure_key_vault', 'bitbucket_pipelines',
+       'confluence', 'confluence_access_control', 'github',
+       'gitlab_ci_cd', 'gitlab_cloud', 'gitlab_self_managed',
+       'google_chronicle', 'google_cloud_identity',
+       'google_cloud_platform', 'google_cloud_vertex_ai',
+       'google_drive', 'google_workspace',
+       'jira', 'jira_service_management',
        'microsoft_azure', 'microsoft_defender_for_endpoint',
        'microsoft_defender_for_endpoint_gcc_high', 'microsoft_entra_id',
        'microsoft_entra_id_gcc_high', 'microsoft_intune',

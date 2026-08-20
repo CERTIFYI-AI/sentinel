@@ -24,6 +24,22 @@ import { DefenderConfig, DefenderGccHighConfig } from './defender/config'
 import { SentinelSiemConfig } from './sentinel_siem/config'
 import { KeyVaultConfig } from './keyvault/config'
 import { DevOpsConfig } from './devops/config'
+import { GoogleWorkspaceConfig } from './google_workspace/config'
+import { GoogleCloudIdentityConfig } from './google_cloud_identity/config'
+import { GoogleDriveConfig } from './google_drive/config'
+import { GcpConfig } from './gcp/config'
+import { VertexAiConfig } from './vertex_ai/config'
+import { ChronicleConfig } from './chronicle/config'
+import { JiraConfig } from './jira/config'
+import { JiraSmConfig } from './jira_sm/config'
+import { ConfluenceConfig } from './confluence/config'
+import { ConfluenceAcConfig } from './confluence_ac/config'
+import { BitbucketConfig } from './bitbucket/config'
+import { GitLabCloudConfig } from './gitlab_cloud/config'
+import { GitLabSmConfig } from './gitlab_sm/config'
+import { GitLabCiCdConfig } from './gitlab_cicd/config'
+import { AwsBedrockConfig } from './aws_bedrock/config'
+import { AwsSecretsManagerConfig } from './aws_secrets_manager/config'
 
 export type { IntegrationConfig, CredentialField, IntegrationCategory, AuthMethod } from './types'
 
@@ -44,6 +60,22 @@ export const INTEGRATIONS: IntegrationConfig[] = [
   SentinelSiemConfig,
   KeyVaultConfig,
   DevOpsConfig,
+  GoogleWorkspaceConfig,
+  GoogleCloudIdentityConfig,
+  GoogleDriveConfig,
+  GcpConfig,
+  VertexAiConfig,
+  ChronicleConfig,
+  JiraConfig,
+  JiraSmConfig,
+  ConfluenceConfig,
+  ConfluenceAcConfig,
+  BitbucketConfig,
+  GitLabCloudConfig,
+  GitLabSmConfig,
+  GitLabCiCdConfig,
+  AwsBedrockConfig,
+  AwsSecretsManagerConfig,
 ]
 
 export function getIntegrationConfig(id: string): IntegrationConfig | undefined {

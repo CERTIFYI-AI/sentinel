@@ -41,6 +41,16 @@ class TestAdapterGate:
             "microsoft_defender_for_endpoint",
             "microsoft_defender_for_endpoint_gcc_high",
             "microsoft_sentinel", "azure_key_vault", "azure_devops",
+            # Phase 2: Google family
+            "google_workspace", "google_cloud_identity", "google_drive",
+            "google_cloud_platform", "google_cloud_vertex_ai", "google_chronicle",
+            # Phase 2: Atlassian family
+            "jira", "jira_service_management", "confluence",
+            "confluence_access_control", "bitbucket_pipelines",
+            # Phase 2: GitLab family
+            "gitlab_cloud", "gitlab_self_managed", "gitlab_ci_cd",
+            # Phase 2: AWS AI / secrets
+            "aws_bedrock", "aws_secrets_manager",
         })
 
     def test_catalogued_only_product_has_no_adapter(self):
@@ -214,6 +224,54 @@ class TestConnectFormMatchesTheAdapter:
     def test_devops_form_matches_its_credentials(self):
         self._assert_parity("azure_devops", "dashboard/src/integrations/devops/config.ts")
 
+    def test_google_workspace_form_matches_its_credentials(self):
+        self._assert_parity("google_workspace", "dashboard/src/integrations/google_workspace/config.ts")
+
+    def test_google_cloud_identity_form_matches_its_credentials(self):
+        self._assert_parity("google_cloud_identity", "dashboard/src/integrations/google_cloud_identity/config.ts")
+
+    def test_google_drive_form_matches_its_credentials(self):
+        self._assert_parity("google_drive", "dashboard/src/integrations/google_drive/config.ts")
+
+    def test_gcp_form_matches_its_credentials(self):
+        self._assert_parity("google_cloud_platform", "dashboard/src/integrations/gcp/config.ts")
+
+    def test_vertex_ai_form_matches_its_credentials(self):
+        self._assert_parity("google_cloud_vertex_ai", "dashboard/src/integrations/vertex_ai/config.ts")
+
+    def test_chronicle_form_matches_its_credentials(self):
+        self._assert_parity("google_chronicle", "dashboard/src/integrations/chronicle/config.ts")
+
+    def test_jira_form_matches_its_credentials(self):
+        self._assert_parity("jira", "dashboard/src/integrations/jira/config.ts")
+
+    def test_jira_sm_form_matches_its_credentials(self):
+        self._assert_parity("jira_service_management", "dashboard/src/integrations/jira_sm/config.ts")
+
+    def test_confluence_form_matches_its_credentials(self):
+        self._assert_parity("confluence", "dashboard/src/integrations/confluence/config.ts")
+
+    def test_confluence_ac_form_matches_its_credentials(self):
+        self._assert_parity("confluence_access_control", "dashboard/src/integrations/confluence_ac/config.ts")
+
+    def test_bitbucket_form_matches_its_credentials(self):
+        self._assert_parity("bitbucket_pipelines", "dashboard/src/integrations/bitbucket/config.ts")
+
+    def test_gitlab_cloud_form_matches_its_credentials(self):
+        self._assert_parity("gitlab_cloud", "dashboard/src/integrations/gitlab_cloud/config.ts")
+
+    def test_gitlab_sm_form_matches_its_credentials(self):
+        self._assert_parity("gitlab_self_managed", "dashboard/src/integrations/gitlab_sm/config.ts")
+
+    def test_gitlab_cicd_form_matches_its_credentials(self):
+        self._assert_parity("gitlab_ci_cd", "dashboard/src/integrations/gitlab_cicd/config.ts")
+
+    def test_aws_bedrock_form_matches_its_credentials(self):
+        self._assert_parity("aws_bedrock", "dashboard/src/integrations/aws_bedrock/config.ts")
+
+    def test_aws_secrets_manager_form_matches_its_credentials(self):
+        self._assert_parity("aws_secrets_manager", "dashboard/src/integrations/aws_secrets_manager/config.ts")
+
     def test_every_shipped_adapter_has_a_connect_form(self):
         # A registered adapter with no form renders a "packaging gap" message
         # instead of fields. Catch it here rather than in front of a user.
@@ -238,6 +296,26 @@ class TestConnectFormMatchesTheAdapter:
             "microsoft_sentinel": "dashboard/src/integrations/sentinel_siem/config.ts",
             "azure_key_vault": "dashboard/src/integrations/keyvault/config.ts",
             "azure_devops": "dashboard/src/integrations/devops/config.ts",
+            # Phase 2: Google family
+            "google_workspace": "dashboard/src/integrations/google_workspace/config.ts",
+            "google_cloud_identity": "dashboard/src/integrations/google_cloud_identity/config.ts",
+            "google_drive": "dashboard/src/integrations/google_drive/config.ts",
+            "google_cloud_platform": "dashboard/src/integrations/gcp/config.ts",
+            "google_cloud_vertex_ai": "dashboard/src/integrations/vertex_ai/config.ts",
+            "google_chronicle": "dashboard/src/integrations/chronicle/config.ts",
+            # Phase 2: Atlassian family
+            "jira": "dashboard/src/integrations/jira/config.ts",
+            "jira_service_management": "dashboard/src/integrations/jira_sm/config.ts",
+            "confluence": "dashboard/src/integrations/confluence/config.ts",
+            "confluence_access_control": "dashboard/src/integrations/confluence_ac/config.ts",
+            "bitbucket_pipelines": "dashboard/src/integrations/bitbucket/config.ts",
+            # Phase 2: GitLab family
+            "gitlab_cloud": "dashboard/src/integrations/gitlab_cloud/config.ts",
+            "gitlab_self_managed": "dashboard/src/integrations/gitlab_sm/config.ts",
+            "gitlab_ci_cd": "dashboard/src/integrations/gitlab_cicd/config.ts",
+            # Phase 2: AWS AI / secrets
+            "aws_bedrock": "dashboard/src/integrations/aws_bedrock/config.ts",
+            "aws_secrets_manager": "dashboard/src/integrations/aws_secrets_manager/config.ts",
         }
         assert set(paths) == set(available_slugs())
         for slug, path in paths.items():

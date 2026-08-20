@@ -24,7 +24,16 @@ returns this set so the UI can cross-check itself against the server.
 from __future__ import annotations
 
 from sentinel.integrations.aws.adapter import AwsAdapter, AwsCredentials
+from sentinel.integrations.aws_bedrock.adapter import AwsBedrockAdapter, AwsBedrockCredentials
+from sentinel.integrations.aws_secrets_manager.adapter import (
+    AwsSecretsManagerAdapter,
+    AwsSecretsManagerCredentials,
+)
 from sentinel.integrations.azure.adapter import AzureAdapter, AzureCredentials
+from sentinel.integrations.bitbucket.adapter import BitbucketAdapter, BitbucketCredentials
+from sentinel.integrations.chronicle.adapter import ChronicleAdapter, ChronicleCredentials
+from sentinel.integrations.confluence.adapter import ConfluenceAdapter, ConfluenceCredentials
+from sentinel.integrations.confluence_ac.adapter import ConfluenceAcAdapter, ConfluenceAcCredentials
 from sentinel.integrations.defender.adapter import (
     DefenderAdapter,
     DefenderCredentials,
@@ -36,18 +45,34 @@ from sentinel.integrations.entra.adapter import (
     EntraCredentials,
     EntraGccHighCredentials,
 )
+from sentinel.integrations.gcp.adapter import GcpAdapter, GcpCredentials
 from sentinel.integrations.github.adapter import GithubAdapter, GithubCredentials
+from sentinel.integrations.gitlab_cicd.adapter import GitLabCiCdAdapter, GitLabCiCdCredentials
+from sentinel.integrations.gitlab_cloud.adapter import GitLabCloudAdapter, GitLabCloudCredentials
+from sentinel.integrations.gitlab_sm.adapter import GitLabSelfManagedAdapter, GitLabSelfManagedCredentials
+from sentinel.integrations.google_cloud_identity.adapter import (
+    GoogleCloudIdentityAdapter,
+    GoogleCloudIdentityCredentials,
+)
+from sentinel.integrations.google_drive.adapter import GoogleDriveAdapter, GoogleDriveCredentials
+from sentinel.integrations.google_workspace.adapter import (
+    GoogleWorkspaceAdapter,
+    GoogleWorkspaceCredentials,
+)
 from sentinel.integrations.intune.adapter import (
     IntuneAdapter,
     IntuneCredentials,
     IntuneGccHighCredentials,
 )
+from sentinel.integrations.jira.adapter import JiraAdapter, JiraCredentials
+from sentinel.integrations.jira_sm.adapter import JiraSmAdapter, JiraSmCredentials
 from sentinel.integrations.keyvault.adapter import KeyVaultAdapter, KeyVaultCredentials
 from sentinel.integrations.okta.adapter import OktaAdapter, OktaCredentials
 from sentinel.integrations.onedrive.adapter import OneDriveAdapter, OneDriveCredentials
 from sentinel.integrations.sentinel_siem.adapter import SentinelSiemAdapter, SentinelSiemCredentials
 from sentinel.integrations.sharepoint.adapter import SharePointAdapter, SharePointCredentials
 from sentinel.integrations.teams.adapter import TeamsAdapter, TeamsCredentials
+from sentinel.integrations.vertex_ai.adapter import VertexAiAdapter, VertexAiCredentials
 
 _REGISTRY: dict[str, tuple[type, type]] = {
     "github": (GithubAdapter, GithubCredentials),
@@ -70,6 +95,26 @@ _REGISTRY: dict[str, tuple[type, type]] = {
     "microsoft_sentinel": (SentinelSiemAdapter, SentinelSiemCredentials),
     "azure_key_vault": (KeyVaultAdapter, KeyVaultCredentials),
     "azure_devops": (AzureDevOpsAdapter, AzureDevOpsCredentials),
+    # Phase 2: Google family
+    "google_workspace": (GoogleWorkspaceAdapter, GoogleWorkspaceCredentials),
+    "google_cloud_identity": (GoogleCloudIdentityAdapter, GoogleCloudIdentityCredentials),
+    "google_drive": (GoogleDriveAdapter, GoogleDriveCredentials),
+    "google_cloud_platform": (GcpAdapter, GcpCredentials),
+    "google_cloud_vertex_ai": (VertexAiAdapter, VertexAiCredentials),
+    "google_chronicle": (ChronicleAdapter, ChronicleCredentials),
+    # Phase 2: Atlassian family
+    "jira": (JiraAdapter, JiraCredentials),
+    "jira_service_management": (JiraSmAdapter, JiraSmCredentials),
+    "confluence": (ConfluenceAdapter, ConfluenceCredentials),
+    "confluence_access_control": (ConfluenceAcAdapter, ConfluenceAcCredentials),
+    "bitbucket_pipelines": (BitbucketAdapter, BitbucketCredentials),
+    # Phase 2: GitLab family
+    "gitlab_cloud": (GitLabCloudAdapter, GitLabCloudCredentials),
+    "gitlab_self_managed": (GitLabSelfManagedAdapter, GitLabSelfManagedCredentials),
+    "gitlab_ci_cd": (GitLabCiCdAdapter, GitLabCiCdCredentials),
+    # Phase 2: AWS AI / secrets
+    "aws_bedrock": (AwsBedrockAdapter, AwsBedrockCredentials),
+    "aws_secrets_manager": (AwsSecretsManagerAdapter, AwsSecretsManagerCredentials),
 }
 
 
