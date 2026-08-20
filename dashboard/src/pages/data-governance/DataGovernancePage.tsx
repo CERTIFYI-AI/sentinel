@@ -130,8 +130,11 @@ function LineageFlow({ lineage }: { lineage: string[] }) {
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-const DSAR_TYPE_TO_DB: Record<DSAR['type'], string> = { Access: 'access', Delete: 'deletion', Portability: 'portability' }
-const DSAR_TYPE_FROM_DB: Record<string, DSAR['type']> = { access: 'Access', deletion: 'Delete', portability: 'Portability' }
+// DB vocabulary is the canonical six-value GDPR set (20260816000011 check
+// constraint): 'deletion' is NOT in it — writing it made every Delete DSAR
+// fail the insert, and reading legacy 'erasure' rows fell back to 'Access'.
+const DSAR_TYPE_TO_DB: Record<DSAR['type'], string> = { Access: 'access', Delete: 'erasure', Portability: 'portability' }
+const DSAR_TYPE_FROM_DB: Record<string, DSAR['type']> = { access: 'Access', erasure: 'Delete', deletion: 'Delete', portability: 'Portability' }
 
 export default function DataGovernancePage() {
   const nav = useNavigate()

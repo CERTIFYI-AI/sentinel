@@ -57,6 +57,7 @@ export function ControlCollabPanel({
   const [pickedUsers, setPickedUsers] = useState<string[]>([])
   const [pickRole, setPickRole] = useState<(typeof ROLES)[number]>('contributor')
   const [assigning, setAssigning] = useState(false)
+  const [personFilter, setPersonFilter] = useState('')
   const personName = (userId: string, fallback: string | null) =>
     people.find((p) => p.id === userId)?.name ?? fallback ?? 'Unavailable'
   const togglePicked = (id: string) =>
@@ -120,43 +121,84 @@ export function ControlCollabPanel({
         ) : (assignments.data ?? []).length === 0 ? (
           <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No one is assigned yet.</p>
         ) : (
-          <div className="space-y-1">
-            {(assignments.data ?? []).map((a) => (
-              <div key={a.id} className="flex items-center justify-between py-1.5 px-2" style={{ border: '1px solid hsl(var(--border))' }}>
-                <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>
-                  {personName(a.userId, a.userName)}
-                  <span className="ml-2 px-1.5 py-0.5 text-[10px] uppercase tracking-wide" style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}>{a.role}</span>
-                </span>
-                {canEdit && (
-                  <button aria-label={`Unassign ${personName(a.userId, a.userName)}`} onClick={() => rmAssign.mutate(a.id)}
-                    className="cursor-pointer" style={{ color: 'hsl(var(--text-4))' }}>
-                    <X size={13} />
-                  </button>
-                )}
+          /* Grouped by role, people as avatar chips — scan roles first, names second */
+          <div className="space-y-2">
+            {ROLES.filter((role) => (assignments.data ?? []).some((a) => a.role === role)).map((role) => (
+              <div key={role}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-1" style={{ color: 'hsl(var(--text-4))' }}>
+                  {role}{(assignments.data ?? []).filter((a) => a.role === role).length > 1 ? 's' : ''}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {(assignments.data ?? []).filter((a) => a.role === role).map((a) => {
+                    const name = personName(a.userId, a.userName)
+                    const initials = name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?'
+                    return (
+                      <span key={a.id} className="inline-flex items-center gap-1.5 pl-1 pr-1.5 py-1"
+                        style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-surface))' }}>
+                        <span className="flex h-5 w-5 items-center justify-center text-[9px] font-bold"
+                          style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }}
+                          aria-hidden="true">
+                          {initials}
+                        </span>
+                        <span className="text-xs" style={{ color: 'hsl(var(--text-1))' }}>{name}</span>
+                        {canEdit && (
+                          <button aria-label={`Unassign ${name} as ${role}`} onClick={() => rmAssign.mutate(a.id)}
+                            className="cursor-pointer hover:opacity-70" style={{ color: 'hsl(var(--text-4))' }}>
+                            <X size={12} />
+                          </button>
+                        )}
+                      </span>
+                    )
+                  })}
+                </div>
               </div>
             ))}
           </div>
         )}
         {canEdit && (
           <div className="mt-2 space-y-2">
-            {/* Multi-select: check several people, assign them in one action */}
+            {/* Multi-select: search, check several people, assign in one action */}
+            <input
+              type="search"
+              value={personFilter}
+              onChange={(e) => setPersonFilter(e.target.value)}
+              placeholder="Search people…"
+              aria-label="Search people to assign"
+              className="w-full px-2 py-1.5 text-xs focus:outline-none"
+              style={{ border: '1px solid hsl(var(--border))', background: 'hsl(var(--bg-surface))', color: 'hsl(var(--text-1))' }}
+            />
             <div className="max-h-36 overflow-y-auto p-2 space-y-1" style={{ border: '1px solid hsl(var(--border))' }}>
               {people.length === 0 ? (
                 <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No people in the directory yet.</p>
-              ) : people.map((p) => {
-                const already = assignedForRole.has(p.id)
-                return (
-                  <label key={p.id}
-                    className={`flex items-center gap-2 text-xs ${already ? 'opacity-50' : 'cursor-pointer'}`}
-                    style={{ color: 'hsl(var(--text-2))' }}>
-                    <input type="checkbox" className="rounded-none border-[hsl(var(--border))]"
-                      checked={pickedUsers.includes(p.id)} disabled={already}
-                      onChange={() => togglePicked(p.id)} />
-                    {p.name}
-                    {already && <span className="text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>already {pickRole}</span>}
-                  </label>
-                )
-              })}
+              ) : (
+                (() => {
+                  const needle = personFilter.trim().toLowerCase()
+                  const visible = needle ? people.filter((p) => p.name.toLowerCase().includes(needle)) : people
+                  if (visible.length === 0) {
+                    return <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No one matches “{personFilter}”.</p>
+                  }
+                  return visible.map((p) => {
+                    const already = assignedForRole.has(p.id)
+                    const initials = p.name.split(/\s+/).map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?'
+                    return (
+                      <label key={p.id}
+                        className={`flex items-center gap-2 text-xs ${already ? 'opacity-50' : 'cursor-pointer'}`}
+                        style={{ color: 'hsl(var(--text-2))' }}>
+                        <input type="checkbox" className="rounded-none border-[hsl(var(--border))]"
+                          checked={pickedUsers.includes(p.id)} disabled={already}
+                          onChange={() => togglePicked(p.id)} />
+                        <span className="flex h-4 w-4 items-center justify-center text-[8px] font-bold shrink-0"
+                          style={{ background: 'hsl(var(--brand-subtle))', color: 'hsl(var(--brand))' }} aria-hidden="true">
+                          {initials}
+                        </span>
+                        <span className="truncate">{p.name}</span>
+                        {p.role && <span className="text-[10px] shrink-0" style={{ color: 'hsl(var(--text-4))' }}>{p.role}</span>}
+                        {already && <span className="text-[10px] shrink-0" style={{ color: 'hsl(var(--text-4))' }}>already {pickRole}</span>}
+                      </label>
+                    )
+                  })
+                })()
+              )}
             </div>
             <div className="flex gap-2">
               <Select value={pickRole} onValueChange={(v) => setPickRole(v as (typeof ROLES)[number])}>

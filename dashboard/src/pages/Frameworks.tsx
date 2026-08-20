@@ -503,25 +503,6 @@ export default function Frameworks() {
                           )}
                         </div>
                         <div className="flex gap-1" onClick={e => e.stopPropagation()}>
-                          {(() => {
-                            const adoption = adoptionFor(fw.id);
-                            const adopted = adoption?.status === 'adopted';
-                            return adopted ? (
-                              <Button size="sm" variant="ghost" style={{ padding: '2px 6px', fontSize: 11 }}
-                                title="Retire this framework from your compliance scope (controls are kept, hidden from posture)"
-                                disabled={setAdoption.isPending}
-                                onClick={() => adoption && setAdoption.mutate({ adoptionId: adoption.id, frameworkId: fw.id!, status: 'retired' })}>
-                                Retire
-                              </Button>
-                            ) : (
-                              <Button size="sm" variant="outline" style={{ padding: '2px 8px', fontSize: 11 }}
-                                title="Adopt this framework into your compliance scope"
-                                disabled={adoptMutation.isPending}
-                                onClick={() => adoptMutation.mutate({ frameworkId: fw.id!, adoptedBy: authUser?.name ?? authUser?.email })}>
-                                Adopt
-                              </Button>
-                            );
-                          })()}
                           <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={() => setEditItem({ ...fw })}>
                             <PencilSimple size={12} />
                           </Button>
@@ -573,6 +554,29 @@ export default function Frameworks() {
                       <div className="flex items-center justify-between pt-3" style={{ borderTop: '1px solid hsl(var(--border))' }}>
                         {fw.code && <span className="font-mono text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>{fw.code}</span>}
                         <AuditDateDisplay dateStr={fw.next_audit_at} />
+                      </div>
+
+                      {/* Adoption is the card's primary action — full width, never hidden in a corner */}
+                      <div className="mt-3" onClick={e => e.stopPropagation()}>
+                        {(() => {
+                          const adoption = adoptionFor(fw.id);
+                          const adopted = adoption?.status === 'adopted';
+                          return adopted ? (
+                            <Button size="sm" variant="outline" className="w-full" style={{ borderRadius: 0 }}
+                              title="Retire this framework from your compliance scope — its controls are kept, just hidden from posture"
+                              disabled={setAdoption.isPending}
+                              onClick={() => adoption && setAdoption.mutate({ adoptionId: adoption.id, frameworkId: fw.id!, status: 'retired' })}>
+                              Retire from scope
+                            </Button>
+                          ) : (
+                            <Button size="sm" className="w-full" style={{ borderRadius: 0 }}
+                              title="Adopt this framework into your compliance scope — its controls start counting toward posture"
+                              disabled={adoptMutation.isPending}
+                              onClick={() => adoptMutation.mutate({ frameworkId: fw.id!, adoptedBy: authUser?.name ?? authUser?.email })}>
+                              Adopt into scope
+                            </Button>
+                          );
+                        })()}
                       </div>
                     </CardContent>
                   </Card>
