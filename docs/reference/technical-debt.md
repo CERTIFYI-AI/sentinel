@@ -1288,7 +1288,7 @@ encryption/decryption with AAD binding.
 
 No action required beyond ensuring production deployments use ESO/Sealed Secrets.
 
-## TD-025 — Three modules have UI but no backing data pipeline
+## TD-027 — Three modules have UI but no backing data pipeline
 
 **Status:** Open · **Severity:** P2 · **Owner:** Platform team
 
@@ -1323,9 +1323,9 @@ defect recurs and the checks below are worth repeating.
 | Doc | Claim | Reality |
 |---|---|---|
 | `docs/api/api-reference.md` | Listed 5 Supabase Edge Functions — `generate-report`, `ai-advisor`, `sla-enforcer`, `freshness-checker`, `auto-task-generator` | **None existed.** Meanwhile 10 real functions under `supabase/functions/` were undocumented. Table replaced with the real set. |
-| `docs/modules/ai-advisor-narrative.md` | "Status: Simulated (AI Advisor)" | Module is now an empty state, not a simulation (TD-025) |
-| `docs/modules/benchmarking-maturity.md` | "Beta (… Examination Manager)" | Examination Manager is not connected (TD-025) |
-| `docs/modules/executive-intelligence.md` | "Status: Production" covering `/peer-intelligence`; "Peer benchmarks (anonymised, opt-in)" | Peer benchmarking is not implemented (TD-025) |
+| `docs/modules/ai-advisor-narrative.md` | "Status: Simulated (AI Advisor)" | Module is now an empty state, not a simulation (TD-027) |
+| `docs/modules/benchmarking-maturity.md` | "Beta (… Examination Manager)" | Examination Manager is not connected (TD-027) |
+| `docs/modules/executive-intelligence.md` | "Status: Production" covering `/peer-intelligence`; "Peer benchmarks (anonymised, opt-in)" | Peer benchmarking is not implemented (TD-027) |
 | `docs/contributing/ui-component-reference.md` | Linked `src/lib/chart-colors.ts` and showed a `chartColors` import example | File deleted in `abfd658`; real API is the `useChartTheme()` hook |
 | `docs/getting-started/troubleshooting.md` | Linked `src/components/CommandPalette.tsx` | Actual path is `src/components/ui/CommandPalette.tsx` |
 
@@ -1339,3 +1339,27 @@ Note the same sweep found **no** tracked build artifacts, logs, backups or
 temp files, and no dead Python — an early "unimported module" scan flagged 25
 files but every one was re-exported through a package `__init__.py` or was the
 Docker entrypoint. Recorded so the next audit does not re-derive it.
+
+## Register hygiene — duplicate TD ids
+
+**Status:** Open · **Severity:** P3 · **Owner:** Platform team
+
+Four ids are used by two unrelated entries each. This register is not sorted by
+id — the highest numbers sit at the *top* — so `grep '^## TD-' | tail` returns
+the oldest entries, not the newest, and picking "the next number" that way
+collides. (That is exactly how TD-027 was first filed as a second TD-025.)
+
+| Id | Entry A | Entry B |
+|---|---|---|
+| TD-016 | `ws02_catalog_read` leaves seven tenant tables world-readable | `frameworks` exists in two incompatible schemas |
+| TD-017 | Thirteen create paths rejected by their own RLS policy | `tenant_id`/`org_id` era split on four tables |
+| TD-023 | CSP keeps `style-src 'unsafe-inline'` | `integration_connections.credentials` plaintext column |
+| TD-024 | SSO callback links accounts by bare email | Demo credentials in source control |
+
+Not renumbered here on purpose: CHANGELOG.md cites several of these ids by
+number, so a silent renumber would break the historical record. Resolving this
+needs a deliberate pass that rewrites both the register and every citation, or
+a decision to suffix the later entries (TD-016b, etc.).
+
+**To pick a free id:** `grep -o '^## TD-[0-9]*' docs/reference/technical-debt.md | sort -u | tail -1`
+— sort first, never trust file order.
