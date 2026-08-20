@@ -139,9 +139,10 @@ create index if not exists idx_control_links_related on public.control_links(rel
 -- per catalog control, status 'not_implemented': the catalog's asserted
 -- status is demo data, and posture must be evidenced, never imported.
 insert into public.controls
-  (org_id, control_ref, name, title, description, framework_id, framework,
+  (org_id, tenant_id, control_ref, name, title, description, framework_id, framework,
    category, domain, status, evidence_count)
 select coalesce(fc.org_id, '00000000-0000-0000-0000-000000000001'::uuid),
+       coalesce(fc.org_id, '00000000-0000-0000-0000-000000000001')::text,
        fc.control_ref, fc.title, fc.title, fc.description,
        f.id, f.name, fc.domain, fc.domain, 'not_implemented', 0
   from public.framework_controls fc
