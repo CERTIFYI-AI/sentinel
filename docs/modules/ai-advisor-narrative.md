@@ -8,7 +8,7 @@
 AI Advisor is not connected. It previously shipped a keyword-matched
 simulation whose canned answers asserted specific organisation-level figures,
 and a "Take action" button that reported success while writing nothing. Both
-were removed (TD-025); the route now renders an empty state naming the
+were removed (TD-027); the route now renders an empty state naming the
 missing pipeline. What follows describes the intended module, not current
 behaviour.
 

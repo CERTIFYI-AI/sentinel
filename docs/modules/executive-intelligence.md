@@ -23,7 +23,7 @@ that justify the programme's existence.
 3. Value Realization tracks programme value: hours saved, fines avoided,
    deals unblocked, audit cycle time.
 4. Peer benchmarks are **not implemented** — no peer-contribution pipeline
-   exists, so `/peer-intelligence` renders an honest empty state (TD-025).
+   exists, so `/peer-intelligence` renders an honest empty state (TD-027).
 5. Board-pack export composes a report with Narrative Engine commentary.
 
 ## Features — full breakdown
