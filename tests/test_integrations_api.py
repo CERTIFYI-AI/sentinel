@@ -37,6 +37,10 @@ class TestAdapterGate:
             "github", "aws", "microsoft_azure", "okta",
             "microsoft_entra_id", "microsoft_entra_id_gcc_high",
             "microsoft_intune", "microsoft_intune_gcc_high",
+            "microsoft_sharepoint", "microsoft_onedrive", "microsoft_teams",
+            "microsoft_defender_for_endpoint",
+            "microsoft_defender_for_endpoint_gcc_high",
+            "microsoft_sentinel", "azure_key_vault", "azure_devops",
         })
 
     def test_catalogued_only_product_has_no_adapter(self):
@@ -189,6 +193,27 @@ class TestConnectFormMatchesTheAdapter:
     def test_intune_form_matches_its_credentials(self):
         self._assert_parity("microsoft_intune", "dashboard/src/integrations/intune/config.ts")
 
+    def test_sharepoint_form_matches_its_credentials(self):
+        self._assert_parity("microsoft_sharepoint", "dashboard/src/integrations/sharepoint/config.ts")
+
+    def test_onedrive_form_matches_its_credentials(self):
+        self._assert_parity("microsoft_onedrive", "dashboard/src/integrations/onedrive/config.ts")
+
+    def test_teams_form_matches_its_credentials(self):
+        self._assert_parity("microsoft_teams", "dashboard/src/integrations/teams/config.ts")
+
+    def test_defender_form_matches_its_credentials(self):
+        self._assert_parity("microsoft_defender_for_endpoint", "dashboard/src/integrations/defender/config.ts")
+
+    def test_sentinel_form_matches_its_credentials(self):
+        self._assert_parity("microsoft_sentinel", "dashboard/src/integrations/sentinel_siem/config.ts")
+
+    def test_keyvault_form_matches_its_credentials(self):
+        self._assert_parity("azure_key_vault", "dashboard/src/integrations/keyvault/config.ts")
+
+    def test_devops_form_matches_its_credentials(self):
+        self._assert_parity("azure_devops", "dashboard/src/integrations/devops/config.ts")
+
     def test_every_shipped_adapter_has_a_connect_form(self):
         # A registered adapter with no form renders a "packaging gap" message
         # instead of fields. Catch it here rather than in front of a user.
@@ -204,6 +229,15 @@ class TestConnectFormMatchesTheAdapter:
             "microsoft_entra_id_gcc_high": "dashboard/src/integrations/entra/config.ts",
             "microsoft_intune": "dashboard/src/integrations/intune/config.ts",
             "microsoft_intune_gcc_high": "dashboard/src/integrations/intune/config.ts",
+            # Phase 1: remaining Microsoft Graph family
+            "microsoft_sharepoint": "dashboard/src/integrations/sharepoint/config.ts",
+            "microsoft_onedrive": "dashboard/src/integrations/onedrive/config.ts",
+            "microsoft_teams": "dashboard/src/integrations/teams/config.ts",
+            "microsoft_defender_for_endpoint": "dashboard/src/integrations/defender/config.ts",
+            "microsoft_defender_for_endpoint_gcc_high": "dashboard/src/integrations/defender/config.ts",
+            "microsoft_sentinel": "dashboard/src/integrations/sentinel_siem/config.ts",
+            "azure_key_vault": "dashboard/src/integrations/keyvault/config.ts",
+            "azure_devops": "dashboard/src/integrations/devops/config.ts",
         }
         assert set(paths) == set(available_slugs())
         for slug, path in paths.items():

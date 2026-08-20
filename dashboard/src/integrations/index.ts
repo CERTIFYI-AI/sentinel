@@ -17,6 +17,13 @@ import { AzureConfig } from './azure/config'
 import { OktaConfig } from './okta/config'
 import { EntraConfig, EntraGccHighConfig } from './entra/config'
 import { IntuneConfig, IntuneGccHighConfig } from './intune/config'
+import { SharePointConfig } from './sharepoint/config'
+import { OneDriveConfig } from './onedrive/config'
+import { TeamsConfig } from './teams/config'
+import { DefenderConfig, DefenderGccHighConfig } from './defender/config'
+import { SentinelSiemConfig } from './sentinel_siem/config'
+import { KeyVaultConfig } from './keyvault/config'
+import { DevOpsConfig } from './devops/config'
 
 export type { IntegrationConfig, CredentialField, IntegrationCategory, AuthMethod } from './types'
 
@@ -29,6 +36,14 @@ export const INTEGRATIONS: IntegrationConfig[] = [
   EntraGccHighConfig,
   IntuneConfig,
   IntuneGccHighConfig,
+  SharePointConfig,
+  OneDriveConfig,
+  TeamsConfig,
+  DefenderConfig,
+  DefenderGccHighConfig,
+  SentinelSiemConfig,
+  KeyVaultConfig,
+  DevOpsConfig,
 ]
 
 export function getIntegrationConfig(id: string): IntegrationConfig | undefined {
