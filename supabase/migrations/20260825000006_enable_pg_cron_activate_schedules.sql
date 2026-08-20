@@ -25,6 +25,8 @@ begin
   else
     raise notice 'pg_cron unavailable in this environment; schedules skipped';
   end if;
+exception when insufficient_privilege then
+  raise notice 'pg_cron available but current role lacks permission; schedules skipped';
 end $pgcron$;
 
 select set_config('app.settings.supabase_functions_url',

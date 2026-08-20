@@ -135,7 +135,7 @@ class AwsSecretsManagerAdapter:
         try:
             secrets = await self._list_all_secrets()
         except Exception as exc:
-            logger.warning("aws_sm.secrets.inventory: %s", exc)
+            logger.warning("aws_sm.vault.inventory: %s", exc)
             return [IntegrationFinding(
                 check_id="aws_secrets_manager.secrets.inventory",
                 title="Unable to list Secrets Manager secrets",
@@ -165,7 +165,7 @@ class AwsSecretsManagerAdapter:
         try:
             secrets = await self._list_all_secrets()
         except Exception as exc:
-            logger.warning("aws_sm.secrets.rotation: %s", exc)
+            logger.warning("aws_sm.vault.rotation: %s", exc)
             return [IntegrationFinding(
                 check_id="aws_secrets_manager.secrets.rotation",
                 title="Unable to check secret rotation status",
@@ -215,7 +215,7 @@ class AwsSecretsManagerAdapter:
         try:
             secrets = await self._list_all_secrets()
         except Exception as exc:
-            logger.warning("aws_sm.secrets.last_accessed: %s", exc)
+            logger.warning("aws_sm.vault.last_accessed: %s", exc)
             return [IntegrationFinding(
                 check_id="aws_secrets_manager.secrets.last_accessed",
                 title="Unable to check secret last-accessed dates",
