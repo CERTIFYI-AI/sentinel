@@ -249,7 +249,7 @@ Other agent modules resolve directly: `/risks`, `/hitl`, `/dsr`, `/compliance`,
 ### Command palette / keyboard
 
 Press **⌘K** (macOS) or **Ctrl+K** to open the command palette
-([`src/components/CommandPalette.tsx`](../../dashboard/src/components/CommandPalette.tsx));
+([`src/components/ui/CommandPalette.tsx`](../../dashboard/src/components/ui/CommandPalette.tsx));
 `/` focuses search from anywhere outside an input.
 
 ---

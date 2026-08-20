@@ -103,15 +103,15 @@ surfaces; prefer `Button` for new code.
 
 ## Colour & charts
 
-All colour comes from design tokens. For Recharts, pull values from
-[`src/lib/chart-colors.ts`](../../dashboard/src/lib/chart-colors.ts) or the
-`useChartTheme()` hook — never pass a Tailwind class or raw hex to a chart prop
-in application code (literal hex is acceptable only inside that helper module).
+All colour comes from design tokens. For Recharts, pull values from the
+[`useChartTheme()`](../../dashboard/src/hooks/useChartTheme.ts) hook — never
+pass a Tailwind class or raw hex to a chart prop in application code.
 
 ```typescript
-import { chartColors, trustScoreColor } from "@/lib/chart-colors";
+import { useChartTheme } from "@/hooks/useChartTheme";
 
-<Line stroke={chartColors.trustHigh} />          // correct
+const ct = useChartTheme();
+<CartesianGrid stroke={ct.grid} />               // correct
 <Bar fill={trustScoreColor(score)} />            // correct
 
 <Line stroke="text-green-500" />                 // wrong

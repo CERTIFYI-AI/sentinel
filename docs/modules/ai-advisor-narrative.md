@@ -1,11 +1,18 @@
 # AI Advisor & Narrative Engine
 
 **Routes:** `/ai-advisor`, `/narrative-engine`
-**Status:** Simulated (AI Advisor); Production (Narrative Engine)
-**Owner:** Platform · **Backing table(s):** AI Advisor: none (client-side simulation). Narrative Engine: `transparency_reports` (org-scoped, RLS) via `governanceFactsService.ts`
+**Status:** Not connected (AI Advisor); Production (Narrative Engine)
+**Owner:** Platform · **Backing table(s):** AI Advisor: none — the module renders an honest empty state. Narrative Engine: `transparency_reports` (org-scoped, RLS) via `governanceFactsService.ts`
 
 ## Purpose
-AI Advisor is a simulated compliance co-pilot that responds to GRC questions
+AI Advisor is not connected. It previously shipped a keyword-matched
+simulation whose canned answers asserted specific organisation-level figures,
+and a "Take action" button that reported success while writing nothing. Both
+were removed (TD-025); the route now renders an empty state naming the
+missing pipeline. What follows describes the intended module, not current
+behaviour.
+
+When built, AI Advisor is a compliance co-pilot that responds to GRC questions
 with keyword-matched canned text. Narrative Engine composes governance
 narratives from real structured data for board reports and regulator
 disclosures.
@@ -19,7 +26,7 @@ AI Advisor is a placeholder for a future RAG-backed assistant (AI Brain).
 
 ## How it works
 
-### AI Advisor (Simulated)
+### AI Advisor (not connected — target design)
 1. Chat panel with keyword-matched responses from a hardcoded `RESPONSES`
    array — not a live AI model.
 2. Advisory queue with `SUGGESTIONS` cards (static, illustrative).

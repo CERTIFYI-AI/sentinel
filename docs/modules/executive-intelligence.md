@@ -1,7 +1,7 @@
 # Executive Intelligence
 
 **Routes:** `/executive-center` (redirects to `/ciso?tab=metrics`), `/ciso`, `/roi`, `/value-realization`, `/peer-intelligence`, `/reporting`
-**Status:** Production
+**Status:** Production, except `/peer-intelligence` — not connected
 **Owner:** Executive · **Backing table(s):** aggregates from `frameworks`, `controls`, `risks`, `incidents`, `compliance_scores`, `ai_models` (org-scoped, RLS); reporting via `reportingService.ts`
 
 ## Purpose
@@ -22,7 +22,8 @@ that justify the programme's existence.
    and framework scores.
 3. Value Realization tracks programme value: hours saved, fines avoided,
    deals unblocked, audit cycle time.
-4. Peer benchmarks (anonymised, opt-in) compare maturity and metrics.
+4. Peer benchmarks are **not implemented** — no peer-contribution pipeline
+   exists, so `/peer-intelligence` renders an honest empty state (TD-025).
 5. Board-pack export composes a report with Narrative Engine commentary.
 
 ## Features — full breakdown
@@ -34,10 +35,10 @@ that justify the programme's existence.
 | Control effectiveness | bar | Effective vs total controls | Read-only derived |
 | Open high-risk items | count | Critical risks and incidents | Read-only from `risks` + `incidents` |
 | Value metrics | cards | Hours saved, fines avoided, deals unblocked | Read-only from value tracking |
-| Peer benchmarks | comparison | Anonymous maturity comparison (opt-in) | Read-only |
+| Peer benchmarks | comparison | **Not implemented** — empty state, no figures shown | n/a |
 | Board pack export | button | Downloads executive report | Real file export |
 
-Nulls: unmeasured metrics show `—`. Peer benchmarks are opt-in —
+Nulls: unmeasured metrics show `—`. Peer benchmarks are not implemented —
 unenrolled organisations see an honest empty state.
 
 ## Interlinks

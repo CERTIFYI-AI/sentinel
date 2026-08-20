@@ -1,7 +1,7 @@
 # Benchmarking & Maturity Assessment
 
 **Routes:** `/benchmark`, `/examination-manager`, `/maturity`
-**Status:** Production (Maturity); Beta (Benchmark, Examination Manager)
+**Status:** Production (Maturity); Beta (Benchmark); Not connected (Examination Manager)
 **Owner:** Compliance · **Backing table(s):** `maturity_assessments` (org-scoped, RLS)
 
 ## Purpose
