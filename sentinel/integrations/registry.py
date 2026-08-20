@@ -25,6 +25,12 @@ from __future__ import annotations
 
 from sentinel.integrations.aws.adapter import AwsAdapter, AwsCredentials
 from sentinel.integrations.azure.adapter import AzureAdapter, AzureCredentials
+from sentinel.integrations.defender.adapter import (
+    DefenderAdapter,
+    DefenderCredentials,
+    DefenderGccHighCredentials,
+)
+from sentinel.integrations.devops.adapter import AzureDevOpsAdapter, AzureDevOpsCredentials
 from sentinel.integrations.entra.adapter import (
     EntraAdapter,
     EntraCredentials,
@@ -36,7 +42,12 @@ from sentinel.integrations.intune.adapter import (
     IntuneCredentials,
     IntuneGccHighCredentials,
 )
+from sentinel.integrations.keyvault.adapter import KeyVaultAdapter, KeyVaultCredentials
 from sentinel.integrations.okta.adapter import OktaAdapter, OktaCredentials
+from sentinel.integrations.onedrive.adapter import OneDriveAdapter, OneDriveCredentials
+from sentinel.integrations.sentinel_siem.adapter import SentinelSiemAdapter, SentinelSiemCredentials
+from sentinel.integrations.sharepoint.adapter import SharePointAdapter, SharePointCredentials
+from sentinel.integrations.teams.adapter import TeamsAdapter, TeamsCredentials
 
 _REGISTRY: dict[str, tuple[type, type]] = {
     "github": (GithubAdapter, GithubCredentials),
@@ -50,6 +61,15 @@ _REGISTRY: dict[str, tuple[type, type]] = {
     "microsoft_entra_id_gcc_high": (EntraAdapter, EntraGccHighCredentials),
     "microsoft_intune": (IntuneAdapter, IntuneCredentials),
     "microsoft_intune_gcc_high": (IntuneAdapter, IntuneGccHighCredentials),
+    # Phase 1: remaining Microsoft Graph family
+    "microsoft_sharepoint": (SharePointAdapter, SharePointCredentials),
+    "microsoft_onedrive": (OneDriveAdapter, OneDriveCredentials),
+    "microsoft_teams": (TeamsAdapter, TeamsCredentials),
+    "microsoft_defender_for_endpoint": (DefenderAdapter, DefenderCredentials),
+    "microsoft_defender_for_endpoint_gcc_high": (DefenderAdapter, DefenderGccHighCredentials),
+    "microsoft_sentinel": (SentinelSiemAdapter, SentinelSiemCredentials),
+    "azure_key_vault": (KeyVaultAdapter, KeyVaultCredentials),
+    "azure_devops": (AzureDevOpsAdapter, AzureDevOpsCredentials),
 }
 
 
