@@ -141,7 +141,7 @@ class OnePasswordAdapter:
         findings: list[IntegrationFinding] = []
         for result in results:
             if isinstance(result, BaseException):
-                logger.warning("1password check failed: %s", result)
+                logger.warning("1pw check failed: %s", result)
                 continue
             findings.extend(result)
         return findings
