@@ -1,10 +1,10 @@
 -- 20260906000002_phase3_ai_adapters.sql
 --
--- Flip adapter_status for Phase 3: AI platform adapters.
+-- Flip adapter_status to 'available' for Phase 3: AI platform adapters.
 -- Idempotent.
 
 update public.integration_catalog
-set    adapter_status = 'shipped'
+set    adapter_status = 'available'
 where  slug in (
   'openai',
   'openai_azure_openai',
@@ -21,4 +21,4 @@ where  slug in (
   'lakera_protect_ai',
   'hiddenlayer'
 )
-  and adapter_status <> 'shipped';
+  and adapter_status <> 'available';
