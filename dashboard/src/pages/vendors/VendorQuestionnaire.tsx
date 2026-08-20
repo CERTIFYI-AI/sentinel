@@ -38,6 +38,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useVendor } from '@/hooks/useVendorsData'
 import { useVendorQuestionnaires } from '@/hooks/useVendorQuestionnaires'
 import { useAssessmentTemplates } from '@/hooks/queries/useAssessmentTemplates'
+import { useQuery } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import { fetchInvites, sendInviteEmail, buildFillUrl } from '@/services/vendorInviteService'
 import type { QuestionnaireDecision } from '@/services/vendorQuestionnaireService'
 import { Pill, LinkPill, Fact, tone, fmtDate } from './vendorUi'
 
@@ -266,6 +269,9 @@ export default function VendorQuestionnaire() {
           </Button>
         }
       />
+
+      {/* ── Outstanding invitations (tokenized no-login links, 24h window) ── */}
+      <InvitesCard vendorId={vendor.id} />
 
       {/* ── Existing submissions ─────────────────────────────────────────── */}
       <Card style={{ borderRadius: 0, border: '1px solid hsl(var(--border))' }}>
@@ -521,5 +527,77 @@ export default function VendorQuestionnaire() {
         record deliberately when you accept the attestation.
       </p>
     </div>
+  )
+}
+
+/**
+ * InvitesCard — the vendor's questionnaire invitations: what was sent to
+ * whom, its 24-hour window, and whether it came back. Completed invites link
+ * to nothing extra here because the submission appears in "Submitted
+ * responses" above. Resend re-issues the email for a pending invite; when
+ * email is not configured the link is copyable instead — never a fake sent.
+ */
+function InvitesCard({ vendorId }: { vendorId: string }) {
+  const invites = useQuery({
+    queryKey: ['vendor-invites', vendorId],
+    queryFn: () => fetchInvites(vendorId),
+    staleTime: 30_000,
+  })
+
+  if (invites.isLoading || (invites.data ?? []).length === 0) return null
+
+  const toneFor = (s: string) =>
+    s === 'completed' ? tone('ok') : s === 'pending' ? tone('warn') : tone('err')
+
+  return (
+    <Card style={{ borderRadius: 0, border: '1px solid hsl(var(--border))' }}>
+      <CardContent className="p-5">
+        <h2 className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>Invitations</h2>
+        <p className="mt-0.5 text-xs" style={{ color: 'hsl(var(--text-4))' }}>
+          Tokenized links sent to the vendor contact — filled without login, valid for 24 hours.
+        </p>
+        <div className="mt-3 space-y-1.5">
+          {(invites.data ?? []).map((inv) => (
+            <div key={inv.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2"
+              style={{ border: '1px solid hsl(var(--border))' }}>
+              <div className="min-w-0">
+                <p className="truncate text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>
+                  {inv.templateName} <span style={{ color: 'hsl(var(--text-4))' }}>{inv.templateVersion}</span>
+                </p>
+                <p className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>
+                  to {inv.sentTo} · {inv.status === 'pending'
+                    ? `expires ${fmtDate(inv.expiresAt)}`
+                    : inv.status === 'completed'
+                      ? `completed ${fmtDate(inv.completedAt)}`
+                      : inv.status}
+                </p>
+              </div>
+              <div className="flex shrink-0 items-center gap-2">
+                <Pill tone={toneFor(inv.status)}>{inv.status}</Pill>
+                {inv.status === 'pending' && (
+                  <>
+                    <Button size="sm" variant="ghost"
+                      onClick={() => { void navigator.clipboard.writeText(buildFillUrl(inv.token)); toast.success('Link copied') }}>
+                      Copy link
+                    </Button>
+                    <Button size="sm" variant="outline"
+                      onClick={() =>
+                        sendInviteEmail(inv.token)
+                          .then((r) => r.sent
+                            ? toast.success('Invitation email re-sent')
+                            : toast.warning(r.reason === 'email-not-configured'
+                                ? 'Email is not configured — use Copy link instead'
+                                : `Not sent: ${r.reason}`))
+                          .catch((e: Error) => toast.error(e.message))}>
+                      Resend
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

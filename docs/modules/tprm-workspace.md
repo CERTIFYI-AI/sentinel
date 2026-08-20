@@ -114,3 +114,27 @@ Renewal, Vendor Exit / Offboarding.
 - The CAIQ packs are domain-level screens aligned to the CSA CCM/CAIQ v4
   domains — not the verbatim licensed CSA instrument; collect the vendor's
   full CAIQ submission as evidence.
+
+## Onboarding questionnaire invitations (2026-09-29)
+
+Registering a vendor now requires a contact email and offers a multi-select
+of the questionnaire packs. Each selected pack becomes a row in
+`vendor_questionnaire_invites` (org-RLS; pack questions SNAPSHOTTED at send
+time; token defaults to 48-hex random; `expires_at` = now() + 24h) and is
+emailed to the contact as a tokenized link.
+
+- The vendor fills at `/questionnaire/respond?token=…` — no account. The
+  page calls the `vendor-questionnaire-fill` edge function (anon key; the
+  token is the capability; the invites table itself is org-RLS'd and only
+  the function's service role can resolve a token). Scoring happens
+  SERVER-SIDE from the snapshot; the client sends option values only.
+- Submissions insert into `vendor_questionnaires` — the same rows the vendor
+  profile and /vendors/:id/questionnaire already list — so completed fills
+  reflect on the vendor profile with no extra wiring. The invite flips to
+  `completed` with the questionnaire id.
+- Email delivery is honest: with `RESEND_API_KEY` set (function secret,
+  optional `INVITE_FROM`, `PUBLIC_APP_URL`) the email is sent; without it
+  the UI says so and offers a copyable link — never a fake "sent". Pending
+  invites are listed on the vendor questionnaire page with Copy link /
+  Resend; expiry is enforced lazily on every touch.
+

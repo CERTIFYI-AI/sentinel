@@ -35,6 +35,10 @@ import { ErrorState } from '@/components/ui/ErrorState'
 import { PageSkeleton } from '@/components/ui/PageSkeleton'
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog'
 import { FormDialog, Field } from '@/components/evals/FormDialog'
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog'
+import { toast } from 'sonner'
+import { useAssessmentTemplates } from '@/hooks/queries/useAssessmentTemplates'
+import { createInvites, sendInviteEmail, buildFillUrl } from '@/services/vendorInviteService'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -205,8 +209,39 @@ export default function VendorRegistry() {
     setParams(next, { replace: true })
   }
 
-  function openCreate() { setEditing(null); setForm(BLANK); setFormOpen(true) }
+  function openCreate() { setEditing(null); setForm(BLANK); setSelectedPacks([]); setFormOpen(true) }
   function openEdit(v: VendorRecord) { setEditing(v); setForm(toForm(v)); setFormOpen(true) }
+
+  // Onboarding questionnaire invitations: selected packs are snapshotted onto
+  // tokenized invites and emailed to the (required) contact — the vendor fills
+  // without login within 24h and the response lands on this vendor's profile.
+  const templatesQuery = useAssessmentTemplates()
+  const [selectedPacks, setSelectedPacks] = useState<string[]>([])
+  const [inviteResults, setInviteResults] = useState<
+    { pack: string; sent: boolean; url: string; reason?: string }[] | null
+  >(null)
+  const togglePack = (slug: string) =>
+    setSelectedPacks((cur) => (cur.includes(slug) ? cur.filter((s) => s !== slug) : [...cur, slug]))
+
+  async function sendOnboardingInvites(vendorId: string, email: string) {
+    const templates = (templatesQuery.data ?? []).filter((t) => selectedPacks.includes(t.slug))
+    if (templates.length === 0) return
+    try {
+      const invites = await createInvites({ vendorId, email, templates })
+      const results: { pack: string; sent: boolean; url: string; reason?: string }[] = []
+      for (const inv of invites) {
+        try {
+          const r = await sendInviteEmail(inv.token)
+          results.push({ pack: inv.templateName, sent: r.sent, url: r.url ?? buildFillUrl(inv.token), reason: r.reason })
+        } catch (e) {
+          results.push({ pack: inv.templateName, sent: false, url: buildFillUrl(inv.token), reason: e instanceof Error ? e.message : 'send failed' })
+        }
+      }
+      setInviteResults(results)
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Invitations failed')
+    }
+  }
 
   function submit() {
     const patch: Partial<VendorRecord> = {
@@ -228,7 +263,16 @@ export default function VendorRegistry() {
     if (editing) {
       update.mutate({ id: editing.id, patch }, { onSuccess: () => setFormOpen(false) })
     } else {
-      create.mutate(patch, { onSuccess: () => setFormOpen(false) })
+      create.mutate(patch, {
+        onSuccess: (saved) => {
+          setFormOpen(false)
+          // Fire the selected questionnaire invitations at the (required)
+          // contact email; the results dialog reports honestly per pack.
+          if (saved?.id && form.contactEmail.trim() && selectedPacks.length > 0) {
+            void sendOnboardingInvites(saved.id, form.contactEmail.trim())
+          }
+        },
+      })
     }
   }
 
@@ -539,7 +583,7 @@ export default function VendorRegistry() {
         description="Vendors are the anchor record for assessments, SLAs, questionnaires and evidence."
         submitLabel={editing ? 'Save changes' : 'Register vendor'}
         busy={create.isPending || update.isPending}
-        disabled={!form.name.trim()}
+        disabled={!form.name.trim() || (!editing && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.contactEmail.trim()))}
         onSubmit={submit}
       >
         <div className="grid grid-cols-2 gap-3">
@@ -555,8 +599,9 @@ export default function VendorRegistry() {
           <Field label="Website">
             <Input value={form.website} onChange={(e) => set('website', e.target.value)} placeholder="https://vendor.com" />
           </Field>
-          <Field label="Contact email">
-            <Input value={form.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} placeholder="security@vendor.com" />
+          <Field label="Contact email" required={!editing}
+            hint={editing ? undefined : 'Questionnaire invitations are emailed here'}>
+            <Input type="email" value={form.contactEmail} onChange={(e) => set('contactEmail', e.target.value)} placeholder="security@vendor.com" />
           </Field>
           <Field label="Business owner">
             <Input value={form.businessOwner} onChange={(e) => set('businessOwner', e.target.value)} />
@@ -606,7 +651,67 @@ export default function VendorRegistry() {
             }}
           />
         </Field>
+
+        {/* Onboarding questionnaire packs — multi-select; each selected pack is
+            emailed to the contact as a tokenized 24-hour no-login link. */}
+        {!editing && (
+          <Field label="Send questionnaires on registration"
+            hint="Each selected pack goes to the contact email as a link the vendor fills without an account (24-hour window). Responses land on the vendor's profile.">
+            {templatesQuery.isLoading ? (
+              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>Loading packs…</p>
+            ) : (templatesQuery.data ?? []).length === 0 ? (
+              <p className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>No questionnaire packs available.</p>
+            ) : (
+              <div className="max-h-44 space-y-1 overflow-y-auto p-2" style={{ border: '1px solid hsl(var(--border))' }}>
+                {(templatesQuery.data ?? []).map((t) => (
+                  <label key={t.slug} className="flex cursor-pointer items-center gap-2 text-xs" style={{ color: 'hsl(var(--text-2))' }}>
+                    <input type="checkbox" className="rounded-none border-[hsl(var(--border))]"
+                      checked={selectedPacks.includes(t.slug)} onChange={() => togglePack(t.slug)} />
+                    <span className="truncate">{t.name}</span>
+                    <span className="shrink-0 text-[10px]" style={{ color: 'hsl(var(--text-4))' }}>
+                      {t.version} · {t.questions.length} questions
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+          </Field>
+        )}
       </FormDialog>
+
+      {/* Invitation results — honest per-pack outcome, links copyable when
+          email is not configured. */}
+      <Dialog open={!!inviteResults} onOpenChange={(o) => { if (!o) setInviteResults(null) }}>
+        <DialogContent style={{ borderRadius: 0, maxWidth: 560 }}>
+          <DialogHeader>
+            <DialogTitle>Questionnaire invitations</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2">
+            {(inviteResults ?? []).map((r) => (
+              <div key={r.pack} className="flex items-center justify-between gap-3 px-3 py-2" style={{ border: '1px solid hsl(var(--border))' }}>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-medium" style={{ color: 'hsl(var(--text-1))' }}>{r.pack}</p>
+                  <p className="text-[11px]" style={{ color: r.sent ? 'hsl(var(--s-ok-tx))' : 'hsl(var(--s-wn-tx))' }}>
+                    {r.sent ? 'Email sent — link valid for 24 hours'
+                      : r.reason === 'email-not-configured'
+                        ? 'Email is not configured — copy the link and send it yourself'
+                        : `Not sent: ${r.reason ?? 'unknown'}`}
+                  </p>
+                </div>
+                {!r.sent && (
+                  <Button size="sm" variant="outline" className="shrink-0"
+                    onClick={() => { void navigator.clipboard.writeText(r.url); toast.success('Link copied') }}>
+                    Copy link
+                  </Button>
+                )}
+              </div>
+            ))}
+            <p className="text-[11px]" style={{ color: 'hsl(var(--text-4))' }}>
+              Pending and completed invitations are visible on the vendor&apos;s questionnaire page.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       <ConfirmDialog
         open={!!deleteTarget}
