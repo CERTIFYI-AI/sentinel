@@ -33,7 +33,8 @@ class TestAdapterGate:
         # Keep in step with sentinel/integrations/registry.py AND with the
         # migration that flips `adapter_status` — a slug connectable in one and
         # not the other is either a dead Connect button or a hidden capability.
-        assert available_slugs() == frozenset({"github", "aws", "microsoft_azure", "okta"})
+        assert available_slugs() == frozenset({"github", "aws", "microsoft_azure", "okta",
+                                     "microsoft_entra_id", "microsoft_entra_id_gcc_high"})
 
     def test_catalogued_only_product_has_no_adapter(self):
         # Slack is catalogued but no adapter ships; connecting must be refused.
@@ -179,6 +180,9 @@ class TestConnectFormMatchesTheAdapter:
             "aws": "dashboard/src/integrations/aws/config.ts",
             "microsoft_azure": "dashboard/src/integrations/azure/config.ts",
             "okta": "dashboard/src/integrations/okta/config.ts",
+            # Two slugs, one adapter — the connect forms differ only by cloud.
+            "microsoft_entra_id": "dashboard/src/integrations/entra/config.ts",
+            "microsoft_entra_id_gcc_high": "dashboard/src/integrations/entra/config.ts",
         }
         assert set(paths) == set(available_slugs())
         for slug, path in paths.items():

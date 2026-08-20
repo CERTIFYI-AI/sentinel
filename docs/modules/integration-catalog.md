@@ -11,7 +11,7 @@ instances), `integration_findings`, `control_finding_evidence` ·
 `dashboard/src/integrations/connectionProfiles.ts`,
 `dashboard/src/pages/controls/ControlDetail.tsx` (Automated Evidence tab) ·
 **Server:** `sentinel/integrations/` (registry, worker, crypto, control mapping),
-`sentinel/integrations/{github,aws,azure,okta}/adapter.py`
+`sentinel/integrations/{github,aws,azure,okta,entra}/adapter.py`
 
 ## Purpose
 
@@ -27,14 +27,16 @@ evidence tables behind it — `integration_findings`, `control_finding_evidence`
 collection pipeline, a real control-mapping engine, and no way for a user to
 reach any of it. This module closes that gap.
 
-It also carries an honesty obligation. Of the 217 catalogued products, **four**
-ship an adapter today — `github`, `aws`, `microsoft_azure` and `okta`. Rendering
+It also carries an honesty obligation. Of the 217 catalogued products, **six**
+ship an adapter today — `github`, `aws`, `microsoft_azure`, `okta`,
+`microsoft_entra_id` and `microsoft_entra_id_gcc_high` (the latter two share
+one adapter across sovereign clouds). Rendering
 a Connect button on all 217 would promise evidence collection that cannot
 happen — the same class of defect as an unearned certification badge.
 
 That ratio is the number to watch: the catalogue is 217 wide and the collection
-engine is 4 deep. Every product has a real, product-specific connect form, but
-only these four *collect*; the rest register a governed source with a named
+engine is 6 deep. Every product has a real, product-specific connect form, but
+only these six *collect*; the rest register a governed source with a named
 owner and a review cadence. Closing the gap is per-product API work, and each
 adapter lands the same way — implementation, registry entry, connect form,
 catalogue flip — never by relaxing what "connected" means.

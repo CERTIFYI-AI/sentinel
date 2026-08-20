@@ -25,6 +25,11 @@ from __future__ import annotations
 
 from sentinel.integrations.aws.adapter import AwsAdapter, AwsCredentials
 from sentinel.integrations.azure.adapter import AzureAdapter, AzureCredentials
+from sentinel.integrations.entra.adapter import (
+    EntraAdapter,
+    EntraCredentials,
+    EntraGccHighCredentials,
+)
 from sentinel.integrations.github.adapter import GithubAdapter, GithubCredentials
 from sentinel.integrations.okta.adapter import OktaAdapter, OktaCredentials
 
@@ -34,6 +39,10 @@ _REGISTRY: dict[str, tuple[type, type]] = {
     # Catalogue slug for Azure is `microsoft_azure`; `azure` is not a row.
     "microsoft_azure": (AzureAdapter, AzureCredentials),
     "okta": (OktaAdapter, OktaCredentials),
+    # One adapter, two catalogue slugs: the sovereign cloud is selected by the
+    # credentials, so GCC High cannot silently query commercial endpoints.
+    "microsoft_entra_id": (EntraAdapter, EntraCredentials),
+    "microsoft_entra_id_gcc_high": (EntraAdapter, EntraGccHighCredentials),
 }
 
 

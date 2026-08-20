@@ -259,7 +259,8 @@ describe('connect forms', () => {
     // a slug in one and not the other is a dead Connect button or a hidden
     // capability. `okta` joined in 20260922000001.
     expect(INTEGRATIONS.map(i => i.id).sort()).toEqual(
-      ['aws', 'github', 'microsoft_azure', 'okta'],
+      ['aws', 'github', 'microsoft_azure', 'microsoft_entra_id',
+       'microsoft_entra_id_gcc_high', 'okta'],
     )
   })
 

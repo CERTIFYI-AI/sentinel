@@ -155,8 +155,8 @@ adapter. Until then, the catalogue entry does its job.
 | | Count |
 | --- | ---: |
 | Catalogued products | 217 |
-| Collecting (`available` / `beta`) | 4 |
-| Remaining, phased above | 215 |
+| Collecting (`available` / `beta`) | 6 (`+microsoft_entra_id`, `+microsoft_entra_id_gcc_high`) |
+| Remaining, phased above | 213 |
 
 Update this table with each connector, and update the ratio in
 [`../modules/integration-catalog.md`](../modules/integration-catalog.md) —

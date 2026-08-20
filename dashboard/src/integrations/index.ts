@@ -15,6 +15,7 @@ import { GithubConfig } from './github/config'
 import { AwsConfig } from './aws/config'
 import { AzureConfig } from './azure/config'
 import { OktaConfig } from './okta/config'
+import { EntraConfig, EntraGccHighConfig } from './entra/config'
 
 export type { IntegrationConfig, CredentialField, IntegrationCategory, AuthMethod } from './types'
 
@@ -23,6 +24,8 @@ export const INTEGRATIONS: IntegrationConfig[] = [
   AwsConfig,
   AzureConfig,
   OktaConfig,
+  EntraConfig,
+  EntraGccHighConfig,
 ]
 
 export function getIntegrationConfig(id: string): IntegrationConfig | undefined {
