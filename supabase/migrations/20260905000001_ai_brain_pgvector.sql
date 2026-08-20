@@ -46,7 +46,12 @@ begin
     return;
   end if;
 
-  execute 'create extension if not exists vector';
+  begin
+    execute 'create extension if not exists vector';
+  exception when insufficient_privilege then
+    raise notice 'pgvector available but current role lacks permission — AI Brain objects skipped';
+    return;
+  end;
 
   -- ── 2. The knowledge base ────────────────────────────────────────────────
   --

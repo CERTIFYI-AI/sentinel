@@ -21,7 +21,7 @@
 create table if not exists public.framework_adoptions (
   id                uuid primary key default gen_random_uuid(),
   org_id            uuid not null default current_user_org_id(),
-  framework_id      uuid not null references public.frameworks(id) on delete cascade,
+  framework_id      text not null references public.frameworks(id) on delete cascade,
   status            text not null default 'adopted'
                     check (status in ('adopted','paused','retired')),
   adopted_at        timestamptz not null default now(),

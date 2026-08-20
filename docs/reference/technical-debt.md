@@ -1394,3 +1394,37 @@ destructive — needs explicit sign-off, then a lockdown/drop migration.
 catalog's rows), repoint the Frameworks catalog tab at it, add a
 `catalog_ref` reconciliation for the 9 AI frameworks whose refs differ, and
 retire `framework_controls` + the three legacy tables behind a sign-off.
+
+## TD-029 — `microsoft_onedrive` adapter is unreachable: no catalogue row carries its slug
+
+**Status:** Open · **Severity:** P3 · **Owner:** Integrations
+
+Found while landing the Phase 8 connector rollout (2026-08-20), pre-existing
+since Phase 1. `sentinel/integrations/registry.py` registers
+`"microsoft_onedrive"` and `dashboard/src/integrations/onedrive/config.ts`
+ships its connect form, but **no row in `integration_catalog` has that
+slug** — the seed (`20260825000002`) carries a bare `onedrive` row instead
+(category `saas`, generic "expansion target" prose), alongside the properly
+named `microsoft_sharepoint` for the sibling product.
+
+Consequence: `20260925000001_enable_phase1_graph_adapters.sql` flips
+`microsoft_onedrive` to `available` and matches **zero rows**, so the
+adapter is built, registered, form-complete, and reachable by nobody — the
+exact defect step 4 of the registry docstring exists to prevent. The bare
+`onedrive` row stays `catalogued`, so its card offers no Connect button.
+
+Not fixed inside the Phase 8 rollout migration because both candidate fixes
+touch live data: renaming the catalogue row rewrites a slug that
+`integrations.catalog_slug` may already reference, and inserting a second
+row would leave two OneDrive entries in the browsable catalogue.
+
+**To close:** decide whether the canonical slug is `onedrive` or
+`microsoft_onedrive`, then either (a) rename the catalogue row and migrate
+any `integrations.catalog_slug` referencing the old value in the same
+transaction, or (b) re-key the registry entry and connect form to
+`onedrive`. Option (b) is smaller and touches no live rows, but breaks the
+`microsoft_*` naming the rest of the Graph family uses. Verify afterwards
+that the registry slug set and the set of `available` catalogue rows agree
+in both directions — the existing sync guards compare the registry against
+the connect forms, not against the catalogue seed, which is why this went
+unnoticed for seven phases.
