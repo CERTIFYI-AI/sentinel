@@ -37,6 +37,7 @@ import { FormDialog, Field } from '@/components/evals/FormDialog'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useVendor } from '@/hooks/useVendorsData'
 import { useVendorQuestionnaires } from '@/hooks/useVendorQuestionnaires'
+import { useAssessmentTemplates } from '@/hooks/queries/useAssessmentTemplates'
 import type { QuestionnaireDecision } from '@/services/vendorQuestionnaireService'
 import { Pill, LinkPill, Fact, tone, fmtDate } from './vendorUi'
 
@@ -45,7 +46,7 @@ const TEMPLATE = 'Sentinel VSQ'
 const TEMPLATE_VERSION = 'v1.0'
 
 interface QuestionOption { value: string; label: string; points: number }
-interface Question { id: string; text: string; icon: React.ElementType; category: string; options: QuestionOption[] }
+interface Question { id: string; text: string; icon?: React.ElementType; category: string; options: QuestionOption[] }
 
 const QUESTIONS: Question[] = [
   {
@@ -150,6 +151,20 @@ export default function VendorQuestionnaire() {
   const [answers, setAnswers] = useState<Answers>({})
   const [respondent, setRespondent] = useState('')
   const [respondentEmail, setRespondentEmail] = useState('')
+
+  // Questionnaire packs from vendor_assessment_templates. ?template=<slug>
+  // preselects a pack (deep link from the pack library); the hardcoded VSQ
+  // stays as the fallback so the page still works if templates fail to load.
+  const templatesQuery = useAssessmentTemplates()
+  const [templateSlug, setTemplateSlug] = useState<string>(params.get('template') || 'vsq-core')
+  const activeTemplate = (templatesQuery.data ?? []).find((t) => t.slug === templateSlug) ?? null
+  const activeQuestions: Question[] = activeTemplate
+    ? activeTemplate.questions.map((q) => ({ id: q.id, text: q.text, category: q.category, options: q.options }))
+    : QUESTIONS
+  const activeName = activeTemplate?.name ?? TEMPLATE
+  const activeVersion = activeTemplate?.version ?? TEMPLATE_VERSION
+  const activeMaxScore = activeQuestions.reduce((sum, q) => sum + Math.max(...q.options.map((o) => o.points)), 0)
+  const switchTemplate = (slug: string) => { setTemplateSlug(slug); setAnswers({}) }
   const [reviewFor, setReviewFor] = useState<string | null>(null)
   const [reviewer, setReviewer] = useState('')
   const [decision, setDecision] = useState<QuestionnaireDecision>('approved')
@@ -157,11 +172,11 @@ export default function VendorQuestionnaire() {
   const viewing = openParam ? questionnaires.find((q) => q.id === openParam) ?? null : null
 
   const answeredCount = Object.keys(answers).filter((k) => answers[k]?.value).length
-  const score = useMemo(() => QUESTIONS.reduce((sum, q) => {
+  const score = useMemo(() => activeQuestions.reduce((sum, q) => {
     const a = answers[q.id]?.value
     return sum + (q.options.find((o) => o.value === a)?.points ?? 0)
-  }, 0), [answers])
-  const pct = Math.round((score / MAX_SCORE) * 100)
+  }, 0), [answers, activeQuestions])
+  const pct = activeMaxScore > 0 ? Math.round((score / activeMaxScore) * 100) : 0
 
   if (isLoading) return <PageSkeleton title="Vendor questionnaire" rows={6} />
 
@@ -196,20 +211,20 @@ export default function VendorQuestionnaire() {
     if (!vendor) return
     submit.mutate({
       vendorId: vendor.id,
-      template: TEMPLATE,
-      templateVersion: TEMPLATE_VERSION,
-      questions: QUESTIONS.map((q) => ({ id: q.id, text: q.text, category: q.category, options: q.options })),
+      template: activeName,
+      templateVersion: activeVersion,
+      questions: activeQuestions.map((q) => ({ id: q.id, text: q.text, category: q.category, options: q.options })),
       answers: Object.fromEntries(
         Object.entries(answers)
           .filter(([, a]) => !!a.value)
           .map(([qid, a]) => {
-            const q = QUESTIONS.find((x) => x.id === qid)
+            const q = activeQuestions.find((x) => x.id === qid)
             const opt = q?.options.find((o) => o.value === a.value)
             return [qid, { value: a.value, label: opt?.label, points: opt?.points, notes: a.notes || undefined }]
           }),
       ),
       score,
-      maxScore: MAX_SCORE,
+      maxScore: activeMaxScore,
       respondent,
       respondentEmail: respondentEmail || undefined,
     }, {
@@ -237,7 +252,7 @@ export default function VendorQuestionnaire() {
     <div className="space-y-6">
       <PageHeader
         title="Vendor security questionnaire"
-        subtitle={`${TEMPLATE} ${TEMPLATE_VERSION} · ${vendor.name || 'Unnamed vendor'}`}
+        subtitle={`${activeName} ${activeVersion} · ${vendor.name || 'Unnamed vendor'}`}
         breadcrumbs={[
           { label: 'Home', href: '/' },
           { label: 'Vendors', href: '/vendors' },
@@ -354,10 +369,28 @@ export default function VendorQuestionnaire() {
       <Card style={{ borderRadius: 0, border: '1px solid hsl(var(--border))' }}>
         <CardContent className="p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h2 className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>New response</h2>
+            <div className="flex items-center gap-3">
+              <h2 className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>New response</h2>
+              {/* Questionnaire pack picker — switching packs clears the draft */}
+              <Select value={templateSlug} onValueChange={switchTemplate}>
+                <SelectTrigger className="h-8 w-80 text-xs">
+                  <SelectValue placeholder={templatesQuery.isLoading ? 'Loading packs…' : 'Questionnaire pack'} />
+                </SelectTrigger>
+                <SelectContent>
+                  {(templatesQuery.data ?? []).map((t) => (
+                    <SelectItem key={t.slug} value={t.slug}>
+                      {t.name} · {t.version} ({t.questions.length} questions)
+                    </SelectItem>
+                  ))}
+                  {(templatesQuery.data ?? []).length === 0 && (
+                    <SelectItem value="vsq-core">{TEMPLATE} {TEMPLATE_VERSION}</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
             <div className="flex items-center gap-3">
               <span className="text-xs" style={{ color: 'hsl(var(--text-4))' }}>
-                {answeredCount} of {QUESTIONS.length} answered
+                {answeredCount} of {activeQuestions.length} answered
               </span>
               <span className="text-sm font-semibold" style={{ color: 'hsl(var(--text-1))' }}>
                 {answeredCount === 0 ? '—' : `${pct}%`}
@@ -379,9 +412,13 @@ export default function VendorQuestionnaire() {
             </Field>
           </div>
 
+          {activeTemplate?.description && (
+            <p className="mt-3 text-xs" style={{ color: 'hsl(var(--text-3))' }}>{activeTemplate.description}</p>
+          )}
+
           <div className="mt-5 space-y-4">
-            {QUESTIONS.map((q) => {
-              const Icon = q.icon
+            {activeQuestions.map((q) => {
+              const Icon = q.icon ?? ClipboardText
               const a = answers[q.id]
               return (
                 <div key={q.id} className="p-3" style={{ border: '1px solid hsl(var(--border))' }}>

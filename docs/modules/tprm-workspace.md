@@ -96,3 +96,21 @@ from the RLS on each source table.
 - Because it holds no table, there is no migration for this module; its inputs
   are created by
   `supabase/migrations/20260822000001_tprm_supply_esg_foundation.sql`.
+
+## Questionnaire packs (2026-09-28)
+
+`vendor_assessment_templates` holds the 10 built-in TPRM questionnaire packs
+(96 questions), grouped by product module: Vendor Intake & Inherent Risk,
+CAIQ Cloud Security (CAIQ v4.1-aligned + CAIQ-Lite), Privacy & Data
+Protection, Evidence & Document Review, SIG / Security Due Diligence (BC/DR),
+AI Vendor Assessment, Subprocessor / Fourth-Party Risk, Vendor Approval &
+Renewal, Vendor Exit / Offboarding.
+
+- The pack library renders on `/vendors/assessments`; "Run" picks a vendor
+  and deep-links to `/vendors/:id/questionnaire?template=<slug>`.
+- The vendor questionnaire page carries a pack picker; switching packs
+  clears the draft. Responses snapshot pack name, version, questions, score
+  and max score at submit time, so template edits never rescore history.
+- The CAIQ packs are domain-level screens aligned to the CSA CCM/CAIQ v4
+  domains — not the verbatim licensed CSA instrument; collect the vendor's
+  full CAIQ submission as evidence.
