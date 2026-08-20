@@ -29,6 +29,8 @@ import {
 } from '@phosphor-icons/react';
 import { useFrameworksData } from '@/hooks/useFrameworksData';
 import { useFrameworkCatalog } from '@/hooks/useFrameworkCatalog';
+import { useFrameworkAdoptions, useAdoptFramework, useSetAdoptionStatus } from '@/hooks/queries/useFrameworkAdoptions';
+import { useAuthStore } from '@/store/authStore';
 import { InterlinkChip } from '../components/ui/InterlinkChip';
 import type { FrameworkRecord } from '@/services/frameworkService';
 import { supabase, isSupabaseConfigured } from '@/lib/supabase';
@@ -285,6 +287,15 @@ function FrameworkRequirements({
 
 export default function Frameworks() {
   const { frameworks, isLoading, error, save, remove } = useFrameworksData();
+  // Compliance scope (ISO/IEC 42001 4.3): adoption records decide which
+  // frameworks count toward posture. Adopt/retire is a governed, audit-logged
+  // act; frameworks.is_active is derived from it.
+  const adoptionsQuery = useFrameworkAdoptions();
+  const adoptMutation = useAdoptFramework();
+  const setAdoption = useSetAdoptionStatus();
+  const authUser = useAuthStore((s) => s.user);
+  const adoptionFor = (frameworkId?: string | null) =>
+    (adoptionsQuery.data ?? []).find((a) => a.frameworkId === frameworkId);
   const nav = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -470,11 +481,32 @@ export default function Frameworks() {
                           {fw.jurisdiction && (
                             <Badge variant="outline" style={{ borderRadius: 0, fontSize: 10 }}>{fw.jurisdiction}</Badge>
                           )}
-                          {fw.is_active === false && (
-                            <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>Inactive</Badge>
+                          {fw.is_active === false ? (
+                            <Badge style={{ background: 'hsl(var(--bg-muted))', color: 'hsl(var(--text-3))', borderRadius: 0, fontSize: 10 }}>In library — not adopted</Badge>
+                          ) : (
+                            <Badge style={{ background: 'hsl(var(--s-ok-bg))', color: 'hsl(var(--s-ok-tx))', borderRadius: 0, fontSize: 10 }}>Adopted</Badge>
                           )}
                         </div>
                         <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                          {(() => {
+                            const adoption = adoptionFor(fw.id);
+                            const adopted = adoption?.status === 'adopted';
+                            return adopted ? (
+                              <Button size="sm" variant="ghost" style={{ padding: '2px 6px', fontSize: 11 }}
+                                title="Retire this framework from your compliance scope (controls are kept, hidden from posture)"
+                                disabled={setAdoption.isPending}
+                                onClick={() => adoption && setAdoption.mutate({ adoptionId: adoption.id, frameworkId: fw.id!, status: 'retired' })}>
+                                Retire
+                              </Button>
+                            ) : (
+                              <Button size="sm" variant="outline" style={{ padding: '2px 8px', fontSize: 11 }}
+                                title="Adopt this framework into your compliance scope"
+                                disabled={adoptMutation.isPending}
+                                onClick={() => adoptMutation.mutate({ frameworkId: fw.id!, adoptedBy: authUser?.name ?? authUser?.email })}>
+                                Adopt
+                              </Button>
+                            );
+                          })()}
                           <Button size="sm" variant="ghost" style={{ padding: '2px 6px' }} onClick={() => setEditItem({ ...fw })}>
                             <PencilSimple size={12} />
                           </Button>

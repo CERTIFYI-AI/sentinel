@@ -30,6 +30,7 @@ import { useModelsData } from '@/hooks/useModelsData'
 import { useRisksData } from '@/hooks/useRisksData'
 import { usePolicies } from '@/hooks/queries/usePolicies'
 import { useRBAC } from '@/hooks/useRBAC'
+import { useAdoptedFrameworkIds } from '@/hooks/queries/useFrameworkAdoptions'
 import { ControlCollabPanel } from '@/components/compliance/ControlCollabPanel'
 import type { ControlRecord } from '@/services/controlService'
 
@@ -100,8 +101,20 @@ export default function ComplianceControls() {
   const [sheetId, setSheetId] = useState<string | null>(null)
   const [view, setView] = useState<'list' | 'board'>('list')
   const [frameworkFilter, setFrameworkFilter] = useState<string>('all')
+  const [showOutOfScope, setShowOutOfScope] = useState(false)
+  const { ids: adoptedIds, isLoading: adoptionsLoading } = useAdoptedFrameworkIds()
 
-  const rows = useMemo(() => controlsQuery.data ?? [], [controlsQuery.data])
+  const allRows = useMemo(() => controlsQuery.data ?? [], [controlsQuery.data])
+  // Compliance scope: only controls whose framework the org has adopted
+  // count toward the library and its KPIs (ISO/IEC 42001 4.3). Controls with
+  // no framework are org-authored and always in scope. Out-of-scope controls
+  // stay one toggle away, never deleted.
+  const inScopeRows = useMemo(
+    () => allRows.filter((c) => !c.frameworkId || adoptedIds.has(c.frameworkId)),
+    [allRows, adoptedIds],
+  )
+  const rows = showOutOfScope || adoptionsLoading ? allRows : inScopeRows
+  const outOfScopeCount = allRows.length - inScopeRows.length
   const modelName = (id: string) => models.find((m) => m.id === id)?.name ?? 'Unavailable'
   // Linked risks/policies resolve to display names at render time — never a
   // raw uuid; an unresolvable id shows "Unavailable".
@@ -290,6 +303,18 @@ export default function ComplianceControls() {
           </Button>
         </div>
         <div className="flex items-center gap-2">
+          {outOfScopeCount > 0 && (
+            <label className="flex items-center gap-1.5 text-xs cursor-pointer" style={{ color: 'hsl(var(--text-3))' }}>
+              <input type="checkbox" className="rounded-none border-[hsl(var(--border))]"
+                checked={showOutOfScope} onChange={(e) => setShowOutOfScope(e.target.checked)} />
+              Show {outOfScopeCount} out-of-scope
+              <button type="button" className="underline cursor-pointer" style={{ color: 'hsl(var(--text-4))' }}
+                onClick={(e) => { e.preventDefault(); nav('/frameworks') }}
+                title="Adopt or retire frameworks in the Frameworks library">
+                manage scope
+              </button>
+            </label>
+          )}
           <Select value={frameworkFilter} onValueChange={setFrameworkFilter}>
             <SelectTrigger className="w-72 h-8 text-xs"><SelectValue placeholder="All frameworks" /></SelectTrigger>
             <SelectContent>
