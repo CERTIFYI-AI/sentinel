@@ -154,9 +154,27 @@ adapter. Until then, the catalogue entry does its job.
 
 | | Count |
 | --- | ---: |
-| Catalogued products | 217 |
-| Collecting (`available` / `beta`) | 6 (`+microsoft_entra_id`, `+microsoft_entra_id_gcc_high`) |
-| Remaining, phased above | 213 |
+| Catalogued products | 219 seeded (217 after `20260829000002` drops the two peer-GRC rows) |
+| Collecting (`available` / `beta`) | **216 — Phases 1–8 complete** |
+| Remaining, phased above | 0 |
+
+**The rollout is finished.** Phase 8 was built out in full rather than left
+to monitored mode: the "not a commitment" note below was an explicit
+judgement call about where adapters stop paying for themselves, and it was
+overridden deliberately so every catalogued product collects. That note is
+kept as written, because the reasoning still applies to anything added to
+the catalogue *next*.
+
+Four catalogue rows are intentionally not connectable: `drata` and
+`secureframe` (peer-GRC evidence import — deferred indefinitely, rows
+removed by `20260829000002`), and the bare `sharepoint` / `onedrive`
+duplicates of the Microsoft Graph family rows. One adapter reachable under
+two slugs would let a product be connected twice and collect against two
+identities.
+
+One known gap, tracked as **TD-029**: the `microsoft_onedrive` adapter is
+registered and form-complete but has no catalogue row under that slug, so it
+is currently unreachable. See `docs/reference/technical-debt.md`.
 
 Update this table with each connector, and update the ratio in
 [`../modules/integration-catalog.md`](../modules/integration-catalog.md) —

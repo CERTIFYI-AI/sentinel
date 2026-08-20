@@ -122,6 +122,89 @@ import { VeracodeConfig } from './veracode/config'
 import { WizConfig } from './wiz/config'
 // Phase 7: HRIS / people
 import { WorkdayConfig } from './workday/config'
+// Phase 8: Collaboration, ticketing & business SaaS
+import { SlackConfig } from './slack/config'
+import { ZoomConfig } from './zoom/config'
+import { WebexConfig } from './webex/config'
+import { BoxConfig } from './box/config'
+import { DropboxConfig } from './dropbox/config'
+import { NotionConfig } from './notion/config'
+import { DocusignConfig } from './docusign/config'
+import { CalendlyConfig } from './calendly/config'
+import { MiroConfig } from './miro/config'
+import { ServicenowConfig } from './servicenow/config'
+import { ZendeskConfig } from './zendesk/config'
+import { AsanaConfig } from './asana/config'
+import { LinearConfig } from './linear/config'
+import { ClickupConfig } from './clickup/config'
+import { MondayComConfig } from './monday_com/config'
+import { BasecampConfig } from './basecamp/config'
+import { SmartsheetConfig } from './smartsheet/config'
+import { TeamworkConfig } from './teamwork/config'
+import { FreshserviceConfig } from './freshservice/config'
+import { SalesforceConfig } from './salesforce/config'
+import { HubspotConfig } from './hubspot/config'
+import { PipedriveConfig } from './pipedrive/config'
+import { CopperConfig } from './copper/config'
+import { InsightlyConfig } from './insightly/config'
+import { CloseConfig } from './close/config'
+import { CapsuleConfig } from './capsule/config'
+import { GongConfig } from './gong/config'
+import { GorgiasConfig } from './gorgias/config'
+import { IntercomConfig } from './intercom/config'
+import { XeroConfig } from './xero/config'
+import { QuickbooksConfig } from './quickbooks/config'
+import { BrexConfig } from './brex/config'
+import { RampConfig } from './ramp/config'
+import { TwilioConfig } from './twilio/config'
+import { ApolloConfig } from './apollo/config'
+import { ZoominfoConfig } from './zoominfo/config'
+import { EnvoyConfig } from './envoy/config'
+import { ToriiConfig } from './torii/config'
+import { RocksetConfig } from './rockset/config'
+import { ClockworkConfig } from './clockwork/config'
+import { Knowbe4Config } from './knowbe4/config'
+import { UdemyBusinessConfig } from './udemy_business/config'
+import { WizerConfig } from './wizer/config'
+import { MimecastConfig } from './mimecast/config'
+import { DoceboConfig } from './docebo/config'
+import { CybereadyConfig } from './cybeready/config'
+import { BreezyHrConfig } from './breezy_hr/config'
+import { CatsConfig } from './cats/config'
+import { JobviteConfig } from './jobvite/config'
+import { SmartrecruitersConfig } from './smartrecruiters/config'
+import { TeamtailorConfig } from './teamtailor/config'
+import { JobadderConfig } from './jobadder/config'
+import { LeverConfig } from './lever/config'
+import { ComeetConfig } from './comeet/config'
+import { CertnConfig } from './certn/config'
+import { CheckrConfig } from './checkr/config'
+import { OracleCloudConfig } from './oracle_cloud/config'
+import { DigitaloceanConfig } from './digitalocean/config'
+import { VercelConfig } from './vercel/config'
+import { NetlifyConfig } from './netlify/config'
+import { ScalewayConfig } from './scaleway/config'
+import { SupabaseConfig } from './supabase/config'
+import { OvhcloudConfig } from './ovhcloud/config'
+import { HerokuConfig } from './heroku/config'
+import { AkamaiConfig } from './akamai/config'
+import { SnowflakeConfig } from './snowflake/config'
+import { RenderConfig } from './render/config'
+import { MongoDbAtlasConfig } from './mongodb_atlas/config'
+import { MongoDbAtlasForGovernmentConfig } from './mongodb_atlas_for_government/config'
+import { IbmCloudConfig } from './ibm_cloud/config'
+import { AlibabaCloudConfig } from './alibaba_cloud/config'
+import { CloudflareConfig } from './cloudflare/config'
+import { KubernetesConfig } from './kubernetes/config'
+import { DockerHubConfig } from './docker_hub/config'
+import { GithubActionsConfig } from './github_actions/config'
+import { JenkinsConfig } from './jenkins/config'
+import { CircleciConfig } from './circleci/config'
+import { HashicorpVaultConfig } from './hashicorp_vault/config'
+import { BitwardenConfig } from './bitwarden/config'
+import { FieldguideConfig } from './fieldguide/config'
+import { VouchCyberInsuranceConfig } from './vouch_cyber_insurance/config'
+import { AScendConfig } from './a_scend/config'
 import { SapSuccessfactorsConfig } from './sap_successfactors/config'
 import { AdpConfig } from './adp/config'
 import { AdpWorkforceNowConfig } from './adp_workforce_now/config'
@@ -290,6 +373,89 @@ export const INTEGRATIONS: IntegrationConfig[] = [
   AlexisHRConfig,
   EmploymentHeroConfig,
   SevenShiftsConfig,
+  // Phase 8: Collaboration, ticketing & business SaaS
+  SlackConfig,
+  ZoomConfig,
+  WebexConfig,
+  BoxConfig,
+  DropboxConfig,
+  NotionConfig,
+  DocusignConfig,
+  CalendlyConfig,
+  MiroConfig,
+  ServicenowConfig,
+  ZendeskConfig,
+  AsanaConfig,
+  LinearConfig,
+  ClickupConfig,
+  MondayComConfig,
+  BasecampConfig,
+  SmartsheetConfig,
+  TeamworkConfig,
+  FreshserviceConfig,
+  SalesforceConfig,
+  HubspotConfig,
+  PipedriveConfig,
+  CopperConfig,
+  InsightlyConfig,
+  CloseConfig,
+  CapsuleConfig,
+  GongConfig,
+  GorgiasConfig,
+  IntercomConfig,
+  XeroConfig,
+  QuickbooksConfig,
+  BrexConfig,
+  RampConfig,
+  TwilioConfig,
+  ApolloConfig,
+  ZoominfoConfig,
+  EnvoyConfig,
+  ToriiConfig,
+  RocksetConfig,
+  ClockworkConfig,
+  Knowbe4Config,
+  UdemyBusinessConfig,
+  WizerConfig,
+  MimecastConfig,
+  DoceboConfig,
+  CybereadyConfig,
+  BreezyHrConfig,
+  CatsConfig,
+  JobviteConfig,
+  SmartrecruitersConfig,
+  TeamtailorConfig,
+  JobadderConfig,
+  LeverConfig,
+  ComeetConfig,
+  CertnConfig,
+  CheckrConfig,
+  OracleCloudConfig,
+  DigitaloceanConfig,
+  VercelConfig,
+  NetlifyConfig,
+  ScalewayConfig,
+  SupabaseConfig,
+  OvhcloudConfig,
+  HerokuConfig,
+  AkamaiConfig,
+  SnowflakeConfig,
+  RenderConfig,
+  MongoDbAtlasConfig,
+  MongoDbAtlasForGovernmentConfig,
+  IbmCloudConfig,
+  AlibabaCloudConfig,
+  CloudflareConfig,
+  KubernetesConfig,
+  DockerHubConfig,
+  GithubActionsConfig,
+  JenkinsConfig,
+  CircleciConfig,
+  HashicorpVaultConfig,
+  BitwardenConfig,
+  FieldguideConfig,
+  VouchCyberInsuranceConfig,
+  AScendConfig,
 ]
 
 export function getIntegrationConfig(id: string): IntegrationConfig | undefined {

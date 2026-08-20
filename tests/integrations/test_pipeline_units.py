@@ -93,11 +93,16 @@ class TestRegistry:
         assert "github" in available_slugs()
 
     def test_catalogued_only_slug_raises_lookup_error(self):
-        # `slack` is catalogued with no adapter. (This was `okta` until its
-        # adapter shipped in 20260922000001 — the assertion is about the
-        # refusal, not the product.)
+        # A catalogued slug with no adapter must be refused. The example has
+        # moved as adapters shipped (okta -> slack -> here); the assertion is
+        # about the refusal, not the product.
+        #
+        # `sharepoint` is the bare catalogue row that duplicates the shipped
+        # `microsoft_sharepoint` entry. Nothing is registered under the bare
+        # slug, and nothing should be: one adapter reachable under two slugs
+        # would let the same product be connected twice.
         with pytest.raises(LookupError, match="catalogued only"):
-            get_adapter_class("slack")
+            get_adapter_class("sharepoint")
 
 
 class TestBackoff:

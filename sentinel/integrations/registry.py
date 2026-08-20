@@ -206,6 +206,90 @@ from sentinel.integrations.trinet.adapter import TrinetAdapter, TrinetCredential
 from sentinel.integrations.ukg.adapter import UkgAdapter, UkgCredentials
 from sentinel.integrations.workday.adapter import WorkdayAdapter, WorkdayCredentials
 
+# Phase 8: Collaboration, ticketing & business SaaS
+from sentinel.integrations.slack.adapter import SlackAdapter, SlackCredentials
+from sentinel.integrations.zoom.adapter import ZoomAdapter, ZoomCredentials
+from sentinel.integrations.webex.adapter import WebexAdapter, WebexCredentials
+from sentinel.integrations.box.adapter import BoxAdapter, BoxCredentials
+from sentinel.integrations.dropbox.adapter import DropboxAdapter, DropboxCredentials
+from sentinel.integrations.notion.adapter import NotionAdapter, NotionCredentials
+from sentinel.integrations.docusign.adapter import DocusignAdapter, DocusignCredentials
+from sentinel.integrations.calendly.adapter import CalendlyAdapter, CalendlyCredentials
+from sentinel.integrations.miro.adapter import MiroAdapter, MiroCredentials
+from sentinel.integrations.servicenow.adapter import ServicenowAdapter, ServicenowCredentials
+from sentinel.integrations.zendesk.adapter import ZendeskAdapter, ZendeskCredentials
+from sentinel.integrations.asana.adapter import AsanaAdapter, AsanaCredentials
+from sentinel.integrations.linear.adapter import LinearAdapter, LinearCredentials
+from sentinel.integrations.clickup.adapter import ClickupAdapter, ClickupCredentials
+from sentinel.integrations.monday_com.adapter import MondayComAdapter, MondayComCredentials
+from sentinel.integrations.basecamp.adapter import BasecampAdapter, BasecampCredentials
+from sentinel.integrations.smartsheet.adapter import SmartsheetAdapter, SmartsheetCredentials
+from sentinel.integrations.teamwork.adapter import TeamworkAdapter, TeamworkCredentials
+from sentinel.integrations.freshservice.adapter import FreshserviceAdapter, FreshserviceCredentials
+from sentinel.integrations.salesforce.adapter import SalesforceAdapter, SalesforceCredentials
+from sentinel.integrations.hubspot.adapter import HubspotAdapter, HubspotCredentials
+from sentinel.integrations.pipedrive.adapter import PipedriveAdapter, PipedriveCredentials
+from sentinel.integrations.copper.adapter import CopperAdapter, CopperCredentials
+from sentinel.integrations.insightly.adapter import InsightlyAdapter, InsightlyCredentials
+from sentinel.integrations.close.adapter import CloseAdapter, CloseCredentials
+from sentinel.integrations.capsule.adapter import CapsuleAdapter, CapsuleCredentials
+from sentinel.integrations.gong.adapter import GongAdapter, GongCredentials
+from sentinel.integrations.gorgias.adapter import GorgiasAdapter, GorgiasCredentials
+from sentinel.integrations.intercom.adapter import IntercomAdapter, IntercomCredentials
+from sentinel.integrations.xero.adapter import XeroAdapter, XeroCredentials
+from sentinel.integrations.quickbooks.adapter import QuickbooksAdapter, QuickbooksCredentials
+from sentinel.integrations.brex.adapter import BrexAdapter, BrexCredentials
+from sentinel.integrations.ramp.adapter import RampAdapter, RampCredentials
+from sentinel.integrations.twilio.adapter import TwilioAdapter, TwilioCredentials
+from sentinel.integrations.apollo.adapter import ApolloAdapter, ApolloCredentials
+from sentinel.integrations.zoominfo.adapter import ZoominfoAdapter, ZoominfoCredentials
+from sentinel.integrations.envoy.adapter import EnvoyAdapter, EnvoyCredentials
+from sentinel.integrations.torii.adapter import ToriiAdapter, ToriiCredentials
+from sentinel.integrations.rockset.adapter import RocksetAdapter, RocksetCredentials
+from sentinel.integrations.clockwork.adapter import ClockworkAdapter, ClockworkCredentials
+from sentinel.integrations.knowbe4.adapter import Knowbe4Adapter, Knowbe4Credentials
+from sentinel.integrations.udemy_business.adapter import UdemyBusinessAdapter, UdemyBusinessCredentials
+from sentinel.integrations.wizer.adapter import WizerAdapter, WizerCredentials
+from sentinel.integrations.mimecast.adapter import MimecastAdapter, MimecastCredentials
+from sentinel.integrations.docebo.adapter import DoceboAdapter, DoceboCredentials
+from sentinel.integrations.cybeready.adapter import CybereadyAdapter, CybereadyCredentials
+from sentinel.integrations.breezy_hr.adapter import BreezyHrAdapter, BreezyHrCredentials
+from sentinel.integrations.cats.adapter import CatsAdapter, CatsCredentials
+from sentinel.integrations.jobvite.adapter import JobviteAdapter, JobviteCredentials
+from sentinel.integrations.smartrecruiters.adapter import SmartrecruitersAdapter, SmartrecruitersCredentials
+from sentinel.integrations.teamtailor.adapter import TeamtailorAdapter, TeamtailorCredentials
+from sentinel.integrations.jobadder.adapter import JobadderAdapter, JobadderCredentials
+from sentinel.integrations.lever.adapter import LeverAdapter, LeverCredentials
+from sentinel.integrations.comeet.adapter import ComeetAdapter, ComeetCredentials
+from sentinel.integrations.certn.adapter import CertnAdapter, CertnCredentials
+from sentinel.integrations.checkr.adapter import CheckrAdapter, CheckrCredentials
+from sentinel.integrations.oracle_cloud.adapter import OracleCloudAdapter, OracleCloudCredentials
+from sentinel.integrations.digitalocean.adapter import DigitaloceanAdapter, DigitaloceanCredentials
+from sentinel.integrations.vercel.adapter import VercelAdapter, VercelCredentials
+from sentinel.integrations.netlify.adapter import NetlifyAdapter, NetlifyCredentials
+from sentinel.integrations.scaleway.adapter import ScalewayAdapter, ScalewayCredentials
+from sentinel.integrations.supabase.adapter import SupabaseAdapter, SupabaseCredentials
+from sentinel.integrations.ovhcloud.adapter import OvhcloudAdapter, OvhcloudCredentials
+from sentinel.integrations.heroku.adapter import HerokuAdapter, HerokuCredentials
+from sentinel.integrations.akamai.adapter import AkamaiAdapter, AkamaiCredentials
+from sentinel.integrations.snowflake.adapter import SnowflakeAdapter, SnowflakeCredentials
+from sentinel.integrations.render.adapter import RenderAdapter, RenderCredentials
+from sentinel.integrations.mongodb_atlas.adapter import MongoDbAtlasAdapter, MongoDbAtlasCredentials
+from sentinel.integrations.mongodb_atlas_for_government.adapter import MongoDbAtlasForGovernmentAdapter, MongoDbAtlasForGovernmentCredentials
+from sentinel.integrations.ibm_cloud.adapter import IbmCloudAdapter, IbmCloudCredentials
+from sentinel.integrations.alibaba_cloud.adapter import AlibabaCloudAdapter, AlibabaCloudCredentials
+from sentinel.integrations.cloudflare.adapter import CloudflareAdapter, CloudflareCredentials
+from sentinel.integrations.kubernetes.adapter import KubernetesAdapter, KubernetesCredentials
+from sentinel.integrations.docker_hub.adapter import DockerHubAdapter, DockerHubCredentials
+from sentinel.integrations.github_actions.adapter import GithubActionsAdapter, GithubActionsCredentials
+from sentinel.integrations.jenkins.adapter import JenkinsAdapter, JenkinsCredentials
+from sentinel.integrations.circleci.adapter import CircleciAdapter, CircleciCredentials
+from sentinel.integrations.hashicorp_vault.adapter import HashicorpVaultAdapter, HashicorpVaultCredentials
+from sentinel.integrations.bitwarden.adapter import BitwardenAdapter, BitwardenCredentials
+from sentinel.integrations.fieldguide.adapter import FieldguideAdapter, FieldguideCredentials
+from sentinel.integrations.vouch_cyber_insurance.adapter import VouchCyberInsuranceAdapter, VouchCyberInsuranceCredentials
+from sentinel.integrations.a_scend.adapter import AScendAdapter, AScendCredentials
+
 _REGISTRY: dict[str, tuple[type, type]] = {
     "github": (GithubAdapter, GithubCredentials),
     "aws": (AwsAdapter, AwsCredentials),
@@ -354,6 +438,89 @@ _REGISTRY: dict[str, tuple[type, type]] = {
     "alexishr": (AlexisHRAdapter, AlexisHRCredentials),
     "employment_hero": (EmploymentHeroAdapter, EmploymentHeroCredentials),
     "7shifts": (SevenShiftsAdapter, SevenShiftsCredentials),
+    # Phase 8: Collaboration, ticketing & business SaaS
+    "slack": (SlackAdapter, SlackCredentials),
+    "zoom": (ZoomAdapter, ZoomCredentials),
+    "webex": (WebexAdapter, WebexCredentials),
+    "box": (BoxAdapter, BoxCredentials),
+    "dropbox": (DropboxAdapter, DropboxCredentials),
+    "notion": (NotionAdapter, NotionCredentials),
+    "docusign": (DocusignAdapter, DocusignCredentials),
+    "calendly": (CalendlyAdapter, CalendlyCredentials),
+    "miro": (MiroAdapter, MiroCredentials),
+    "servicenow": (ServicenowAdapter, ServicenowCredentials),
+    "zendesk": (ZendeskAdapter, ZendeskCredentials),
+    "asana": (AsanaAdapter, AsanaCredentials),
+    "linear": (LinearAdapter, LinearCredentials),
+    "clickup": (ClickupAdapter, ClickupCredentials),
+    "monday_com": (MondayComAdapter, MondayComCredentials),
+    "basecamp": (BasecampAdapter, BasecampCredentials),
+    "smartsheet": (SmartsheetAdapter, SmartsheetCredentials),
+    "teamwork": (TeamworkAdapter, TeamworkCredentials),
+    "freshservice": (FreshserviceAdapter, FreshserviceCredentials),
+    "salesforce": (SalesforceAdapter, SalesforceCredentials),
+    "hubspot": (HubspotAdapter, HubspotCredentials),
+    "pipedrive": (PipedriveAdapter, PipedriveCredentials),
+    "copper": (CopperAdapter, CopperCredentials),
+    "insightly": (InsightlyAdapter, InsightlyCredentials),
+    "close": (CloseAdapter, CloseCredentials),
+    "capsule": (CapsuleAdapter, CapsuleCredentials),
+    "gong": (GongAdapter, GongCredentials),
+    "gorgias": (GorgiasAdapter, GorgiasCredentials),
+    "intercom": (IntercomAdapter, IntercomCredentials),
+    "xero": (XeroAdapter, XeroCredentials),
+    "quickbooks": (QuickbooksAdapter, QuickbooksCredentials),
+    "brex": (BrexAdapter, BrexCredentials),
+    "ramp": (RampAdapter, RampCredentials),
+    "twilio": (TwilioAdapter, TwilioCredentials),
+    "apollo": (ApolloAdapter, ApolloCredentials),
+    "zoominfo": (ZoominfoAdapter, ZoominfoCredentials),
+    "envoy": (EnvoyAdapter, EnvoyCredentials),
+    "torii": (ToriiAdapter, ToriiCredentials),
+    "rockset": (RocksetAdapter, RocksetCredentials),
+    "clockwork": (ClockworkAdapter, ClockworkCredentials),
+    "knowbe4": (Knowbe4Adapter, Knowbe4Credentials),
+    "udemy_business": (UdemyBusinessAdapter, UdemyBusinessCredentials),
+    "wizer": (WizerAdapter, WizerCredentials),
+    "mimecast": (MimecastAdapter, MimecastCredentials),
+    "docebo": (DoceboAdapter, DoceboCredentials),
+    "cybeready": (CybereadyAdapter, CybereadyCredentials),
+    "breezy_hr": (BreezyHrAdapter, BreezyHrCredentials),
+    "cats": (CatsAdapter, CatsCredentials),
+    "jobvite": (JobviteAdapter, JobviteCredentials),
+    "smartrecruiters": (SmartrecruitersAdapter, SmartrecruitersCredentials),
+    "teamtailor": (TeamtailorAdapter, TeamtailorCredentials),
+    "jobadder": (JobadderAdapter, JobadderCredentials),
+    "lever": (LeverAdapter, LeverCredentials),
+    "comeet": (ComeetAdapter, ComeetCredentials),
+    "certn": (CertnAdapter, CertnCredentials),
+    "checkr": (CheckrAdapter, CheckrCredentials),
+    "oracle_cloud": (OracleCloudAdapter, OracleCloudCredentials),
+    "digitalocean": (DigitaloceanAdapter, DigitaloceanCredentials),
+    "vercel": (VercelAdapter, VercelCredentials),
+    "netlify": (NetlifyAdapter, NetlifyCredentials),
+    "scaleway": (ScalewayAdapter, ScalewayCredentials),
+    "supabase": (SupabaseAdapter, SupabaseCredentials),
+    "ovhcloud": (OvhcloudAdapter, OvhcloudCredentials),
+    "heroku": (HerokuAdapter, HerokuCredentials),
+    "akamai": (AkamaiAdapter, AkamaiCredentials),
+    "snowflake": (SnowflakeAdapter, SnowflakeCredentials),
+    "render": (RenderAdapter, RenderCredentials),
+    "mongodb_atlas": (MongoDbAtlasAdapter, MongoDbAtlasCredentials),
+    "mongodb_atlas_for_government": (MongoDbAtlasForGovernmentAdapter, MongoDbAtlasForGovernmentCredentials),
+    "ibm_cloud": (IbmCloudAdapter, IbmCloudCredentials),
+    "alibaba_cloud": (AlibabaCloudAdapter, AlibabaCloudCredentials),
+    "cloudflare": (CloudflareAdapter, CloudflareCredentials),
+    "kubernetes": (KubernetesAdapter, KubernetesCredentials),
+    "docker_hub": (DockerHubAdapter, DockerHubCredentials),
+    "github_actions": (GithubActionsAdapter, GithubActionsCredentials),
+    "jenkins": (JenkinsAdapter, JenkinsCredentials),
+    "circleci": (CircleciAdapter, CircleciCredentials),
+    "hashicorp_vault": (HashicorpVaultAdapter, HashicorpVaultCredentials),
+    "bitwarden": (BitwardenAdapter, BitwardenCredentials),
+    "fieldguide": (FieldguideAdapter, FieldguideCredentials),
+    "vouch_cyber_insurance": (VouchCyberInsuranceAdapter, VouchCyberInsuranceCredentials),
+    "a_scend": (AScendAdapter, AScendCredentials),
 }
 
 

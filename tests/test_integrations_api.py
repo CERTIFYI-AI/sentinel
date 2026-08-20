@@ -86,13 +86,39 @@ class TestAdapterGate:
             "isolved", "payfit", "square_payroll", "kenjo", "netsuite",
             "factorial", "charthop", "humaans", "proliant", "alexishr",
             "employment_hero", "7shifts",
+            # Phase 8: Collaboration, ticketing & business SaaS
+            "slack", "zoom", "webex", "box", "dropbox", "notion",
+            "docusign", "calendly", "miro", "servicenow", "zendesk",
+            "asana", "linear", "clickup", "monday_com", "basecamp",
+            "smartsheet", "teamwork", "freshservice", "salesforce",
+            "hubspot", "pipedrive", "copper", "insightly", "close",
+            "capsule", "gong", "gorgias", "intercom", "xero",
+            "quickbooks", "brex", "ramp", "twilio", "apollo", "zoominfo",
+            "envoy", "torii", "rockset", "clockwork", "knowbe4",
+            "udemy_business", "wizer", "mimecast", "docebo", "cybeready",
+            "breezy_hr", "cats", "jobvite", "smartrecruiters",
+            "teamtailor", "jobadder", "lever", "comeet", "certn",
+            "checkr", "oracle_cloud", "digitalocean", "vercel",
+            "netlify", "scaleway", "supabase", "ovhcloud", "heroku",
+            "akamai", "snowflake", "render", "mongodb_atlas",
+            "mongodb_atlas_for_government", "ibm_cloud", "alibaba_cloud",
+            "cloudflare", "kubernetes", "docker_hub", "github_actions",
+            "jenkins", "circleci", "hashicorp_vault", "bitwarden",
+            "fieldguide", "vouch_cyber_insurance", "a_scend",
         })
 
     def test_catalogued_only_product_has_no_adapter(self):
-        # Slack is catalogued but no adapter ships; connecting must be refused.
-        # (Okta used to be the example here until its adapter shipped in
-        # 20260922000001 — the point of the test is the refusal, not the slug.)
-        assert "slack" not in available_slugs()
+        # A catalogued slug with no adapter must be refused. The example has
+        # moved as adapters shipped (okta -> slack -> here); the point of the
+        # test is the refusal, not the slug.
+        #
+        # `sharepoint` is the bare catalogue row that duplicates the shipped
+        # `microsoft_sharepoint` entry. Nothing is registered under the bare
+        # slug, so it doubles as a one-id-space guard: an adapter reachable
+        # under two different slugs would let the same product be connected
+        # twice and collect against two identities.
+        assert "sharepoint" not in available_slugs()
+        assert "microsoft_sharepoint" in available_slugs()
 
     def test_azure_is_keyed_by_its_catalogue_slug(self):
         # The catalogue row is `microsoft_azure`. Registering it as `azure`
@@ -625,6 +651,263 @@ class TestConnectFormMatchesTheAdapter:
     def test_seven_shifts_form_matches_its_credentials(self):
         self._assert_parity("7shifts", "dashboard/src/integrations/seven_shifts/config.ts")
 
+    def test_slack_form_matches_its_credentials(self):
+        self._assert_parity("slack", "dashboard/src/integrations/slack/config.ts")
+
+    def test_zoom_form_matches_its_credentials(self):
+        self._assert_parity("zoom", "dashboard/src/integrations/zoom/config.ts")
+
+    def test_webex_form_matches_its_credentials(self):
+        self._assert_parity("webex", "dashboard/src/integrations/webex/config.ts")
+
+    def test_box_form_matches_its_credentials(self):
+        self._assert_parity("box", "dashboard/src/integrations/box/config.ts")
+
+    def test_dropbox_form_matches_its_credentials(self):
+        self._assert_parity("dropbox", "dashboard/src/integrations/dropbox/config.ts")
+
+    def test_notion_form_matches_its_credentials(self):
+        self._assert_parity("notion", "dashboard/src/integrations/notion/config.ts")
+
+    def test_docusign_form_matches_its_credentials(self):
+        self._assert_parity("docusign", "dashboard/src/integrations/docusign/config.ts")
+
+    def test_calendly_form_matches_its_credentials(self):
+        self._assert_parity("calendly", "dashboard/src/integrations/calendly/config.ts")
+
+    def test_miro_form_matches_its_credentials(self):
+        self._assert_parity("miro", "dashboard/src/integrations/miro/config.ts")
+
+    def test_servicenow_form_matches_its_credentials(self):
+        self._assert_parity("servicenow", "dashboard/src/integrations/servicenow/config.ts")
+
+    def test_zendesk_form_matches_its_credentials(self):
+        self._assert_parity("zendesk", "dashboard/src/integrations/zendesk/config.ts")
+
+    def test_asana_form_matches_its_credentials(self):
+        self._assert_parity("asana", "dashboard/src/integrations/asana/config.ts")
+
+    def test_linear_form_matches_its_credentials(self):
+        self._assert_parity("linear", "dashboard/src/integrations/linear/config.ts")
+
+    def test_clickup_form_matches_its_credentials(self):
+        self._assert_parity("clickup", "dashboard/src/integrations/clickup/config.ts")
+
+    def test_monday_com_form_matches_its_credentials(self):
+        self._assert_parity("monday_com", "dashboard/src/integrations/monday_com/config.ts")
+
+    def test_basecamp_form_matches_its_credentials(self):
+        self._assert_parity("basecamp", "dashboard/src/integrations/basecamp/config.ts")
+
+    def test_smartsheet_form_matches_its_credentials(self):
+        self._assert_parity("smartsheet", "dashboard/src/integrations/smartsheet/config.ts")
+
+    def test_teamwork_form_matches_its_credentials(self):
+        self._assert_parity("teamwork", "dashboard/src/integrations/teamwork/config.ts")
+
+    def test_freshservice_form_matches_its_credentials(self):
+        self._assert_parity("freshservice", "dashboard/src/integrations/freshservice/config.ts")
+
+    def test_salesforce_form_matches_its_credentials(self):
+        self._assert_parity("salesforce", "dashboard/src/integrations/salesforce/config.ts")
+
+    def test_hubspot_form_matches_its_credentials(self):
+        self._assert_parity("hubspot", "dashboard/src/integrations/hubspot/config.ts")
+
+    def test_pipedrive_form_matches_its_credentials(self):
+        self._assert_parity("pipedrive", "dashboard/src/integrations/pipedrive/config.ts")
+
+    def test_copper_form_matches_its_credentials(self):
+        self._assert_parity("copper", "dashboard/src/integrations/copper/config.ts")
+
+    def test_insightly_form_matches_its_credentials(self):
+        self._assert_parity("insightly", "dashboard/src/integrations/insightly/config.ts")
+
+    def test_close_form_matches_its_credentials(self):
+        self._assert_parity("close", "dashboard/src/integrations/close/config.ts")
+
+    def test_capsule_form_matches_its_credentials(self):
+        self._assert_parity("capsule", "dashboard/src/integrations/capsule/config.ts")
+
+    def test_gong_form_matches_its_credentials(self):
+        self._assert_parity("gong", "dashboard/src/integrations/gong/config.ts")
+
+    def test_gorgias_form_matches_its_credentials(self):
+        self._assert_parity("gorgias", "dashboard/src/integrations/gorgias/config.ts")
+
+    def test_intercom_form_matches_its_credentials(self):
+        self._assert_parity("intercom", "dashboard/src/integrations/intercom/config.ts")
+
+    def test_xero_form_matches_its_credentials(self):
+        self._assert_parity("xero", "dashboard/src/integrations/xero/config.ts")
+
+    def test_quickbooks_form_matches_its_credentials(self):
+        self._assert_parity("quickbooks", "dashboard/src/integrations/quickbooks/config.ts")
+
+    def test_brex_form_matches_its_credentials(self):
+        self._assert_parity("brex", "dashboard/src/integrations/brex/config.ts")
+
+    def test_ramp_form_matches_its_credentials(self):
+        self._assert_parity("ramp", "dashboard/src/integrations/ramp/config.ts")
+
+    def test_twilio_form_matches_its_credentials(self):
+        self._assert_parity("twilio", "dashboard/src/integrations/twilio/config.ts")
+
+    def test_apollo_form_matches_its_credentials(self):
+        self._assert_parity("apollo", "dashboard/src/integrations/apollo/config.ts")
+
+    def test_zoominfo_form_matches_its_credentials(self):
+        self._assert_parity("zoominfo", "dashboard/src/integrations/zoominfo/config.ts")
+
+    def test_envoy_form_matches_its_credentials(self):
+        self._assert_parity("envoy", "dashboard/src/integrations/envoy/config.ts")
+
+    def test_torii_form_matches_its_credentials(self):
+        self._assert_parity("torii", "dashboard/src/integrations/torii/config.ts")
+
+    def test_rockset_form_matches_its_credentials(self):
+        self._assert_parity("rockset", "dashboard/src/integrations/rockset/config.ts")
+
+    def test_clockwork_form_matches_its_credentials(self):
+        self._assert_parity("clockwork", "dashboard/src/integrations/clockwork/config.ts")
+
+    def test_knowbe4_form_matches_its_credentials(self):
+        self._assert_parity("knowbe4", "dashboard/src/integrations/knowbe4/config.ts")
+
+    def test_udemy_business_form_matches_its_credentials(self):
+        self._assert_parity(
+            "udemy_business", "dashboard/src/integrations/udemy_business/config.ts"
+        )
+
+    def test_wizer_form_matches_its_credentials(self):
+        self._assert_parity("wizer", "dashboard/src/integrations/wizer/config.ts")
+
+    def test_mimecast_form_matches_its_credentials(self):
+        self._assert_parity("mimecast", "dashboard/src/integrations/mimecast/config.ts")
+
+    def test_docebo_form_matches_its_credentials(self):
+        self._assert_parity("docebo", "dashboard/src/integrations/docebo/config.ts")
+
+    def test_cybeready_form_matches_its_credentials(self):
+        self._assert_parity("cybeready", "dashboard/src/integrations/cybeready/config.ts")
+
+    def test_breezy_hr_form_matches_its_credentials(self):
+        self._assert_parity("breezy_hr", "dashboard/src/integrations/breezy_hr/config.ts")
+
+    def test_cats_form_matches_its_credentials(self):
+        self._assert_parity("cats", "dashboard/src/integrations/cats/config.ts")
+
+    def test_jobvite_form_matches_its_credentials(self):
+        self._assert_parity("jobvite", "dashboard/src/integrations/jobvite/config.ts")
+
+    def test_smartrecruiters_form_matches_its_credentials(self):
+        self._assert_parity(
+            "smartrecruiters", "dashboard/src/integrations/smartrecruiters/config.ts"
+        )
+
+    def test_teamtailor_form_matches_its_credentials(self):
+        self._assert_parity("teamtailor", "dashboard/src/integrations/teamtailor/config.ts")
+
+    def test_jobadder_form_matches_its_credentials(self):
+        self._assert_parity("jobadder", "dashboard/src/integrations/jobadder/config.ts")
+
+    def test_lever_form_matches_its_credentials(self):
+        self._assert_parity("lever", "dashboard/src/integrations/lever/config.ts")
+
+    def test_comeet_form_matches_its_credentials(self):
+        self._assert_parity("comeet", "dashboard/src/integrations/comeet/config.ts")
+
+    def test_certn_form_matches_its_credentials(self):
+        self._assert_parity("certn", "dashboard/src/integrations/certn/config.ts")
+
+    def test_checkr_form_matches_its_credentials(self):
+        self._assert_parity("checkr", "dashboard/src/integrations/checkr/config.ts")
+
+    def test_oracle_cloud_form_matches_its_credentials(self):
+        self._assert_parity("oracle_cloud", "dashboard/src/integrations/oracle_cloud/config.ts")
+
+    def test_digitalocean_form_matches_its_credentials(self):
+        self._assert_parity("digitalocean", "dashboard/src/integrations/digitalocean/config.ts")
+
+    def test_vercel_form_matches_its_credentials(self):
+        self._assert_parity("vercel", "dashboard/src/integrations/vercel/config.ts")
+
+    def test_netlify_form_matches_its_credentials(self):
+        self._assert_parity("netlify", "dashboard/src/integrations/netlify/config.ts")
+
+    def test_scaleway_form_matches_its_credentials(self):
+        self._assert_parity("scaleway", "dashboard/src/integrations/scaleway/config.ts")
+
+    def test_supabase_form_matches_its_credentials(self):
+        self._assert_parity("supabase", "dashboard/src/integrations/supabase/config.ts")
+
+    def test_ovhcloud_form_matches_its_credentials(self):
+        self._assert_parity("ovhcloud", "dashboard/src/integrations/ovhcloud/config.ts")
+
+    def test_heroku_form_matches_its_credentials(self):
+        self._assert_parity("heroku", "dashboard/src/integrations/heroku/config.ts")
+
+    def test_akamai_form_matches_its_credentials(self):
+        self._assert_parity("akamai", "dashboard/src/integrations/akamai/config.ts")
+
+    def test_snowflake_form_matches_its_credentials(self):
+        self._assert_parity("snowflake", "dashboard/src/integrations/snowflake/config.ts")
+
+    def test_render_form_matches_its_credentials(self):
+        self._assert_parity("render", "dashboard/src/integrations/render/config.ts")
+
+    def test_mongodb_atlas_form_matches_its_credentials(self):
+        self._assert_parity("mongodb_atlas", "dashboard/src/integrations/mongodb_atlas/config.ts")
+
+    def test_mongodb_atlas_for_government_form_matches_its_credentials(self):
+        self._assert_parity(
+            "mongodb_atlas_for_government", "dashboard/src/integrations/mongodb_atlas_for_government/config.ts"
+        )
+
+    def test_ibm_cloud_form_matches_its_credentials(self):
+        self._assert_parity("ibm_cloud", "dashboard/src/integrations/ibm_cloud/config.ts")
+
+    def test_alibaba_cloud_form_matches_its_credentials(self):
+        self._assert_parity("alibaba_cloud", "dashboard/src/integrations/alibaba_cloud/config.ts")
+
+    def test_cloudflare_form_matches_its_credentials(self):
+        self._assert_parity("cloudflare", "dashboard/src/integrations/cloudflare/config.ts")
+
+    def test_kubernetes_form_matches_its_credentials(self):
+        self._assert_parity("kubernetes", "dashboard/src/integrations/kubernetes/config.ts")
+
+    def test_docker_hub_form_matches_its_credentials(self):
+        self._assert_parity("docker_hub", "dashboard/src/integrations/docker_hub/config.ts")
+
+    def test_github_actions_form_matches_its_credentials(self):
+        self._assert_parity(
+            "github_actions", "dashboard/src/integrations/github_actions/config.ts"
+        )
+
+    def test_jenkins_form_matches_its_credentials(self):
+        self._assert_parity("jenkins", "dashboard/src/integrations/jenkins/config.ts")
+
+    def test_circleci_form_matches_its_credentials(self):
+        self._assert_parity("circleci", "dashboard/src/integrations/circleci/config.ts")
+
+    def test_hashicorp_vault_form_matches_its_credentials(self):
+        self._assert_parity(
+            "hashicorp_vault", "dashboard/src/integrations/hashicorp_vault/config.ts"
+        )
+
+    def test_bitwarden_form_matches_its_credentials(self):
+        self._assert_parity("bitwarden", "dashboard/src/integrations/bitwarden/config.ts")
+
+    def test_fieldguide_form_matches_its_credentials(self):
+        self._assert_parity("fieldguide", "dashboard/src/integrations/fieldguide/config.ts")
+
+    def test_vouch_cyber_insurance_form_matches_its_credentials(self):
+        self._assert_parity(
+            "vouch_cyber_insurance", "dashboard/src/integrations/vouch_cyber_insurance/config.ts"
+        )
+
+    def test_a_scend_form_matches_its_credentials(self):
+        self._assert_parity("a_scend", "dashboard/src/integrations/a_scend/config.ts")
     def test_every_shipped_adapter_has_a_connect_form(self):
         # A registered adapter with no form renders a "packaging gap" message
         # instead of fields. Catch it here rather than in front of a user.
@@ -776,6 +1059,89 @@ class TestConnectFormMatchesTheAdapter:
             "alexishr": "dashboard/src/integrations/alexishr/config.ts",
             "employment_hero": "dashboard/src/integrations/employment_hero/config.ts",
             "7shifts": "dashboard/src/integrations/seven_shifts/config.ts",
+            # Phase 8: Collaboration, ticketing & business SaaS
+            "slack": "dashboard/src/integrations/slack/config.ts",
+            "zoom": "dashboard/src/integrations/zoom/config.ts",
+            "webex": "dashboard/src/integrations/webex/config.ts",
+            "box": "dashboard/src/integrations/box/config.ts",
+            "dropbox": "dashboard/src/integrations/dropbox/config.ts",
+            "notion": "dashboard/src/integrations/notion/config.ts",
+            "docusign": "dashboard/src/integrations/docusign/config.ts",
+            "calendly": "dashboard/src/integrations/calendly/config.ts",
+            "miro": "dashboard/src/integrations/miro/config.ts",
+            "servicenow": "dashboard/src/integrations/servicenow/config.ts",
+            "zendesk": "dashboard/src/integrations/zendesk/config.ts",
+            "asana": "dashboard/src/integrations/asana/config.ts",
+            "linear": "dashboard/src/integrations/linear/config.ts",
+            "clickup": "dashboard/src/integrations/clickup/config.ts",
+            "monday_com": "dashboard/src/integrations/monday_com/config.ts",
+            "basecamp": "dashboard/src/integrations/basecamp/config.ts",
+            "smartsheet": "dashboard/src/integrations/smartsheet/config.ts",
+            "teamwork": "dashboard/src/integrations/teamwork/config.ts",
+            "freshservice": "dashboard/src/integrations/freshservice/config.ts",
+            "salesforce": "dashboard/src/integrations/salesforce/config.ts",
+            "hubspot": "dashboard/src/integrations/hubspot/config.ts",
+            "pipedrive": "dashboard/src/integrations/pipedrive/config.ts",
+            "copper": "dashboard/src/integrations/copper/config.ts",
+            "insightly": "dashboard/src/integrations/insightly/config.ts",
+            "close": "dashboard/src/integrations/close/config.ts",
+            "capsule": "dashboard/src/integrations/capsule/config.ts",
+            "gong": "dashboard/src/integrations/gong/config.ts",
+            "gorgias": "dashboard/src/integrations/gorgias/config.ts",
+            "intercom": "dashboard/src/integrations/intercom/config.ts",
+            "xero": "dashboard/src/integrations/xero/config.ts",
+            "quickbooks": "dashboard/src/integrations/quickbooks/config.ts",
+            "brex": "dashboard/src/integrations/brex/config.ts",
+            "ramp": "dashboard/src/integrations/ramp/config.ts",
+            "twilio": "dashboard/src/integrations/twilio/config.ts",
+            "apollo": "dashboard/src/integrations/apollo/config.ts",
+            "zoominfo": "dashboard/src/integrations/zoominfo/config.ts",
+            "envoy": "dashboard/src/integrations/envoy/config.ts",
+            "torii": "dashboard/src/integrations/torii/config.ts",
+            "rockset": "dashboard/src/integrations/rockset/config.ts",
+            "clockwork": "dashboard/src/integrations/clockwork/config.ts",
+            "knowbe4": "dashboard/src/integrations/knowbe4/config.ts",
+            "udemy_business": "dashboard/src/integrations/udemy_business/config.ts",
+            "wizer": "dashboard/src/integrations/wizer/config.ts",
+            "mimecast": "dashboard/src/integrations/mimecast/config.ts",
+            "docebo": "dashboard/src/integrations/docebo/config.ts",
+            "cybeready": "dashboard/src/integrations/cybeready/config.ts",
+            "breezy_hr": "dashboard/src/integrations/breezy_hr/config.ts",
+            "cats": "dashboard/src/integrations/cats/config.ts",
+            "jobvite": "dashboard/src/integrations/jobvite/config.ts",
+            "smartrecruiters": "dashboard/src/integrations/smartrecruiters/config.ts",
+            "teamtailor": "dashboard/src/integrations/teamtailor/config.ts",
+            "jobadder": "dashboard/src/integrations/jobadder/config.ts",
+            "lever": "dashboard/src/integrations/lever/config.ts",
+            "comeet": "dashboard/src/integrations/comeet/config.ts",
+            "certn": "dashboard/src/integrations/certn/config.ts",
+            "checkr": "dashboard/src/integrations/checkr/config.ts",
+            "oracle_cloud": "dashboard/src/integrations/oracle_cloud/config.ts",
+            "digitalocean": "dashboard/src/integrations/digitalocean/config.ts",
+            "vercel": "dashboard/src/integrations/vercel/config.ts",
+            "netlify": "dashboard/src/integrations/netlify/config.ts",
+            "scaleway": "dashboard/src/integrations/scaleway/config.ts",
+            "supabase": "dashboard/src/integrations/supabase/config.ts",
+            "ovhcloud": "dashboard/src/integrations/ovhcloud/config.ts",
+            "heroku": "dashboard/src/integrations/heroku/config.ts",
+            "akamai": "dashboard/src/integrations/akamai/config.ts",
+            "snowflake": "dashboard/src/integrations/snowflake/config.ts",
+            "render": "dashboard/src/integrations/render/config.ts",
+            "mongodb_atlas": "dashboard/src/integrations/mongodb_atlas/config.ts",
+            "mongodb_atlas_for_government": "dashboard/src/integrations/mongodb_atlas_for_government/config.ts",
+            "ibm_cloud": "dashboard/src/integrations/ibm_cloud/config.ts",
+            "alibaba_cloud": "dashboard/src/integrations/alibaba_cloud/config.ts",
+            "cloudflare": "dashboard/src/integrations/cloudflare/config.ts",
+            "kubernetes": "dashboard/src/integrations/kubernetes/config.ts",
+            "docker_hub": "dashboard/src/integrations/docker_hub/config.ts",
+            "github_actions": "dashboard/src/integrations/github_actions/config.ts",
+            "jenkins": "dashboard/src/integrations/jenkins/config.ts",
+            "circleci": "dashboard/src/integrations/circleci/config.ts",
+            "hashicorp_vault": "dashboard/src/integrations/hashicorp_vault/config.ts",
+            "bitwarden": "dashboard/src/integrations/bitwarden/config.ts",
+            "fieldguide": "dashboard/src/integrations/fieldguide/config.ts",
+            "vouch_cyber_insurance": "dashboard/src/integrations/vouch_cyber_insurance/config.ts",
+            "a_scend": "dashboard/src/integrations/a_scend/config.ts",
         }
         assert set(paths) == set(available_slugs())
         for slug, path in paths.items():
