@@ -76,7 +76,13 @@ class OvhcloudAdapter:
             body,
             timestamp,
         ])
-        signature = "$1$" + hashlib.sha1(to_sign.encode()).hexdigest()  # noqa: S324 — OVH-mandated scheme
+        # nosemgrep: python.lang.security.insecure-hash-algorithms.insecure-hash-algorithm-sha1
+        # SHA1 is OVH's documented, non-negotiable API v6 signature algorithm
+        # (https://api.ovh.com/g934.first_step_with_api) — OVH's servers
+        # compute and compare the signature with SHA1 themselves, so using a
+        # stronger hash here would not weaken anything; it would just make
+        # every signed request fail authentication.
+        signature = "$1$" + hashlib.sha1(to_sign.encode()).hexdigest()  # noqa: S324
         return {
             "X-Ovh-Application": creds.application_key,
             "X-Ovh-Consumer": creds.consumer_credential,
