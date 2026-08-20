@@ -440,11 +440,16 @@ the caller's organization.
 
 | Function | Trigger | Purpose |
 |----------|---------|---------|
-| `generate-report` | HTTP POST | Compile and format compliance reports |
-| `ai-advisor` | HTTP POST + SSE | Stream GRC recommendations |
-| `sla-enforcer` | Cron (30 min) | Mark overdue HITL and DSR items |
-| `freshness-checker` | Cron (daily) | Update evidence freshness status |
-| `auto-task-generator` | DB webhook | Create tasks from new risks/gaps |
+| `ai-brain-config` | HTTP | Manages per-org AI Brain configuration; encrypts provider API keys |
+| `audit-export` | HTTP | Authenticated audit-log exporter |
+| `evidence-rehash` | Cron (nightly) | Drains `evidence_rehash_queue` and re-hashes Storage objects |
+| `executive-digest` | Cron (hourly) | LLM executive digest generation |
+| `governance-dispatcher` | DB webhook | Fires when a governance row is inserted |
+| `integrations-connect` | HTTP | Browser half of the evidence pipeline (OAuth connect) |
+| `mesh-sentinels` | Cron | Runs the continuous sentinel agents of the Agentic Mesh |
+| `scim-users` | HTTP | SCIM 2.0 `/Users` endpoint for Okta / Azure AD / WorkOS |
+| `set-active-org` | HTTP | Writes the caller's active `org_id` into `app_metadata` |
+| `sso-oidc-callback` | HTTP | Handles the OIDC `/authorize` → `/token` → `/userinfo` tail |
 
 See [Supabase Integration](../architecture/SUPABASE_INTEGRATION.md) for the
 schema, RLS policies, and storage layout.

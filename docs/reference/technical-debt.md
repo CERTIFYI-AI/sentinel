@@ -1311,3 +1311,31 @@ Audits, Incident Log, Evidence Vault, CISO Dashboard, Benchmarking & Maturity).
 real, org-scoped data per First principle #3, or retire the routes. Leaving them
 as empty states indefinitely is a dead-end for the user and fails the "no
 dead-end records" UI/UX gate.
+
+## TD-026 — Documentation drifted from the code it describes
+
+**Status:** Fixed (2026-09-20) · **Severity:** P3 · **Owner:** Platform team
+
+A repo-wide audit found documentation asserting things the code did not do.
+All were corrected in the same change; recorded here because the *class* of
+defect recurs and the checks below are worth repeating.
+
+| Doc | Claim | Reality |
+|---|---|---|
+| `docs/api/api-reference.md` | Listed 5 Supabase Edge Functions — `generate-report`, `ai-advisor`, `sla-enforcer`, `freshness-checker`, `auto-task-generator` | **None existed.** Meanwhile 10 real functions under `supabase/functions/` were undocumented. Table replaced with the real set. |
+| `docs/modules/ai-advisor-narrative.md` | "Status: Simulated (AI Advisor)" | Module is now an empty state, not a simulation (TD-025) |
+| `docs/modules/benchmarking-maturity.md` | "Beta (… Examination Manager)" | Examination Manager is not connected (TD-025) |
+| `docs/modules/executive-intelligence.md` | "Status: Production" covering `/peer-intelligence`; "Peer benchmarks (anonymised, opt-in)" | Peer benchmarking is not implemented (TD-025) |
+| `docs/contributing/ui-component-reference.md` | Linked `src/lib/chart-colors.ts` and showed a `chartColors` import example | File deleted in `abfd658`; real API is the `useChartTheme()` hook |
+| `docs/getting-started/troubleshooting.md` | Linked `src/components/CommandPalette.tsx` | Actual path is `src/components/ui/CommandPalette.tsx` |
+
+**Repeatable checks** (worth adding to CI):
+- Broken relative links: for each `docs/**/*.md`, resolve every `](../…)` target
+  against the filesystem. Was 2 broken, now 0.
+- Documented-vs-real edge functions: diff the function table in
+  `api-reference.md` against `ls supabase/functions/`.
+
+Note the same sweep found **no** tracked build artifacts, logs, backups or
+temp files, and no dead Python — an early "unimported module" scan flagged 25
+files but every one was re-exported through a package `__init__.py` or was the
+Docker entrypoint. Recorded so the next audit does not re-derive it.
